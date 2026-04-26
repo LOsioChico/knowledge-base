@@ -15,7 +15,7 @@ What you need to master before any advanced pattern.
 - [[fundamentals/modules|Modules: feature, shared, core]]
 - [[fundamentals/di-container|DI container: providers, scopes, custom providers]]
 - [[fundamentals/lifecycle|Lifecycle hooks: OnModuleInit, OnApplicationBootstrap]]
-- [[fundamentals/request-lifecycle|Request lifecycle: Middleware, Guard, Interceptor, Pipe]]
+- [[fundamentals/request-lifecycle|Request lifecycle: middleware, guards, interceptors, pipes, filters]]
 
 ## Patterns
 
