@@ -21,18 +21,23 @@ How a request flows through a NestJS app, from socket to response. Knowing the o
 
 ```mermaid
 flowchart TD
-    A[Incoming request] --> B[Middleware]
-    B --> C[Guards]
-    C --> D["Interceptors (before)"]
-    D --> E[Pipes]
-    E --> F[Controller handler]
-    F --> G["Interceptors (after)"]
-    G --> H[Response]
-    C -.throws.-> I[Exception filters]
-    D -.throws.-> I
-    E -.throws.-> I
-    F -.throws.-> I
-    I --> H
+    A[Incoming request] --> M[Middlewares]
+    M --> EZ
+    subgraph EZ [Exception Zone]
+        direction TB
+        G[Guards] --> BI[Before Interceptor]
+        BI --> P[Pipes]
+        P --> C[Controllers]
+        C --- D[Decorators]
+        C --> AI[After Interceptor]
+    end
+    BI -. mismo interceptor .- AI
+    AI --> R[Response]
+    G -.throws.-> EF[Exception Filters]
+    BI -.throws.-> EF
+    P -.throws.-> EF
+    C -.throws.-> EF
+    EF --> R
 ```
 
 > [!info]- The two interceptor boxes are the **same** interceptor
