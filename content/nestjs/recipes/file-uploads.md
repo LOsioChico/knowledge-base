@@ -149,6 +149,6 @@ With disk storage `file.buffer` is `undefined` and `file.path` points at the sav
 
 ## See also
 
-- [[fundamentals/interceptors|Interceptors]]: how `FileInterceptor` plugs into the request lifecycle
+- [[fundamentals/interceptors|Interceptors]]: how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request lifecycle]]
 - [[fundamentals/pipes|Pipes]]: what `ParseFilePipe` actually is
 - Official: [docs.nestjs.com/techniques/file-upload](https://docs.nestjs.com/techniques/file-upload)
