@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm ci
+      - name: Lint wikilinks (first-mention rule)
+        run: npm run lint:wikilinks
       - name: Build Quartz
         run: npx quartz build
       - name: Upload artifact
