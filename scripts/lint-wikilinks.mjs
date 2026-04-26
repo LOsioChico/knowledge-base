@@ -177,22 +177,86 @@ for (const n of notes) {
 
 if (violations.length === 0) {
   console.log("✓ wikilink linter: all first mentions are linked");
-  process.exit(0);
+} else {
+  console.error(`✗ wikilink linter: ${violations.length} first-mention violation(s)\n`);
+  const byFile = new Map();
+  for (const v of violations) {
+    if (!byFile.has(v.file)) byFile.set(v.file, []);
+    byFile.get(v.file).push(v);
+  }
+  for (const [file, list] of byFile) {
+    console.error(`  ${file}`);
+    for (const v of list) {
+      console.error(
+        `    L${v.line}: "${v.term}" should link to [[${v.target}|${v.term}]]`,
+      );
+    }
+  }
+  console.error("\nFix by wrapping the first prose mention in a wikilink, OR add it to `related:` and link it later in the body.");
 }
 
-console.error(`✗ wikilink linter: ${violations.length} first-mention violation(s)\n`);
-const byFile = new Map();
-for (const v of violations) {
-  if (!byFile.has(v.file)) byFile.set(v.file, []);
-  byFile.get(v.file).push(v);
+// ---------------------------------------------------------------------------
+// Listing-completeness checks.
+// Recipes (and other indexed sub-folders) must be listed in:
+//   1. their area index page (e.g. content/nestjs/index.md)
+//   2. quartz/static/llms.txt
+// This catches the "added a note but forgot to surface it" failure mode.
+// ---------------------------------------------------------------------------
+
+const listingViolations = [];
+
+// Areas that have an index.md and an indexed sub-folder list.
+// Add more entries here as the KB grows.
+const INDEXED_FOLDERS = [
+  { area: "nestjs", folder: "recipes" },
+];
+
+const llmsTxtPath = fileURLToPath(new URL("../quartz/static/llms.txt", import.meta.url));
+let llmsTxt = "";
+try {
+  llmsTxt = await readFile(llmsTxtPath, "utf8");
+} catch {
+  // file optional; skip the llms check if missing
 }
-for (const [file, list] of byFile) {
-  console.error(`  ${file}`);
-  for (const v of list) {
-    console.error(
-      `    L${v.line}: "${v.term}" should link to [[${v.target}|${v.term}]]`,
-    );
+
+for (const { area, folder } of INDEXED_FOLDERS) {
+  const areaIndex = notes.find((n) => n.rel === `${area}/index`);
+  const folderIndex = `${area}/${folder}/index`;
+  const folderNotes = notes.filter(
+    (n) => n.rel.startsWith(`${area}/${folder}/`) && n.rel !== folderIndex,
+  );
+  for (const fn of folderNotes) {
+    if (areaIndex && !areaIndex.body.includes(`[[${fn.rel}`)) {
+      listingViolations.push({
+        file: relative(REPO, areaIndex.path),
+        msg: `missing entry for [[${fn.rel}]] (new ${folder.replace(/s$/, "")} not listed in area index)`,
+      });
+    }
+    if (llmsTxt && !llmsTxt.includes(fn.rel)) {
+      listingViolations.push({
+        file: "quartz/static/llms.txt",
+        msg: `missing entry for ${fn.rel}`,
+      });
+    }
   }
 }
-console.error("\nFix by wrapping the first prose mention in a wikilink, OR add it to `related:` and link it later in the body.");
-process.exit(1);
+
+if (listingViolations.length === 0) {
+  console.log("✓ listing-completeness: all recipes surfaced in area index and llms.txt");
+} else {
+  console.error(`\n✗ listing-completeness: ${listingViolations.length} missing entr${listingViolations.length === 1 ? "y" : "ies"}\n`);
+  const byFile = new Map();
+  for (const v of listingViolations) {
+    if (!byFile.has(v.file)) byFile.set(v.file, []);
+    byFile.get(v.file).push(v);
+  }
+  for (const [file, list] of byFile) {
+    console.error(`  ${file}`);
+    for (const v of list) console.error(`    ${v.msg}`);
+  }
+}
+
+if (violations.length > 0 || listingViolations.length > 0) {
+  process.exit(1);
+}
+process.exit(0);
