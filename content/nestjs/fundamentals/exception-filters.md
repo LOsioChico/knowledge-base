@@ -55,4 +55,4 @@ Filters only fire on **uncaught** exceptions. A `try/catch` inside the controlle
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[../patterns/error-handling|Error handling patterns]]
+- [[nestjs/patterns/error-handling|Error handling patterns]]

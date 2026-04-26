@@ -13,7 +13,7 @@ related:
 
 ## Available
 
-- [[recipes/file-uploads|File uploads with Multer]]
+- [[nestjs/recipes/file-uploads|File uploads with Multer]]
 
 ## Pending
 

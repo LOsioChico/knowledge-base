@@ -60,6 +60,6 @@ export class CatsController {
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[../auth/jwt-strategy|JWT strategy]]
-- [[../auth/guards-vs-middleware|Guards vs middleware]]
-- [[../auth/rbac-cbac|RBAC and CBAC]]
+- [[nestjs/auth/jwt-strategy|JWT strategy]]
+- [[nestjs/auth/guards-vs-middleware|Guards vs middleware]]
+- [[nestjs/auth/rbac-cbac|RBAC and CBAC]]

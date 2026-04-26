@@ -57,5 +57,5 @@ Any error thrown by a [[nestjs/fundamentals/pipes|pipe]], controller, or service
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[../observability/logging-pino|Structured logging]]
-- [[../observability/opentelemetry|OpenTelemetry]]
+- [[nestjs/observability/logging-pino|Structured logging]]
+- [[nestjs/observability/opentelemetry|OpenTelemetry]]

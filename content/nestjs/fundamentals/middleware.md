@@ -49,4 +49,4 @@ Sequential, in bind order. Global middleware runs first. Across modules, the roo
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[../auth/guards-vs-middleware|Guards vs middleware]]
+- [[nestjs/auth/guards-vs-middleware|Guards vs middleware]]
