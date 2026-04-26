@@ -125,6 +125,9 @@ Skipping any step is a bug.
 - Body links use Obsidian wikilinks: `[[nestjs/fundamentals/guards|Guards]]`. Quartz renders these and emits backlinks automatically.
 - `related:` frontmatter uses the same wikilink syntax inside quotes: `"[[nestjs/fundamentals/guards]]"`.
 - Bidirectional by default. If A `related:` B, then B `related:` A.
+- **First-mention wikilink rule**: the FIRST time a concept that has its own note appears in the body of another note, it MUST be a wikilink, not plain text. Subsequent mentions in the same note can stay plain. Code identifiers (e.g. `FileInterceptor`, `ParseFilePipe`) are not concepts; the underlying concept (`[[nestjs/fundamentals/interceptors|interceptor]]`, `[[nestjs/fundamentals/pipes|pipe]]`) is.
+- A note never wikilinks to itself. Self-mentions stay plain.
+- `related:` is the safety net (machine-readable), wikilinks are the surface (reader-facing). Both must agree: if it's in `related:`, the body should link it at first mention; if the body links it, it must be in `related:`.
 - Avoid stub links to non-existent notes. If you reference a future note, mark it explicitly: `[[microservices/kafka|Kafka (planned)]]`.
 
 ## Recipe template
@@ -145,8 +148,8 @@ Use `content/nestjs/recipes/file-uploads.md` as the canonical example. Structure
 - No em-dashes (`—`). Use `:` or rewrite the sentence.
 - No `--` either.
 - No filler ("In this guide, we will..."). Get to the example.
-- Conventional commits: `type(scope): summary`. Atomic commits, one logical change each.
-- No co-author trailers in commit messages.
+- Conventional commits: `type: summary`. NO scope. Atomic commits, one logical change each.
+- No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
 ## LLM ingest layer
