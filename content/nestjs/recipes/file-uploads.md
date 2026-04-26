@@ -42,7 +42,7 @@ export class UploadsController {
 
 ## Validation: the right way
 
-Skip hand-rolled pipes. Use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
+Skip hand-rolled [[nestjs/fundamentals/pipes|pipes]]. Use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
 
 ```typescript
 import {

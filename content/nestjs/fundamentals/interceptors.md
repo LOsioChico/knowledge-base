@@ -46,7 +46,7 @@ A global logging interceptor therefore sees the **final** response shape after a
 
 ## Errors
 
-Any error thrown by a pipe, controller, or service can be caught with `catchError` inside an interceptor, before it reaches the [[exception-filters|filter]] layer.
+Any error thrown by a [[nestjs/fundamentals/pipes|pipe]], controller, or service can be caught with `catchError` inside an interceptor, before it reaches the [[exception-filters|filter]] layer.
 
 ## When to reach for it
 
