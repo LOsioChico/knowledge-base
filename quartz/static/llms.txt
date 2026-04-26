@@ -1,0 +1,39 @@
+# Luis - Knowledge Base
+
+> Personal NestJS-focused knowledge base. Concept notes, recipes, patterns, and gotchas. Deployed at https://losiochico.github.io/knowledge-base. Source: https://github.com/LOsioChico/knowledge-base.
+
+This file follows the https://llmstxt.org spec. Use it as the entrypoint for ingesting the whole vault. Each link points to a markdown source file in the repo. The agent contract is in `AGENTS.md` at the repo root and MUST be read before any edit.
+
+## Operating contract
+
+- [AGENTS.md](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/AGENTS.md): folder layout, frontmatter schema, controlled tag vocabulary, mandatory pre-flight ritual, and linking rules
+
+## Maps of content
+
+- [Knowledge Base home](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/index.md): top-level areas list
+- [NestJS](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/index.md): all NestJS notes grouped by fundamentals, recipes, and planned areas
+- [NestJS recipes](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/index.md): how-to guides
+
+## NestJS fundamentals
+
+- [Request lifecycle](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/request-lifecycle.md): the order in which middleware, guards, interceptors, pipes, controllers, and exception filters run
+- [Middleware](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/middleware.md): Express/Fastify-level interception, runs before guards
+- [Guards](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/guards.md): authorization decisions, return boolean, run after middleware
+- [Interceptors](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/interceptors.md): wrap the handler with before/after logic, RxJS-based
+- [Pipes](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/pipes.md): transform and validate inputs before they reach the handler
+- [Exception filters](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/fundamentals/exception-filters.md): catch thrown errors and shape the response
+
+## NestJS recipes
+
+- [File uploads with Multer](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/file-uploads.md): accept multipart/form-data, validate size and mime-type, memory vs disk storage, gotchas
+
+## Optional
+
+Reserved areas, not yet authored. When added, move them above and update `AGENTS.md` tag vocabulary.
+
+- microservices (Kafka, RabbitMQ, NATS, CQRS, domain events, outbox)
+- data (Prisma, TypeORM, transactions, migrations)
+- auth (JWT, sessions, Passport strategies, OAuth)
+- testing (unit, e2e, mocking, fixtures)
+- observability (OpenTelemetry, structured logging, tracing)
+- deployment (Docker, GitHub Actions, env config)
