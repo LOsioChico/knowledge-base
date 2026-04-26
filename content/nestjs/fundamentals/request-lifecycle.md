@@ -28,7 +28,6 @@ flowchart TD
         G[Guards] --> BI[Before Interceptor]
         BI --> P[Pipes]
         P --> C[Controllers]
-        C --- D[Decorators]
         C --> AI[After Interceptor]
     end
     BI -. mismo interceptor .- AI
