@@ -22,6 +22,13 @@ source:
 ## Signature
 
 ```typescript
+import {
+  ArgumentMetadata,
+  BadRequestException,
+  Injectable,
+  PipeTransform,
+} from '@nestjs/common';
+
 @Injectable()
 export class ParseIntPipe implements PipeTransform<string, number> {
   transform(value: string, metadata: ArgumentMetadata): number {
@@ -69,6 +76,8 @@ All exported from `@nestjs/common`. List verified against `packages/common/pipes
 Standard order is global, controller, route. But at the **route parameter level**, pipes run from the **last parameter to the first**:
 
 ```typescript
+import { Body, Controller, Param, Patch, Query, UsePipes } from '@nestjs/common';
+
 @UsePipes(GeneralValidationPipe)
 @Controller('cats')
 export class CatsController {
@@ -89,11 +98,16 @@ export class CatsController {
 Returns its constructor argument when the incoming value is `null`, `undefined`, or `NaN` (verified in `default-value.pipe.ts`). **Order matters** when chaining:
 
 ```typescript
-@Get()
-list(
-  @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  @Query('size', new DefaultValuePipe(10), ParseIntPipe) size: number,
-) {}
+import { Controller, DefaultValuePipe, Get, ParseIntPipe, Query } from '@nestjs/common';
+
+@Controller('cats')
+export class CatsController {
+  @Get()
+  list(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('size', new DefaultValuePipe(10), ParseIntPipe) size: number,
+  ) {}
+}
 ```
 
 `DefaultValuePipe` runs **first** so `ParseIntPipe` receives a number, not `undefined`. Reverse the order and `ParseIntPipe` would throw on missing query params.
