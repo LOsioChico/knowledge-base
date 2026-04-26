@@ -46,29 +46,33 @@ Skip hand-rolled [[nestjs/fundamentals/pipes|pipes]]. Use the built-in `ParseFil
 
 ```typescript
 import {
-  ParseFilePipeBuilder,
+  Controller,
   HttpStatus,
+  ParseFilePipeBuilder,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-@Post()
-@UseInterceptors(FileInterceptor('file'))
-upload(
-  @UploadedFile(
-    new ParseFilePipeBuilder()
-      .addFileTypeValidator({ fileType: /^(image\/jpeg|image\/png)$/ })
-      .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
-      .build({
-        errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-        fileIsRequired: true,
-      }),
-  )
-  file: Express.Multer.File,
-) {
-  return file.originalname;
+@Controller('uploads')
+export class UploadsController {
+  @Post()
+  @UseInterceptors(FileInterceptor('file'))
+  upload(
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({ fileType: /^(image\/jpeg|image\/png)$/ })
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+        .build({
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          fileIsRequired: true,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return file.originalname;
+  }
 }
 ```
 
@@ -113,6 +117,9 @@ export class AppModule {}
 For env-driven config use `registerAsync`:
 
 ```typescript
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MulterModule } from '@nestjs/platform-express';
+
 MulterModule.registerAsync({
   imports: [ConfigModule],
   inject: [ConfigService],
@@ -127,6 +134,7 @@ MulterModule.registerAsync({
 By default Multer keeps the file in memory as a `Buffer` on `file.buffer`. That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:
 
 ```typescript
+import { MulterModule } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
 MulterModule.register({
