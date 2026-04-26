@@ -30,7 +30,7 @@ flowchart TD
         P --> C[Controllers]
         C --> AI[After Interceptor]
     end
-    BI -. mismo interceptor .- AI
+    BI -. same interceptor wraps both .- AI
     AI --> R[Response]
     G -.throws.-> EF[Exception Filters]
     BI -.throws.-> EF
@@ -41,6 +41,8 @@ flowchart TD
 
 > [!info]- The two interceptor boxes are the **same** interceptor
 > A single `intercept(context, next)` call wraps the handler. The "before" box is the code that runs prior to invoking the handler; the "after" box is the logic chained on the returned stream. Two boxes in the diagram, **one** method. Details in [[interceptors#The pre/post pattern|Interceptors > The pre/post pattern]].
+>
+> You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers — pre runs in registration order, post runs in **FILO** (first in, last out).
 
 ## The order
 
