@@ -47,7 +47,7 @@ All exported from `@nestjs/common`. List verified against `packages/common/pipes
 | `ParseEnumPipe` | enum membership check | Constructor requires the enum |
 | `ParseDatePipe` | string/number → `Date` | `new Date(value)`; supports `default: () => Date` |
 | `DefaultValuePipe` | fallback when nil | Returns default when value is `null`, `undefined`, or `NaN` |
-| `ParseFilePipe` | upload validation | Pair with `MaxFileSizeValidator`, `FileTypeValidator`. See [[nestjs/recipes/file-uploads]] |
+| `ParseFilePipe` | upload validation | Compose `MaxFileSizeValidator` + `FileTypeValidator` directly, or use the fluent `ParseFilePipeBuilder`. See [[nestjs/recipes/file-uploads\|File uploads recipe]] |
 
 > [!info] Common options across `Parse*` pipes
 > Each `Parse*` constructor accepts an options object with:
@@ -235,4 +235,4 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[nestjs/recipes/file-uploads|File uploads (uses `ParseFilePipe`)]]
+- [[nestjs/recipes/file-uploads|File uploads recipe (ParseFilePipe in action)]]
