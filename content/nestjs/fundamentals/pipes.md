@@ -185,6 +185,19 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 | Validation always passes | Pipe not bound globally, or DTO class lacks decorators |
 | `ParseIntPipe` throws on optional param | Either provide a `DefaultValuePipe` first, or pass `{ optional: true }` to `ParseIntPipe` |
 
+> [!warning]- `enableImplicitConversion` does not handle every type
+> Verified in [`TransformOperationExecutor.ts`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts): implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Practical matrix:
+>
+> | Property type | Implicit conversion | Need `@Type()`? |
+> |---|---|---|
+> | `string`, `number`, `boolean`, `Date` | ✅ enough | ❌ |
+> | Branded type (`string & { __brand: 'Id' }`) | ✅ converts as base (`String`) | ❌ — but the brand is **compile-time only**, no runtime guarantee. Add `@IsUUID()`, regex, or a custom validator if you need it. |
+> | Nested class (no circular imports) | ⚠️ sometimes | ✅ recommended always |
+> | Array of classes (`items: Item[]`) | ❌ TS emits `design:type = Array` with no element info | ✅ **required** — `@Type(() => Item)` |
+> | `interface` / structural type | ❌ emits `design:type = Object`, stays as plain object | ✅ use a real class |
+>
+> Rule of thumb: implicit conversion is a primitive-coercion shortcut, not a substitute for `@Type()` on anything object-shaped.
+
 ## When to reach for it
 
 - DTO validation with `class-validator` and `ValidationPipe`.
