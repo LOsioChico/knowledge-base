@@ -117,6 +117,9 @@ export class CatsController {
 
 ## ValidationPipe
 
+> [!info] Deep dive lives in the [[nestjs/recipes/validation|validation recipe]]
+> This section is a reference for the option flags. For end-to-end DTO patterns — global setup, `whitelist`, `transform`, validation groups, nested objects, custom validators, `exceptionFactory` — see the recipe.
+
 Install peer deps:
 
 ```bash
