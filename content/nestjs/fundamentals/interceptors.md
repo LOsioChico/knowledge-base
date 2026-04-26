@@ -8,11 +8,14 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
 source:
   - https://docs.nestjs.com/interceptors
+  - https://github.com/nestjs/nest/tree/master/packages/common/serializer
+  - https://rxjs.dev/api/operators
 ---
 
-> Wrap the route handler with logic that runs **before and after** it. Built on RxJS, so they can transform the response stream.
+> Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice — built on RxJS, so the response stream is fair game.
 
 ## Signature
 
@@ -20,39 +23,176 @@ source:
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    console.log('Before...');                           // pre
     const start = Date.now();
     return next.handle().pipe(
-      tap(() => console.log(`${Date.now() - start}ms`)),
+      tap(() => console.log(`After ${Date.now() - start}ms`)), // post
     );
   }
 }
 ```
 
+`NestInterceptor<T, R>` is generic: `T` is the type emitted by the handler (`Observable<T>`) and `R` is what your interceptor emits downstream (`Observable<R>`). Both methods can be `async`.
+
+## The pre/post pattern
+
+> [!info] One method, two halves
+> `intercept(context, next)` runs **once per request**. Code before `next.handle()` is the **pre** phase; RxJS operators piped onto the returned `Observable` are the **post** phase. NestJS calls this the AOP "Pointcut" pattern — the handler invocation is the pointcut, your interceptor wraps it.
+
+```text
+┌──────────────────── intercept() ────────────────────┐
+│  pre code                                           │
+│      ↓                                              │
+│   next.handle()  ──▶  PIPES ──▶ HANDLER ──▶ emits   │
+│      ↓                                              │
+│   .pipe(tap, map, catchError, timeout, …)  ◀── post │
+└─────────────────────────────────────────────────────┘
+```
+
+If you **never call** `next.handle()`, the handler is skipped — useful for caching (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
+
+## Built-in interceptors
+
+Nest ships only one out of the box; the rest you compose yourself with RxJS.
+
+| Interceptor | Package | Purpose |
+|---|---|---|
+| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `instanceToPlain` on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()` |
+
+> [!example]- Excluding fields from the response
+> ```typescript
+> import { Exclude } from 'class-transformer';
+>
+> export class UserEntity {
+>   id: number;
+>   email: string;
+>   @Exclude() password: string;
+> }
+>
+> @UseInterceptors(ClassSerializerInterceptor)
+> @Get(':id')
+> findOne(@Param('id') id: string): UserEntity {
+>   return new UserEntity({ id: 1, email: 'a@b.c', password: 'secret' });
+> }
+> ```
+> Verified in [`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts). Requires `class-transformer` peer dep.
+
 ## Binding
 
 | Scope | How |
 |---|---|
-| Global | `app.useGlobalInterceptors()` or the `APP_INTERCEPTOR` provider |
-| Controller | `@UseInterceptors()` on the class |
-| Route | `@UseInterceptors()` on the method |
+| Global | `app.useGlobalInterceptors(new LoggingInterceptor())` or the `APP_INTERCEPTOR` provider (preferred — supports DI) |
+| Controller | `@UseInterceptors(LoggingInterceptor)` on the class |
+| Route | `@UseInterceptors(LoggingInterceptor)` on the method |
+
+> [!tip]- DI for global interceptors
+> `useGlobalInterceptors()` instantiated outside a module **cannot inject dependencies**. Register via `APP_INTERCEPTOR` provider in any module instead:
+> ```typescript
+> providers: [{ provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }]
+> ```
 
 ## Order: the FILO trick
 
-Inbound (before `next.handle()`): global, controller, route.
+The same wrap-around shape applies across multiple interceptors.
 
-Outbound (after the handler returns): the observables resolve **first in, last out**, so the order on the response side is route, controller, global.
+- **Inbound** (pre code, before `next.handle()`): global → controller → route.
+- **Outbound** (RxJS operators, after the handler emits): route → controller → global. First in, last out.
 
-A global logging interceptor therefore sees the **final** response shape after all route and controller interceptors have transformed it.
+```text
+global pre ─▶ controller pre ─▶ route pre ─▶ HANDLER
+                                      ▲
+global post ◀─ controller post ◀─ route post ◀┘
+```
 
-## Errors
+A global logging interceptor therefore sees the **final** response shape after all controller/route interceptors have transformed it.
 
-Any error thrown by a [[nestjs/fundamentals/pipes|pipe]], controller, or service can be caught with `catchError` inside an interceptor, before it reaches the [[exception-filters|filter]] layer.
+## RxJS toolbox
+
+The post-phase operators you'll actually reach for. Imports come from `rxjs` or `rxjs/operators`.
+
+| Operator | Use case |
+|---|---|
+| `tap(fn)` | Side effects (logs, metrics) without changing the value |
+| `map(fn)` | Transform the emitted value (e.g., wrap as `{ data }`) |
+| `catchError(fn)` | Map exceptions thrown by the handler to a different error |
+| `timeout(ms)` | Cancel the request after `ms` and emit a `TimeoutError` |
+| `of(value)` | Build a stream from a constant — used to short-circuit (cache) |
+| `from(promise)` | Convert a promise into an observable inside the pre phase |
+
+> [!warning] `@Res()` disables response mapping
+> If a handler injects `@Res()` and writes to the response directly, RxJS operators on the returned stream **don't run**. Use `@Res({ passthrough: true })` if you need both raw access and interceptors.
+
+## Common recipes
+
+> [!example]- Wrap every response in `{ data }`
+> ```typescript
+> @Injectable()
+> export class TransformInterceptor<T> implements NestInterceptor<T, { data: T }> {
+>   intercept(_ctx: ExecutionContext, next: CallHandler) {
+>     return next.handle().pipe(map((data) => ({ data })));
+>   }
+> }
+> ```
+> Source: [NestJS Interceptors > Response mapping](https://docs.nestjs.com/interceptors#response-mapping).
+
+> [!example]- Map handler exceptions to a generic error
+> ```typescript
+> @Injectable()
+> export class ErrorsInterceptor implements NestInterceptor {
+>   intercept(_ctx: ExecutionContext, next: CallHandler) {
+>     return next.handle().pipe(
+>       catchError((err) => throwError(() => new BadGatewayException())),
+>     );
+>   }
+> }
+> ```
+> Runs **before** [[exception-filters|exception filters]] — the filter sees the rethrown `BadGatewayException`, not the original.
+
+> [!example]- Per-route timeout
+> ```typescript
+> @Injectable()
+> export class TimeoutInterceptor implements NestInterceptor {
+>   intercept(_ctx: ExecutionContext, next: CallHandler) {
+>     return next.handle().pipe(
+>       timeout(5000),
+>       catchError((err) =>
+>         err instanceof TimeoutError
+>           ? throwError(() => new RequestTimeoutException())
+>           : throwError(() => err),
+>       ),
+>     );
+>   }
+> }
+> ```
+
+> [!example]- Cache: skip the handler entirely
+> ```typescript
+> @Injectable()
+> export class CacheInterceptor implements NestInterceptor {
+>   intercept(_ctx: ExecutionContext, next: CallHandler) {
+>     const cached = this.store.get(/* key */);
+>     return cached ? of(cached) : next.handle();
+>   }
+> }
+> ```
+> Returning a fresh `Observable` (here from `of`) means `next.handle()` is **never called** and the handler doesn't run.
+
+## Common errors
+
+| Symptom | Likely cause |
+|---|---|
+| Response transform doesn't apply | Handler uses `@Res()` without `{ passthrough: true }`, so Nest never sees the return value |
+| Global interceptor can't inject | Registered via `useGlobalInterceptors(new X())` instead of `APP_INTERCEPTOR` provider |
+| `catchError` doesn't fire | Error thrown in **pre** phase (before `next.handle()`); only `next.handle().pipe(catchError(…))` catches handler errors |
+| Logger fires twice for one request | Same interceptor bound at multiple scopes (e.g., globally **and** at controller level) |
+| `tap` runs on subscribe but value is missing | Stream is hot/multi-subscribed elsewhere — use `share()` or rethink the pipeline |
 
 ## When to reach for it
 
 - Logging, metrics, distributed tracing.
 - Response shape transforms (wrap every response in `{ data, meta }`).
 - Caching, retries, timeouts.
+- Mapping infrastructure errors to HTTP exceptions before [[exception-filters|filters]] see them.
 
 ## See also
 
