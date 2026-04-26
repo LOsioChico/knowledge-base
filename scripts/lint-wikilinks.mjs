@@ -256,7 +256,87 @@ if (listingViolations.length === 0) {
   }
 }
 
-if (violations.length > 0 || listingViolations.length > 0) {
+// ---------------------------------------------------------------------------
+// related: symmetry check.
+// If A's frontmatter has `related: [[B]]`, then B's frontmatter must have
+// `related: [[A]]`. Index notes are exempt (they're indices, not peers).
+// ---------------------------------------------------------------------------
+
+const symmetryViolations = [];
+
+const notesBySlug = new Map(notes.map((n) => [n.slug, n]));
+
+function resolveTarget(raw) {
+  // strip [[ ]], drop alias after |, drop anchor after #, trim ./ prefix
+  let s = raw.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("#")[0].trim();
+  s = s.replace(/^\.\.?\//, "").replace(/\/$/, "");
+  if (notesBySlug.has(s)) return s;
+  // partial match — Quartz resolves [[guards]] to nestjs/fundamentals/guards
+  for (const slug of notesBySlug.keys()) {
+    if (slug === s || slug.endsWith("/" + s)) return slug;
+  }
+  return null;
+}
+
+function relatedSlugs(note) {
+  const raw = note.src.match(/^---\n([\s\S]*?)\n---/);
+  if (!raw) return [];
+  const out = [];
+  let inRelated = false;
+  for (const line of raw[1].split("\n")) {
+    if (/^related:\s*$/.test(line) || /^related:\s*\[/.test(line)) {
+      inRelated = true;
+      const inline = line.match(/\[(.+)\]/);
+      if (inline) {
+        for (const item of inline[1].split(",")) out.push(item.trim().replace(/^["']|["']$/g, ""));
+        inRelated = false;
+      }
+      continue;
+    }
+    if (inRelated) {
+      if (/^\s+-\s+/.test(line)) {
+        out.push(line.replace(/^\s+-\s+/, "").trim().replace(/^["']|["']$/g, ""));
+      } else if (/^\S/.test(line)) {
+        inRelated = false;
+      }
+    }
+  }
+  return out.map(resolveTarget).filter(Boolean);
+}
+
+for (const n of notes) {
+  if (n.baseName === "index") continue;
+  const targets = relatedSlugs(n);
+  for (const t of targets) {
+    const target = notesBySlug.get(t);
+    if (!target) continue;
+    if (target.baseName === "index") continue; // index notes are exempt
+    const back = relatedSlugs(target);
+    if (!back.includes(n.slug)) {
+      symmetryViolations.push({
+        file: relative(REPO, target.path),
+        msg: `missing back-reference: \`related:\` should include "[[${n.slug}]]" (because [[${n.slug}]] lists [[${t}]])`,
+      });
+    }
+  }
+}
+
+if (symmetryViolations.length === 0) {
+  console.log("✓ related: symmetry: all related: links are bidirectional");
+} else {
+  console.error(`\n✗ related: symmetry: ${symmetryViolations.length} asymmetric link(s)\n`);
+  const byFile = new Map();
+  for (const v of symmetryViolations) {
+    if (!byFile.has(v.file)) byFile.set(v.file, []);
+    byFile.get(v.file).push(v);
+  }
+  for (const [file, list] of byFile) {
+    console.error(`  ${file}`);
+    for (const v of list) console.error(`    ${v.msg}`);
+  }
+}
+
+if (violations.length > 0 || listingViolations.length > 0 || symmetryViolations.length > 0) {
   process.exit(1);
 }
 process.exit(0);

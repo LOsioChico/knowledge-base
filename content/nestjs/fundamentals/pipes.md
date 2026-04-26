@@ -9,6 +9,8 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/file-uploads]]"
+  - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/recipes/validation]]"
 source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation

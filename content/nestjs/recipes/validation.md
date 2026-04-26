@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/fundamentals/pipes]]"
 source:
   - https://docs.nestjs.com/techniques/validation

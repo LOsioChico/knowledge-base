@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/interceptors]]"
 source:
   - https://docs.nestjs.com/exception-filters
 ---

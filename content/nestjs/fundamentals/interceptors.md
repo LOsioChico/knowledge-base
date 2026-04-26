@@ -9,6 +9,8 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/recipes/file-uploads]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
