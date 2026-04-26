@@ -160,6 +160,18 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
+## Code examples (MANDATORY)
+
+Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is. Concretely:
+
+1. **Always include all imports** the snippet uses (decorators, classes, RxJS operators, third-party modules). No "assume this is imported" — readers can't run partial code.
+2. **Wrap class methods in their proper container.** A controller method goes inside `@Controller(...) export class FooController { ... }`. A module snippet goes inside `@Module({...}) export class FooModule {}`. No bare `@Get() foo() {}` floating outside a class.
+3. **Show class fields and constructors that the example references.** If the body uses `this.store`, the field must be declared. If `this.config` is accessed, the constructor must inject it.
+4. **No undefined references.** If a symbol appears (`UpdateCatDTO`, `AuditInterceptor`, `Guard1`), either it was defined earlier on the page, comes from an import, or has an inline comment pointing to where it's defined.
+5. **Single-line illustrative fragments are OK** only when the surrounding prose makes the context unambiguous (e.g., showing one decorator usage right after the full class). When in doubt, write the full snippet.
+
+When editing an existing snippet, audit the imports too — adding a new symbol means adding its import.
+
 ## LLM ingest layer
 
 `quartz/static/llms.txt` follows the https://llmstxt.org spec. It is the canonical entrypoint for any LLM that needs the whole vault. When you add or remove a note, update it in the same commit.
