@@ -39,14 +39,12 @@ export class LoggingInterceptor implements NestInterceptor {
 > [!info] One method, two halves
 > `intercept(context, next)` runs **once per request**. Code before `next.handle()` is the **pre** phase; RxJS operators piped onto the returned `Observable` are the **post** phase. NestJS calls this the AOP "Pointcut" pattern — the handler invocation is the pointcut, your interceptor wraps it.
 
-```text
-┌──────────────────── intercept() ────────────────────┐
-│  pre code                                           │
-│      ↓                                              │
-│   next.handle()  ──▶  PIPES ──▶ HANDLER ──▶ emits   │
-│      ↓                                              │
-│   .pipe(tap, map, catchError, timeout, …)  ◀── post │
-└─────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    pre["Pre — code before next.handle()"] --> call["next.handle()"]
+    call --> pipes[Pipes]
+    pipes --> handler[Handler emits]
+    handler --> post["Post — .pipe(tap, map, catchError, timeout, …)"]
 ```
 
 If you **never call** `next.handle()`, the handler is skipped — useful for caching (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
@@ -98,10 +96,14 @@ The same wrap-around shape applies across multiple interceptors.
 - **Inbound** (pre code, before `next.handle()`): global → controller → route.
 - **Outbound** (RxJS operators, after the handler emits): route → controller → global. First in, last out.
 
-```text
-global pre ─▶ controller pre ─▶ route pre ─▶ HANDLER
-                                      ▲
-global post ◀─ controller post ◀─ route post ◀┘
+```mermaid
+flowchart LR
+    GP[Global pre] --> CP[Controller pre]
+    CP --> RP[Route pre]
+    RP --> H[Handler]
+    H --> RPo[Route post]
+    RPo --> CPo[Controller post]
+    CPo --> GPo[Global post]
 ```
 
 A global logging interceptor therefore sees the **final** response shape after all controller/route interceptors have transformed it.
