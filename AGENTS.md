@@ -34,7 +34,7 @@ Every `.md` under `content/` MUST start with:
 ---
 title: Human Readable Title
 aliases: [synonym one, synonym two]
-tags: [area/<area>, type/<type>, tech/<tech>]
+tags: [type/<type>, tech/<tech>]
 area: <top-level area, e.g. nestjs>
 status: evergreen          # seed | draft | evergreen | archived
 related:
@@ -49,8 +49,8 @@ Field rules:
 
 - `title`: required. Sentence case.
 - `aliases`: required if there are common synonyms. Empty list `[]` is acceptable but discouraged.
-- `tags`: required. Use the controlled vocabulary below. Hierarchical `area/x`, `type/x`, `tech/x` form.
-- `area`: required. Matches the top-level folder.
+- `tags`: required. Use the controlled vocabulary below. Hierarchical `type/x`, `tech/x` form. **Do not tag with the area** — the folder already encodes that.
+- `area`: required frontmatter field. Matches the top-level folder. Used by tooling, NOT exposed as a tag.
 - `status`: required. Default `evergreen` once the note is real.
 - `related`: required. Wikilinks to every directly-related note found during the discovery ritual. Both directions: when you add a new note, you also update `related:` in the notes you linked from.
 - `source`: optional but strongly preferred when the note distills external docs.
@@ -59,15 +59,9 @@ Field rules:
 
 Tags are namespaced. Do not invent free-form tags. If a needed tag is missing, add it here in the same commit that introduces it.
 
-### `area/*` (top-level domain)
+### `area/*` — DO NOT USE AS A TAG
 
-- `area/nestjs`
-- `area/microservices` (reserved)
-- `area/observability` (reserved)
-- `area/data` (reserved)
-- `area/auth` (reserved)
-- `area/testing` (reserved)
-- `area/deployment` (reserved)
+The top-level folder under `content/` encodes the area. A note under `content/nestjs/` is in the NestJS area; tagging it `area/nestjs` adds no information and pollutes the tag index. The `area:` frontmatter field is the machine-readable version for tooling. If a note ever needs to span two areas (e.g., a NestJS+React recipe), file it under the primary area's folder and add the secondary area to `related:` via wikilinks — not tags.
 
 ### `type/*` (note kind)
 
