@@ -178,7 +178,7 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 `quartz/static/llms.txt` follows the https://llmstxt.org spec. It is the canonical entrypoint for any LLM that needs the whole vault. When you add or remove a note, update it in the same commit.
 
-If the vault grows past ~50 notes and grep starts missing things, add a local embedding index (see `prioritized roadmap` in the research notes for this session). Until then, the deterministic source of truth is: **MOCs + tags + `related:` + this ritual**.
+If the vault grows past ~50 notes and grep starts missing things, add a local embedding index (see `prioritized roadmap` in the research notes for this session). When that day comes, evaluate [chunkhound](https://github.com/ofriw/chunkhound) (MCP-native, queryable by the agent at write time) before rolling our own with `@xenova/transformers`. Until then, the deterministic source of truth is: **MOCs + tags + `related:` + this ritual**.
 
 ## When you finish
 
