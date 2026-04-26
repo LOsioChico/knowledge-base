@@ -1,7 +1,7 @@
 ---
 title: Recipes
 aliases: [how-to, cookbook]
-tags: [area/nestjs, type/moc]
+tags: [type/moc]
 area: nestjs
 status: evergreen
 related:

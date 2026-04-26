@@ -1,7 +1,7 @@
 ---
 title: NestJS
 aliases: [nest, nest.js]
-tags: [area/nestjs, type/moc, tech/typescript]
+tags: [type/moc, tech/typescript]
 area: nestjs
 status: evergreen
 related:

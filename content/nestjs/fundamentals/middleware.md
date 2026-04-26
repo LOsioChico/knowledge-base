@@ -1,7 +1,7 @@
 ---
 title: Middleware
 aliases: [express middleware, fastify middleware]
-tags: [area/nestjs, type/concept, lifecycle, tech/http]
+tags: [type/concept, lifecycle, tech/http]
 area: nestjs
 status: evergreen
 related:

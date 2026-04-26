@@ -1,7 +1,7 @@
 ---
 title: Exception Filters
 aliases: [error handler, http exception filter]
-tags: [area/nestjs, type/concept, lifecycle, errors]
+tags: [type/concept, lifecycle, errors]
 area: nestjs
 status: evergreen
 related:

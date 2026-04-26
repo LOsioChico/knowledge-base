@@ -1,7 +1,7 @@
 ---
 title: Guards
 aliases: [authorization guard, canActivate]
-tags: [area/nestjs, type/concept, lifecycle]
+tags: [type/concept, lifecycle]
 area: nestjs
 status: evergreen
 related:
