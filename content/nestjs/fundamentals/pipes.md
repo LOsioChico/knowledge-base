@@ -198,6 +198,34 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >
 > Rule of thumb: implicit conversion is a primitive-coercion shortcut, not a substitute for `@Type()` on anything object-shaped.
 
+> [!warning]- Arrays of classes need both `@Type()` and `@ValidateNested({ each: true })`
+> The `Item[]` in TypeScript is invisible at runtime — class-transformer reads `Array.isArray(value)` and applies whatever `@Type()` says to **each element**. Without `@Type()`, elements stay as plain objects. Without `@ValidateNested({ each: true })` from [`class-validator`](https://github.com/typestack/class-validator#validating-nested-objects), the decorators inside `Item` (`@IsString()`, `@IsInt()`, etc.) **are not executed** on the children — silent pass.
+>
+> ```ts
+> import { Type } from 'class-transformer';
+> import { ValidateNested, IsString } from 'class-validator';
+>
+> class Item {
+>   @IsString()
+>   name: string;
+> }
+>
+> export class CreatePostDto {
+>   @ValidateNested({ each: true })
+>   @Type(() => Item)
+>   items: Item[];
+> }
+> ```
+>
+> | Setup | `items` becomes | Children validated? |
+> |---|---|---|
+> | nothing | array of plain objects | ❌ |
+> | `@Type(() => Item)` only | array of `Item` instances | ❌ — `@IsString()` inside `Item` never runs |
+> | `@ValidateNested({ each: true })` only | array of plain objects | ❌ — validator has no class to validate against |
+> | both | array of `Item` instances | ✅ |
+>
+> Same combo applies to single nested objects (`item: Item` → `@ValidateNested()` without `each`). Verified in [`TransformOperationExecutor.ts`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) (lines ~219, 284) and [class-validator nested-objects docs](https://github.com/typestack/class-validator#validating-nested-objects).
+
 ## When to reach for it
 
 - DTO validation with `class-validator` and `ValidationPipe`.
