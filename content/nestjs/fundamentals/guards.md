@@ -17,6 +17,9 @@ source:
 ## Signature
 
 ```typescript
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { Observable } from 'rxjs';
+
 @Injectable()
 export class AuthGuard implements CanActivate {
   canActivate(
@@ -42,6 +45,8 @@ Return `true` to continue. Return `false` to throw `ForbiddenException`.
 Global, then controller, then route. Within the same scope, in the order listed in the decorator.
 
 ```typescript
+import { Controller, Get, UseGuards } from '@nestjs/common';
+
 @UseGuards(Guard1, Guard2)
 @Controller('cats')
 export class CatsController {
