@@ -1,9 +1,14 @@
 ---
 title: Middleware
-tags:
-  - nestjs
-  - lifecycle
-  - middleware
+aliases: [express middleware, fastify middleware]
+tags: [area/nestjs, type/concept, lifecycle, tech/http]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/guards]]"
+source:
+  - https://docs.nestjs.com/middleware
 ---
 
 > Functions called **before** the route handler. They have access to the raw request and response objects and call `next()` to pass control. Same idea as Express middleware.

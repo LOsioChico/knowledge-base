@@ -1,9 +1,15 @@
 ---
 title: Interceptors
-tags:
-  - nestjs
-  - lifecycle
-  - rxjs
+aliases: [aspect, around-handler]
+tags: [area/nestjs, type/concept, lifecycle, tech/rxjs]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/pipes]]"
+source:
+  - https://docs.nestjs.com/interceptors
 ---
 
 > Wrap the route handler with logic that runs **before and after** it. Built on RxJS, so they can transform the response stream.

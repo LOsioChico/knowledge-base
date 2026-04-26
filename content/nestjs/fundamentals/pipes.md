@@ -1,9 +1,15 @@
 ---
 title: Pipes
-tags:
-  - nestjs
-  - lifecycle
-  - validation
+aliases: [validation pipe, transform pipe]
+tags: [area/nestjs, type/concept, lifecycle, validation]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
+source:
+  - https://docs.nestjs.com/pipes
 ---
 
 > Transform or validate input data **before** it reaches the route handler.

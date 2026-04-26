@@ -1,9 +1,14 @@
 ---
 title: Exception Filters
-tags:
-  - nestjs
-  - lifecycle
-  - errors
+aliases: [error handler, http exception filter]
+tags: [area/nestjs, type/concept, lifecycle, errors]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/pipes]]"
+source:
+  - https://docs.nestjs.com/exception-filters
 ---
 
 > Catch unhandled exceptions and turn them into HTTP responses. The **only** lifecycle component that resolves bottom up.

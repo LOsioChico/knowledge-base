@@ -1,9 +1,12 @@
 ---
 title: Recipes
-tags:
-  - nestjs
-  - recipes
-  - how-to
+aliases: [how-to, cookbook]
+tags: [area/nestjs, type/moc]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/index]]"
+  - "[[nestjs/recipes/file-uploads]]"
 ---
 
 > Task-oriented guides. Each one solves a concrete problem with a working snippet and the gotchas I hit along the way.

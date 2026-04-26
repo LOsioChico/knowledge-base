@@ -1,9 +1,15 @@
 ---
 title: Guards
-tags:
-  - nestjs
-  - lifecycle
-  - auth
+aliases: [authorization guard, canActivate]
+tags: [area/nestjs, type/concept, lifecycle]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/middleware]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+source:
+  - https://docs.nestjs.com/guards
 ---
 
 > Decide whether a request will reach the route handler. Used for **authorization**.

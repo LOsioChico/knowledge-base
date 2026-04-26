@@ -1,5 +1,10 @@
 ---
 title: Knowledge Base
+aliases: [home, vault]
+tags: [type/moc]
+status: evergreen
+related:
+  - "[[nestjs/index]]"
 ---
 
 Welcome to my personal knowledge base. Patterns, gotchas, and notes I keep coming back to.

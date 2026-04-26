@@ -1,10 +1,15 @@
 ---
 title: File uploads with Multer
-tags:
-  - nestjs
-  - recipes
-  - multer
-  - http
+aliases: [multipart upload, multer, file upload]
+tags: [area/nestjs, type/recipe, tech/multer, tech/http, validation]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/recipes/index]]"
+  - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+source:
+  - https://docs.nestjs.com/techniques/file-upload
 ---
 
 > Accept `multipart/form-data` in a NestJS controller, validate size and mime-type, and reject anything sketchy. Express adapter only. Fastify needs `@nestjs/platform-fastify`'s own multipart plugin.

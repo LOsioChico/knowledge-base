@@ -1,8 +1,18 @@
 ---
 title: Request Lifecycle
-tags:
-  - nestjs
-  - lifecycle
+aliases: [request pipeline, execution order]
+tags: [area/nestjs, type/concept, lifecycle]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/index]]"
+  - "[[nestjs/fundamentals/middleware]]"
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
+source:
+  - https://docs.nestjs.com/faq/request-lifecycle
 ---
 
 How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.

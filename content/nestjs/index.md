@@ -1,9 +1,15 @@
 ---
 title: NestJS
-tags:
-  - nestjs
-  - backend
-  - typescript
+aliases: [nest, nest.js]
+tags: [area/nestjs, type/moc, tech/typescript]
+area: nestjs
+status: evergreen
+related:
+  - "[[index]]"
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/recipes/index]]"
+source:
+  - https://docs.nestjs.com
 ---
 
 Map of content for NestJS. Broken links are pending topics. They will get filled in over time.
