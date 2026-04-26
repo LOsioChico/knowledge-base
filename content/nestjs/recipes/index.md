@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/index]]"
   - "[[nestjs/recipes/file-uploads]]"
+  - "[[nestjs/recipes/serialization]]"
 ---
 
 > Task-oriented guides. Each one solves a concrete problem with a working snippet and the gotchas I hit along the way.
@@ -14,6 +15,7 @@ related:
 ## Available
 
 - [[nestjs/recipes/file-uploads|File uploads with Multer]]
+- [[nestjs/recipes/serialization|Response serialization with class-transformer]]
 
 ## Pending
 
