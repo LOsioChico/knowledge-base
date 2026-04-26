@@ -6,6 +6,7 @@ area: nestjs
 status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
+  - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/interceptors]]"
 source:
@@ -42,7 +43,7 @@ export class UploadsController {
 
 ## Validation: the right way
 
-Skip hand-rolled [[nestjs/fundamentals/pipes|pipes]]. Use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
+For body/query DTOs, lean on the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, skip hand-rolled [[nestjs/fundamentals/pipes|pipes]] and use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
 
 ```typescript
 import {

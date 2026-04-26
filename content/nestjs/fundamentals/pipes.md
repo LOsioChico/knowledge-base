@@ -144,7 +144,7 @@ npm i class-validator class-transformer
 | `forbidUnknownValues` | Reject unknown objects (Nest sets default to `false`, [issue #10683](https://github.com/nestjs/nest/issues/10683)) |
 | `skipMissingProperties` | Skip validation for null/undefined props |
 | `stopAtFirstError` | Stop at the first failing decorator per property |
-| `groups` | Validation groups |
+| `groups` | Validation groups — same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups — same DTO, different rules per route\|the validation recipe]] |
 | `errorFormat` | `'list'` (default) or `'grouped'` |
 
 Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).

@@ -8,6 +8,7 @@ related:
   - "[[nestjs/index]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/recipes/validation]]"
 ---
 
 > Task-oriented guides. Each one solves a concrete problem with a working snippet and the gotchas I hit along the way.
@@ -16,6 +17,7 @@ related:
 
 - [[nestjs/recipes/file-uploads|File uploads with Multer]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
+- [[nestjs/recipes/validation|Request validation with class-validator]]
 
 ## Pending
 
