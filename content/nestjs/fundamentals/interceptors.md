@@ -20,6 +20,14 @@ source:
 ## Signature
 
 ```typescript
+import {
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
+import { Observable, tap } from 'rxjs';
+
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -103,6 +111,14 @@ Controller- and route-scoped bindings always resolve the interceptor through Nes
 > [!tip]- DI for global interceptors — what changes with vs. without
 > Say your interceptor needs to read a flag from `ConfigService`:
 > ```typescript
+> import {
+>   CallHandler,
+>   ExecutionContext,
+>   Injectable,
+>   NestInterceptor,
+> } from '@nestjs/common';
+> import { ConfigService } from '@nestjs/config';
+>
 > @Injectable()
 > export class AuditInterceptor implements NestInterceptor {
 >   constructor(private readonly config: ConfigService) {}
@@ -123,11 +139,12 @@ Controller- and route-scoped bindings always resolve the interceptor through Nes
 >
 > **With DI** — register as a provider in any module (commonly `AppModule`):
 > ```typescript
+> import { Module } from '@nestjs/common';
 > import { APP_INTERCEPTOR } from '@nestjs/core';
 >
 > @Module({
 >   providers: [
->     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+>     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor }, // AuditInterceptor from the class above
 >   ],
 > })
 > export class AppModule {}
@@ -179,9 +196,17 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 > [!example]- Wrap every response in `{ data }`
 > ```typescript
+> import {
+>   CallHandler,
+>   ExecutionContext,
+>   Injectable,
+>   NestInterceptor,
+> } from '@nestjs/common';
+> import { map, Observable } from 'rxjs';
+>
 > @Injectable()
 > export class TransformInterceptor<T> implements NestInterceptor<T, { data: T }> {
->   intercept(_ctx: ExecutionContext, next: CallHandler) {
+>   intercept(_ctx: ExecutionContext, next: CallHandler): Observable<{ data: T }> {
 >     return next.handle().pipe(map((data) => ({ data })));
 >   }
 > }
@@ -190,6 +215,15 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 > [!example]- Map handler exceptions to a generic error
 > ```typescript
+> import {
+>   BadGatewayException,
+>   CallHandler,
+>   ExecutionContext,
+>   Injectable,
+>   NestInterceptor,
+> } from '@nestjs/common';
+> import { catchError, throwError } from 'rxjs';
+>
 > @Injectable()
 > export class ErrorsInterceptor implements NestInterceptor {
 >   intercept(_ctx: ExecutionContext, next: CallHandler) {
@@ -203,6 +237,15 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 > [!example]- Per-route timeout
 > ```typescript
+> import {
+>   CallHandler,
+>   ExecutionContext,
+>   Injectable,
+>   NestInterceptor,
+>   RequestTimeoutException,
+> } from '@nestjs/common';
+> import { catchError, throwError, timeout, TimeoutError } from 'rxjs';
+>
 > @Injectable()
 > export class TimeoutInterceptor implements NestInterceptor {
 >   intercept(_ctx: ExecutionContext, next: CallHandler) {
@@ -220,15 +263,26 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 > [!example]- Cache: skip the handler entirely
 > ```typescript
+> import {
+>   CallHandler,
+>   ExecutionContext,
+>   Injectable,
+>   NestInterceptor,
+> } from '@nestjs/common';
+> import { of } from 'rxjs';
+>
 > @Injectable()
 > export class CacheInterceptor implements NestInterceptor {
->   intercept(_ctx: ExecutionContext, next: CallHandler) {
->     const cached = this.store.get(/* key */);
+>   private store = new Map<string, unknown>();
+>
+>   intercept(ctx: ExecutionContext, next: CallHandler) {
+>     const key = ctx.switchToHttp().getRequest<{ url: string }>().url;
+>     const cached = this.store.get(key);
 >     return cached ? of(cached) : next.handle();
 >   }
 > }
 > ```
-> Returning a fresh `Observable` (here from `of`) means `next.handle()` is **never called** and the handler doesn't run.
+> Returning a fresh `Observable` (here from `of`) means `next.handle()` is **never called** and the handler doesn't run. The `Map` is a stub — swap it for a real cache (`@nestjs/cache-manager`, Redis) in production.
 
 ## Common errors
 
