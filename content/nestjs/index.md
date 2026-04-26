@@ -17,6 +17,12 @@ What you need to master before any advanced pattern.
 - [[fundamentals/lifecycle|Lifecycle hooks: OnModuleInit, OnApplicationBootstrap]]
 - [[fundamentals/request-lifecycle|Request lifecycle: middleware, guards, interceptors, pipes, filters]]
 
+## Recipes
+
+Task-oriented how-tos. See [[recipes/index|all recipes]].
+
+- [[recipes/file-uploads|File uploads with Multer]]
+
 ## Patterns
 
 Architecture patterns that NestJS enables but does not enforce.
