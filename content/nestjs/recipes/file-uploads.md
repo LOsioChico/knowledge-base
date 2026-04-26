@@ -38,7 +38,7 @@ export class UploadsController {
 }
 ```
 
-`FileInterceptor('file')` reads the field named `file` from the form. Change the string to match your form field.
+`FileInterceptor('file')` is a built-in [[nestjs/fundamentals/interceptors|interceptor]] that reads the field named `file` from the form. Change the string to match your form field.
 
 ## Validation: the right way
 
