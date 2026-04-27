@@ -336,7 +336,209 @@ if (symmetryViolations.length === 0) {
   }
 }
 
-if (violations.length > 0 || listingViolations.length > 0 || symmetryViolations.length > 0) {
+// ---------------------------------------------------------------------------
+// Discoverability check (TF-IDF cosine similarity).
+// Catches the "you don't know what you don't know" failure mode: an agent
+// writes note A about a topic that semantically overlaps with existing note B,
+// but never mentions B by name (so first-mention can't fire) and never lists
+// it in `related:` (because it didn't know B existed).
+//
+// For each pair (A, B) with cosine similarity >= THRESHOLD on TF-IDF vectors:
+//   - exempt if either references the other (related: or wikilink in body)
+//   - exempt if either lists the other in `unrelated:` (explicit "considered
+//     and rejected" opt-out — forces a deliberate decision per pair, no
+//     blanket "disable check" escape hatch)
+//   - else VIOLATION: must be linked, related-listed, or marked unrelated.
+//
+// Threshold tuned empirically against the current vault; see DEV NOTES below.
+// ---------------------------------------------------------------------------
+
+const SIMILARITY_THRESHOLD = 0.20;
+
+const STOPWORDS = new Set([
+  "the", "and", "for", "are", "but", "not", "you", "all", "can", "had", "her",
+  "was", "one", "our", "out", "day", "get", "has", "him", "his", "how", "man",
+  "new", "now", "old", "see", "two", "way", "who", "boy", "did", "its", "let",
+  "put", "say", "she", "too", "use", "this", "that", "with", "have", "from",
+  "they", "been", "were", "their", "would", "there", "what", "about", "which",
+  "when", "your", "will", "into", "some", "than", "then", "them", "these",
+  "those", "such", "also", "just", "only", "other", "most", "more", "much",
+  "very", "even", "each", "any", "both", "either", "here", "where", "while",
+  "before", "after", "between", "during", "through", "above", "below", "under",
+  "over", "because", "since", "until", "though", "although", "however", "thus",
+  "hence", "therefore", "indeed", "first", "second", "third", "next", "last",
+  "previous", "another", "every", "many", "few", "several", "still", "yet",
+  "may", "might", "must", "should", "could", "would", "shall", "does", "doing",
+  "done", "being", "able", "make", "made", "makes", "making", "want", "need",
+  "like", "see", "look", "find", "give", "take", "know", "think", "way",
+  "thing", "things", "case", "cases", "example", "examples", "note", "notes",
+  "above", "below", "section", "chapter", "page", "site",
+]);
+
+function tokenize(text) {
+  return text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !STOPWORDS.has(w) && !/^\d+$/.test(w));
+}
+
+function bodyWikilinkTargets(note) {
+  const out = new Set();
+  for (const m of note.body.matchAll(/\[\[([^\]|#]+)/g)) {
+    const t = resolveTarget(m[1]);
+    if (t) out.add(t);
+  }
+  return out;
+}
+
+function unrelatedSlugs(note) {
+  const raw = note.src.match(/^---\n([\s\S]*?)\n---/);
+  if (!raw) return [];
+  const out = [];
+  let inBlock = false;
+  for (const line of raw[1].split("\n")) {
+    if (/^unrelated:\s*$/.test(line) || /^unrelated:\s*\[/.test(line)) {
+      inBlock = true;
+      const inline = line.match(/\[(.+)\]/);
+      if (inline) {
+        for (const item of inline[1].split(","))
+          out.push(item.trim().replace(/^["']|["']$/g, ""));
+        inBlock = false;
+      }
+      continue;
+    }
+    if (inBlock) {
+      if (/^\s+-\s+/.test(line)) {
+        out.push(line.replace(/^\s+-\s+/, "").trim().replace(/^["']|["']$/g, ""));
+      } else if (/^\S/.test(line)) {
+        inBlock = false;
+      }
+    }
+  }
+  return out
+    .map((s) => s.replace(/^\[\[|\]\]$/g, "").split("|")[0].split("#")[0].trim())
+    .map(resolveTarget)
+    .filter(Boolean);
+}
+
+// Build TF per note (title weighted x3, aliases x2, masked body x1).
+// Masked body = code/links/wikilinks zeroed out, so noise is excluded.
+const indexableNotes = notes.filter((n) => n.baseName !== "index");
+const tfMaps = new Map();
+const docFreq = new Map();
+
+for (const n of indexableNotes) {
+  const tf = new Map();
+  const add = (text, weight) => {
+    for (const tok of tokenize(text)) {
+      tf.set(tok, (tf.get(tok) || 0) + weight);
+    }
+  };
+  if (n.title) add(n.title, 3);
+  for (const a of n.aliases) add(a, 2);
+  add(n.masked, 1);
+  tfMaps.set(n.slug, tf);
+  for (const tok of tf.keys()) {
+    docFreq.set(tok, (docFreq.get(tok) || 0) + 1);
+  }
+}
+
+const N = indexableNotes.length;
+const idf = new Map();
+for (const [tok, df] of docFreq) {
+  // Smoothed IDF: log((N + 1) / (df + 1)) + 1, never zero.
+  idf.set(tok, Math.log((N + 1) / (df + 1)) + 1);
+}
+
+const vecs = new Map();
+const norms = new Map();
+for (const [slug, tf] of tfMaps) {
+  const vec = new Map();
+  let normSq = 0;
+  for (const [tok, freq] of tf) {
+    const w = freq * idf.get(tok);
+    vec.set(tok, w);
+    normSq += w * w;
+  }
+  vecs.set(slug, vec);
+  norms.set(slug, Math.sqrt(normSq));
+}
+
+function cosine(slugA, slugB) {
+  const a = vecs.get(slugA);
+  const b = vecs.get(slugB);
+  const nA = norms.get(slugA);
+  const nB = norms.get(slugB);
+  if (!nA || !nB) return 0;
+  const [small, large] = a.size < b.size ? [a, b] : [b, a];
+  let dot = 0;
+  for (const [tok, w] of small) {
+    const w2 = large.get(tok);
+    if (w2) dot += w * w2;
+  }
+  return dot / (nA * nB);
+}
+
+const discoveryViolations = [];
+const slugList = indexableNotes.map((n) => n.slug);
+const refsCache = new Map();
+for (const n of indexableNotes) {
+  const all = new Set(relatedSlugs(n));
+  for (const t of bodyWikilinkTargets(n)) all.add(t);
+  refsCache.set(n.slug, all);
+}
+const unrelatedCache = new Map(
+  indexableNotes.map((n) => [n.slug, new Set(unrelatedSlugs(n))]),
+);
+
+for (let i = 0; i < slugList.length; i++) {
+  for (let j = i + 1; j < slugList.length; j++) {
+    const a = slugList[i];
+    const b = slugList[j];
+    const sim = cosine(a, b);
+    if (sim < SIMILARITY_THRESHOLD) continue;
+    if (refsCache.get(a).has(b) || refsCache.get(b).has(a)) continue;
+    if (unrelatedCache.get(a).has(b) || unrelatedCache.get(b).has(a)) continue;
+    discoveryViolations.push({ a, b, sim });
+  }
+}
+
+discoveryViolations.sort((x, y) => y.sim - x.sim);
+
+if (discoveryViolations.length === 0) {
+  console.log(
+    `✓ discoverability: no unlinked semantic neighbors above ${SIMILARITY_THRESHOLD.toFixed(2)} similarity`,
+  );
+} else {
+  console.error(
+    `\n✗ discoverability: ${discoveryViolations.length} unlinked semantic neighbor pair(s) above ${SIMILARITY_THRESHOLD.toFixed(2)}\n`,
+  );
+  for (const v of discoveryViolations) {
+    console.error(`  ${v.sim.toFixed(3)}  [[${v.a}]]  <->  [[${v.b}]]`);
+  }
+  console.error(
+    "\nFor each pair, do ONE of the following:",
+  );
+  console.error(
+    "  • add [[other]] to `related:` on both sides (preferred — they ARE related)",
+  );
+  console.error(
+    "  • wikilink one to the other in body prose (looser association)",
+  );
+  console.error(
+    "  • add [[other]] under `unrelated:` in EITHER frontmatter (explicit",
+  );
+  console.error(
+    "    \"considered and rejected\" — silences the pair permanently)",
+  );
+}
+
+if (
+  violations.length > 0 ||
+  listingViolations.length > 0 ||
+  symmetryViolations.length > 0 ||
+  discoveryViolations.length > 0
+) {
   process.exit(1);
 }
 process.exit(0);

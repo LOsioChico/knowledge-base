@@ -40,6 +40,7 @@ status: evergreen          # seed | draft | evergreen | archived
 related:
   - "[[path/to/note-a]]"
   - "[[path/to/note-b]]"
+unrelated: []          # optional; per-pair opt-out for discoverability linter
 source:
   - https://official.docs/url
 ---
@@ -53,6 +54,7 @@ Field rules:
 - `area`: required frontmatter field. Matches the top-level folder. Used by tooling, NOT exposed as a tag.
 - `status`: required. Default `evergreen` once the note is real.
 - `related`: required. Wikilinks to every directly-related note found during the discovery ritual. Both directions: when you add a new note, you also update `related:` in the notes you linked from.
+- `unrelated`: optional. Same wikilink syntax as `related:`. Use ONLY to silence the discoverability linter for a specific pair of notes that the TF-IDF check flags as semantic neighbors but that you've **considered and rejected** as a real relationship. This is a per-pair audit trail, NOT a global silence — you cannot opt a note out of the check entirely. Mirror format: `unrelated: ["[[path/to/note]]"]` or block YAML list.
 - `source`: optional but strongly preferred when the note distills external docs.
 
 ## Controlled tag vocabulary
@@ -122,6 +124,7 @@ Skipping any step is a bug.
 - **Known limitation of forced symmetry**: `related:` currently collapses three distinct relationships (peer ↔ peer, recipe → fundamental prerequisite, fundamental → recipes-that-use-it) into one symmetric field. This is fine at the current vault size but will cause noise on fundamentals that get many dependents. When that starts to hurt (a fundamental's `related:` block becomes longer than its own content, ~10+ dependents), split the contract: keep `related:` for symmetric peers, add `prerequisites:` for asymmetric "you need to read this first" links (linter would NOT require back-references on `prerequisites:`). Don't pre-emptively split — wait for the friction.
 - **First-mention wikilink rule** (enforced by `npm run lint:wikilinks`): the FIRST time a concept that has its own note appears in the body of another note, it MUST be a wikilink, not plain text. Subsequent mentions in the same note can stay plain. Code identifiers (e.g. `FileInterceptor`, `ParseFilePipe`) are not concepts; the underlying concept (`[[nestjs/fundamentals/interceptors|interceptor]]`, `[[nestjs/fundamentals/pipes|pipe]]`) is. The linter scans every note's title + aliases + filename to build the concept catalog, then checks every other note's body for unlinked first mentions. CI blocks merges on violations.
 - **Listing-completeness rule** (same linter): every note under an indexed sub-folder (currently `nestjs/recipes/`) MUST appear in the area `index.md` AND in `quartz/static/llms.txt`. Add new indexed folders to the `INDEXED_FOLDERS` array in `scripts/lint-wikilinks.mjs`.
+- **Discoverability rule** (same linter, BLOCKING): every pair of notes whose TF-IDF cosine similarity is ≥ 0.20 MUST be connected — either via `related:` (either direction), a body wikilink (either direction), or an explicit `unrelated:` opt-out (either direction). This is the safety net for "you don't know what you don't know": when you write a new note, the linter compares it against every existing note and flags semantic neighbors you didn't realize existed. Resolution is one of three: (1) add the missing `related:` link both ways, (2) add a body wikilink at first mention, or (3) if the overlap is genuinely coincidental (shared vocabulary, different topic), declare it via `unrelated:` on either side. **You cannot ignore the warning** — every above-threshold pair must be acknowledged. Threshold (0.20) was calibrated against the natural similarity cliff in the current vault; revisit if the false-positive rate grows. Algorithm details: title × 3 + aliases × 2 + masked body × 1, smoothed IDF, ~120 English stopwords, `index` notes excluded.
 - A note never wikilinks to itself. Self-mentions stay plain.
 - `related:` is the safety net (machine-readable), wikilinks are the surface (reader-facing). Both must agree: if it's in `related:`, the body should link it at first mention; if the body links it, it must be in `related:`.
 - Avoid stub links to non-existent notes. If you reference a future note, mark it explicitly: `[[microservices/kafka|Kafka (planned)]]`.
