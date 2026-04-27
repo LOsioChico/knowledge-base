@@ -40,6 +40,20 @@ export class LoggingInterceptor implements NestInterceptor {
 
 `NestInterceptor<T, R>` is generic: `T` is the type emitted by the handler (`Observable<T>`) and `R` is what your interceptor emits downstream (`Observable<R>`). Both methods can be `async`.
 
+## Generate with the CLI
+
+```bash
+nest generate interceptor logging   # full form
+nest g itc logging                  # short alias → src/logging/logging.interceptor.ts
+nest g itc logging --flat           # no wrapping folder → src/logging.interceptor.ts
+nest g itc common/audit             # nested path → src/common/audit/audit.interceptor.ts
+nest g itc common/audit --flat      # nested + flat → src/common/audit.interceptor.ts
+nest g itc logging --no-spec        # skip the *.spec.ts test file
+nest g itc logging --dry-run        # preview the file plan, write nothing
+```
+
+Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+
 ## The pre/post pattern
 
 > [!info] One method, two halves

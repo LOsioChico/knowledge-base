@@ -43,6 +43,20 @@ export class AuthGuard implements CanActivate {
 
 It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 
+## Generate with the CLI
+
+```bash
+nest generate guard roles      # full form
+nest g gu roles                # short alias → src/roles/roles.guard.ts
+nest g gu roles --flat         # no wrapping folder → src/roles.guard.ts
+nest g gu auth/jwt             # nested path → src/auth/jwt/jwt.guard.ts
+nest g gu auth/jwt --flat      # nested + flat → src/auth/jwt.guard.ts
+nest g gu roles --no-spec      # skip the *.spec.ts test file
+nest g gu roles --dry-run      # preview the file plan, write nothing
+```
+
+Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+
 ## Why a guard, not [[nestjs/fundamentals/middleware|middleware]]
 
 Both run before the handler, but middleware is "dumb": it doesn't know which handler will execute next. A guard receives an `ExecutionContext` and can read **route metadata** (`@Roles()`, `@Public()`, etc.) plus the controller class and handler reference. That is what makes role/permission decisions declarative. See [Guards intro](https://docs.nestjs.com/guards).
@@ -51,10 +65,10 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 Nest core ships **none**. Authorization is application-specific, so you write your own — or pull one from a peer package.
 
-| Guard                 | Package             | Purpose                                                                                                       |
-| --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]]                          |
-| `ThrottlerGuard`      | `@nestjs/throttler` | Rate limiting per route or controller                                                                         |
+| Guard                 | Package             | Purpose                                                                                                                                                                 |
+| --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]] |
+| `ThrottlerGuard`      | `@nestjs/throttler` | Rate limiting per route or controller                                                                                                                                   |
 
 Anything else you write yourself. The canonical example is a `RolesGuard` — covered below.
 

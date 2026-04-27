@@ -38,6 +38,20 @@ export class ParseIntPipe implements PipeTransform<string, number> {
 }
 ```
 
+## Generate with the CLI
+
+```bash
+nest generate pipe parse-int   # full form
+nest g pi parse-int            # short alias → src/parse-int/parse-int.pipe.ts
+nest g pi parse-int --flat     # no wrapping folder → src/parse-int.pipe.ts
+nest g pi common/trim          # nested path → src/common/trim/trim.pipe.ts
+nest g pi common/trim --flat   # nested + flat → src/common/trim.pipe.ts
+nest g pi parse-int --no-spec  # skip the *.spec.ts test file
+nest g pi parse-int --dry-run  # preview the file plan, write nothing
+```
+
+Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+
 ## Built-in pipes
 
 All exported from `@nestjs/common`.
@@ -251,6 +265,13 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 - DTO validation with `class-validator` and `ValidationPipe`.
 - String to number or string to UUID coercion.
 - Trim, lowercase, normalize input shape.
+
+## When not to
+
+- Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|lifecycle]] and have no concept of "deny this request".
+- Mutating the raw request before any handler-level concern: use [[nestjs/fundamentals/middleware|middleware]] — pipes only see one argument at a time, not the whole request object.
+- Wrapping the response or timing the handler: that's an [[nestjs/fundamentals/interceptors|interceptor]]. Pipes don't run on the way out.
+- Catching a thrown error to reshape it: use an [[nestjs/fundamentals/exception-filters|exception filter]]. A pipe's job ends at "throw".
 
 ## See also
 
