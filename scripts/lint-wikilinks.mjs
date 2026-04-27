@@ -533,11 +533,40 @@ if (discoveryViolations.length === 0) {
   );
 }
 
+const agentsPath = join(REPO, "AGENTS.md");
+const copilotPath = join(REPO, ".github", "copilot-instructions.md");
+let mirrorViolation = null;
+try {
+  const [agentsSrc, copilotSrc] = await Promise.all([
+    readFile(agentsPath, "utf8"),
+    readFile(copilotPath, "utf8"),
+  ]);
+  if (agentsSrc !== copilotSrc) {
+    mirrorViolation = "content drift";
+  }
+} catch (err) {
+  mirrorViolation = `cannot read both files (${err.code || err.message})`;
+}
+
+if (mirrorViolation === null) {
+  console.log(
+    "✓ agents-mirror: .github/copilot-instructions.md matches AGENTS.md",
+  );
+} else {
+  console.error(
+    `\n✗ agents-mirror: .github/copilot-instructions.md is out of sync with AGENTS.md (${mirrorViolation})\n`,
+  );
+  console.error(
+    "  Fix: cp AGENTS.md .github/copilot-instructions.md && git add .github/copilot-instructions.md",
+  );
+}
+
 if (
   violations.length > 0 ||
   listingViolations.length > 0 ||
   symmetryViolations.length > 0 ||
-  discoveryViolations.length > 0
+  discoveryViolations.length > 0 ||
+  mirrorViolation !== null
 ) {
   process.exit(1);
 }
