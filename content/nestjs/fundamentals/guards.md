@@ -53,10 +53,13 @@ Nest core ships **none**. Authorization is application-specific, so you write yo
 
 | Guard                 | Package             | Purpose                                                                                                       |
 | --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …) |
+| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]]                          |
 | `ThrottlerGuard`      | `@nestjs/throttler` | Rate limiting per route or controller                                                                         |
 
 Anything else you write yourself. The canonical example is a `RolesGuard` — covered below.
+
+> [!todo]- Clarify Passport / strategy / `@nestjs/passport` layering in `jwt-strategy` note
+> Open the planned note with the four-layer split: Passport (orchestrator) → strategy package (`passport-jwt`, `passport-local`, …) → `@nestjs/passport` wrapper (`PassportStrategy`, `AuthGuard`) → user code (`JwtStrategy`, `JwtAuthGuard`). `AuthGuard('jwt')` does not "do JWT" — it delegates to whatever strategy is registered under that name. This is the #1 source of confusion in NestJS auth.
 
 ## `ExecutionContext` essentials
 
@@ -148,7 +151,7 @@ Multiple guards run in this order:
 2. Controller guards (left-to-right inside `@UseGuards()`).
 3. Route guards (left-to-right inside `@UseGuards()`).
 
-The chain stops at the **first** guard that returns `false` or throws — later guards do not run.
+The chain stops at the **first** guard that returns `false`, throws, or rejects a returned `Promise` — later guards do not run.
 
 ```typescript
 import { Controller, Get, UseGuards } from "@nestjs/common"
@@ -212,6 +215,8 @@ export class RolesGuard implements CanActivate {
   }
 }
 ```
+
+Routes without `@Roles()` are treated as public: `getAllAndOverride` returns `undefined` when no metadata is found at handler or class level, so the guard short-circuits to `true`.
 
 ### `Reflector` lookup methods
 
