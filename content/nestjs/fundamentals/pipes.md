@@ -217,6 +217,94 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >
 > Bind per param: `@Body(new ZodValidationPipe(createUserSchema))`. Source: [zod](https://github.com/colinhacks/zod), [Nest docs example](https://docs.nestjs.com/pipes#object-schema-validation).
 
+## Common recipes
+
+> [!example]- Trim and normalize string input
+>
+> Pure transform pipe. No exception path: just clean the value and pass it on.
+>
+> ```typescript
+> import { ArgumentMetadata, Injectable, PipeTransform } from "@nestjs/common"
+>
+> @Injectable()
+> export class TrimPipe implements PipeTransform<unknown, unknown> {
+>   transform(value: unknown, _metadata: ArgumentMetadata) {
+>     if (typeof value === "string") return value.trim()
+>     if (value && typeof value === "object") {
+>       for (const key of Object.keys(value)) {
+>         const v = (value as Record<string, unknown>)[key]
+>         if (typeof v === "string") (value as Record<string, unknown>)[key] = v.trim()
+>       }
+>     }
+>     return value
+>   }
+> }
+> ```
+>
+> Bind globally with `app.useGlobalPipes(new TrimPipe(), new ValidationPipe(...))`. Order matters: `TrimPipe` runs first so `@IsNotEmpty()` sees the trimmed string.
+
+> [!example]- Param to entity lookup (async pipe)
+>
+> Resolve a route param into a domain entity once, instead of every handler doing the DB call itself. Throws `404` if missing.
+>
+> ```typescript
+> import { ArgumentMetadata, Injectable, NotFoundException, PipeTransform } from "@nestjs/common"
+> import { CatsService } from "./cats.service"
+> import { Cat } from "./cat.entity"
+>
+> @Injectable()
+> export class CatByIdPipe implements PipeTransform<string, Promise<Cat>> {
+>   constructor(private readonly cats: CatsService) {}
+>
+>   async transform(id: string, _metadata: ArgumentMetadata): Promise<Cat> {
+>     const cat = await this.cats.findById(id)
+>     if (!cat) throw new NotFoundException(`Cat ${id} not found`)
+>     return cat
+>   }
+> }
+> ```
+>
+> ```typescript
+> @Get(":id")
+> getOne(@Param("id", CatByIdPipe) cat: Cat) {
+>   return cat
+> }
+> ```
+>
+> The handler receives the entity directly. The pipe is `@Injectable()`, so Nest wires `CatsService` automatically. Source: [Pipes > Providing defaults](https://docs.nestjs.com/pipes#providing-defaults).
+
+> [!example]- Compose multiple pipes on the same param
+>
+> Pipes after the first receive the **previous pipe's output**, not the raw value. Use this to default-then-coerce, or coerce-then-validate.
+>
+> ```typescript
+> import {
+>   Controller,
+>   DefaultValuePipe,
+>   Get,
+>   ParseEnumPipe,
+>   ParseIntPipe,
+>   Query,
+> } from "@nestjs/common"
+>
+> enum SortOrder {
+>   Asc = "asc",
+>   Desc = "desc",
+> }
+>
+> @Controller("cats")
+> export class CatsController {
+>   @Get()
+>   list(
+>     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+>     @Query("order", new DefaultValuePipe(SortOrder.Asc), new ParseEnumPipe(SortOrder))
+>     order: SortOrder,
+>   ) {}
+> }
+> ```
+>
+> Same param, multiple pipes, evaluated left-to-right. `DefaultValuePipe` first so downstream pipes never see `undefined`.
+
 ## Common errors
 
 | Symptom                                 | Likely cause                                                                                                     |
