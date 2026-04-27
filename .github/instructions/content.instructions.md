@@ -14,4 +14,5 @@ applyTo: "content/**/*.md"
 - Keep verification/provenance notes out of reader-facing prose. Use `source:` and natural inline links; avoid phrases like "verified in", "checked against", "list verified against", raw repo paths, or approximate line-number notes unless the path is itself the subject.
 - For NestJS HTTP content, keep examples Express-first. Mention Fastify only where the adapter changes the implementation, usually as a gotcha or explicit adapter note.
 - When adding or removing indexed notes, update the relevant MOC and `quartz/static/llms.txt`.
+- Mark open review items inline with a collapsed `> [!todo]-` callout (see `AGENTS.md` → "Open review items in notes"). One actionable sentence per callout, greppable via `grep -rn "\[!todo\]" content/`.
 - If editing `AGENTS.md`, mirror it to `.github/copilot-instructions.md` and run `npm run lint:wikilinks`.

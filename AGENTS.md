@@ -168,6 +168,22 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
+## Open review items in notes
+
+When a note has a follow-up that is not blocking publication — verify against newer docs, expand once a planned recipe lands, double-check a behavior on the next release — mark it inline with a collapsed `todo` callout instead of leaving a TODO comment or opening an external tracker. Quartz/Obsidian render this natively.
+
+```markdown
+> [!todo]- Review on next NestJS release
+> Confirm `getAllAndOverride` still returns `undefined` (not `null`) for missing metadata in v11.
+```
+
+Rules:
+
+- Use `[!todo]-` (collapsed) so the reader doesn't trip on it; the maintainer expands during review sweeps.
+- One concrete, actionable sentence. If it grows past two lines, it's no longer a polish item — promote it to a real edit or split it into a planned note.
+- Greppable: `grep -rn "\[!todo\]" content/` lists every open item across the vault.
+- Resolve or delete in the same PR that addresses the underlying concern. Do not let `[!todo]-` callouts accumulate as decoration.
+
 ## Code examples (MANDATORY)
 
 Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is. Concretely:
