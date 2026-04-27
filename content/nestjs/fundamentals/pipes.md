@@ -318,15 +318,13 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 ## Gotchas
 
 > [!warning]- `enableImplicitConversion` does not handle every type
-> [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Practical matrix:
+> [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Where it works and where it doesn't:
 >
-> | Property type                               | Implicit conversion                                    | Need `@Type()`?                                                                                                                  |
-> | ------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-> | `string`, `number`, `boolean`, `Date`       | ✅ enough                                              | ❌                                                                                                                               |
-> | Branded type (`string & { __brand: 'Id' }`) | ✅ converts as base (`String`)                         | ❌ — but the brand is **compile-time only**, no runtime guarantee. Add `@IsUUID()`, regex, or a custom validator if you need it. |
-> | Nested class (no circular imports)          | ⚠️ sometimes                                           | ✅ recommended always                                                                                                            |
-> | Array of classes (`items: Item[]`)          | ❌ TS emits `design:type = Array` with no element info | ✅ **required** — `@Type(() => Item)`                                                                                            |
-> | `interface` / structural type               | ❌ emits `design:type = Object`, stays as plain object | ✅ use a real class                                                                                                              |
+> - **`string`, `number`, `boolean`, `Date`**: implicit conversion is enough. `@Type()` not needed.
+> - **Branded types** (`string & { __brand: 'Id' }`): converts as the base type (`String`). The brand is compile-time only, no runtime guarantee — add `@IsUUID()`, regex, or a custom validator if you care.
+> - **Nested class** (no circular imports): sometimes works implicitly, but **always declare `@Type(() => NestedClass)`** to be safe.
+> - **Array of classes** (`items: Item[]`): does not work. TS emits `design:type = Array` with no element info. `@Type(() => Item)` is **required**.
+> - **`interface` / structural type**: does not work. TS emits `design:type = Object`, the value stays as a plain object. Use a real class.
 >
 > Rule of thumb: implicit conversion is a primitive-coercion shortcut, not a substitute for `@Type()` on anything object-shaped.
 
@@ -349,12 +347,12 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > }
 > ```
 >
-> | Setup                                  | `items` becomes           | Children validated?                             |
-> | -------------------------------------- | ------------------------- | ----------------------------------------------- |
-> | nothing                                | array of plain objects    | ❌                                              |
-> | `@Type(() => Item)` only               | array of `Item` instances | ❌ — `@IsString()` inside `Item` never runs     |
-> | `@ValidateNested({ each: true })` only | array of plain objects    | ❌ — validator has no class to validate against |
-> | both                                   | array of `Item` instances | ✅                                              |
+> What each setup gives you:
+>
+> - **Neither decorator** → `items` stays an array of plain objects, children not validated.
+> - **`@Type(() => Item)` alone** → `items` becomes `Item` instances, but `@IsString()` inside `Item` never runs (no `@ValidateNested`).
+> - **`@ValidateNested({ each: true })` alone** → `items` stays plain objects, validator has no class to validate against.
+> - **Both** → `items` becomes `Item` instances **and** their decorators run. ✅
 >
 > Same combo applies to single nested objects (`item: Item` → `@ValidateNested()` without `each`). See [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) and the [class-validator nested objects docs](https://github.com/typestack/class-validator#validating-nested-objects).
 
