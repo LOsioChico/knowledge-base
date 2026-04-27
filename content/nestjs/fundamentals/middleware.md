@@ -85,9 +85,14 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 
 ## Route matching
 
-Use strings for simple paths, route objects for method-specific matching, and controller classes when the middleware should apply to every route declared by a controller.
+| Pattern | Matches | Notes |
+| --- | --- | --- |
+| `'cats'` | exact path | Plain string |
+| `'cats/{*splat}'` | any subpath under `cats` | Named wildcard segment |
+| `{ path, method }` | path + HTTP method | Use `RequestMethod.GET`, `POST`, etc. |
+| `CatsController` | every route declared by the controller | Pass the class, not an instance |
 
-`exclude()` must come before `forRoutes()` because `forRoutes()` closes the chain. Wildcards are supported with named path segments, for example `cats/{*splat}`.
+`exclude()` must come before `forRoutes()` because `forRoutes()` closes the chain.
 
 ## When to reach for it
 
@@ -104,11 +109,25 @@ Use strings for simple paths, route objects for method-specific matching, and co
 
 ## Gotchas
 
-- `app.use()` global middleware cannot use the Nest DI container. Use module-bound class middleware if the middleware needs injected providers.
-- With the Express adapter, Nest registers JSON and URL-encoded body parsing by default. If you want to customize those parsers through middleware, pass `{ bodyParser: false }` to `NestFactory.create()` first.
-- Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata, it probably belongs in a guard or interceptor.
+> [!warning]- `app.use()` loses DI
+> Global middleware bound through `app.use()` cannot resolve providers from the Nest container. Bind class middleware via `MiddlewareConsumer` (or `configure()`) when the middleware needs injected services.
+
+> [!warning]- Default body parsers run before custom middleware
+> With the Express adapter, Nest registers JSON and URL-encoded body parsing by default. To customize parsing in middleware, pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser.
+
+> [!info]- No `ExecutionContext` in middleware
+> Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata or class/handler references, it belongs in a guard or interceptor.
+
+## Common errors
+
+| Symptom | Likely cause |
+| --- | --- |
+| Request hangs | Middleware did not call `next()` and did not end the response |
+| Injected provider is `undefined` | Bound through `app.use()` instead of `MiddlewareConsumer` |
+| Custom body parser ignored | Forgot `{ bodyParser: false }` on `NestFactory.create()` |
+| Middleware runs on excluded route | `exclude()` placed after `forRoutes()` (the chain closes on `forRoutes`) |
+| Cannot read handler metadata | Wrong layer — use a guard or interceptor, middleware has no `ExecutionContext` |
 
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[nestjs/auth/guards-vs-middleware|Guards vs middleware (planned)]]
