@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/recipes/validation]]"
+  - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/interceptors]]"
 source:
@@ -26,22 +27,22 @@ npm i -D @types/multer
 ## Single file
 
 ```typescript
-import { Controller, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Controller, Post, UseInterceptors, UploadedFile } from "@nestjs/common"
+import { FileInterceptor } from "@nestjs/platform-express"
 
-@Controller('uploads')
+@Controller("uploads")
 export class UploadsController {
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor("file"))
   upload(@UploadedFile() file: Express.Multer.File) {
-    return { name: file.originalname, size: file.size, mime: file.mimetype };
+    return { name: file.originalname, size: file.size, mime: file.mimetype }
   }
 }
 ```
 
 `FileInterceptor('file')` is a built-in [[nestjs/fundamentals/interceptors|interceptor]] that reads the field named `file` from the form. Change the string to match your form field.
 
-## Validation: the right way
+## Uploaded file checks: the right way
 
 For body/query DTOs, lean on the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, skip hand-rolled [[nestjs/fundamentals/pipes|pipes]] and use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
 
@@ -53,13 +54,13 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-} from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+} from "@nestjs/common"
+import { FileInterceptor } from "@nestjs/platform-express"
 
-@Controller('uploads')
+@Controller("uploads")
 export class UploadsController {
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor("file"))
   upload(
     @UploadedFile(
       new ParseFilePipeBuilder()
@@ -72,35 +73,35 @@ export class UploadsController {
     )
     file: Express.Multer.File,
   ) {
-    return file.originalname;
+    return file.originalname
   }
 }
 ```
 
-| Builder method | What it checks |
-|---|---|
-| `addFileTypeValidator({ fileType })` | Mime-type via the file's [magic number](https://en.wikipedia.org/wiki/Magic_number_(programming)#In_files), not the client-provided header. String or RegExp. |
-| `addMaxSizeValidator({ maxSize })` | Bytes. Multer also enforces a hard cap (see below). |
-| `.build({ fileIsRequired: false })` | Makes the upload optional. Default is required. |
+| Builder method                       | What it checks                                                                                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addFileTypeValidator({ fileType })` | Mime-type via the file's [magic number](<https://en.wikipedia.org/wiki/Magic_number_(programming)#In_files>), not the client-provided header. String or RegExp. |
+| `addMaxSizeValidator({ maxSize })`   | Bytes. Multer also enforces a hard cap (see below).                                                                                                             |
+| `.build({ fileIsRequired: false })`  | Makes the upload optional. Default is required.                                                                                                                 |
 
 > Magic number validation means a renamed `.exe` to `.jpg` still gets rejected. Do not skip this.
 
 ## Multiple files
 
-| Decorator | When |
-|---|---|
+| Decorator                                     | When                                                              |
+| --------------------------------------------- | ----------------------------------------------------------------- |
 | `FilesInterceptor('files', maxCount?, opts?)` | Same field name, an array of files. Read with `@UploadedFiles()`. |
-| `FileFieldsInterceptor([{ name, maxCount }])` | Different field names per slot (e.g. `avatar` and `cover`). |
-| `AnyFilesInterceptor()` | Accept anything. Use sparingly. |
-| `NoFilesInterceptor()` | Accept `multipart/form-data` for text fields, reject any file. |
+| `FileFieldsInterceptor([{ name, maxCount }])` | Different field names per slot (e.g. `avatar` and `cover`).       |
+| `AnyFilesInterceptor()`                       | Accept anything. Use sparingly.                                   |
+| `NoFilesInterceptor()`                        | Accept `multipart/form-data` for text fields, reject any file.    |
 
 ## Sensible defaults via MulterModule
 
 Set caps once at module level so every route inherits them.
 
 ```typescript
-import { Module } from '@nestjs/common';
-import { MulterModule } from '@nestjs/platform-express';
+import { Module } from "@nestjs/common"
+import { MulterModule } from "@nestjs/platform-express"
 
 @Module({
   imports: [
@@ -118,16 +119,16 @@ export class AppModule {}
 For env-driven config use `registerAsync`:
 
 ```typescript
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MulterModule } from '@nestjs/platform-express';
+import { ConfigModule, ConfigService } from "@nestjs/config"
+import { MulterModule } from "@nestjs/platform-express"
 
 MulterModule.registerAsync({
   imports: [ConfigModule],
   inject: [ConfigService],
   useFactory: (config: ConfigService) => ({
-    limits: { fileSize: config.get<number>('UPLOAD_MAX_BYTES') },
+    limits: { fileSize: config.get<number>("UPLOAD_MAX_BYTES") },
   }),
-});
+})
 ```
 
 ## Where do the bytes go?
@@ -135,15 +136,15 @@ MulterModule.registerAsync({
 By default Multer keeps the file in memory as a `Buffer` on `file.buffer`. That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:
 
 ```typescript
-import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { MulterModule } from "@nestjs/platform-express"
+import { diskStorage } from "multer"
 
 MulterModule.register({
   storage: diskStorage({
-    destination: './uploads',
+    destination: "./uploads",
     filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
   }),
-});
+})
 ```
 
 With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file.

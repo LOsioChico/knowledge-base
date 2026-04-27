@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/pipes]]"
 source:
   - https://docs.nestjs.com/middleware
 ---
@@ -16,22 +17,22 @@ source:
 ## Signature
 
 ```typescript
-import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { Injectable, NestMiddleware } from "@nestjs/common"
+import { Request, Response, NextFunction } from "express"
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    next();
+    next()
   }
 }
 ```
 
 ## Binding
 
-| Scope | How |
-|---|---|
-| Global | `app.use(fn)` in `main.ts` |
+| Scope        | How                                                   |
+| ------------ | ----------------------------------------------------- |
+| Global       | `app.use(fn)` in `main.ts`                            |
 | Module bound | `configure(consumer)` in a module, with path matchers |
 
 ## Order
@@ -52,4 +53,4 @@ Sequential, in bind order. Global middleware runs first. Across modules, the roo
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[nestjs/auth/guards-vs-middleware|Guards vs middleware]]
+- [[nestjs/auth/guards-vs-middleware|Guards vs middleware (planned)]]

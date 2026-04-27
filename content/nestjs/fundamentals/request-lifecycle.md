@@ -11,6 +11,7 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/recipes/file-uploads]]"
 source:
   - https://docs.nestjs.com/faq/request-lifecycle
 ---
@@ -58,15 +59,15 @@ flowchart TD
 
 ## Why the order matters
 
-Pick the right tool by asking *when* it should run:
+Pick the right tool by asking _when_ it should run:
 
-| Need | Tool |
-|---|---|
-| Mutate the raw request, attach correlation IDs | [[middleware|Middleware]] |
-| Authorization decision before any work | [[guards|Guards]] |
-| Wrap the handler with logging, caching, retries | [[interceptors|Interceptors]] |
-| Validate or transform input | [[pipes|Pipes]] |
-| Convert a thrown error into an HTTP response | [[exception-filters|Exception filters]] |
+| Need                                            | Tool                                     |
+| ----------------------------------------------- | ---------------------------------------- |
+| Mutate the raw request, attach correlation IDs  | [[middleware\|Middleware]]               |
+| Authorization decision before any work          | [[guards\|Guards]]                       |
+| Wrap the handler with logging, caching, retries | [[interceptors\|Interceptors]]           |
+| Validate or transform input                     | [[pipes\|Pipes]]                         |
+| Convert a thrown error into an HTTP response    | [[exception-filters\|Exception filters]] |
 
 ## Source
 

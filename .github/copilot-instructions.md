@@ -36,11 +36,11 @@ title: Human Readable Title
 aliases: [synonym one, synonym two]
 tags: [type/<type>, tech/<tech>]
 area: <top-level area, e.g. nestjs>
-status: evergreen          # seed | draft | evergreen | archived
+status: evergreen # seed | draft | evergreen | archived
 related:
   - "[[path/to/note-a]]"
   - "[[path/to/note-b]]"
-unrelated: []          # optional; per-pair opt-out for discoverability linter
+unrelated: [] # optional; per-pair opt-out for discoverability linter
 source:
   - https://official.docs/url
 ---
@@ -76,7 +76,7 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 ### `tech/*` (specific technology)
 
-- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved)
+- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved)
 
 ### Cross-cutting concepts (no namespace, used sparingly)
 

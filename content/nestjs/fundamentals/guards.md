@@ -17,15 +17,13 @@ source:
 ## Signature
 
 ```typescript
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
+import { Observable } from "rxjs"
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
-    return true;
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+    return true
   }
 }
 ```
@@ -34,21 +32,21 @@ Return `true` to continue. Return `false` to throw `ForbiddenException`.
 
 ## Binding
 
-| Scope | How |
-|---|---|
-| Global | `app.useGlobalGuards()` or the `APP_GUARD` provider |
-| Controller | `@UseGuards()` on the class |
-| Route | `@UseGuards()` on the method |
+| Scope      | How                                                 |
+| ---------- | --------------------------------------------------- |
+| Global     | `app.useGlobalGuards()` or the `APP_GUARD` provider |
+| Controller | `@UseGuards()` on the class                         |
+| Route      | `@UseGuards()` on the method                        |
 
 ## Order
 
 Global, then controller, then route. Within the same scope, in the order listed in the decorator.
 
 ```typescript
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, UseGuards } from "@nestjs/common"
 
 @UseGuards(Guard1, Guard2)
-@Controller('cats')
+@Controller("cats")
 export class CatsController {
   @UseGuards(Guard3)
   @Get()
@@ -65,6 +63,6 @@ export class CatsController {
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[nestjs/auth/jwt-strategy|JWT strategy]]
-- [[nestjs/auth/guards-vs-middleware|Guards vs middleware]]
-- [[nestjs/auth/rbac-cbac|RBAC and CBAC]]
+- [[nestjs/auth/jwt-strategy|JWT strategy (planned)]]
+- [[nestjs/fundamentals/middleware|Middleware]] and [[nestjs/auth/guards-vs-middleware|guards vs middleware (planned)]]
+- [[nestjs/auth/rbac-cbac|RBAC and CBAC (planned)]]

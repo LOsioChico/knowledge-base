@@ -14,7 +14,7 @@ source:
   - https://github.com/typestack/class-validator
 ---
 
-> Validate request bodies, query params, and path params against DTO classes — declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers serialization on the way out (see [[nestjs/recipes/serialization|the serialization recipe]]) and validation on the way in.
+> Validate request bodies, query params, and path params against DTO classes — declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers [[nestjs/recipes/serialization|serialization]] on the way out and validation on the way in.
 
 ## When to reach for it
 
@@ -33,13 +33,13 @@ npm i class-validator class-transformer
 Bind globally in `main.ts` so every controller is covered:
 
 ```ts
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
+import "reflect-metadata"
+import { NestFactory } from "@nestjs/core"
+import { ValidationPipe } from "@nestjs/common"
+import { AppModule } from "./app.module"
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule)
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -47,10 +47,10 @@ async function bootstrap() {
       transform: true,
       transformOptions: { enableImplicitConversion: true },
     }),
-  );
-  await app.listen(3000);
+  )
+  await app.listen(3000)
 }
-bootstrap();
+bootstrap()
 ```
 
 Those four options are the **secure default**. Each one earns its keep below.
@@ -58,27 +58,27 @@ Those four options are the **secure default**. Each one earns its keep below.
 ## A first DTO
 
 ```ts
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MinLength } from "class-validator"
 
 export class CreateUserDto {
   @IsEmail()
-  email: string;
+  email: string
 
   @IsString()
   @MinLength(8)
-  password: string;
+  password: string
 }
 ```
 
 ```ts
-import { Body, Controller, Post } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
+import { Body, Controller, Post } from "@nestjs/common"
+import { CreateUserDto } from "./dto/create-user.dto"
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
   @Post()
   create(@Body() dto: CreateUserDto) {
-    return { ok: true, email: dto.email };
+    return { ok: true, email: dto.email }
   }
 }
 ```
@@ -88,7 +88,7 @@ export class UsersController {
 ## `whitelist` and `forbidNonWhitelisted` — the security pair
 
 ```ts
-new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
 ```
 
 - **`whitelist: true`** — silently strips properties that aren't decorated on the DTO. `{ email, password, isAdmin: true }` arrives at the handler as `{ email, password }`.
@@ -104,19 +104,19 @@ Use both in production. Strip-only is fine for migrations where old clients stil
 By default, `@Body() dto: CreateUserDto` is a **plain object** that just happens to satisfy the type at compile time. With `transform: true`, the pipe runs `plainToInstance(CreateUserDto, body)` so `dto instanceof CreateUserDto` is true and any methods on the DTO actually work.
 
 ```ts
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength } from "class-validator"
 
 export class CreateUserDto {
   @IsString()
   @MinLength(2)
-  firstName: string;
+  firstName: string
 
   @IsString()
   @MinLength(2)
-  lastName: string;
+  lastName: string
 
   fullName(): string {
-    return `${this.firstName} ${this.lastName}`;
+    return `${this.firstName} ${this.lastName}`
   }
 }
 ```
@@ -128,13 +128,13 @@ Without `transform: true`, calling `dto.fullName()` throws `dto.fullName is not 
 Path/query params arrive as strings. With implicit conversion on, the pipe coerces based on the TS type:
 
 ```ts
-import { IsInt, Max, Min } from 'class-validator';
+import { IsInt, Max, Min } from "class-validator"
 
 export class PaginationQuery {
   @IsInt()
   @Min(1)
   @Max(100)
-  limit: number;
+  limit: number
 }
 ```
 
@@ -150,37 +150,37 @@ This is the parallel to `class-transformer` groups in the [[nestjs/recipes/seria
 A real case: on `POST /users`, password is required. On `PATCH /users/:id`, the user is updating their profile and shouldn't have to re-send the password.
 
 ```ts
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from "class-validator"
 
 export class UserDto {
-  @IsEmail({}, { groups: ['create', 'update'] })
-  email: string;
+  @IsEmail({}, { groups: ["create", "update"] })
+  email: string
 
-  @IsString({ groups: ['create'] })
-  @MinLength(8, { groups: ['create'] })
-  @IsOptional({ groups: ['update'] })
-  password?: string;
+  @IsString({ groups: ["create"] })
+  @MinLength(8, { groups: ["create"] })
+  @IsOptional({ groups: ["update"] })
+  password?: string
 }
 ```
 
 Tell the pipe which group to apply per route:
 
 ```ts
-import { Body, Controller, Patch, Post, UsePipes, ValidationPipe } from '@nestjs/common';
-import { UserDto } from './dto/user.dto';
+import { Body, Controller, Patch, Post, UsePipes, ValidationPipe } from "@nestjs/common"
+import { UserDto } from "./dto/user.dto"
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
   @Post()
-  @UsePipes(new ValidationPipe({ groups: ['create'], whitelist: true }))
+  @UsePipes(new ValidationPipe({ groups: ["create"], whitelist: true }))
   create(@Body() dto: UserDto) {
-    return dto;
+    return dto
   }
 
-  @Patch(':id')
-  @UsePipes(new ValidationPipe({ groups: ['update'], whitelist: true }))
+  @Patch(":id")
+  @UsePipes(new ValidationPipe({ groups: ["update"], whitelist: true }))
   update(@Body() dto: UserDto) {
-    return dto;
+    return dto
   }
 }
 ```
@@ -193,23 +193,23 @@ export class UsersController {
 Decorators don't recurse automatically. You need `@ValidateNested()` to descend, plus `@Type()` from `class-transformer` so the pipe knows which class to instantiate inside arrays.
 
 ```ts
-import { Type } from 'class-transformer';
-import { IsArray, IsString, MinLength, ValidateNested } from 'class-validator';
+import { Type } from "class-transformer"
+import { IsArray, IsString, MinLength, ValidateNested } from "class-validator"
 
 export class OrderItemDto {
   @IsString()
-  sku: string;
+  sku: string
 
   @IsString()
   @MinLength(1)
-  quantity: string;
+  quantity: string
 }
 
 export class CreateOrderDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => OrderItemDto)
-  items: OrderItemDto[];
+  items: OrderItemDto[]
 }
 ```
 
@@ -220,32 +220,32 @@ Without `@Type()`, items stay as plain objects and their decorators never run.
 When the built-ins aren't enough, write your own. For a sync rule, a function-style decorator is the lightest:
 
 ```ts
-import { registerDecorator, ValidationOptions } from 'class-validator';
+import { registerDecorator, ValidationOptions } from "class-validator"
 
 export function IsSlug(options?: ValidationOptions) {
   return function (object: object, propertyName: string) {
     registerDecorator({
-      name: 'isSlug',
+      name: "isSlug",
       target: object.constructor,
       propertyName,
       options,
       validator: {
         validate(value: unknown) {
-          return typeof value === 'string' && /^[a-z0-9-]+$/.test(value);
+          return typeof value === "string" && /^[a-z0-9-]+$/.test(value)
         },
         defaultMessage: () => `${propertyName} must be lowercase letters, digits, and dashes only`,
       },
-    });
-  };
+    })
+  }
 }
 ```
 
 ```ts
-import { IsSlug } from './validators/is-slug.validator';
+import { IsSlug } from "./validators/is-slug.validator"
 
 export class CreatePostDto {
   @IsSlug()
-  slug: string;
+  slug: string
 }
 ```
 
@@ -256,19 +256,19 @@ For async rules that need DI (e.g., "is this email already taken?"), use `Valida
 Default error shape is fine for a frontend you control. For a public API, shape it yourself:
 
 ```ts
-import { BadRequestException, ValidationError, ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common"
 
 new ValidationPipe({
   exceptionFactory: (errors: ValidationError[]) =>
     new BadRequestException({
       statusCode: 400,
-      error: 'Validation failed',
+      error: "Validation failed",
       details: errors.map((e) => ({
         field: e.property,
         messages: Object.values(e.constraints ?? {}),
       })),
     }),
-});
+})
 ```
 
 In production, also set `disableErrorMessages: true` if you don't want the raw constraint strings reaching the client (and instead return your own copy).

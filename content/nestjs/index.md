@@ -12,16 +12,16 @@ source:
   - https://docs.nestjs.com
 ---
 
-Map of content for NestJS. Broken links are pending topics. They will get filled in over time.
+Map of content for NestJS. Links marked planned are pending topics. They will get filled in over time.
 
 ## Fundamentals
 
 What you need to master before any advanced pattern.
 
-- [[nestjs/fundamentals/modules|Modules: feature, shared, core]]
-- [[nestjs/fundamentals/di-container|DI container: providers, scopes, custom providers]]
-- [[nestjs/fundamentals/lifecycle|Lifecycle hooks: OnModuleInit, OnApplicationBootstrap]]
-- [[nestjs/fundamentals/request-lifecycle|Request lifecycle: middleware, guards, interceptors, pipes, filters]]
+- [[nestjs/fundamentals/modules|Modules: feature, shared, core (planned)]]
+- [[nestjs/fundamentals/di-container|DI container: providers, scopes, custom providers (planned)]]
+- [[nestjs/fundamentals/lifecycle|Lifecycle hooks: OnModuleInit, OnApplicationBootstrap (planned)]]
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/exception-filters|filters]]
 
 ## Recipes
 
@@ -35,45 +35,45 @@ Task-oriented how-tos. See [[nestjs/recipes/index|all recipes]].
 
 Architecture patterns that NestJS enables but does not enforce.
 
-- [[nestjs/patterns/cqrs|CQRS: commands, queries, events]]
-- [[nestjs/patterns/repository-pattern|Repository pattern: when yes, when no]]
-- [[nestjs/patterns/domain-events|Domain events: EventEmitter2 vs CQRS events]]
-- [[nestjs/patterns/error-handling|Error handling: filters and exception hierarchy]]
+- [[nestjs/patterns/cqrs|CQRS: commands, queries, events (planned)]]
+- [[nestjs/patterns/repository-pattern|Repository pattern: when yes, when no (planned)]]
+- [[nestjs/patterns/domain-events|Domain events: EventEmitter2 vs CQRS events (planned)]]
+- [[nestjs/patterns/error-handling|Error handling: filters and exception hierarchy (planned)]]
 
 ## Data
 
-- [[nestjs/data/prisma|Prisma: setup, transactions, soft delete]]
-- [[nestjs/data/typeorm|TypeORM: relations and query builder]]
-- [[nestjs/data/caching|Caching: CacheModule + Redis]]
+- [[nestjs/data/prisma|Prisma: setup, transactions, soft delete (planned)]]
+- [[nestjs/data/typeorm|TypeORM: relations and query builder (planned)]]
+- [[nestjs/data/caching|Caching: CacheModule + Redis (planned)]]
 
 ## Auth
 
-- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]
-- [[nestjs/auth/guards-vs-middleware|Guards vs Middleware: when to use each]]
-- [[nestjs/auth/rbac-cbac|RBAC and CBAC]]
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport (planned)]]
+- [[nestjs/auth/guards-vs-middleware|Guards vs Middleware: when to use each (planned)]]
+- [[nestjs/auth/rbac-cbac|RBAC and CBAC (planned)]]
 
 ## Testing
 
-- [[nestjs/testing/unit-tests|Unit tests with Test.createTestingModule]]
-- [[nestjs/testing/e2e|E2E with Supertest + Testcontainers]]
-- [[nestjs/testing/mocks-strategy|Mocking strategy]]
+- [[nestjs/testing/unit-tests|Unit tests with Test.createTestingModule (planned)]]
+- [[nestjs/testing/e2e|E2E with Supertest + Testcontainers (planned)]]
+- [[nestjs/testing/mocks-strategy|Mocking strategy (planned)]]
 
 ## Observability
 
-- [[nestjs/observability/logging-pino|Structured logging with Pino]]
-- [[nestjs/observability/opentelemetry|OpenTelemetry: traces and metrics]]
-- [[nestjs/observability/health-checks|Health checks with Terminus]]
+- [[nestjs/observability/logging-pino|Structured logging with Pino (planned)]]
+- [[nestjs/observability/opentelemetry|OpenTelemetry: traces and metrics (planned)]]
+- [[nestjs/observability/health-checks|Health checks with Terminus (planned)]]
 
 ## Deployment
 
-- [[nestjs/deployment/docker|Docker: multistage builds]]
-- [[nestjs/deployment/graceful-shutdown|Graceful shutdown]]
-- [[nestjs/deployment/config-validation|Config validation with Zod]]
+- [[nestjs/deployment/docker|Docker: multistage builds (planned)]]
+- [[nestjs/deployment/graceful-shutdown|Graceful shutdown (planned)]]
+- [[nestjs/deployment/config-validation|Config validation with Zod (planned)]]
 
 ## Gotchas
 
 Problems I already solved and do not want to google again.
 
-- [[nestjs/gotchas/circular-deps|Circular dependencies: forwardRef and how to avoid it]]
-- [[nestjs/gotchas/scope-request-pitfalls|Request-scoped providers: the hidden cost]]
-- [[nestjs/gotchas/async-providers|Async providers: useFactory with dependencies]]
+- [[nestjs/gotchas/circular-deps|Circular dependencies: forwardRef and how to avoid it (planned)]]
+- [[nestjs/gotchas/scope-request-pitfalls|Request-scoped providers: the hidden cost (planned)]]
+- [[nestjs/gotchas/async-providers|Async providers: useFactory with dependencies (planned)]]

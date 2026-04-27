@@ -9,7 +9,7 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
 ---
 
-> The mental model. Modules, the DI container, and the request lifecycle that ties middleware, guards, interceptors, pipes and exception filters together.
+> The mental model. Modules, the DI container, and the [[nestjs/fundamentals/request-lifecycle|request lifecycle]] that ties [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]] and [[nestjs/fundamentals/exception-filters|exception filters]] together.
 
 ## Available
 

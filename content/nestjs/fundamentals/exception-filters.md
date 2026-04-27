@@ -17,33 +17,28 @@ source:
 ## Signature
 
 ```typescript
-import {
-  ArgumentsHost,
-  Catch,
-  ExceptionFilter,
-  HttpException,
-} from '@nestjs/common';
-import { Response } from 'express';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from "@nestjs/common"
+import { Response } from "express"
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: HttpException, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<Response>()
     response.status(exception.getStatus()).json({
       error: exception.message,
-    });
+    })
   }
 }
 ```
 
 ## Binding
 
-| Scope | How |
-|---|---|
-| Global | `app.useGlobalFilters()` or the `APP_FILTER` provider |
-| Controller | `@UseFilters()` on the class |
-| Route | `@UseFilters()` on the method |
+| Scope      | How                                                   |
+| ---------- | ----------------------------------------------------- |
+| Global     | `app.useGlobalFilters()` or the `APP_FILTER` provider |
+| Controller | `@UseFilters()` on the class                          |
+| Route      | `@UseFilters()` on the method                         |
 
 ## Order: route first, then controller, then global
 
@@ -64,4 +59,4 @@ Filters only fire on **uncaught** exceptions. A `try/catch` inside the controlle
 ## See also
 
 - [[request-lifecycle|Request lifecycle hub]]
-- [[nestjs/patterns/error-handling|Error handling patterns]]
+- [[nestjs/patterns/error-handling|Error handling patterns (planned)]]
