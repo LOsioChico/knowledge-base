@@ -358,6 +358,43 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >
 > Same combo applies to single nested objects (`item: Item` → `@ValidateNested()` without `each`). See [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) and the [class-validator nested objects docs](https://github.com/typestack/class-validator#validating-nested-objects).
 
+> [!warning]- `import type { Dto }` silently disables validation
+> `ValidationPipe` reads the runtime metatype emitted by TypeScript (`Reflect.getMetadata('design:paramtypes', ...)`). A type-only import is erased at compile time, so the metatype becomes `Object` and the pipe falls back to passing the value through untouched: no decorator runs, no error thrown. Always import DTOs as values:
+>
+> ```ts
+> import { CreateUserDto } from "./create-user.dto" // ✅
+> import type { CreateUserDto } from "./create-user.dto" // ❌ validation disabled
+> ```
+>
+> Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
+
+> [!warning]- Generics and interfaces have no runtime metadata
+> TypeScript erases generics and interfaces during compilation, so they leave nothing for `class-validator` to inspect. `ValidationPipe` will not validate `Partial<CreateCatDto>`, `Pick<...>`, a bare interface, or a union type. Use a concrete class (often via [`@nestjs/mapped-types`](https://docs.nestjs.com/openapi/mapped-types) helpers like `PartialType`, `PickType`, `OmitType`, `IntersectionType`). Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
+
+> [!warning]- `body: CreateUserDto[]` is not validated as an array of DTOs
+> `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array` — the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
+>
+> ```ts
+> // 1. ParseArrayPipe carries the element class explicitly
+> @Post()
+> createBulk(
+>   @Body(new ParseArrayPipe({ items: CreateUserDto }))
+>   bulk: CreateUserDto[],
+> ) {}
+>
+> // 2. Wrap in a DTO with @Type()
+> class CreateUsersDto {
+>   @ValidateNested({ each: true })
+>   @Type(() => CreateUserDto)
+>   users: CreateUserDto[]
+> }
+> ```
+>
+> Source: [Parsing and validating arrays](https://docs.nestjs.com/techniques/validation#parsing-and-validating-arrays).
+
+> [!warning]- `@Req()` / `@Res()` bypass the pipe layer
+> Pipes run on **decorator-extracted arguments** (`@Body`, `@Param`, `@Query`, custom decorators). When you grab `@Req()` or `@Res()` directly, you're working with the raw Express/Fastify objects — no metatype, no pipe runs. If you need validation, decorate properties (`@Body() body: Dto`) instead of reaching into `req.body` yourself.
+
 ## When to reach for it
 
 - DTO validation with `class-validator` and `ValidationPipe`.
