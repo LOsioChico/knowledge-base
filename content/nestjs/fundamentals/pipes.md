@@ -52,6 +52,14 @@ nest g pi parse-int --dry-run  # preview the file plan, write nothing
 
 Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
 
+## Why a pipe, not [[nestjs/fundamentals/middleware|middleware]] / [[nestjs/fundamentals/guards|a guard]] / [[nestjs/fundamentals/interceptors|an interceptor]]
+
+- **Per-argument scope**: a pipe receives **one** handler argument (`@Body()`, `@Query('id')`, …) plus its `metatype`, not the full `Request`. That is what makes `ValidationPipe` automatic: it looks up the DTO class from the metatype and runs `class-validator` against just that value.
+- **Transform or reject**: return a value to pass it on (optionally coerced/sanitized), throw to reject with `400 BadRequestException` by default. There is no `next()`, no response stream, no `Observable`.
+- **Wrong layer for other jobs**: authorization belongs in [[nestjs/fundamentals/guards|a guard]] (boolean decision, `403`); wrapping or timing belongs in [[nestjs/fundamentals/interceptors|an interceptor]] (sees the response); request-shape mutation across many routes belongs in [[nestjs/fundamentals/middleware|middleware]] (handler args don't exist there yet).
+
+Source: [Pipes intro](https://docs.nestjs.com/pipes).
+
 ## Built-in pipes
 
 All exported from `@nestjs/common`.
@@ -218,6 +226,8 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 | Extra fields appear in DTO              | Enable `whitelist: true` to strip them                                                                           |
 | Validation always passes                | Pipe not bound globally, or DTO class lacks decorators                                                           |
 | `ParseIntPipe` throws on optional param | Either provide a `DefaultValuePipe` first, or pass `{ optional: true }` to `ParseIntPipe`                        |
+
+## Gotchas
 
 > [!warning]- `enableImplicitConversion` does not handle every type
 > [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Practical matrix:
