@@ -6,6 +6,7 @@ area: nestjs
 status: evergreen
 related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/middleware]]"
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
