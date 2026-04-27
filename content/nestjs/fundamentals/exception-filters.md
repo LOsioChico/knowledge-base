@@ -8,6 +8,7 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/guards]]"
 source:
   - https://docs.nestjs.com/exception-filters
 ---

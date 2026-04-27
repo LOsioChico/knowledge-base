@@ -8,6 +8,7 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/middleware]]"
   - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/serialization]]"

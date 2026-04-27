@@ -9,6 +9,7 @@ related:
   - "[[nestjs/recipes/serialization]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/guards]]"
 source:
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/typestack/class-validator
