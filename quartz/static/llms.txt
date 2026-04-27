@@ -27,6 +27,7 @@ This file follows the https://llmstxt.org spec. Use it as the entrypoint for ing
 
 - [File uploads with Multer](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/file-uploads.md): accept multipart/form-data, validate size and mime-type, memory vs disk storage, gotchas
 - [Response serialization with class-transformer](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/serialization.md): ClassSerializerInterceptor, @Exclude/@Expose/@Transform, role-based groups, the class-instance gotcha
+- [Request trace ID propagation](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/trace-id.md): seed note covering AsyncLocalStorage and nestjs-cls patterns for per-request trace IDs, with verified gotchas (enterWith leakage, non-crypto default idGenerator, HTTP-only scope)
 - [Request validation with class-validator](https://raw.githubusercontent.com/LOsioChico/knowledge-base/main/content/nestjs/recipes/validation.md): ValidationPipe, whitelist/forbidNonWhitelisted, transform + implicit conversion, validation groups, nested objects, custom validators
 
 ## Optional

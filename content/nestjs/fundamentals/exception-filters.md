@@ -9,6 +9,7 @@ related:
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/exception-filters
 ---

@@ -12,6 +12,7 @@ related:
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/file-uploads]]"
+  - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/faq/request-lifecycle
 ---

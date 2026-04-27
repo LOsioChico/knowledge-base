@@ -10,6 +10,7 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
 source:
   - https://docs.nestjs.com/guards

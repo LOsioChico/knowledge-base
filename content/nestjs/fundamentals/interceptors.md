@@ -12,6 +12,7 @@ related:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/serialization]]"
   - "[[nestjs/recipes/file-uploads]]"
+  - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer

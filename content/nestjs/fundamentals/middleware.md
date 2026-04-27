@@ -9,6 +9,7 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/middleware
   - https://docs.nestjs.com/faq/request-lifecycle
