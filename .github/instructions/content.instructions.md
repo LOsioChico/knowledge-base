@@ -11,5 +11,7 @@ applyTo: "content/**/*.md"
 - Keep changes scoped to `content/` plus required discovery surfaces: nearest `index.md`, area `index.md`, `content/index.md` for new areas, and `quartz/static/llms.txt`.
 - Preserve the frontmatter contract: `title`, `aliases`, `tags`, `area`, `status`, `related`, `source` when applicable, and `unrelated` only for considered discoverability opt-outs.
 - Maintain bidirectional `related:` links and first-mention body wikilinks. Do not add orphan notes.
+- Keep verification/provenance notes out of reader-facing prose. Use `source:` and natural inline links; avoid phrases like "verified in", "checked against", "list verified against", raw repo paths, or approximate line-number notes unless the path is itself the subject.
+- For NestJS HTTP content, keep examples Express-first. Mention Fastify only where the adapter changes the implementation, usually as a gotcha or explicit adapter note.
 - When adding or removing indexed notes, update the relevant MOC and `quartz/static/llms.txt`.
 - If editing `AGENTS.md`, mirror it to `.github/copilot-instructions.md` and run `npm run lint:wikilinks`.

@@ -95,7 +95,7 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 > }
 > ```
 >
-> Response body: `{ "id": 1, "email": "a@b.c" }` — `password` is stripped. The interceptor only acts on **class instances**; returning a plain object (`{ id, email, password }`) bypasses it. Verified in [`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts). Requires the `class-transformer` peer dep. Full coverage in [[nestjs/recipes/serialization|the serialization recipe]] (groups, `@Expose`, `@Transform`, `excludeAll`).
+> Response body: `{ "id": 1, "email": "a@b.c" }`; `password` is stripped. Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`, so it only acts on **class instances**; returning a plain object (`{ id, email, password }`) bypasses it. Requires the `class-transformer` peer dep. Full coverage in [[nestjs/recipes/serialization|the serialization recipe]] (groups, `@Expose`, `@Transform`, `excludeAll`).
 
 ## Binding
 

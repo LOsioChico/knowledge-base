@@ -39,7 +39,7 @@ export class ParseIntPipe implements PipeTransform<string, number> {
 
 ## Built-in pipes
 
-All exported from `@nestjs/common`. List verified against `packages/common/pipes/index.ts`.
+All exported from `@nestjs/common`.
 
 | Pipe               | Purpose                                                      | Notes                                                                                                                                                             |
 | ------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -94,7 +94,7 @@ export class CatsController {
 
 ## DefaultValuePipe
 
-Returns its constructor argument when the incoming value is `null`, `undefined`, or `NaN` (verified in `default-value.pipe.ts`). **Order matters** when chaining:
+Returns its constructor argument when the incoming value is `null`, `undefined`, or `NaN`. **Order matters** when chaining:
 
 ```typescript
 import { Controller, DefaultValuePipe, Get, ParseIntPipe, Query } from "@nestjs/common"
@@ -205,7 +205,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 | `ParseIntPipe` throws on optional param | Either provide a `DefaultValuePipe` first, or pass `{ optional: true }` to `ParseIntPipe`                        |
 
 > [!warning]- `enableImplicitConversion` does not handle every type
-> Verified in [`TransformOperationExecutor.ts`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts): implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Practical matrix:
+> [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Practical matrix:
 >
 > | Property type                               | Implicit conversion                                    | Need `@Type()`?                                                                                                                  |
 > | ------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
@@ -243,7 +243,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > | `@ValidateNested({ each: true })` only | array of plain objects    | ❌ — validator has no class to validate against |
 > | both                                   | array of `Item` instances | ✅                                              |
 >
-> Same combo applies to single nested objects (`item: Item` → `@ValidateNested()` without `each`). Verified in [`TransformOperationExecutor.ts`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) (lines ~219, 284) and [class-validator nested-objects docs](https://github.com/typestack/class-validator#validating-nested-objects).
+> Same combo applies to single nested objects (`item: Item` → `@ValidateNested()` without `each`). See [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) and the [class-validator nested objects docs](https://github.com/typestack/class-validator#validating-nested-objects).
 
 ## When to reach for it
 

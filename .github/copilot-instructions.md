@@ -150,6 +150,7 @@ Never write a technical claim from training-data memory. Every fact MUST be veri
 - **Cross-check**: at least two independent primary sources for any non-trivial claim (signature, default value, behavior, package name, version-specific feature). One source is not enough.
 - **Cite in `source:`**: every note's frontmatter `source:` list MUST contain the exact URLs consulted. If a section was added later, append the URL that backs it. No URL, no claim.
 - **Inline link for surprising claims**: if a fact is counterintuitive or version-specific, link the source inline next to the claim, not just in frontmatter.
+- **Reader-facing citations only**: cite surprising claims with normal links. Do not expose authoring audit wording in note bodies, such as "verified in", "checked against", "list verified against", raw repo paths as prose, approximate line-number notes, or scratchpad provenance. If a fact needs provenance, put the exact URL in `source:` or link the named API/docs naturally in prose.
 - **Versions matter**: state the version when behavior is version-specific (e.g., "NestJS 10+", "class-validator 0.14"). Verify the claim still holds in the latest stable.
 - **Unknowns are unknowns**: if you cannot verify a claim from primary sources within the session, do NOT write it. Leave a `// TODO: verify` placeholder or omit the section. Hallucinations are worse than gaps.
 - **Code snippets**: copy from official docs or test against the actual package. Do not "reconstruct from memory". Mark adapted snippets as such.
@@ -162,6 +163,7 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No em-dashes (`—`). Use `:` or rewrite the sentence.
 - No `--` either.
 - No filler ("In this guide, we will..."). Get to the example.
+- NestJS HTTP notes are Express-first. Use Express imports/types in examples. Mention Fastify only when the adapter changes the implementation, usually as a gotcha or explicit adapter note.
 - Conventional commits: `type: summary`. NO scope. Atomic commits, one logical change each.
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
