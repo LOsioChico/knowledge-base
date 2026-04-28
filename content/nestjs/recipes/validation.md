@@ -17,6 +17,8 @@ related:
 source:
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/typestack/class-validator
+  - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts
 ---
 
 > Validate request bodies, query params, and path params against DTO classes — declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers [[nestjs/recipes/serialization|serialization]] on the way out and validation on the way in.
@@ -289,6 +291,15 @@ export class UsersController {
 
 > [!tip]- Always pass `always: true` if some decorators have no group
 > A decorator without `groups` runs **only when no group is set** by default. Set `always: true` on the pipe (or `always: true` on the decorator) to keep ungrouped rules running alongside grouped ones.
+
+> [!warning]- The route-level `@UsePipes()` does not replace the global `ValidationPipe`
+> Pipes **stack**: the global `ValidationPipe` runs first, then the route-level one — both transform the body. Source: [`PipesConsumer.applyPipes`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts) iterates over the array of pipes the [`PipesContextCreator`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts) builds from `[global, controller, method, param]`. Concretely:
+>
+> - Each grouped decorator (`@IsEmail({}, { groups: ["create"] })`) is **skipped** by the global pipe (no group active) and run by the route pipe. Net result is correct, but `class-transformer` runs twice and `class-validator` walks every decorator twice.
+> - The moment you add an ungrouped rule (`@IsUUID() id?: string`), the global pipe enforces it on every route, and the route pipe enforces it again. Two errors for the same field if it fails.
+> - There is no built-in way to disable a global pipe per route. To get a single pass, drop the global `ValidationPipe` and bind it explicitly per controller, **or** make the global pipe the only one and switch groups via a small custom pipe that reads a `@SetMetadata('validationGroup', 'create')` decorator.
+>
+> For a low-traffic API the double pass is invisible. For hot endpoints with large DTOs, measure before adding route-level pipes on top of a global one.
 
 ## Nested objects and arrays
 
