@@ -12,6 +12,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/fundamentals/middleware]]"
 source:
   - https://docs.nestjs.com/exception-filters
 ---

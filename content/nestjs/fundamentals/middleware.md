@@ -1,6 +1,6 @@
 ---
 title: Middleware
-aliases: [express middleware]
+aliases: [express middleware, NestMiddleware, MiddlewareConsumer]
 tags: [type/concept, lifecycle, tech/http]
 area: nestjs
 status: evergreen
@@ -9,20 +9,26 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/middleware
   - https://docs.nestjs.com/faq/request-lifecycle
-  - https://docs.nestjs.com/techniques/performance#middleware
+  - https://docs.nestjs.com/security/helmet
+  - https://docs.nestjs.com/security/cors
+  - https://docs.nestjs.com/techniques/compression
+  - https://docs.nestjs.com/faq/raw-body
+  - https://docs.nestjs.com/cli/usages
 ---
 
-> Express-style functions called **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the route handler. They receive raw request/response objects and either call `next()` or end the response.
+> Express-style functions called **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the route handler. They receive raw `req`/`res` objects and either call `next()` or end the response.
 
 ## Signature
 
 ```typescript
 import { Injectable, NestMiddleware } from "@nestjs/common"
-import { Request, Response, NextFunction } from "express"
+import { NextFunction, Request, Response } from "express"
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -32,9 +38,25 @@ export class LoggerMiddleware implements NestMiddleware {
 }
 ```
 
+The `use()` method can be sync, return a `Promise`, or end the response. **Never** silently return without calling `next()` or ending `res`: the request hangs until the client times out.
+
+## Generate with the CLI
+
+```bash
+nest generate middleware logger      # full form
+nest g mi logger                     # short alias → src/logger/logger.middleware.ts
+nest g mi logger --flat              # no wrapping folder → src/logger.middleware.ts
+nest g mi auth/jwt                   # nested path → src/auth/jwt/jwt.middleware.ts
+nest g mi auth/jwt --flat            # nested + flat → src/auth/jwt.middleware.ts
+nest g mi logger --no-spec           # skip the *.spec.ts test file
+nest g mi logger --dry-run           # preview the file plan, write nothing
+```
+
+Same shape as the other lifecycle generators (`gu`, `pi`, `in`). The CLI defaults to wrapping the file in a folder named after the element; `--flat` drops it directly in the target. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+
 ## Functional middleware
 
-Class middleware can inject providers from the same module. If the middleware does not need dependencies, use a plain function:
+Class middleware can inject providers from the same module. If the middleware needs no dependencies, a plain function is shorter and the [official docs prefer it](https://docs.nestjs.com/middleware#functional-middleware) for that case:
 
 ```typescript
 import { NextFunction, Request, Response } from "express"
@@ -44,15 +66,44 @@ export function logger(req: Request, res: Response, next: NextFunction): void {
 }
 ```
 
+Functional middleware is bound the same way as class middleware: pass the function reference to `consumer.apply(...)` or `app.use(...)`.
+
+## Why middleware, not a [[nestjs/fundamentals/guards|guard]] or [[nestjs/fundamentals/interceptors|interceptor]]
+
+Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request lifecycle]] and sees only raw HTTP. It has **no `ExecutionContext`**: it cannot read decorator metadata, the controller class, or the handler reference. That makes it the right tool for cross-cutting HTTP concerns (helmet, compression, request IDs) and the wrong tool for anything that depends on which handler will run.
+
+| Need                                                                | Use                                                  |
+| ------------------------------------------------------------------- | ---------------------------------------------------- |
+| Mutate raw `req`/`res` for every (matching) route                   | Middleware                                           |
+| Decide "should this handler run?" based on roles/permissions        | [[nestjs/fundamentals/guards\|Guard]]                |
+| Validate or coerce a parameter (`@Body()`, `@Param()`, `@Query()`)  | [[nestjs/fundamentals/pipes\|Pipe]]                  |
+| Wrap the handler (timing, caching, response mapping, retries)       | [[nestjs/fundamentals/interceptors\|Interceptor]]    |
+| Turn a thrown error into an HTTP response                           | [[nestjs/fundamentals/exception-filters\|Exception filter]] |
+
+## Common middleware you'll plug in
+
+Most apps wire the same handful of Express-ecosystem packages. Nest documents the canonical setup for each:
+
+| Middleware                                                    | Package           | Purpose                                              | Bind via                                                         |
+| ------------------------------------------------------------- | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
+| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)     | `app.use(helmet())` in `main.ts`                                 |
+| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                  | `app.enableCors(options)` (not `app.use`)                        |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/br response compression                         | `app.use(compression())` in `main.ts`                            |
+| `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`             | `app.use(cookieParser())`                                        |
+| `express-session`                                             | `express-session` | Server-side session store                            | `app.use(session(options))`                                      |
+| Body parsers                                                  | built-in          | `express.json()` / `express.urlencoded()` (auto on)  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
+
+CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`, because the platform adapter wires it before any user middleware.
+
 ## Binding
 
 | Scope        | How                                                  | DI access |
 | ------------ | ---------------------------------------------------- | --------- |
-| Global       | `app.use(logger)` in `main.ts`                       | No        |
+| Global       | `app.use(fn)` in `main.ts`                           | No        |
 | Module bound | `consumer.apply(LoggerMiddleware).forRoutes(...)`    | Yes       |
-| All routes   | Module-bound class middleware with `.forRoutes("*")` | Yes       |
+| All routes   | Module-bound class middleware with `.forRoutes('*')` | Yes       |
 
-There is no middleware slot in the `@Module()` metadata. Module-bound middleware lives in `configure()` on a module class:
+There is no middleware slot in `@Module()` metadata. Module-bound middleware lives in `configure()` on a class that implements `NestModule`:
 
 ```typescript
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common"
@@ -70,6 +121,8 @@ export class AppModule implements NestModule {
 }
 ```
 
+Middleware has **no `APP_*` token** like [[nestjs/fundamentals/global-providers|pipes, guards, interceptors, and filters]]. The DI-aware path is `MiddlewareConsumer`; `app.use()` always bypasses the container.
+
 ### `MiddlewareConsumer`
 
 | Method           | Use                                                                                           |
@@ -78,57 +131,198 @@ export class AppModule implements NestModule {
 | `exclude(...)`   | Skip paths before the final matcher. Accepts strings and `{ path, method }` route objects.    |
 | `forRoutes(...)` | Finish the chain by matching strings, route objects, controller classes, or multiple entries. |
 
+You can call `.apply(A, B, C)` to chain several middleware in one go; they run in the order passed.
+
 ## Order
 
-Middleware runs before the rest of the [[nestjs/fundamentals/request-lifecycle|request lifecycle]]. Global middleware runs first, then module-bound middleware. Within each group, middleware runs in bind order. Across modules, middleware bound to the root module runs first, then middleware from imported modules in `imports` array order.
+Middleware runs **before** every other lifecycle layer. Inside the middleware tier:
+
+1. Global middleware bound via `app.use(...)` in `main.ts` (in bind order).
+2. Module-bound middleware from the root module's `configure()` (in `apply()` order).
+3. Module-bound middleware from imported modules, in `imports` array order.
+
+After the middleware chain finishes, Nest moves on to [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] (pre) → [[nestjs/fundamentals/pipes|pipes]] → handler. Source: [Request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
 
 If a middleware does not end the response, it must call `next()`. Otherwise the request stays open.
 
 ## Route matching
 
-| Pattern | Matches | Notes |
-| --- | --- | --- |
-| `'cats'` | exact path | Plain string |
-| `'cats/{*splat}'` | any subpath under `cats` | Named wildcard segment |
-| `{ path, method }` | path + HTTP method | Use `RequestMethod.GET`, `POST`, etc. |
-| `CatsController` | every route declared by the controller | Pass the class, not an instance |
+| Pattern              | Matches                                       | Notes                                             |
+| -------------------- | --------------------------------------------- | ------------------------------------------------- |
+| `'cats'`             | exact path                                    | Plain string                                      |
+| `'cats/{*splat}'`    | any subpath under `cats`                      | Named wildcard segment (path-to-regexp v6 syntax) |
+| `{ path, method }`   | path + HTTP method                            | Use `RequestMethod.GET`, `POST`, etc.             |
+| `CatsController`     | every route declared by the controller        | Pass the class, not an instance                   |
 
-`exclude()` must come before `forRoutes()` because `forRoutes()` closes the chain.
+`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
+
+## Common recipes
+
+> [!example]- Attach a [[nestjs/recipes/trace-id|request id]] to every response
+>
+> Functional middleware, no DI needed. Read the inbound `x-request-id` if the caller sent one, otherwise mint a new one. Echoed back on the response so callers can correlate.
+>
+> ```typescript
+> // request-id.middleware.ts
+> import { randomUUID } from "node:crypto"
+> import { NextFunction, Request, Response } from "express"
+>
+> export function requestId(req: Request, res: Response, next: NextFunction): void {
+>   const id = (req.headers["x-request-id"] as string) ?? randomUUID()
+>   req.headers["x-request-id"] = id
+>   res.setHeader("x-request-id", id)
+>   next()
+> }
+> ```
+>
+> ```typescript
+> // main.ts
+> import { NestFactory } from "@nestjs/core"
+> import { AppModule } from "./app.module"
+> import { requestId } from "./request-id.middleware"
+>
+> async function bootstrap() {
+>   const app = await NestFactory.create(AppModule)
+>   app.use(requestId)
+>   await app.listen(3000)
+> }
+> bootstrap()
+> ```
+>
+> For a request-scoped logger that picks this up via `AsyncLocalStorage`, see the [[nestjs/recipes/trace-id|trace-id recipe]].
+
+> [!example]- Module-bound logger that injects a service
+>
+> Class middleware so `Logger` resolves through DI:
+>
+> ```typescript
+> // logger.middleware.ts
+> import { Injectable, Logger, NestMiddleware } from "@nestjs/common"
+> import { NextFunction, Request, Response } from "express"
+>
+> @Injectable()
+> export class HttpLoggerMiddleware implements NestMiddleware {
+>   private readonly logger = new Logger("HTTP")
+>
+>   use(req: Request, res: Response, next: NextFunction): void {
+>     const started = Date.now()
+>     res.on("finish", () => {
+>       this.logger.log(
+>         `${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - started}ms`,
+>       )
+>     })
+>     next()
+>   }
+> }
+> ```
+>
+> ```typescript
+> // app.module.ts
+> import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common"
+> import { HttpLoggerMiddleware } from "./logger.middleware"
+>
+> @Module({})
+> export class AppModule implements NestModule {
+>   configure(consumer: MiddlewareConsumer): void {
+>     consumer.apply(HttpLoggerMiddleware).forRoutes("*")
+>   }
+> }
+> ```
+>
+> Listening on `res.on('finish', ...)` is the canonical way to time the full request: it fires after interceptors, pipes, the handler, and the outgoing response have all completed.
+
+> [!example]- Capture the raw body for a Stripe webhook
+>
+> Stripe signs the **raw** request body. The default `express.json()` parser replaces it with a parsed object before your handler runs. Disable Nest's built-in body parser, then route raw bodies to the webhook path only:
+>
+> ```typescript
+> // main.ts
+> import { json, raw } from "express"
+> import { NestFactory } from "@nestjs/core"
+> import { AppModule } from "./app.module"
+>
+> async function bootstrap() {
+>   const app = await NestFactory.create(AppModule, { bodyParser: false })
+>   app.use("/webhooks/stripe", raw({ type: "application/json" }))
+>   app.use(json()) // re-enable JSON parsing for everything else
+>   await app.listen(3000)
+> }
+> bootstrap()
+> ```
+>
+> An alternative is `NestFactory.create(AppModule, { rawBody: true })` plus `@Req() req: RawBodyRequest<Request>` and `req.rawBody`. See [Raw body](https://docs.nestjs.com/faq/raw-body).
+
+> [!example]- Mount third-party Express middleware globally
+>
+> Helmet and compression illustrate the standard pattern: install, import, `app.use()` in `main.ts`. They have no Nest-specific wrapper.
+>
+> ```typescript
+> // main.ts
+> import compression from "compression"
+> import helmet from "helmet"
+> import { NestFactory } from "@nestjs/core"
+> import { AppModule } from "./app.module"
+>
+> async function bootstrap() {
+>   const app = await NestFactory.create(AppModule)
+>   app.use(helmet())
+>   app.use(compression())
+>   app.enableCors({ origin: "https://example.com" })
+>   await app.listen(3000)
+> }
+> bootstrap()
+> ```
+>
+> CORS uses `app.enableCors(...)` instead of `app.use(cors())` so the adapter can install it before any other middleware runs.
 
 ## When to reach for it
 
 - Mutate the raw request before Nest reaches guards, pipes, or controllers.
 - Attach correlation IDs, request IDs, or low-level logging context.
-- Adapt third-party Express middleware.
+- Plug in a third-party Express middleware (helmet, compression, cookie-parser, …).
 - Apply cross-cutting HTTP behavior that is not tied to handler metadata.
 
 ## When not to
 
-- Authorization: use a [[guards|guard]]. Guards can read route metadata and decide whether the handler should run.
-- DTO checks or param coercion: use a [[pipes|pipe]]. Pipes run with argument metadata.
-- Response mapping, caching around the handler, or timing after the handler returns: use an [[nestjs/fundamentals/interceptors|interceptor]].
+- Authorization: use a [[nestjs/fundamentals/guards|guard]]. Guards read route metadata and decide whether the handler should run.
+- DTO checks or param coercion: use a [[nestjs/fundamentals/pipes|pipe]]. Pipes run with argument metadata.
+- Response mapping, caching, or timing **around** the handler: use an [[nestjs/fundamentals/interceptors|interceptor]].
+- Catching exceptions and shaping the error response: use an [[nestjs/fundamentals/exception-filters|exception filter]].
 
 ## Gotchas
 
 > [!warning]- `app.use()` loses DI
-> Global middleware bound through `app.use()` cannot resolve providers from the Nest container. Bind class middleware via `MiddlewareConsumer` (or `configure()`) when the middleware needs injected services.
+> Global middleware bound through `app.use()` cannot resolve providers from the Nest container. Bind class middleware via `MiddlewareConsumer.apply(...).forRoutes(...)` when the middleware needs injected services. Unlike pipes/guards/interceptors, there is no `APP_MIDDLEWARE` token, so [[nestjs/fundamentals/global-providers|the DI-aware-globals shortcut]] doesn't apply here.
 
 > [!warning]- Default body parsers run before custom middleware
-> With the Express adapter, Nest registers JSON and URL-encoded body parsing by default. To customize parsing in middleware, pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser.
+> With the Express adapter, Nest registers `express.json()` and `express.urlencoded()` automatically. To customize parsing (raw bodies for webhooks, multipart, custom limits), pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser. See [Raw body](https://docs.nestjs.com/faq/raw-body).
+
+> [!warning]- Middleware does not run on microservices or WebSocket gateways
+> `app.use()` and `MiddlewareConsumer` are HTTP-only. Microservice transports and WebSocket gateways have no middleware concept; use guards, interceptors, or pipes there. In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application) the HTTP middleware chain still applies to the HTTP side only.
 
 > [!info]- No `ExecutionContext` in middleware
-> Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata or class/handler references, it belongs in a guard or interceptor.
+> Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata, the controller class, or the handler reference, it belongs in a guard or interceptor.
+
+> [!info]- Fastify adapter changes the `req`/`res` types
+> Under `@nestjs/platform-fastify`, the parameters are `FastifyRequest` and `FastifyReply` (and `done` instead of `next` for Fastify hooks). Class middleware via `MiddlewareConsumer` still works, but the request/response shape and any third-party middleware you plug in must be Fastify-compatible.
 
 ## Common errors
 
-| Symptom | Likely cause |
-| --- | --- |
-| Request hangs | Middleware did not call `next()` and did not end the response |
-| Injected provider is `undefined` | Bound through `app.use()` instead of `MiddlewareConsumer` |
-| Custom body parser ignored | Forgot `{ bodyParser: false }` on `NestFactory.create()` |
-| Middleware runs on excluded route | `exclude()` placed after `forRoutes()` (the chain closes on `forRoutes`) |
-| Cannot read handler metadata | Wrong layer — use a guard or interceptor, middleware has no `ExecutionContext` |
+| Symptom                                | Likely cause                                                                          |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| Request hangs                          | Middleware did not call `next()` and did not end the response                         |
+| Injected provider is `undefined`       | Bound through `app.use()` instead of `MiddlewareConsumer`                             |
+| Custom body parser ignored             | Forgot `{ bodyParser: false }` on `NestFactory.create()`                              |
+| Middleware runs on excluded route      | `exclude()` placed after `forRoutes()` (the chain closes on `forRoutes`)              |
+| Cannot read handler metadata           | Wrong layer: use a guard or interceptor, middleware has no `ExecutionContext`         |
+| Middleware never fires on a WS gateway | Middleware is HTTP-only. Move the logic to a guard or interceptor                     |
+| Stripe webhook signature fails         | `express.json()` consumed the body before your handler. Use `raw()` on the webhook path |
 
 ## See also
 
-- [[request-lifecycle|Request lifecycle hub]]
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle hub]]
+- [[nestjs/fundamentals/guards|Guards]]: authorization, runs after middleware.
+- [[nestjs/fundamentals/interceptors|Interceptors]]: wrap the handler with timing, caching, response mapping.
+- [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]: middleware doesn't have an `APP_*` token, but the rest of the lifecycle does.
+- [[nestjs/recipes/trace-id|Trace-id recipe]]: pair a request-id middleware with `AsyncLocalStorage` for log correlation.
+- Official docs: [Middleware](https://docs.nestjs.com/middleware), [Helmet](https://docs.nestjs.com/security/helmet), [CORS](https://docs.nestjs.com/security/cors), [Compression](https://docs.nestjs.com/techniques/compression).

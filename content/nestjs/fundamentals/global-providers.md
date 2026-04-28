@@ -19,6 +19,7 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/validation]]"
+  - "[[nestjs/fundamentals/middleware]]"
 source:
   - https://docs.nestjs.com/pipes#global-scoped-pipes
   - https://docs.nestjs.com/guards#binding-guards
