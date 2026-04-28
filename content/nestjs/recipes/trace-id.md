@@ -30,7 +30,9 @@ The mechanism is `AsyncLocalStorage` from `node:async_hooks`: a per-request stor
 
 ## Two implementations
 
-### Plain `AsyncLocalStorage` (no extra deps)
+**Recommendation**: start with plain `AsyncLocalStorage`. It is one middleware, zero dependencies, and easy to read. Reach for [`nestjs-cls`](#when-to-reach-for-nestjs-cls) only when you hit one of three specific needs.
+
+### Plain `AsyncLocalStorage` (default choice)
 
 Mirrors the NestJS official recipe. A custom [[nestjs/fundamentals/middleware|middleware]] wraps `next()` with `als.run(store, ...)` so the rest of the lifecycle ([[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → [[nestjs/fundamentals/exception-filters|exception filters]]) sees the same store.
 
@@ -50,9 +52,17 @@ use(req, res, next) {
 
 Read it anywhere with `traceStorage.getStore()?.traceId`.
 
-### `nestjs-cls` (productized)
+### When to reach for `nestjs-cls`
 
-`nestjs-cls` is the de facto wrapper. It abstracts the middleware/guard/interceptor mounting, supports non-HTTP transports (microservices, queues), and handles request-id generation natively.
+`nestjs-cls` is a wrapper around the same `AsyncLocalStorage`. It does NOT do anything you couldn't do yourself; it adds ergonomics that pay off in three specific scenarios:
+
+1. **Many per-request values** (user, tenant, feature flags, DB transaction). The library gives you a typed `ClsStore` interface and per-key `cls.set/get`, instead of growing one `Map` or instantiating multiple `AsyncLocalStorage`s.
+2. **Non-HTTP transports**: microservices, BullMQ consumers, websocket gateways, cron jobs. Ships ready-made `ClsGuard` / `ClsInterceptor` / `@UseCls()` for those entry points (HTTP middleware doesn't run there).
+3. **The [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) plugin**: propagates a Prisma/TypeORM transaction across services without passing it as a parameter. The killer feature.
+
+If your need is "log the trace ID and echo it on the response", **none of those apply**. Stick with plain ALS.
+
+For completeness, the equivalent setup with the library:
 
 ```typescript
 ClsModule.forRoot({
@@ -82,13 +92,7 @@ Verified against [`cls.middleware.ts`](https://github.com/Papooch/nestjs-cls/blo
 - `idGenerator?: (req: any) => string | Promise<string>` defaults to `() => Math.random().toString(36).slice(-8)` — short, but **not cryptographically random**.
 - The middleware does NOT touch the response. No `X-Request-ID` header is set automatically; if downstream services or clients need to see the ID, you set the header yourself in `setup` (or in a separate middleware/interceptor).
 
-That signature is the trick: since `idGenerator` already receives `req`, header-or-fallback belongs there, not in `setup`. With the snippet above:
-
-- `X-Request-ID` header present → `cls.getId()` returns the incoming value (you propagated the upstream trace).
-- Header absent → `cls.getId()` returns a fresh `randomUUID()`.
-- Either way, `setup` echoes it back on the response so the client can correlate.
-
-Reach for `setup` when you also want to stash the user, tenant, or other per-request values alongside the ID.
+Since `idGenerator` already receives `req`, header-or-fallback belongs there, not in `setup`. Reach for `setup` to stash the user, tenant, or other per-request values alongside the ID, or to echo the header back as shown above.
 
 ## Surface points (planned, not yet documented)
 
