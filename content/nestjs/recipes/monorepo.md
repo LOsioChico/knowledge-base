@@ -190,6 +190,18 @@ Output (interleaved with auto-assigned colored prefixes):
 
 How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every script whose name matches the pattern. `npm:start:dev:*` matches `start:dev:my-app` and `start:dev:my-app-2`, runs both in parallel, and uses whatever the `*` matched as each process's prefix. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
 
+> [!info]- Using yarn, pnpm, or bun instead
+> `concurrently` ships first-class shortcuts for all four runners. Swap the prefix in the script and use the matching install/run commands; nothing else in the recipe changes. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
+>
+> | Shortcut         | Expands to            | Install + run                       |
+> | ---------------- | --------------------- | ----------------------------------- |
+> | `npm:<script>`   | `npm run <script>`    | `npm i -D concurrently` / `npm run start:dev` |
+> | `yarn:<script>`  | `yarn run <script>`   | `yarn add -D concurrently` / `yarn start:dev` |
+> | `pnpm:<script>`  | `pnpm run <script>`   | `pnpm add -D concurrently` / `pnpm start:dev` |
+> | `bun:<script>`   | `bun run <script>`    | `bun add -d concurrently` / `bun run start:dev` |
+>
+> At scaffold time, `nest new` accepts `--package-manager npm|yarn|pnpm` (no `bun`); for bun, scaffold with `npm` then re-install with `bun install`. Source: [`nest new` reference](https://docs.nestjs.com/cli/usages#nest-new).
+
 > [!info]- The `-c` flag controls prefix colors
 > `-c` (alias of `--prefix-colors`) decides how each process's `[name]` prefix is colored. Three forms:
 >
