@@ -15,6 +15,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation

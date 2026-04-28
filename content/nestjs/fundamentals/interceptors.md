@@ -15,6 +15,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer

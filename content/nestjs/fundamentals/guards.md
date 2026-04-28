@@ -13,6 +13,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/guards
   - https://docs.nestjs.com/fundamentals/execution-context
@@ -405,6 +406,6 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle hub]]
-- [[nestjs/auth/jwt-strategy|JWT strategy with Passport (planned)]]
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]
 - [[nestjs/auth/guards-vs-middleware|Guards vs middleware (planned)]]
 - [[nestjs/auth/rbac-cbac|RBAC and CBAC (planned)]]

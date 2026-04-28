@@ -12,6 +12,7 @@ related:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/middleware
   - https://docs.nestjs.com/faq/request-lifecycle

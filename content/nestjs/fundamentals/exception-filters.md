@@ -20,6 +20,7 @@ related:
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/exception-filters
   - https://docs.nestjs.com/fundamentals/execution-context

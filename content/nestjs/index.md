@@ -49,7 +49,7 @@ Architecture patterns that NestJS enables but does not enforce.
 
 ## Auth
 
-- [[nestjs/auth/jwt-strategy|JWT strategy with Passport (planned)]]
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]
 - [[nestjs/auth/guards-vs-middleware|Guards vs Middleware: when to use each (planned)]]
 - [[nestjs/auth/rbac-cbac|RBAC and CBAC (planned)]]
 

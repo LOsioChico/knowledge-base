@@ -13,6 +13,7 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/typestack/class-validator

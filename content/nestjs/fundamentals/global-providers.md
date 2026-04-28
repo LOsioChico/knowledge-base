@@ -20,6 +20,7 @@ related:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/middleware]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 source:
   - https://docs.nestjs.com/pipes#global-scoped-pipes
   - https://docs.nestjs.com/guards#binding-guards
