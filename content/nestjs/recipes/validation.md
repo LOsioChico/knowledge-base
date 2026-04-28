@@ -175,6 +175,22 @@ export class CreateUserDto {
 
 Without `transform: true`, calling `dto.fullName()` throws `dto.fullName is not a function`.
 
+### Where the pipe actually instantiates a class
+
+The pipe inspects the **metatype** of the parameter (the TS type Nest reflects from your handler signature) and skips built-in primitives. Mental check: if the metatype is a custom class with decorators, you get an instance; otherwise the value passes through untouched.
+
+| Parameter signature                       | Metatype          | Validation runs? | `transform` produces                          |
+| ----------------------------------------- | ----------------- | :--------------: | --------------------------------------------- |
+| `@Body() dto: CreateUserDto`              | `CreateUserDto`   |        ✅         | `CreateUserDto` instance                      |
+| `@Query() q: PaginationQuery`             | `PaginationQuery` |        ✅         | `PaginationQuery` instance                    |
+| `@Param() p: GetUserParams`               | `GetUserParams`   |        ✅         | `GetUserParams` instance                      |
+| `@Body() raw: object`                     | `Object`          |        ❌         | The raw POJO from `body-parser`               |
+| `@Param('id') id: string`                 | `String`          |        ❌         | The raw string                                |
+| `@Query('page') page: number`             | `Number`          |        ❌         | The raw string (`"2"`, not `2`)               |
+| `@UploadedFile() file: Express.Multer.File` | `Object`        |        ❌         | The raw [[nestjs/recipes/file-uploads|multer]] file (validate with `ParseFilePipe`) |
+
+For path/query coercion of a single primitive, reach for [[nestjs/fundamentals/pipes|`ParseIntPipe` / `ParseBoolPipe`]] instead — `ValidationPipe` won't touch them.
+
 ### `enableImplicitConversion: true`
 
 Path/query params arrive as strings. With implicit conversion on, the pipe coerces based on the TS type:
