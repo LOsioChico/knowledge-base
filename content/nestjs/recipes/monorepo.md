@@ -184,16 +184,11 @@ npm run start:dev
 
 Output (interleaved with auto-assigned colored prefixes):
 
-<pre style="background:#0d1117;color:#e6edf3;padding:0.75rem 1rem;border-radius:6px;overflow-x:auto;line-height:1.5"><code><span style="color:#f472b6;font-weight:600">[my-app-2]</span> webpack 5.89.0 compiled <span style="color:#4ade80;font-weight:600">successfully</span> in 207 ms
-<span style="color:#22d3ee;font-weight:600">[my-app]</span> webpack 5.89.0 compiled <span style="color:#4ade80;font-weight:600">successfully</span> in 208 ms
-<span style="color:#f472b6;font-weight:600">[my-app-2]</span> Type-checking in progress...
-<span style="color:#22d3ee;font-weight:600">[my-app]</span> Type-checking in progress...
-<span style="color:#f472b6;font-weight:600">[my-app-2]</span> <span style="color:#4ade80">[Nest]</span> 28292  - 04/28/2026, 2:54:20 PM     <span style="color:#4ade80">LOG</span> <span style="color:#eab308">[NestFactory]</span> <span style="color:#4ade80">Starting Nest application...</span>
-<span style="color:#22d3ee;font-weight:600">[my-app]</span> <span style="color:#4ade80">[Nest]</span> 28293  - 04/28/2026, 2:54:20 PM     <span style="color:#4ade80">LOG</span> <span style="color:#eab308">[NestFactory]</span> <span style="color:#4ade80">Starting Nest application...</span>
-<span style="color:#f472b6;font-weight:600">[my-app-2]</span> <span style="color:#4ade80">[Nest]</span> 28292  - 04/28/2026, 2:54:20 PM     <span style="color:#4ade80">LOG</span> <span style="color:#eab308">[InstanceLoader]</span> <span style="color:#4ade80">MyApp2Module dependencies initialized</span> <span style="color:#eab308">+5ms</span>
+<pre style="background:#0d1117;color:#e6edf3;padding:0.75rem 1rem;border-radius:6px;overflow-x:auto;line-height:1.5"><code><span style="color:#22d3ee;font-weight:600">[my-app]</span> [Nest] LOG [NestApplication] Nest application successfully started
+<span style="color:#f472b6;font-weight:600">[my-app-2]</span> [Nest] LOG [NestApplication] Nest application successfully started
+<span style="color:#22d3ee;font-weight:600">[my-app]</span> GET /cats 200 4ms
+<span style="color:#f472b6;font-weight:600">[my-app-2]</span> GET /orders 200 7ms
 </code></pre>
-
-Two layers of color stack here: `concurrently` colors the `[my-app]` / `[my-app-2]` prefix (controlled by `-c`), and Nest's `ConsoleLogger` colors everything after (`[Nest]` and log level in green, context name in yellow, timing deltas in yellow). Colors survive the pipe because `concurrently` sets `FORCE_COLOR=1` on child processes, so chalk doesn't strip ANSI codes when stdout isn't a TTY. Source: [`ConsoleLogger`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts).
 
 How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every script whose name matches the pattern. `npm:start:dev:*` matches `start:dev:my-app` and `start:dev:my-app-2`, runs both in parallel, and uses whatever the `*` matched as each process's prefix. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
 
