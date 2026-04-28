@@ -54,13 +54,13 @@ Read it anywhere with `traceStorage.getStore()?.traceId`.
 
 ### When to reach for `nestjs-cls`
 
-`nestjs-cls` is a wrapper around the same `AsyncLocalStorage`. It does NOT do anything you couldn't do yourself; it adds ergonomics that pay off in three specific scenarios:
+`nestjs-cls` is a wrapper around the same `AsyncLocalStorage`. It does NOT enable anything you couldn't do yourself — `als.run(store, () => handler())` works at any entry point, HTTP or not. What it adds is **pre-built wiring** and one feature that is genuinely hard to replicate:
 
-1. **Many per-request values** (user, tenant, feature flags, DB transaction). The library gives you a typed `ClsStore` interface and per-key `cls.set/get`, instead of growing one `Map` or instantiating multiple `AsyncLocalStorage`s.
-2. **Non-HTTP transports**: microservices, BullMQ consumers, websocket gateways, cron jobs. Ships ready-made `ClsGuard` / `ClsInterceptor` / `@UseCls()` for those entry points (HTTP middleware doesn't run there).
-3. **The [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) plugin**: propagates a Prisma/TypeORM transaction across services without passing it as a parameter. The killer feature.
+1. **Convenience for many per-request values** (user, tenant, feature flags). You get a typed `ClsStore` interface and per-key `cls.set/get` instead of designing your own store shape. Saves boilerplate, doesn't unlock anything new.
+2. **Convenience for non-HTTP transports**: ships ready-made `ClsGuard` / `ClsInterceptor` / `@UseCls()` so you don't have to write a 20-line wrapper around `als.run()` for microservices, BullMQ consumers, websocket gateways, or cron. Same outcome plain ALS would give you, less code.
+3. **The [`@nestjs-cls/transactional`](https://papooch.github.io/nestjs-cls/plugins/available-plugins/transactional) plugin**: propagates a Prisma/TypeORM transaction across services without passing it as a parameter. This is the one thing that is NOT trivial to roll yourself — it requires DB-adapter plugins that intercept queries. **This is the real reason to adopt the library.**
 
-If your need is "log the trace ID and echo it on the response", **none of those apply**. Stick with plain ALS.
+For the trace ID alone, none of those apply. Stick with plain ALS until you also want shared transactions across services; at that point `nestjs-cls` + the transactional plugin earns its weight and you migrate the trace ID into the same store along the way.
 
 For completeness, the equivalent setup with the library:
 
