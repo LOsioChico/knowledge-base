@@ -19,6 +19,7 @@ related:
 - [[nestjs/fundamentals/interceptors|Interceptors]]
 - [[nestjs/fundamentals/pipes|Pipes]]
 - [[nestjs/fundamentals/exception-filters|Exception filters]]
+- [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]
 
 ## Pending
 

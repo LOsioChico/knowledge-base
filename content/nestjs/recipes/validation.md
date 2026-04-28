@@ -10,6 +10,9 @@ related:
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/global-providers]]"
 source:
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/typestack/class-validator
@@ -55,6 +58,9 @@ bootstrap()
 ```
 
 Those four options are the **secure default**. Each one earns its keep below.
+
+> [!note]- Need DI in the pipe? Use `APP_PIPE` instead
+> `app.useGlobalPipes(new ValidationPipe(...))` constructs the [[nestjs/fundamentals/pipes|pipe]] outside the container, so it can't inject providers (`ConfigService`, loggers, repositories) or run with request scope. The same applies to global [[nestjs/fundamentals/guards|guards]] and [[nestjs/fundamentals/interceptors|interceptors]]. When you need any of that, register through the matching `APP_*` token. See [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]] for the full comparison and worked examples.
 
 ## A first DTO
 

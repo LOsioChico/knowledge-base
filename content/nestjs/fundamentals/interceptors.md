@@ -13,6 +13,8 @@ related:
   - "[[nestjs/recipes/serialization]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/recipes/validation]]"
+  - "[[nestjs/fundamentals/global-providers]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer

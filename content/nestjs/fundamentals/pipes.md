@@ -14,6 +14,7 @@ related:
   - "[[nestjs/recipes/serialization]]"
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
+  - "[[nestjs/fundamentals/global-providers]]"
 source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation
@@ -90,7 +91,7 @@ All exported from `@nestjs/common`.
 
 | Scope      | How                                               |
 | ---------- | ------------------------------------------------- |
-| Global     | `app.useGlobalPipes()` or the `APP_PIPE` provider |
+| Global     | `app.useGlobalPipes()` or the [[nestjs/fundamentals/global-providers|`APP_PIPE` provider]] |
 | Controller | `@UsePipes()` on the class                        |
 | Route      | `@UsePipes()` on the method                       |
 | Param      | `@Body(new ValidationPipe())`                     |
