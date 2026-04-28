@@ -60,11 +60,14 @@ Why the factory: `ClassSerializerInterceptor` needs `Reflector` to read `@Serial
 
 Decorate the entity / DTO class with `class-transformer` decorators. The interceptor reads them and rewrites the response.
 
+> All examples below assume the global `ClassSerializerInterceptor` from [the previous section](#wire-up-the-interceptor) is wired up. Without it, the decorators are inert.
+
 ### `@Exclude()`
 
 Drops the field from the response. Apply per-property or at class level.
 
 ```typescript
+import { Controller, Get, Param } from '@nestjs/common';
 import { Exclude } from 'class-transformer';
 
 export class UserEntity {
@@ -77,17 +80,20 @@ export class UserEntity {
     Object.assign(this, partial);
   }
 }
-```
 
-In the entity, every field still exists in memory:
-
-```typescript
-new UserEntity({
-  id: 1,
-  email: 'a@b.c',
-  password: 'hunter2',
-  passwordResetToken: 'abc123',
-})
+@Controller('users')
+export class UsersController {
+  @Get(':id')
+  findOne(@Param('id') id: string): UserEntity {
+    // The handler still sees password/passwordResetToken on the instance.
+    return new UserEntity({
+      id: Number(id),
+      email: 'a@b.c',
+      password: 'hunter2',
+      passwordResetToken: 'abc123',
+    });
+  }
+}
 ```
 
 `GET /users/1` returns:
@@ -96,14 +102,15 @@ new UserEntity({
 { "id": 1, "email": "a@b.c" }
 ```
 
-`password` and `passwordResetToken` are stripped on the way out. The handler still has access to them inside the controller.
+`password` and `passwordResetToken` are stripped on the way out by the globally-bound `ClassSerializerInterceptor`. The handler still has access to them inside the controller — the stripping happens after `return`.
 
 ### `@Expose()` and `excludeAll` strategy
 
 Flip the default: hide everything, then opt fields in. Safer for accidental leaks when you add a new column to the entity.
 
 ```typescript
-import { Exclude, Expose } from 'class-transformer';
+import { Controller, Get, Param } from '@nestjs/common';
+import { Exclude, Expose, plainToInstance } from 'class-transformer';
 
 @Exclude()
 export class UserDto {
@@ -112,17 +119,21 @@ export class UserDto {
   passwordHash: string; // not @Expose()'d, so excluded
   internalNote: string; // same
 }
-```
 
-From an instance carrying every field:
-
-```typescript
-Object.assign(new UserDto(), {
-  id: 1,
-  email: 'a@b.c',
-  passwordHash: '$2b$...',
-  internalNote: 'flagged for review',
-})
+@Controller('users')
+export class UsersController {
+  @Get(':id')
+  findOne(@Param('id') id: string): UserDto {
+    // Pretend this came from the database.
+    const row = {
+      id: Number(id),
+      email: 'a@b.c',
+      passwordHash: '$2b$...',
+      internalNote: 'flagged for review',
+    };
+    return plainToInstance(UserDto, row);
+  }
+}
 ```
 
 `GET /users/1` returns:
@@ -138,36 +149,43 @@ Adding a new column to the entity now defaults to **hidden** until someone expli
 Reshape a value on the way out: format dates, mask digits, derive fields.
 
 ```typescript
-import { Transform } from 'class-transformer';
+import { Controller, Get, Param } from '@nestjs/common';
+import { plainToInstance, Transform } from 'class-transformer';
 
 export class UserDto {
+  id: number;
+
   @Transform(({ value }) => value.toISOString())
   createdAt: Date;
 
   @Transform(({ value }) => `${value.slice(0, 2)}***${value.slice(-2)}`)
   apiKey: string;
 }
+
+@Controller('users')
+export class UsersController {
+  @Get(':id')
+  findOne(@Param('id') id: string): UserDto {
+    return plainToInstance(UserDto, {
+      id: Number(id),
+      createdAt: new Date('2025-01-15T09:30:00Z'),
+      apiKey: 'sk_live_abcdef1234567890',
+    });
+  }
+}
 ```
 
-From:
-
-```typescript
-Object.assign(new UserDto(), {
-  createdAt: new Date('2025-01-15T09:30:00Z'),
-  apiKey: 'sk_live_abcdef1234567890',
-})
-```
-
-Response:
+`GET /users/1` returns:
 
 ```json
 {
+  "id": 1,
   "createdAt": "2025-01-15T09:30:00.000Z",
   "apiKey": "sk***90"
 }
 ```
 
-The `value` is the raw property; the function returns whatever should appear in the JSON.
+The `value` argument is the raw property; the function returns whatever should appear in the JSON.
 
 ## The class-instance gotcha
 
@@ -215,7 +233,21 @@ export class UsersController {
 
 Same data, different type, very different blast radius.
 
-If your ORM hands you POJOs (raw query results, `.lean()` in Mongoose), wrap them: `return rows.map((r) => new UserEntity(r))`.
+### How your ORM affects this
+
+The handler is free to use every field of a class instance — `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances.
+
+| Source                                            | What you get back                       | `@Exclude()` works? | Fix                                          |
+| ------------------------------------------------- | --------------------------------------- | :-----------------: | -------------------------------------------- |
+| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance              |          ✅          | None needed                                  |
+| Prisma `prisma.user.findUnique(...)`              | Plain object (generated TS type)        |          ❌          | `return plainToInstance(UserEntity, user)`   |
+| Mongoose `.lean()`                                | Plain object                            |          ❌          | `return plainToInstance(UserEntity, doc)`    |
+| Raw SQL via `dataSource.query(...)`               | Plain object                            |          ❌          | `return plainToInstance(UserEntity, row)`    |
+| `fetch()` / external HTTP call                    | Plain object                            |          ❌          | `return plainToInstance(UserEntity, body)`   |
+
+Mental check: if `console.log(returned instanceof UserEntity)` would print `false` right before `return`, serialization is silently skipped. Wrap with `plainToInstance(UserEntity, raw)` (or `new UserEntity(raw)` if your constructor copies fields).
+
+For arrays, map: `return rows.map((r) => plainToInstance(UserEntity, r))`.
 
 ## Role-based views with groups
 
