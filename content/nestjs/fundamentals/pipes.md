@@ -97,8 +97,6 @@ All exported from `@nestjs/common`.
 | Route      | `@UsePipes()` on the method                       |
 | Param      | `@Body(new ValidationPipe())`                     |
 
-Bindings **stack**, they don't replace each other: every applicable pipe runs in order (global, controller, route, param) on the same value, each one's output feeding the next. Adding `@UsePipes()` on a route does not disable the global pipe.
-
 ## Order: the param level reversal
 
 Standard order is global, controller, route. But at the **route parameter level**, pipes run from the **last parameter to the first**:

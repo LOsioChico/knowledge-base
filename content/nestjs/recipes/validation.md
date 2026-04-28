@@ -290,8 +290,6 @@ export class UsersController {
 > [!tip]- Always pass `always: true` if some decorators have no group
 > A decorator without `groups` runs **only when no group is set** by default. Set `always: true` on the pipe (or `always: true` on the decorator) to keep ungrouped rules running alongside grouped ones.
 
-The route-level `@UsePipes()` does not replace the global `ValidationPipe` — pipes [[nestjs/fundamentals/pipes#binding|stack]]. The global pipe runs first and is a no-op for grouped decorators (no group active), then the route pipe runs with `groups: ["create"]`. If you ever add an ungrouped rule (`@IsUUID() id?: string`), both pipes enforce it and you get the same error twice.
-
 ## Nested objects and arrays
 
 Decorators don't recurse automatically. You need `@ValidateNested()` to descend, plus `@Type()` from `class-transformer` so the pipe knows which class to instantiate inside arrays.

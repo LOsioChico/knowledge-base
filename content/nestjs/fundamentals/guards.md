@@ -98,8 +98,6 @@ Anything else you write yourself. The canonical example is a `RolesGuard`, cover
 | Controller | `@UseGuards(AuthGuard)` on the class                                           | Yes           |
 | Route      | `@UseGuards(AuthGuard)` on the method                                          | Yes           |
 
-Bindings **stack**, they don't replace each other: every applicable guard runs and **all** must return `true` for the handler to execute. The first one to return `false` (or throw) short-circuits the rest with `403 Forbidden`. Adding `@UseGuards()` on a route does not disable the global guard.
-
 Controller- and route-scoped bindings always resolve through Nest's DI container when you pass the **class** (`@UseGuards(RolesGuard)`). Pass an instance (`@UseGuards(new RolesGuard())`) and DI is bypassed.
 
 ```typescript
