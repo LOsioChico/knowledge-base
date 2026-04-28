@@ -42,6 +42,18 @@ export class UploadsController {
 
 `FileInterceptor('file')` is a built-in [[nestjs/fundamentals/interceptors|interceptor]] that reads the field named `file` from the form. Change the string to match your form field.
 
+A matching request:
+
+```shell
+curl -F file=@logo.png http://localhost:3000/uploads
+```
+
+Response:
+
+```json
+{ "name": "logo.png", "size": 24580, "mime": "image/png" }
+```
+
 ## Uploaded file checks: the right way
 
 For body/query DTOs, lean on the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, skip hand-rolled [[nestjs/fundamentals/pipes|pipes]] and use the built-in `ParseFilePipeBuilder`. It composes validators and produces a clean 400 (or whatever you choose) when something fails.
@@ -83,6 +95,22 @@ export class UploadsController {
 | `addFileTypeValidator({ fileType })` | Mime-type via the file's [magic number](<https://en.wikipedia.org/wiki/Magic_number_(programming)#In_files>), not the client-provided header. String or RegExp. |
 | `addMaxSizeValidator({ maxSize })`   | Bytes. Multer also enforces a hard cap (see below).                                                                                                             |
 | `.build({ fileIsRequired: false })`  | Makes the upload optional. Default is required.                                                                                                                 |
+
+Uploading a 12 MB PDF to that route:
+
+```shell
+curl -F file=@huge-report.pdf http://localhost:3000/uploads
+```
+
+Returns `422 Unprocessable Entity`:
+
+```json
+{
+  "statusCode": 422,
+  "message": "Validation failed (expected type is /^(image\\/jpeg|image\\/png)$/)",
+  "error": "Unprocessable Entity"
+}
+```
 
 > Magic number validation means a renamed `.exe` to `.jpg` still gets rejected. Do not skip this.
 

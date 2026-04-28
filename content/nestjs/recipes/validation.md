@@ -84,7 +84,36 @@ export class UsersController {
 }
 ```
 
-`POST /users` with `{ email: "not-an-email", password: "short" }` returns `400` with both messages. Nothing else to wire up.
+`POST /users` with a valid body:
+
+```json
+{ "email": "a@b.c", "password": "hunter2!" }
+```
+
+```json
+{ "ok": true, "email": "a@b.c" }
+```
+
+Same route with bad input:
+
+```json
+{ "email": "not-an-email", "password": "short" }
+```
+
+Returns `400 Bad Request`:
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 8 characters"
+  ],
+  "error": "Bad Request"
+}
+```
+
+Nothing else to wire up.
 
 ## `whitelist` and `forbidNonWhitelisted` — the security pair
 
@@ -92,8 +121,30 @@ export class UsersController {
 new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
 ```
 
-- **`whitelist: true`** — silently strips properties that aren't decorated on the DTO. `{ email, password, isAdmin: true }` arrives at the handler as `{ email, password }`.
+- **`whitelist: true`** — silently strips properties that aren't decorated on the DTO.
 - **`forbidNonWhitelisted: true`** — upgrades the silent strip to a `400`. Callers learn immediately that the field is unknown.
+
+With `whitelist: true` only, this request:
+
+```json
+{ "email": "a@b.c", "password": "hunter2!", "isAdmin": true }
+```
+
+Arrives at the handler as:
+
+```json
+{ "email": "a@b.c", "password": "hunter2!" }
+```
+
+Add `forbidNonWhitelisted: true` and the same request fails fast:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["property isAdmin should not exist"],
+  "error": "Bad Request"
+}
+```
 
 Use both in production. Strip-only is fine for migrations where old clients still send deprecated fields you want to ignore.
 
@@ -184,6 +235,33 @@ export class UsersController {
     return dto
   }
 }
+```
+
+`POST /users` without a password fails:
+
+```json
+{ "email": "a@b.c" }
+```
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "password must be longer than or equal to 8 characters",
+    "password must be a string"
+  ],
+  "error": "Bad Request"
+}
+```
+
+`PATCH /users/1` with the same body passes — the `update` group only requires `email`:
+
+```json
+{ "email": "a@b.c" }
+```
+
+```json
+{ "email": "a@b.c" }
 ```
 
 > [!tip]- Always pass `always: true` if some decorators have no group

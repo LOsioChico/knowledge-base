@@ -56,43 +56,9 @@ export class AppModule {}
 
 Why the factory: `ClassSerializerInterceptor` needs `Reflector` to read `@SerializeOptions()` metadata. The shorthand `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` works too because Nest resolves the constructor deps automatically; the factory form is explicit and survives if you ever wrap or extend the interceptor.
 
-## The class-instance gotcha
-
-The interceptor only acts on **class instances**. If your controller returns a plain object, serialization is silently skipped and every field leaks.
-
-```typescript
-import { Controller, Get } from '@nestjs/common';
-import { Exclude } from 'class-transformer';
-
-export class UserEntity {
-  id: number;
-  email: string;
-  @Exclude() password: string;
-
-  constructor(partial: Partial<UserEntity>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Controller('users')
-export class UsersController {
-  @Get('plain')
-  leaks() {
-    return { id: 1, email: 'a@b.c', password: 'secret' }; // password leaks
-  }
-
-  @Get('instance')
-  safe(): UserEntity {
-    return new UserEntity({ id: 1, email: 'a@b.c', password: 'secret' });
-  }
-}
-```
-
-`/users/plain` returns `{ id, email, password }`. `/users/instance` returns `{ id, email }`. Same data, different type, very different blast radius.
-
-If your ORM hands you POJOs (raw query results, `.lean()` in Mongoose), wrap them: `return rows.map((r) => new UserEntity(r))`.
-
 ## The decorators
+
+Decorate the entity / DTO class with `class-transformer` decorators. The interceptor reads them and rewrites the response.
 
 ### `@Exclude()`
 
@@ -106,8 +72,31 @@ export class UserEntity {
   email: string;
   @Exclude() password: string;
   @Exclude() passwordResetToken: string;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
 }
 ```
+
+In the entity, every field still exists in memory:
+
+```typescript
+new UserEntity({
+  id: 1,
+  email: 'a@b.c',
+  password: 'hunter2',
+  passwordResetToken: 'abc123',
+})
+```
+
+`GET /users/1` returns:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+`password` and `passwordResetToken` are stripped on the way out. The handler still has access to them inside the controller.
 
 ### `@Expose()` and `excludeAll` strategy
 
@@ -123,6 +112,23 @@ export class UserDto {
   passwordHash: string; // not @Expose()'d, so excluded
   internalNote: string; // same
 }
+```
+
+From an instance carrying every field:
+
+```typescript
+Object.assign(new UserDto(), {
+  id: 1,
+  email: 'a@b.c',
+  passwordHash: '$2b$...',
+  internalNote: 'flagged for review',
+})
+```
+
+`GET /users/1` returns:
+
+```json
+{ "id": 1, "email": "a@b.c" }
 ```
 
 Adding a new column to the entity now defaults to **hidden** until someone explicitly `@Expose()`s it. That's the strategy you want for any DTO that wraps a sensitive entity.
@@ -143,7 +149,73 @@ export class UserDto {
 }
 ```
 
+From:
+
+```typescript
+Object.assign(new UserDto(), {
+  createdAt: new Date('2025-01-15T09:30:00Z'),
+  apiKey: 'sk_live_abcdef1234567890',
+})
+```
+
+Response:
+
+```json
+{
+  "createdAt": "2025-01-15T09:30:00.000Z",
+  "apiKey": "sk***90"
+}
+```
+
 The `value` is the raw property; the function returns whatever should appear in the JSON.
+
+## The class-instance gotcha
+
+Those decorators only fire when the controller returns a **class instance**. Return a plain object and the interceptor silently skips it — every field leaks.
+
+```typescript
+import { Controller, Get } from '@nestjs/common';
+import { Exclude } from 'class-transformer';
+
+export class UserEntity {
+  id: number;
+  email: string;
+  @Exclude() password: string;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Controller('users')
+export class UsersController {
+  @Get('plain')
+  leaks() {
+    return { id: 1, email: 'a@b.c', password: 'secret' };
+  }
+
+  @Get('instance')
+  safe(): UserEntity {
+    return new UserEntity({ id: 1, email: 'a@b.c', password: 'secret' });
+  }
+}
+```
+
+`GET /users/plain` returns:
+
+```json
+{ "id": 1, "email": "a@b.c", "password": "secret" }
+```
+
+`GET /users/instance` returns:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+Same data, different type, very different blast radius.
+
+If your ORM hands you POJOs (raw query results, `.lean()` in Mongoose), wrap them: `return rows.map((r) => new UserEntity(r))`.
 
 ## Role-based views with groups
 
@@ -178,7 +250,24 @@ export class UsersController {
 }
 ```
 
-`/users/me` returns `{ id, email }`. `/users/admin` returns `{ id, email, role, lastLoginIp }`. Same entity, two payloads, zero conditional code in the controller.
+`/users/me` returns:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+`/users/admin` returns:
+
+```json
+{
+  "id": 1,
+  "email": "a@b.c",
+  "role": "admin",
+  "lastLoginIp": "1.2.3.4"
+}
+```
+
+Same entity, two payloads, zero conditional code in the controller.
 
 ## Gotchas
 
