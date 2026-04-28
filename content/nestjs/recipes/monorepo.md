@@ -1,0 +1,392 @@
+---
+title: NestJS CLI monorepos
+aliases:
+  [
+    nest monorepo,
+    nest workspace,
+    nest-cli monorepo,
+    multi-app nestjs,
+    apps and libs,
+    nest generate app,
+    nest generate library,
+  ]
+tags: [type/recipe, tech/nest-cli, tech/typescript]
+area: nestjs
+status: evergreen
+related:
+  - "[[nestjs/recipes/index]]"
+  - "[[nestjs/fundamentals/index]]"
+source:
+  - https://docs.nestjs.com/cli/monorepo
+  - https://docs.nestjs.com/cli/libraries
+  - https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md
+  - https://www.youtube.com/watch?v=3_jJK5NMGzs
+---
+
+> Host multiple Nest applications and shared libraries in one repo using the Nest CLI's built-in monorepo mode. No `nx`, no `turborepo`, no extra config: one command (`nest g app`) flips a standard project into a workspace, and `nest g library` lets you share modules across apps via `@app/*` path aliases.
+
+## When to reach for it
+
+- Two or more Nest services that share auth, DB models, or config.
+- A team that wants one `package.json`, one lint config, one CI pipeline.
+- You're considering `nx` or `turborepo` and want to know what Nest gives you out of the box.
+
+## When not to
+
+- Single application, single deploy: stick with standard mode.
+- Multi-language repo (Nest API + Go service + Rust worker): use `nx`, `turborepo`, or `pnpm` workspaces. Nest CLI only knows about Nest projects.
+- You need fine-grained task graphs, remote build cache, or affected-only test runs: that's `nx`/`turborepo` territory.
+
+## Setup
+
+Nothing extra. The Nest CLI ships with the monorepo schematics. Install globally:
+
+```bash
+npm i -g @nestjs/cli@latest
+```
+
+## Step 1: scaffold a standard project
+
+```bash
+nest new my-app
+cd my-app
+```
+
+This is a single-project layout: `src/`, `test/`, `package.json`, `tsconfig.json`, `nest-cli.json`. Standard mode.
+
+## Step 2: convert to a monorepo by adding a second app
+
+```bash
+nest g app my-app-2
+```
+
+The schematic detects you're in a single-project workspace and **rewrites the layout in place**:
+
+```
+apps/
+  my-app/
+    src/
+    test/
+    tsconfig.app.json
+  my-app-2/
+    src/
+    test/
+    tsconfig.app.json
+nest-cli.json
+package.json
+tsconfig.json
+```
+
+A few things just changed:
+
+- The original `src/` and `test/` were moved under `apps/my-app/`.
+- A new `apps/my-app-2/` was created with the standard starter structure.
+- Each app got its own `tsconfig.app.json` that extends the root `tsconfig.json`.
+- `nest-cli.json` switched to monorepo mode (`"monorepo": true`) and the original app was registered as the **default project** via the top-level `"root"` property. Source: [CLI properties](https://docs.nestjs.com/cli/monorepo#cli-properties).
+
+> [!warning]- Conversion only works on canonical layouts
+> The schematic relocates `src/` and `test/` into `apps/<name>/`. If you've moved or renamed these folders, the conversion fails or produces unreliable results. Re-source from a fresh `nest new` if your project diverged. Source: [Monorepo conversion warning](https://docs.nestjs.com/cli/monorepo#monorepo-mode).
+
+After conversion, `nest-cli.json` looks roughly like this:
+
+```json
+{
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/my-app/src",
+  "monorepo": true,
+  "root": "apps/my-app",
+  "compilerOptions": {
+    "webpack": true,
+    "tsConfigPath": "apps/my-app/tsconfig.app.json"
+  },
+  "projects": {
+    "my-app": {
+      "type": "application",
+      "root": "apps/my-app",
+      "entryFile": "main",
+      "sourceRoot": "apps/my-app/src",
+      "compilerOptions": { "tsConfigPath": "apps/my-app/tsconfig.app.json" }
+    },
+    "my-app-2": {
+      "type": "application",
+      "root": "apps/my-app-2",
+      "entryFile": "main",
+      "sourceRoot": "apps/my-app-2/src",
+      "compilerOptions": { "tsConfigPath": "apps/my-app-2/tsconfig.app.json" }
+    }
+  }
+}
+```
+
+Two facts to internalize from this file:
+
+- `"webpack": true` is the **monorepo default** (in standard mode the default is `tsc`). Nest assumes monorepos benefit from webpack's bundling. You can flip it to `tsc` or `swc` via the `builder` field. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
+- The top-level `"root"` points at the **default project**. Every `nest` command without a project name targets it.
+
+## Step 3: targeting a specific app
+
+The default project is implicit:
+
+```bash
+nest build              # builds my-app only
+nest start              # starts my-app only
+nest start --watch      # watch mode on my-app
+```
+
+To target the other app, pass its name:
+
+```bash
+nest build my-app-2
+nest start my-app-2
+nest start --watch my-app-2
+```
+
+`dist/` ends up structured per project:
+
+```
+dist/
+  apps/
+    my-app/main.js
+    my-app-2/main.js
+```
+
+> [!warning]- `package.json` scripts target the default project only
+> The original `start`, `start:dev`, `build`, `test` scripts that `nest new` generated still exist after conversion, and they still target only the default project (because they don't pass a name). Add per-app scripts yourself; see [step 4](#step-4-run-multiple-apps-in-one-terminal).
+
+## Step 4: run multiple apps in one terminal
+
+Two separate `nest start --watch` shells get old fast. The CLI has no built-in "start all" or "build all". Use [`concurrently`](https://github.com/open-cli-tools/concurrently):
+
+```bash
+npm i -D concurrently
+```
+
+Add per-app scripts and a fan-out script that uses `concurrently`'s `npm:` shortcut with a wildcard:
+
+```json
+{
+  "scripts": {
+    "start:dev:my-app": "nest start my-app --watch",
+    "start:dev:my-app-2": "nest start my-app-2 --watch",
+    "start:dev": "concurrently -c auto 'npm:start:dev:*'"
+  }
+}
+```
+
+Run:
+
+```bash
+npm run start:dev
+```
+
+Output (interleaved with auto-assigned colored prefixes):
+
+```
+[my-app] [Nest] LOG [NestApplication] Nest application successfully started
+[my-app-2] [Nest] LOG [NestApplication] Nest application successfully started
+[my-app] GET /cats 200 4ms
+[my-app-2] GET /orders 200 7ms
+```
+
+How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every script whose name matches the pattern. `npm:start:dev:*` matches `start:dev:my-app` and `start:dev:my-app-2`, runs both in parallel, and uses whatever the `*` matched as each process's prefix. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
+
+`-c auto` picks a different color per process so you can tell the streams apart in the terminal.
+
+> [!warning]- Two apps default to the same port
+> Each app generated by `nest g app` gets the standard starter `main.ts` with `await app.listen(3000)`. The second app does not auto-increment. Boot both at once and you get `EADDRINUSE: address already in use :::3000`. Edit `apps/my-app-2/src/main.ts` (or pull the port from `process.env.PORT`) before fanning out.
+
+## Step 5: share code with libraries
+
+Libraries are the monorepo's reuse primitive: one folder, one TS path alias, every app imports it like an npm package.
+
+```bash
+nest g library popcorn
+```
+
+The CLI prompts:
+
+```
+What prefix would you like to use for the library (default: @app)?
+```
+
+Press enter to accept `@app`. The schematic creates:
+
+```
+libs/
+  popcorn/
+    src/
+      index.ts
+      popcorn.module.ts
+      popcorn.service.ts
+    tsconfig.lib.json
+```
+
+It also updates the root `tsconfig.json` with a `paths` mapping:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@app/popcorn": ["libs/popcorn/src"],
+      "@app/popcorn/*": ["libs/popcorn/src/*"]
+    }
+  }
+}
+```
+
+That's the whole magic: webpack and `tsc` resolve `@app/popcorn` to `libs/popcorn/src/index.ts`. No symlinks, no `npm link`, no publishing. Source: [Using libraries](https://docs.nestjs.com/cli/libraries#using-libraries).
+
+The generated module exports a service:
+
+```ts
+// libs/popcorn/src/popcorn.module.ts
+import { Module } from "@nestjs/common"
+import { PopcornService } from "./popcorn.service"
+
+@Module({
+  providers: [PopcornService],
+  exports: [PopcornService],
+})
+export class PopcornModule {}
+```
+
+```ts
+// libs/popcorn/src/popcorn.service.ts
+import { Injectable, Logger } from "@nestjs/common"
+
+@Injectable()
+export class PopcornService {
+  private readonly logger = new Logger(PopcornService.name)
+
+  getPopcorn(): string {
+    this.logger.log("🍿")
+    return "🍿"
+  }
+}
+```
+
+```ts
+// libs/popcorn/src/index.ts
+export * from "./popcorn.module"
+export * from "./popcorn.service"
+```
+
+Consume it from any app:
+
+```ts
+// apps/my-app/src/app.module.ts
+import { Module } from "@nestjs/common"
+import { PopcornModule } from "@app/popcorn"
+import { AppController } from "./app.controller"
+import { AppService } from "./app.service"
+
+@Module({
+  imports: [PopcornModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+```
+
+```ts
+// apps/my-app/src/app.service.ts
+import { Injectable } from "@nestjs/common"
+import { PopcornService } from "@app/popcorn"
+
+@Injectable()
+export class AppService {
+  constructor(private readonly popcorn: PopcornService) {}
+
+  getHello(): string {
+    return this.popcorn.getPopcorn()
+  }
+}
+```
+
+Hit the default route:
+
+```bash
+curl http://localhost:3000
+```
+
+Response (and a `🍿` log line in the terminal):
+
+```
+🍿
+```
+
+`my-app-2` can import the same library the same way. Both apps now share `PopcornService` without copy-paste.
+
+> [!info]- Build a library on its own
+> `nest build popcorn` compiles the library standalone, useful in CI to gate library changes before the apps that consume it. Source: [Creating libraries](https://docs.nestjs.com/cli/libraries#creating-libraries).
+
+> [!info]- Libraries have no `main.ts`
+> A library is `"type": "library"` in `nest-cli.json` with `"entryFile": "index"` (vs `"main"` for apps). It can't run on its own — it's only useful when an app imports it. Source: [Libraries metadata](https://docs.nestjs.com/cli/libraries#creating-libraries).
+
+## What gets shared, what stays per-app
+
+| Item                       | Scope            | Where it lives                              |
+| -------------------------- | ---------------- | ------------------------------------------- |
+| `package.json` + lockfile  | Workspace-wide   | Root                                        |
+| `node_modules/`            | Workspace-wide   | Root (single install)                       |
+| Lint config, prettier      | Workspace-wide   | Root                                        |
+| Root `tsconfig.json`       | Workspace-wide   | Root (extended by every project)            |
+| Per-app `tsconfig.app.json`| Per app          | `apps/<name>/tsconfig.app.json`             |
+| Per-lib `tsconfig.lib.json`| Per library      | `libs/<name>/tsconfig.lib.json`             |
+| `main.ts`                  | Per app          | `apps/<name>/src/main.ts`                   |
+| `index.ts` (entry export)  | Per library      | `libs/<name>/src/index.ts`                  |
+| Path alias `@app/<lib>`    | Workspace-wide   | Root `tsconfig.json#compilerOptions.paths`  |
+
+The single `node_modules` is the headline tradeoff. Two apps cannot pin different versions of the same package: that's the price for shared installs and shared CI.
+
+## Pros and cons
+
+Pros:
+
+- Zero extra tooling: it's just the Nest CLI.
+- Shared `node_modules`, lint, CI, and types.
+- Libraries are first-class — `@app/<name>` works in every editor.
+- Convert standard → monorepo with one command, no migration script.
+
+Cons:
+
+- No task graph: the CLI doesn't know which apps depend on which libraries, so a library change always rebuilds everything.
+- No remote cache, no affected-only commands. If you need either, reach for `nx` or `turborepo` (you can layer them **on top** of Nest's monorepo mode).
+- Single `package.json`: every app gets every dep. You can't isolate a footgun dep to one app.
+- No built-in "start all" / "build all": you wire `concurrently` yourself.
+
+## Gotchas
+
+> [!warning]- Renaming the original app needs a vault-wide find-and-replace
+> The original project keeps its name (e.g., `my-app`) in `nest-cli.json`'s `"root"`, the `"projects"` map, every `tsconfig.app.json` path, and any npm scripts you've added. If you rename it, search the repo for the old name and update every match. The CLI does not provide a rename command.
+
+> [!warning]- Webpack is the default compiler in monorepos
+> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"builder": { "type": "tsc" }` in `nest-cli.json#compilerOptions`. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
+
+> [!warning]- The library prefix is global per workspace
+> The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths — and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.
+
+> [!info]- You can layer `nx` or `turborepo` on top
+> Nest's monorepo mode is just folder layout + a CLI config. Nothing stops you from putting `nx.json` or `turbo.json` next to `nest-cli.json` and using their task graphs to orchestrate `nest build <name>` calls. The Nest CLI doesn't fight you.
+
+> [!info]- Libraries can be built standalone for publishing
+> If you ever want to publish a library to npm, `nest build <lib>` produces a clean dist you can ship. Add a per-library `package.json` and you're done. The reverse path (npm package → workspace library) is not supported by the CLI; you'd copy the source in manually.
+
+## Common errors
+
+| Symptom                                                     | Likely cause                                                                                       |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `EADDRINUSE: address already in use :::3000` after `start:dev` | Both apps default to port 3000. Change one, or read from `process.env.PORT`                        |
+| `nest build` only compiles one app                          | Working as designed: `build` targets the default project. Add per-app scripts or a `build:all` fan-out |
+| `Cannot find module '@app/<lib>'`                           | The lib was created outside the workspace, or root `tsconfig.json#paths` got hand-edited and broke. Regenerate or restore the path mapping |
+| `nest g library` prompts for a prefix every time            | That's the schematic's behavior. Press enter to keep the default                                   |
+| Library changes don't show up in the app                    | Restart the dev server: webpack's incremental rebuild watches the lib, but cold-cached builds need a kick |
+| `concurrently 'npm:start:dev:*'` runs nothing              | No matching scripts. Run `npm run` to list scripts and confirm naming. The wildcard is exact-prefix, not glob |
+
+## See also
+
+- [[nestjs/recipes/index|Recipes hub]]: other task-oriented guides.
+- [[nestjs/fundamentals/index|Fundamentals]]: the building blocks each app in the monorepo uses.
+- Official: [Workspaces (monorepo)](https://docs.nestjs.com/cli/monorepo), [Libraries](https://docs.nestjs.com/cli/libraries).
+- [`concurrently` shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md): the `npm:` prefix and wildcard matching.
+- Source video: Marius Espejo, [How I manage multiple NestJS applications](https://www.youtube.com/watch?v=3_jJK5NMGzs).

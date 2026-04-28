@@ -29,6 +29,7 @@ const VALID_TAGS = new Set([
   "tech/class-validator",
   "tech/class-transformer",
   "tech/asynclocalstorage",
+  "tech/nest-cli",
   "lifecycle",
   "events",
   "cqrs",
