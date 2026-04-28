@@ -148,6 +148,12 @@ Use `content/nestjs/recipes/file-uploads.md` as the canonical example. Structure
 6. gotchas section
 7. `## See also` with internal wikilinks and an official-docs link
 
+### Show, don't tell (MANDATORY for recipes)
+
+Any section that describes an observable behavior change — "returns 400", "strips field X", "rejects payload Y", "the response becomes Z" — MUST include the concrete request and response. Show the input (JSON body, curl, or constructed instance) and the resulting output (JSON, status code, error shape) in fenced blocks. Phrases like "returns 400 with both messages" or "the password is stripped" without the actual JSON are a smell: the reader has to imagine what the recipe is claiming. Add the payloads, then the prose can shrink.
+
+Applies to recipes (`type/recipe`); fundamentals can stay narrative when the behavior is obvious from the snippet.
+
 ## Sourcing rule (NON-NEGOTIABLE)
 
 Never write a technical claim from training-data memory. Every fact MUST be verified against primary sources at the moment of writing.
