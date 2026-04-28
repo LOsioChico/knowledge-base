@@ -159,8 +159,9 @@ bootstrap()
 
 Log line for a request that hit `traceId = 8f2a4c6e-...`:
 
-<pre style="background:#0d1117;color:#e6edf3;padding:0.75rem 1rem;border-radius:6px;overflow-x:auto;line-height:1.5"><code><span style="color:#4ade80">[Nest]</span> 12345  - 04/28/2026, 10:42:13 AM   <span style="color:#4ade80">[Nest]</span><span style="color:#22d3ee;font-weight:600">[8f2a4c6e]</span> <span style="color:#4ade80">LOG</span> <span style="color:#eab308">[CatsController]</span> <span style="color:#4ade80">list() called</span>
-</code></pre>
+```
+[Nest] 12345  - 04/28/2026, 10:42:13 AM   [Nest][8f2a4c6e] LOG [CatsController] list() called
+```
 
 When a log line is emitted **outside** any request (bootstrap, a cron tick), `getTraceId()` returns `undefined` and the prefix is omitted: no crash, no fake ID.
 

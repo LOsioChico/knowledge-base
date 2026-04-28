@@ -184,11 +184,12 @@ npm run start:dev
 
 Output (interleaved with auto-assigned colored prefixes):
 
-<pre style="background:#0d1117;color:#e6edf3;padding:0.75rem 1rem;border-radius:6px;overflow-x:auto;line-height:1.5"><code><span style="color:#22d3ee;font-weight:600">[my-app]</span> [Nest] LOG [NestApplication] Nest application successfully started
-<span style="color:#f472b6;font-weight:600">[my-app-2]</span> [Nest] LOG [NestApplication] Nest application successfully started
-<span style="color:#22d3ee;font-weight:600">[my-app]</span> GET /cats 200 4ms
-<span style="color:#f472b6;font-weight:600">[my-app-2]</span> GET /orders 200 7ms
-</code></pre>
+```
+[my-app] [Nest] LOG [NestApplication] Nest application successfully started
+[my-app-2] [Nest] LOG [NestApplication] Nest application successfully started
+[my-app] GET /cats 200 4ms
+[my-app-2] GET /orders 200 7ms
+```
 
 How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every script whose name matches the pattern. `npm:start:dev:*` matches `start:dev:my-app` and `start:dev:my-app-2`, runs both in parallel, and uses whatever the `*` matched as each process's prefix. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
 
