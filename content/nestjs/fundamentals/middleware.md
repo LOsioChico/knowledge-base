@@ -92,7 +92,7 @@ Most apps wire the same handful of Express-ecosystem packages. Nest documents th
 | [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/br response compression                         | `app.use(compression())` in `main.ts`                            |
 | `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`             | `app.use(cookieParser())`                                        |
 | `express-session`                                             | `express-session` | Server-side session store                            | `app.use(session(options))`                                      |
-| Body parsers                                                  | built-in          | `express.json()` / `express.urlencoded()` (auto on)  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
+| [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
 
 CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`, because the platform adapter wires it before any user middleware.
 
@@ -231,6 +231,21 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 > ```
 >
 > Listening on `res.on('finish', ...)` is the canonical way to time the full request: it fires after interceptors, pipes, the handler, and the outgoing response have all completed.
+
+### Body parsers: raw vs json
+
+A body parser is a piece of middleware that **reads the request stream once** and stores the result on `req.body`. The choice of parser decides what shape your handler sees. Nest's Express adapter auto-registers `express.json()` and `express.urlencoded()`; the others you bind yourself.
+
+| Parser                  | Matches `Content-Type`                | `req.body` becomes                | When to use                                                                                  |
+| ----------------------- | ------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| `express.json()`        | `application/json`                    | Parsed JS object (`{ amount: 1 }`) | 99% of REST endpoints. Auto-on under Nest.                                                  |
+| `express.urlencoded()`  | `application/x-www-form-urlencoded`   | Object from form fields           | HTML form posts. Auto-on under Nest.                                                         |
+| `express.raw()`         | Any (configurable, e.g. `application/json`) | `Buffer` of the original bytes    | Webhooks where a third party signs the byte-for-byte payload (Stripe, GitHub), or binary uploads |
+| `express.text()`        | `text/plain` (configurable)           | UTF-8 `string`                    | Plain-text payloads, XML you'll parse yourself                                               |
+
+The request body is a one-shot stream: once a parser has consumed it, no other parser can. That's why mixing them on overlapping paths breaks: whichever runs first wins, and downstream code sees `req.body` already in that shape (or an empty `{}` if the type didn't match).
+
+Why `raw` matters for signed webhooks: signature verification recomputes an HMAC over the **exact bytes** the sender hashed. `JSON.stringify(req.body)` is not guaranteed to reproduce those bytes (key order, whitespace, unicode escapes can all differ), so a re-serialized body will fail the check. `express.raw()` keeps the original `Buffer` so you can verify, then `JSON.parse(req.body.toString())` yourself.
 
 > [!example]- Capture the raw body for a Stripe webhook
 >
