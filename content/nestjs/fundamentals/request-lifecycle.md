@@ -46,6 +46,9 @@ flowchart TD
 >
 > You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers — pre runs in registration order, post runs in **FILO** (first in, last out).
 
+> [!info]- Why [[middleware|middleware]] sits outside the exception zone
+> Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` inside middleware bubbles to the platform's default [[exception-filters|error handler]], **not** to your `@Catch()` filters. To route a middleware error through the filter chain, call `next(err)` explicitly. See [[middleware#Gotchas|Middleware > Gotchas]].
+
 ## The order
 
 1. Incoming request hits the HTTP adapter.
@@ -57,6 +60,9 @@ flowchart TD
 7. [[interceptors|Interceptors]] (after): route, controller, global. FILO order — first interceptor in is the last one out.
 8. If anything threw, [[exception-filters|Exception filters]] catch it, resolving from route up to global.
 9. Response is sent.
+
+> [!info]- Filters resolve in the **opposite** direction
+> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter.
 
 ## Why the order matters
 
