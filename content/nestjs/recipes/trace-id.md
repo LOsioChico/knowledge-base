@@ -62,6 +62,11 @@ ClsModule.forRoot({
     generateId: true,
     idGenerator: (req) =>
       (req.headers["x-request-id"] as string) ?? randomUUID(),
+    setup: (cls, req, res) => {
+      // nestjs-cls does NOT echo the id back to the client.
+      // If callers need to see it, set the header here.
+      res.setHeader("x-request-id", cls.getId());
+    },
   },
 });
 ```
@@ -70,18 +75,20 @@ Read with `cls.getId()` (built-in) or `cls.get('any-key')`.
 
 #### What `generateId` and `idGenerator` actually do
 
-Verified in [`cls.options.ts`](https://github.com/Papooch/nestjs-cls/blob/main/packages/core/src/lib/cls.options.ts):
+Verified against [`cls.middleware.ts`](https://github.com/Papooch/nestjs-cls/blob/main/packages/core/src/lib/cls-initializers/cls.middleware.ts) and [`cls.options.ts`](https://github.com/Papooch/nestjs-cls/blob/main/packages/core/src/lib/cls.options.ts):
 
 - `generateId: false` (default) means the middleware never produces an ID and `cls.getId()` returns `undefined`. You'd have to set one manually with `cls.setId(...)` in `setup`.
-- `generateId: true` makes the middleware call `idGenerator(req)` once per request and stores the result under the built-in CLS_ID slot (the one `cls.getId()` reads).
+- `generateId: true` makes the middleware call `idGenerator(req)` once per request and stores the result under the built-in `CLS_ID` slot via `cls.setIfUndefined(CLS_ID, id)` (the slot `cls.getId()` reads).
 - `idGenerator?: (req: any) => string | Promise<string>` defaults to `() => Math.random().toString(36).slice(-8)` — short, but **not cryptographically random**.
+- The middleware does NOT touch the response. No `X-Request-ID` header is set automatically; if downstream services or clients need to see the ID, you set the header yourself in `setup` (or in a separate middleware/interceptor).
 
 That signature is the trick: since `idGenerator` already receives `req`, header-or-fallback belongs there, not in `setup`. With the snippet above:
 
 - `X-Request-ID` header present → `cls.getId()` returns the incoming value (you propagated the upstream trace).
 - Header absent → `cls.getId()` returns a fresh `randomUUID()`.
+- Either way, `setup` echoes it back on the response so the client can correlate.
 
-You almost never need `setup` for the trace ID itself; reach for `setup` when you also want to stash the user, tenant, or other per-request values alongside it.
+Reach for `setup` when you also want to stash the user, tenant, or other per-request values alongside the ID.
 
 ## Surface points (planned, not yet documented)
 
