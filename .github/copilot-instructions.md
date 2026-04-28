@@ -76,7 +76,7 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 ### `tech/*` (specific technology)
 
-- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/nestjs-cls`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved)
+- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved)
 
 ### Cross-cutting concepts (no namespace, used sparingly)
 
