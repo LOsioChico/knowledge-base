@@ -60,16 +60,28 @@ ClsModule.forRoot({
   middleware: {
     mount: true,
     generateId: true,
-    idGenerator: () => randomUUID(),
-    setup: (cls, req) => {
-      const incoming = req.headers["x-request-id"];
-      if (incoming) cls.setId(incoming as string);
-    },
+    idGenerator: (req) =>
+      (req.headers["x-request-id"] as string) ?? randomUUID(),
   },
 });
 ```
 
 Read with `cls.getId()` (built-in) or `cls.get('any-key')`.
+
+#### What `generateId` and `idGenerator` actually do
+
+Verified in [`cls.options.ts`](https://github.com/Papooch/nestjs-cls/blob/main/packages/core/src/lib/cls.options.ts):
+
+- `generateId: false` (default) means the middleware never produces an ID and `cls.getId()` returns `undefined`. You'd have to set one manually with `cls.setId(...)` in `setup`.
+- `generateId: true` makes the middleware call `idGenerator(req)` once per request and stores the result under the built-in CLS_ID slot (the one `cls.getId()` reads).
+- `idGenerator?: (req: any) => string | Promise<string>` defaults to `() => Math.random().toString(36).slice(-8)` — short, but **not cryptographically random**.
+
+That signature is the trick: since `idGenerator` already receives `req`, header-or-fallback belongs there, not in `setup`. With the snippet above:
+
+- `X-Request-ID` header present → `cls.getId()` returns the incoming value (you propagated the upstream trace).
+- Header absent → `cls.getId()` returns a fresh `randomUUID()`.
+
+You almost never need `setup` for the trace ID itself; reach for `setup` when you also want to stash the user, tenant, or other per-request values alongside it.
 
 ## Surface points (planned, not yet documented)
 
