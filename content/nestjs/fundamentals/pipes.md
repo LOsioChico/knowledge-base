@@ -78,12 +78,13 @@ All exported from `@nestjs/common`.
 | `DefaultValuePipe` | fallback when nil                                            | Returns default when value is `null`, `undefined`, or `NaN`. See [the section below](#defaultvaluepipe)                                                           |
 | `ParseFilePipe`    | upload validation                                            | Compose `MaxFileSizeValidator` + `FileTypeValidator` directly, or use the fluent `ParseFilePipeBuilder`. See [[nestjs/recipes/file-uploads\|File uploads recipe]] |
 
-> [!info] Common options across `Parse*` pipes
-> Each `Parse*` constructor accepts an options object with:
->
-> - `errorHttpStatusCode` — override the default `400` status.
-> - `exceptionFactory: (error: string) => any` — return a custom exception.
-> - `optional: boolean` — when `true`, nil values pass through instead of throwing.
+### Common options across `Parse*` pipes
+
+| Option                | Default                  | What it does                                          |
+| --------------------- | ------------------------ | ----------------------------------------------------- |
+| `errorHttpStatusCode` | `400`                    | Status used when validation fails                     |
+| `exceptionFactory`    | `BadRequestException`    | Build a custom exception from the error string        |
+| `optional`            | `false`                  | When `true`, nil values pass through instead of throw |
 
 ## Binding
 
@@ -151,27 +152,26 @@ npm i class-validator class-transformer
 
 ### Built-in options (from `ValidationPipeOptions`)
 
-| Option                     | Type                                 | What it does                                                                                                                          |
-| -------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `transform`                | `boolean`                            | Run `class-transformer` to instantiate DTO classes from plain objects. Required if you want primitives coerced or DTO methods to work |
-| `transformOptions`         | `ClassTransformOptions`              | Forwarded to `class-transformer`. Common: `enableImplicitConversion: true` to coerce strings → number/boolean based on TS types       |
-| `disableErrorMessages`     | `boolean`                            | Hide validation messages in the response (use in production)                                                                          |
-| `errorHttpStatusCode`      | `number`                             | Override `400` default (e.g., `422`)                                                                                                  |
-| `exceptionFactory`         | `(errors: ValidationError[]) => any` | Custom exception shape                                                                                                                |
-| `validateCustomDecorators` | `boolean`                            | Validate args from custom param decorators too                                                                                        |
-| `expectedType`             | `Type<any>`                          | Force the type to validate against (overrides metatype)                                                                               |
+| Option                     | Default                  | What it does                                                                                                                          |
+| -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `transform`                | `false`                  | Run `class-transformer` to instantiate DTO classes from plain objects. Required if you want primitives coerced or DTO methods to work |
+| `transformOptions`         | `undefined`              | Forwarded to `class-transformer`. Common: `enableImplicitConversion: true` to coerce strings → number/boolean based on TS types       |
+| `disableErrorMessages`     | `false`                  | Hide validation messages in the response (use in production)                                                                          |
+| `errorHttpStatusCode`      | `400`                    | Status used when validation fails (e.g., set to `422`)                                                                                |
+| `exceptionFactory`         | flattens to `BadRequestException` | Custom exception shape                                                                                                       |
+| `validateCustomDecorators` | `false`                  | Validate args from custom param decorators too                                                                                        |
+| `expectedType`             | `undefined`              | Force the type to validate against (overrides metatype)                                                                               |
 
 ### Inherited `class-validator` options (subset)
 
-| Option                  | What it does                                                                                                                                                              |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `whitelist`             | Strip properties without validation decorators                                                                                                                            |
-| `forbidNonWhitelisted`  | Throw instead of stripping                                                                                                                                                |
-| `forbidUnknownValues`   | Reject unknown objects (Nest sets default to `false`, [issue #10683](https://github.com/nestjs/nest/issues/10683))                                                        |
-| `skipMissingProperties` | Skip validation for null/undefined props                                                                                                                                  |
-| `stopAtFirstError`      | Stop at the first failing decorator per property                                                                                                                          |
-| `groups`                | Validation groups — same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups — same DTO, different rules per route\|the validation recipe]] |
-| `errorFormat`           | `'list'` (default) or `'grouped'`                                                                                                                                         |
+| Option                  | Default     | What it does                                                                                                                                                              |
+| ----------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `whitelist`             | `false`     | Strip properties without validation decorators                                                                                                                            |
+| `forbidNonWhitelisted`  | `false`     | Throw instead of stripping                                                                                                                                                |
+| `forbidUnknownValues`   | `false`     | Reject unknown objects. Nest forces `false` even though `class-validator`'s own default is `true` ([issue #10683](https://github.com/nestjs/nest/issues/10683))           |
+| `skipMissingProperties` | `false`     | Skip validation for null/undefined props                                                                                                                                  |
+| `stopAtFirstError`      | `false`     | Stop at the first failing decorator per property                                                                                                                          |
+| `groups`                | `undefined` | Validation groups — same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups — same DTO, different rules per route\|the validation recipe]] |
 
 Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
