@@ -114,7 +114,10 @@ content-type: application/json
 []
 ```
 
-When the client sends an inbound `X-Request-ID`, it's echoed back instead of replaced (see the [trust gotcha](#gotchas) before doing this on a public-facing edge).
+When the client sends an inbound `X-Request-ID`, it's echoed back instead of replaced.
+
+> [!warning]- Trust inbound `X-Request-ID` only from trusted upstreams
+> The middleware above echoes any client-supplied header. If your service sits directly on the public internet, attackers can poison your logs (`X-Request-ID: admin-action-success`) or collide IDs deliberately to confuse incident response. Behind a reverse proxy / API gateway you control, accept the inbound value; consider stripping it at the proxy if you want to mint fresh IDs only there.
 
 ## Step 2: logger that injects the trace ID into every line
 
@@ -150,6 +153,9 @@ bootstrap()
 ```
 
 `Scope.TRANSIENT` is required for custom loggers so each context that injects the logger gets its own instance. Source: [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger).
+
+> [!warning]- `TraceLogger` MUST be `Scope.TRANSIENT`
+> If `TraceLogger` is the default `Scope.DEFAULT` (singleton), Nest reuses one instance app-wide and the `formatPid` override won't pick up the per-injection context name. The official [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger) docs spell this out: easy to miss until logs lose their context names.
 
 Log line for a request that hit `traceId = 8f2a4c6e-...`:
 
@@ -333,14 +339,8 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > [!warning]- Use `als.run()`, not `als.enterWith()`
 > `enterWith(store)` continues the store for the entire synchronous execution and **into the current async resource**. With Express, the **next** request handled on the same event-loop turn can see the previous request's store until it hits its own `enterWith()` call. `run(store, callback)` scopes the store to the callback's async tree and unwinds cleanly. Source: [Node docs: enterWith](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore).
 
-> [!warning]- Trust inbound `X-Request-ID` only from trusted upstreams
-> The middleware above echoes any client-supplied header. If your service sits directly on the public internet, attackers can poison your logs (`X-Request-ID: admin-action-success`) or collide IDs deliberately to confuse incident response. Behind a reverse proxy / API gateway you control, accept the inbound value; consider stripping it at the proxy if you want to mint fresh IDs only there.
-
 > [!warning]- Don't use `Scope.REQUEST` providers as a substitute
 > Request-scoped providers don't run in passport strategies, gateways, or scheduled tasks, and they recreate the entire DI subtree per request (significant CPU and GC cost). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
-
-> [!warning]- Custom logger MUST be `Scope.TRANSIENT`
-> If `TraceLogger` is the default `Scope.DEFAULT` (singleton), Nest reuses one instance app-wide and the `formatPid` override won't pick up the per-injection context name. The official [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger) docs spell this out: easy to miss until logs lose their context names.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
 > Cryptographically random from day one means the ID is safe to use later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.

@@ -180,6 +180,12 @@ What each option does:
 
 `validate(payload)` is called **only after** the signature check passes — Passport guarantees the token is authentic. The return value becomes `request.user`. Throw `UnauthorizedException` here to reject otherwise-valid tokens (e.g., revoked-token list, banned users).
 
+> [!warning]- `JwtStrategy.validate()` runs **after** signature verification, not before
+> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here — focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throw `UnauthorizedException` to reject; throwing anything else still becomes 401 but loses the explicit semantics.
+
+> [!warning]- Returning `null`/`undefined` from `validate()` produces `Unauthorized`
+> `@nestjs/passport`'s default `handleRequest` throws `UnauthorizedException` whenever the strategy returns a falsy value or `info` indicates failure. To return a custom error (e.g., `403 Forbidden` for inactive users), override `handleRequest(err, user, info)` on the guard. Source: [Extending guards](https://docs.nestjs.com/recipes/passport#extending-guards).
+
 Register the strategy in `AuthModule`:
 
 ```typescript
@@ -337,12 +343,6 @@ The `getAllAndOverride` order `[handler, class]` means a class-level `@Public()`
 
 > [!warning]- The same secret must be in `JwtModule` **and** `JwtStrategy`
 > Signing happens in `auth.service.ts` via `JwtService.signAsync()` (configured by `JwtModule.register({ secret })`). Verification happens in `passport-jwt` via the strategy's `secretOrKey`. Mismatched secrets → every authenticated request gets `401 Unauthorized` with no useful error. Hoist the secret into a single `constants.ts` (or `ConfigService`) and import it in both places.
-
-> [!warning]- `JwtStrategy.validate()` runs **after** signature verification, not before
-> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here — focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throw `UnauthorizedException` to reject; throwing anything else still becomes 401 but loses the explicit semantics.
-
-> [!warning]- Returning `null`/`undefined` from `validate()` produces `Unauthorized`
-> `@nestjs/passport`'s default `handleRequest` throws `UnauthorizedException` whenever the strategy returns a falsy value or `info` indicates failure. To return a custom error (e.g., `403 Forbidden` for inactive users), override `handleRequest(err, user, info)` on the guard. Source: [Extending guards](https://docs.nestjs.com/recipes/passport#extending-guards).
 
 > [!warning]- `passport-jwt` strategies cannot be `Scope.REQUEST`
 > Passport registers strategies on a global instance, so request-scoped strategies are never instantiated. If you need per-request data inside `validate()`, inject `ModuleRef` and resolve dependencies via `ContextIdFactory.getByRequest(request)` (also requires `passReqToCallback: true` in the strategy options). Source: [Request-scoped strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies).
