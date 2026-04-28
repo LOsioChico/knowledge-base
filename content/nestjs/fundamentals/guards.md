@@ -70,13 +70,10 @@ Nest core ships **none**. Authorization is application-specific, so you write yo
 
 | Guard                 | Package             | Purpose                                                                                                                                                                 |
 | --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See the [`IS_PUBLIC` recipe below](#common-recipes) and [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]] |
+| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See the [`IS_PUBLIC` recipe below](#common-recipes) and [[nestjs/auth/jwt-strategy\|JWT strategy recipe]] |
 | `ThrottlerGuard`      | `@nestjs/throttler` | Rate limiting per route or controller                                                                                                                                   |
 
-Anything else you write yourself. The canonical example is a `RolesGuard` — covered below.
-
-> [!todo]- Clarify Passport / strategy / `@nestjs/passport` layering in `jwt-strategy` note
-> Open the planned note with the four-layer split: Passport (orchestrator) → strategy package (`passport-jwt`, `passport-local`, …) → `@nestjs/passport` wrapper (`PassportStrategy`, `AuthGuard`) → user code (`JwtStrategy`, `JwtAuthGuard`). `AuthGuard('jwt')` does not "do JWT" — it delegates to whatever strategy is registered under that name. This is the #1 source of confusion in NestJS auth.
+Anything else you write yourself. The canonical example is a `RolesGuard`, covered below.
 
 ## `ExecutionContext` essentials
 
