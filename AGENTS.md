@@ -2,6 +2,10 @@
 
 Operating contract for any AI agent (Copilot CLI, Claude Code, Cursor, etc.) editing this knowledge base. Read this file end-to-end before touching any note. Nearest `AGENTS.md` wins; this is the root.
 
+## Surface choices, don't pick silently
+
+When a request has plausibly different interpretations (callout severity, callout type, placement, prose vs. table, scope of a refactor, where to put a new section), name the options in one sentence and pick a default — don't commit to one silently. Cheap to ask, expensive to undo.
+
 ## Companion skill
 
 Before editing any file under `content/`, load the **`kb-author`** skill (lives at
