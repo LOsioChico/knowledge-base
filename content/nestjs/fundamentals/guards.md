@@ -200,6 +200,7 @@ export const Roles = Reflector.createDecorator<string[]>()
 // cats.controller.ts
 import { Body, Controller, Post } from "@nestjs/common"
 import { Roles } from "./roles.decorator"
+import { CreateCatDto } from "./create-cat.dto"
 
 @Controller("cats")
 export class CatsController {

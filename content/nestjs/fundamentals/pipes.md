@@ -266,9 +266,16 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > ```
 >
 > ```typescript
-> @Get(":id")
-> getOne(@Param("id", CatByIdPipe) cat: Cat) {
->   return cat
+> import { Controller, Get, Param } from "@nestjs/common"
+> import { CatByIdPipe } from "./cat-by-id.pipe"
+> import { Cat } from "./cat.entity"
+>
+> @Controller("cats")
+> export class CatsController {
+>   @Get(":id")
+>   getOne(@Param("id", CatByIdPipe) cat: Cat) {
+>     return cat
+>   }
 > }
 > ```
 >
@@ -374,15 +381,23 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array` — the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
 >
 > ```ts
+> import { Body, Controller, ParseArrayPipe, Post } from "@nestjs/common"
+> import { Type } from "class-transformer"
+> import { ValidateNested } from "class-validator"
+> import { CreateUserDto } from "./create-user.dto"
+>
 > // 1. ParseArrayPipe carries the element class explicitly
-> @Post()
-> createBulk(
->   @Body(new ParseArrayPipe({ items: CreateUserDto }))
->   bulk: CreateUserDto[],
-> ) {}
+> @Controller("users")
+> export class UsersController {
+>   @Post("bulk")
+>   createBulk(
+>     @Body(new ParseArrayPipe({ items: CreateUserDto }))
+>     bulk: CreateUserDto[],
+>   ) {}
+> }
 >
 > // 2. Wrap in a DTO with @Type()
-> class CreateUsersDto {
+> export class CreateUsersDto {
 >   @ValidateNested({ each: true })
 >   @Type(() => CreateUserDto)
 >   users: CreateUserDto[]

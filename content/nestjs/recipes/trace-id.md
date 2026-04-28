@@ -29,16 +29,20 @@ The mechanism is `AsyncLocalStorage` from `node:async_hooks`: a per-request stor
 A custom [[nestjs/fundamentals/middleware|middleware]] wraps `next()` with `als.run(store, ...)` so the rest of the lifecycle ([[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → [[nestjs/fundamentals/exception-filters|exception filters]]) sees the same store. Zero dependencies beyond Node's built-ins.
 
 ```typescript
-import { AsyncLocalStorage } from "node:async_hooks";
-import { randomUUID } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks"
+import { randomUUID } from "node:crypto"
+import { Injectable, NestMiddleware } from "@nestjs/common"
+import { NextFunction, Request, Response } from "express"
 
-export const traceStorage = new AsyncLocalStorage<{ traceId: string }>();
+export const traceStorage = new AsyncLocalStorage<{ traceId: string }>()
 
-// in a NestJS middleware
-use(req, res, next) {
-  const traceId = (req.headers["x-request-id"] as string) ?? randomUUID();
-  res.setHeader("x-request-id", traceId);
-  traceStorage.run({ traceId }, () => next());
+@Injectable()
+export class TraceMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const traceId = (req.headers["x-request-id"] as string) ?? randomUUID()
+    res.setHeader("x-request-id", traceId)
+    traceStorage.run({ traceId }, () => next())
+  }
 }
 ```
 

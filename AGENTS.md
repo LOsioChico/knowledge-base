@@ -113,6 +113,7 @@ Only after those six steps may you draft the note. Then:
 8. Update `related:` in EVERY note you linked from.
 9. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
 10. Update `quartz/static/llms.txt` so the new note is discoverable to LLMs.
+11. **Audit every code block you touched** against the "Code examples (MANDATORY)" rules below: each fenced ` ```ts ` / ` ```typescript ` block (including those inside `> [!warning]` / `> [!example]` callouts) must carry all imports it uses, wrap class methods in their `@Controller` / `@Module` / `@Injectable` container, declare every field/constructor it references, and have zero undefined symbols. Do this as a final pass before commit, not while drafting — it's the step that's easiest to skip and the one that produces the most reader-facing breakage.
 
 Skipping any step is a bug.
 
