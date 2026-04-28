@@ -174,7 +174,7 @@ Filters resolve **bottom-up**, the opposite of every other lifecycle component:
 2. Controller-bound filter
 3. Global filter
 
-Once a filter catches the exception, **no other filter sees it**. To layer behavior (e.g., always log, then format), use class inheritance from `BaseExceptionFilter`, not stacking.
+Once a filter catches the exception, **no other filter sees it**. To layer behavior (e.g., always log, then format), use class inheritance from `BaseExceptionFilter`, not stacking. This is the opposite of [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], and [[nestjs/fundamentals/interceptors|interceptors]], where every applicable instance runs.
 
 ## When `@Catch()` is empty (catch-all)
 

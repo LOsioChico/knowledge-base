@@ -159,6 +159,8 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 | Controller | `@UseInterceptors(LoggingInterceptor)` on the class                                                               |
 | Route      | `@UseInterceptors(LoggingInterceptor)` on the method                                                              |
 
+Bindings **stack**, they don't replace each other: every applicable interceptor wraps the next one Russian-doll style (global outermost, route innermost), so the pre-phase runs in binding order and the post-phase unwinds in reverse. Adding `@UseInterceptors()` on a route does not disable the global interceptor.
+
 Controller- and route-scoped bindings always resolve the interceptor through Nest's DI container (you pass the **class**, not an instance), so they can inject anything the module exposes. The catch is global scope.
 
 > [!tip]- DI for global interceptors — what changes with vs. without
