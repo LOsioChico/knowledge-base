@@ -1,9 +1,16 @@
 ---
 title: Request trace ID propagation
-aliases: [correlation id, request id, trace id, x-request-id]
+aliases:
+  [
+    correlation id,
+    request id,
+    trace id,
+    x-request-id,
+    AsyncLocalStorage trace,
+  ]
 tags: [type/recipe, tech/asynclocalstorage, lifecycle, errors]
 area: nestjs
-status: seed
+status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/fundamentals/middleware]]"
@@ -12,64 +19,357 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/global-providers]]"
 source:
   - https://docs.nestjs.com/recipes/async-local-storage
   - https://nodejs.org/api/async_context.html
+  - https://docs.nestjs.com/techniques/logger
+  - https://docs.nestjs.com/techniques/http-module
 ---
 
-> [!warning] Seed note
-> This note is a placeholder. The full version depends on populating [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/exception-filters|exception filters]], and [[nestjs/fundamentals/request-lifecycle|the request lifecycle]] with their trace-id surface points first. Until then, this note records the design and the verified primary sources so the work isn't lost.
+> Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". Zero dependencies beyond `node:async_hooks`.
 
-A trace ID (also called request ID or correlation ID) is a per-request identifier that is set once at the edge of the system and read everywhere downstream: logs, error responses, outbound HTTP calls. It turns "an error happened" into "request `8f2a` failed at this exact step in this exact service".
+## How it works
 
-The mechanism is `AsyncLocalStorage` from `node:async_hooks`: a per-request store that survives `await`, accessible without passing it as a parameter. NestJS has an [official recipe](https://docs.nestjs.com/recipes/async-local-storage) for it; this note will eventually layer the trace-id-specific patterns on top.
+`AsyncLocalStorage` (from `node:async_hooks`) is a per-async-context store: anything inside the `als.run(store, callback)` callback (and any `await` chain it spawns) sees the same `store`. A [[nestjs/fundamentals/middleware|middleware]] opens the context once per request; every downstream layer ([[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → [[nestjs/fundamentals/exception-filters|exception filters]]) reads from the same store without anyone passing it as a parameter.
 
-## Implementation
+```mermaid
+flowchart LR
+    A[Request in] --> M["TraceMiddleware<br/>als.run({traceId}, ...)"]
+    M --> rest[Guards → Interceptors → Pipes → Handler → Filters]
+    rest --> R[Response with<br/>x-request-id header]
+    rest -. logs .-> L[Logger reads traceId<br/>from store]
+    rest -. outbound .-> H[HttpService propagates<br/>x-request-id header]
+```
 
-A custom [[nestjs/fundamentals/middleware|middleware]] wraps `next()` with `als.run(store, ...)` so the rest of the lifecycle ([[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → [[nestjs/fundamentals/exception-filters|exception filters]]) sees the same store. Zero dependencies beyond Node's built-ins.
+## Setup
+
+No npm install. `AsyncLocalStorage` is in Node's standard library since 12.17. Optional: `@nestjs/axios` if you want outbound HTTP propagation (covered below).
+
+```bash
+npm install --save @nestjs/axios axios   # optional, for outbound propagation
+```
+
+## Step 1: middleware opens the context
 
 ```typescript
+// trace/trace-context.ts
 import { AsyncLocalStorage } from "node:async_hooks"
+
+export interface TraceStore {
+  traceId: string
+}
+
+export const traceStorage = new AsyncLocalStorage<TraceStore>()
+
+export const getTraceId = (): string | undefined => traceStorage.getStore()?.traceId
+```
+
+```typescript
+// trace/trace.middleware.ts
 import { randomUUID } from "node:crypto"
 import { Injectable, NestMiddleware } from "@nestjs/common"
 import { NextFunction, Request, Response } from "express"
-
-export const traceStorage = new AsyncLocalStorage<{ traceId: string }>()
+import { traceStorage } from "./trace-context"
 
 @Injectable()
 export class TraceMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    const traceId = (req.headers["x-request-id"] as string) ?? randomUUID()
+  use(req: Request, res: Response, next: NextFunction): void {
+    const inbound = req.headers["x-request-id"]
+    const traceId = (typeof inbound === "string" && inbound) || randomUUID()
     res.setHeader("x-request-id", traceId)
     traceStorage.run({ traceId }, () => next())
   }
 }
 ```
 
-Read it anywhere with `traceStorage.getStore()?.traceId`.
+```typescript
+// app.module.ts
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common"
+import { TraceMiddleware } from "./trace/trace.middleware"
 
-For non-HTTP transports (microservice handlers, BullMQ consumers, websocket gateways, cron jobs), wrap the entry point with the same `traceStorage.run(...)` call: HTTP middleware doesn't run there, but `AsyncLocalStorage` does.
+@Module({})
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(TraceMiddleware).forRoutes("*")
+  }
+}
+```
 
-## Surface points (planned, not yet documented)
+Why middleware, not a [[nestjs/fundamentals/guards|guard]] or [[nestjs/fundamentals/interceptors|interceptor]]? Middleware is the **only** layer that runs before guards and can wrap `next()` in `als.run()` so every downstream layer sees the store. Opening the context anywhere later means earlier layers see `undefined`.
 
-The reason this note must wait for its dependencies:
+Request:
 
-- **[[nestjs/fundamentals/middleware|Middleware]]**: the *only* safe place to start the context with `als.run()`. Needs an explicit recipe section — including the existing one-liner ("Attach correlation IDs, request IDs, or low-level logging context") expanded into a worked example.
-- **[[nestjs/fundamentals/exception-filters|Exception filters]]**: they run after the handler and outside the controller's try/catch. They MUST read the trace ID from the store (not from the request, which may be partially mutated) and include it in the JSON error body and `Logger.error` call.
-- **[[nestjs/fundamentals/request-lifecycle|Request lifecycle]]**: the diagram should annotate where the store is opened (middleware) and that every downstream stage shares it. Currently the lifecycle note's responsibilities table mentions "correlation IDs" without explaining the mechanism.
-- **[[nestjs/fundamentals/interceptors|Interceptors]]**: a `LoggingInterceptor` example that prefixes every line with `[traceId]` and times the handler. Also: an axios/`HttpModule` interceptor that propagates `X-Request-ID` to downstream services.
-- **Custom logger**: a `ConsoleLogger` subclass that injects the trace ID into every log line, so application code never has to think about it.
+```bash
+curl -i http://localhost:3000/cats
+```
 
-These will land as concrete code blocks in the respective fundamentals notes; this recipe will then become the integration guide that links them together.
+Response:
 
-## Verified gotchas
+```http
+HTTP/1.1 200 OK
+x-request-id: 8f2a4c6e-7d10-4f4e-b9a1-2c5c1d9c6f8a
+content-type: application/json
 
-- **Use `run()`, not `enterWith()`.** The [Node docs](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore) call out `enterWith` as continuing for the entire synchronous execution and recommend `run()` unless there's a strong reason. With `enterWith()`, subsequent requests on the same event-loop turn can see the previous request's context until they hit their own `enterWith()` call. `run()` scopes the store to its callback and unwinds cleanly.
-- **`REQUEST`-scoped providers are not a substitute.** They don't work in passport strategies, gateways, or scheduled tasks, and they recreate the entire DI subtree per request. The motivation for ALS-based context is explicitly to replace them where they fail.
-- **Generate IDs with `crypto.randomUUID()`**, not `Math.random()`. Fine for log correlation either way, but if the ID ever becomes a security or de-duplication identifier you want it cryptographically random from day one.
-- **Trust inbound `X-Request-ID` only from trusted upstreams.** If the request reaches your service directly from the public internet, prefer minting a fresh ID; accepting client-supplied IDs lets attackers poison your logs or collide IDs deliberately.
+[]
+```
+
+When the client sends an inbound `X-Request-ID`, it's echoed back instead of replaced (see the [trust gotcha](#gotchas) before doing this on a public-facing edge).
+
+## Step 2: logger that injects the trace ID into every line
+
+The point of a trace ID is to find it in logs without sprinkling it through every `Logger.log()` call. Subclass Nest's `ConsoleLogger`:
+
+```typescript
+// trace/trace-logger.service.ts
+import { ConsoleLogger, Injectable, Scope } from "@nestjs/common"
+import { getTraceId } from "./trace-context"
+
+@Injectable({ scope: Scope.TRANSIENT })
+export class TraceLogger extends ConsoleLogger {
+  protected formatPid(pid: number): string {
+    const traceId = getTraceId()
+    const base = super.formatPid(pid)
+    return traceId ? `${base}[${traceId.slice(0, 8)}] ` : base
+  }
+}
+```
+
+```typescript
+// main.ts
+import { NestFactory } from "@nestjs/core"
+import { AppModule } from "./app.module"
+import { TraceLogger } from "./trace/trace-logger.service"
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, { bufferLogs: true })
+  app.useLogger(app.get(TraceLogger))
+  await app.listen(3000)
+}
+bootstrap()
+```
+
+`Scope.TRANSIENT` is required for custom loggers so each context that injects the logger gets its own instance. Source: [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger).
+
+Log line for a request that hit `traceId = 8f2a4c6e-...`:
+
+```
+[Nest] 12345  - 04/28/2026, 10:42:13 AM   [Nest][8f2a4c6e] LOG [CatsController] list() called
+```
+
+When a log line is emitted **outside** any request (bootstrap, a cron tick), `getTraceId()` returns `undefined` and the prefix is omitted: no crash, no fake ID.
+
+## Step 3: exception filter includes the trace ID in error bodies
+
+The [[nestjs/fundamentals/exception-filters|exception filter]] runs outside the controller and is the last code that touches the response. Reading the trace ID from the store (not the request) keeps the filter platform-agnostic and works even if upstream code mutated the request.
+
+```typescript
+// trace/trace-exception.filter.ts
+import { ArgumentsHost, Catch, HttpException, HttpStatus, Logger } from "@nestjs/common"
+import { BaseExceptionFilter } from "@nestjs/core"
+import { Response } from "express"
+import { getTraceId } from "./trace-context"
+
+@Catch()
+export class TraceExceptionFilter extends BaseExceptionFilter {
+  private readonly logger = new Logger(TraceExceptionFilter.name)
+
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const traceId = getTraceId()
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<Response>()
+
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
+    const message =
+      exception instanceof HttpException ? exception.getResponse() : "Internal server error"
+
+    this.logger.error({ traceId, status, exception })
+
+    response.status(status).json({
+      statusCode: status,
+      traceId,
+      message,
+      timestamp: new Date().toISOString(),
+    })
+  }
+}
+```
+
+Register globally via the [[nestjs/fundamentals/global-providers|`APP_FILTER` provider]] (so DI gives `BaseExceptionFilter` the `HttpAdapter` it needs):
+
+```typescript
+// app.module.ts (additions)
+import { APP_FILTER } from "@nestjs/core"
+import { TraceExceptionFilter } from "./trace/trace-exception.filter"
+
+@Module({
+  providers: [{ provide: APP_FILTER, useClass: TraceExceptionFilter }],
+})
+export class AppModule {}
+```
+
+Request that triggers a `NotFoundException`:
+
+```bash
+curl -i http://localhost:3000/cats/999
+```
+
+Response:
+
+```http
+HTTP/1.1 404 Not Found
+x-request-id: 8f2a4c6e-7d10-4f4e-b9a1-2c5c1d9c6f8a
+content-type: application/json
+
+{
+  "statusCode": 404,
+  "traceId": "8f2a4c6e-7d10-4f4e-b9a1-2c5c1d9c6f8a",
+  "message": "Cat 999 not found",
+  "timestamp": "2026-04-28T10:42:13.456Z"
+}
+```
+
+The same `traceId` shows in the error body, the response header, and the log line: three correlation points that a support ticket can quote.
+
+## Step 4: interceptor that times the handler with the trace ID
+
+```typescript
+// trace/timing.interceptor.ts
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from "@nestjs/common"
+import { Observable, tap } from "rxjs"
+import { getTraceId } from "./trace-context"
+
+@Injectable()
+export class TimingInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(TimingInterceptor.name)
+
+  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const start = Date.now()
+    const handler = context.getHandler().name
+    return next.handle().pipe(
+      tap(() => {
+        this.logger.log({ traceId: getTraceId(), handler, ms: Date.now() - start })
+      }),
+    )
+  }
+}
+```
+
+Bind globally via `APP_INTERCEPTOR`. Same trace ID appears in the timing log and the request's other log lines, so you can grep `8f2a4c6e` to reconstruct the whole request.
+
+## Step 5: propagate to outbound HTTP calls
+
+When your service calls another service, forward the trace ID so the next hop's logs are searchable on the same value. Use an axios request interceptor on `HttpService`:
+
+```typescript
+// trace/http-trace.module.ts
+import { HttpModule, HttpService } from "@nestjs/axios"
+import { Module, OnModuleInit } from "@nestjs/common"
+import { getTraceId } from "./trace-context"
+
+@Module({
+  imports: [HttpModule],
+  exports: [HttpModule],
+})
+export class HttpTraceModule implements OnModuleInit {
+  constructor(private readonly http: HttpService) {}
+
+  onModuleInit(): void {
+    this.http.axiosRef.interceptors.request.use((config) => {
+      const traceId = getTraceId()
+      if (traceId) {
+        config.headers.set("x-request-id", traceId)
+      }
+      return config
+    })
+  }
+}
+```
+
+Now any consumer that injects `HttpService` automatically forwards the inbound trace ID. The downstream service, running the same middleware, picks it up via `req.headers['x-request-id']` and continues the chain.
+
+## Non-HTTP entry points
+
+`AsyncLocalStorage` works the same way for microservice handlers, BullMQ consumers, websocket gateways, and cron jobs, but HTTP middleware doesn't run there, so you have to open the context yourself. The pattern is identical:
+
+```typescript
+// queues/emails.processor.ts (BullMQ example)
+import { Processor, WorkerHost } from "@nestjs/bullmq"
+import { randomUUID } from "node:crypto"
+import { Job } from "bullmq"
+import { traceStorage } from "../trace/trace-context"
+
+@Processor("emails")
+export class EmailsProcessor extends WorkerHost {
+  async process(job: Job<{ traceId?: string; to: string }>) {
+    const traceId = job.data.traceId ?? randomUUID()
+    return traceStorage.run({ traceId }, () => this.send(job))
+  }
+
+  private async send(job: Job<{ to: string }>) {
+    /* … */
+  }
+}
+```
+
+The producer side stores `getTraceId()` into the job payload when enqueuing; the consumer re-opens the context with that value. Same idea for Kafka consumers, scheduled tasks (`@Cron`), and anything else that doesn't go through Express.
+
+## When to reach for it
+
+- Microservice or multi-service architecture where one user action spans 2+ services.
+- Production debugging where "find every log line for this user's failed checkout" is a daily question.
+- Async background work (queues, schedules) you want to correlate with the user request that triggered it.
+- Any system with `> 100 req/s` where unstructured logs become unsearchable without correlation.
+
+## When not to
+
+- Single-process monolith with low traffic and a single log stream: `[ip:port]` already gives enough context.
+- You're already using OpenTelemetry: prefer the OTel `traceparent` header and span IDs. They subsume request IDs and add propagation across more transports.
+- Per-request DB transactions or per-request cached values: use `Scope.REQUEST` providers or a transactional outbox. `AsyncLocalStorage` is for **observability** context, not business state.
+
+## Gotchas
+
+> [!warning]- Use `als.run()`, not `als.enterWith()`
+> `enterWith(store)` continues the store for the entire synchronous execution and **into the current async resource**. With Express, the **next** request handled on the same event-loop turn can see the previous request's store until it hits its own `enterWith()` call. `run(store, callback)` scopes the store to the callback's async tree and unwinds cleanly. Source: [Node docs: enterWith](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore).
+
+> [!warning]- Trust inbound `X-Request-ID` only from trusted upstreams
+> The middleware above echoes any client-supplied header. If your service sits directly on the public internet, attackers can poison your logs (`X-Request-ID: admin-action-success`) or collide IDs deliberately to confuse incident response. Behind a reverse proxy / API gateway you control, accept the inbound value; consider stripping it at the proxy if you want to mint fresh IDs only there.
+
+> [!warning]- Don't use `Scope.REQUEST` providers as a substitute
+> Request-scoped providers don't run in passport strategies, gateways, or scheduled tasks, and they recreate the entire DI subtree per request (significant CPU and GC cost). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
+
+> [!warning]- Custom logger MUST be `Scope.TRANSIENT`
+> If `TraceLogger` is the default `Scope.DEFAULT` (singleton), Nest reuses one instance app-wide and the `formatPid` override won't pick up the per-injection context name. The official [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger) docs spell this out: easy to miss until logs lose their context names.
+
+> [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
+> Cryptographically random from day one means the ID is safe to use later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
+
+> [!info]- Old C++ bindings can drop the async context
+> Mainstream libraries (`pg`, `redis`, `mysql2`, axios, undici, BullMQ, RxJS, native promises) preserve context. Old callback-style libraries that schedule work from native bindings without registering an `AsyncResource` may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on actively-maintained libraries.
+
+> [!info]- The interceptor + filter both read from the store: that's the point
+> A [[nestjs/fundamentals/interceptors|`LoggingInterceptor`]], a [[nestjs/fundamentals/exception-filters|`TraceExceptionFilter`]], a service buried five layers deep, and an outbound axios call all read the **same** `traceId` without any of them taking it as a parameter. That's the value `AsyncLocalStorage` adds over passing it on the request object.
+
+## Common errors
+
+| Symptom                                                           | Likely cause                                                                                            |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `getTraceId()` returns `undefined` in the controller              | `TraceMiddleware` not registered, or registered for the wrong path. Use `forRoutes('*')`                |
+| `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a hybrid app. Gateways/microservices skip it. Use `APP_FILTER` |
+| `getTraceId()` returns `undefined` in a queue consumer            | HTTP middleware doesn't run for queue handlers. Open the context manually with `traceStorage.run()` in the processor |
+| `getTraceId()` returns `undefined` after `await someThirdParty()` | Library doesn't preserve async context. Wrap with `new AsyncResource('lib').runInAsyncScope(...)`       |
+| Two concurrent requests show the same trace ID in logs            | Used `enterWith()` instead of `run()`. Switch to `run()`                                                |
+| Custom logger context prefix never appears                        | `TraceLogger` registered without `Scope.TRANSIENT`                                                      |
+| Outbound axios calls don't include `x-request-id`                 | Interceptor registered on a fresh axios instance, not on `HttpService.axiosRef`                         |
+| Trace ID changes mid-request                                      | A library is calling `als.run()` on its own. Audit middlewares; only `TraceMiddleware` should call `run()` |
 
 ## See also
 
-- [NestJS: Async Local Storage recipe](https://docs.nestjs.com/recipes/async-local-storage) — the canonical starting point
-- [Node.js: `AsyncLocalStorage`](https://nodejs.org/api/async_context.html#class-asynclocalstorage)
+- [[nestjs/fundamentals/middleware|Middleware]]: where the context is opened. The lifecycle reason this is the only correct layer.
+- [[nestjs/fundamentals/exception-filters|Exception filters]]: where the trace ID lands in the error body.
+- [[nestjs/fundamentals/interceptors|Interceptors]]: where the trace ID prefixes timing and structured logs.
+- [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]: how `APP_FILTER` and `APP_INTERCEPTOR` register the trace-aware versions.
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle hub]]: where in the pipeline each piece runs.
+- Official: [Async Local Storage recipe](https://docs.nestjs.com/recipes/async-local-storage), [Custom logger](https://docs.nestjs.com/techniques/logger), [HTTP module](https://docs.nestjs.com/techniques/http-module).
+- Node: [`AsyncLocalStorage` API](https://nodejs.org/api/async_context.html#class-asynclocalstorage).

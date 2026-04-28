@@ -21,6 +21,7 @@ related:
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/middleware]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/pipes#global-scoped-pipes
   - https://docs.nestjs.com/guards#binding-guards
