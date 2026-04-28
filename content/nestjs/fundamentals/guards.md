@@ -68,7 +68,7 @@ Nest core ships **none**. Authorization is application-specific, so you write yo
 
 | Guard                 | Package             | Purpose                                                                                                                                                                 |
 | --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]] |
+| `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See the [`IS_PUBLIC` recipe below](#common-recipes) and [[nestjs/auth/jwt-strategy\|JWT strategy (planned)]] |
 | `ThrottlerGuard`      | `@nestjs/throttler` | Rate limiting per route or controller                                                                                                                                   |
 
 Anything else you write yourself. The canonical example is a `RolesGuard` — covered below.

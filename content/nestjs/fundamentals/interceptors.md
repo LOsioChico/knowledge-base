@@ -109,7 +109,7 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 
 | Interceptor                  | Package          | Purpose                                                                                                                                                    |
 | ---------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `instanceToPlain` on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()` |
+| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `instanceToPlain` on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
 
 > [!example]- Excluding fields from the response
 >
@@ -232,13 +232,13 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 | Operator         | Use case                                                            |
 | ---------------- | ------------------------------------------------------------------- |
-| `tap(fn)`        | Side effects (logs, metrics) without changing the value             |
-| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`)              |
-| `catchError(fn)` | Map exceptions thrown by the handler to a different error           |
-| `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`             |
-| `of(value)`      | Build a stream from a constant — used to short-circuit (cache)      |
+| `tap(fn)`        | Side effects (logs, metrics) without changing the value. See the [async pre-phase recipe](#common-recipes) |
+| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)    |
+| `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)    |
+| `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`. See the [per-route timeout recipe](#common-recipes) |
+| `of(value)`      | Build a stream from a constant — used to short-circuit (cache). See the [cache recipe](#common-recipes)    |
 | `from(promise)`  | Convert a promise into an observable inside the pre phase           |
-| `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options   |
+| `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options. See the [retry recipe](#common-recipes) |
 | `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError` |
 
 ## Common recipes
