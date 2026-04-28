@@ -13,7 +13,7 @@ for executing on them.
 
 ## What this repo is
 
-A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. Source markdown lives under `content/`. Quartz config is `quartz.config.ts`. Static assets shipped as-is from `quartz/static/` (this is where `llms.txt` lives).
+A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. Source markdown lives under `content/`. Quartz config is `quartz.config.ts`. Static assets shipped as-is from `quartz/static/`.
 
 ## Folder layout
 
@@ -25,7 +25,7 @@ content/
     <subarea>/
       index.md                   # sub-area MOC if the subarea has 3+ notes
       <note>.md                  # atomic note, one concept per file
-quartz/static/llms.txt           # LLM entrypoint, regenerated on structural change
+quartz/static/                   # site-level static assets (favicon, og image, etc.)
 ```
 
 Rules:
@@ -111,18 +111,14 @@ rg -n '^(tags|aliases|area|related):' content -A 4
 
 # 5. Read every candidate note that the searches surfaced
 bat content/<area>/<candidate>.md
-
-# 6. Check the LLM index for anything you missed
-bat quartz/static/llms.txt
 ```
 
-Only after those six steps may you draft the note. Then:
+Only after those five steps may you draft the note. Then:
 
-7. Add the note with the full frontmatter schema.
-8. Update `related:` in EVERY note you linked from.
-9. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
-10. Update `quartz/static/llms.txt` so the new note is discoverable to LLMs.
-11. **Audit every code block you touched** against the "Code examples (MANDATORY)" rules below: each fenced ` ```ts ` / ` ```typescript ` block (including those inside `> [!warning]` / `> [!example]` callouts) must carry all imports it uses, wrap class methods in their `@Controller` / `@Module` / `@Injectable` container, declare every field/constructor it references, and have zero undefined symbols. Do this as a final pass before commit, not while drafting — it's the step that's easiest to skip and the one that produces the most reader-facing breakage.
+6. Add the note with the full frontmatter schema.
+7. Update `related:` in EVERY note you linked from.
+8. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
+9. **Audit every code block you touched** against the "Code examples (MANDATORY)" rules below: each fenced ` ```ts ` / ` ```typescript ` block (including those inside `> [!warning]` / `> [!example]` callouts) must carry all imports it uses, wrap class methods in their `@Controller` / `@Module` / `@Injectable` container, declare every field/constructor it references, and have zero undefined symbols. Do this as a final pass before commit, not while drafting — it's the step that's easiest to skip and the one that produces the most reader-facing breakage.
 
 Skipping any step is a bug.
 
@@ -133,8 +129,7 @@ Skipping any step is a bug.
 - Bidirectional by default — and **enforced by `npm run lint:wikilinks`**. If A `related:` B, then B `related:` A. The linter resolves partial wikilinks (e.g. `[[guards]]` → `nestjs/fundamentals/guards`) and exempts `index` notes (they're indices, not peers). CI blocks merges on asymmetric `related:` links.
 - **Known limitation of forced symmetry**: `related:` currently collapses three distinct relationships (peer ↔ peer, recipe → fundamental prerequisite, fundamental → recipes-that-use-it) into one symmetric field. This is fine at the current vault size but will cause noise on fundamentals that get many dependents. When that starts to hurt (a fundamental's `related:` block becomes longer than its own content, ~10+ dependents), split the contract: keep `related:` for symmetric peers, add `prerequisites:` for asymmetric "you need to read this first" links (linter would NOT require back-references on `prerequisites:`). Don't pre-emptively split — wait for the friction.
 - **First-mention wikilink rule** (enforced by `npm run lint:wikilinks`): the FIRST time a concept that has its own note appears in the body of another note, it MUST be a wikilink, not plain text. Subsequent mentions in the same note can stay plain. Code identifiers (e.g. `FileInterceptor`, `ParseFilePipe`) are not concepts; the underlying concept (`[[nestjs/fundamentals/interceptors|interceptor]]`, `[[nestjs/fundamentals/pipes|pipe]]`) is. The linter scans every note's title + aliases + filename to build the concept catalog, then checks every other note's body for unlinked first mentions. CI blocks merges on violations.
-- **Listing-completeness rule** (same linter): every note under an indexed sub-folder (currently `nestjs/recipes/`) MUST appear in the area `index.md` AND in `quartz/static/llms.txt`. Add new indexed folders to the `INDEXED_FOLDERS` array in `scripts/lint-wikilinks.mjs`.
-- **Discoverability rule** (same linter, BLOCKING): every pair of notes whose TF-IDF cosine similarity is ≥ 0.20 MUST be connected — either via `related:` (either direction), a body wikilink (either direction), or an explicit `unrelated:` opt-out (either direction). This is the safety net for "you don't know what you don't know": when you write a new note, the linter compares it against every existing note and flags semantic neighbors you didn't realize existed. Resolution is one of three: (1) add the missing `related:` link both ways, (2) add a body wikilink at first mention, or (3) if the overlap is genuinely coincidental (shared vocabulary, different topic), declare it via `unrelated:` on either side. **You cannot ignore the warning** — every above-threshold pair must be acknowledged. Threshold (0.20) was calibrated against the natural similarity cliff in the current vault; revisit if the false-positive rate grows. Algorithm details: title × 3 + aliases × 2 + masked body × 1, smoothed IDF, ~120 English stopwords, `index` notes excluded.
+- **Listing-completeness rule** (same linter): every note under an indexed sub-folder (currently `nestjs/recipes/`) MUST appear in the area `index.md`. Add new indexed folders to the `INDEXED_FOLDERS` array in `scripts/lint-wikilinks.mjs`.- **Discoverability rule** (same linter, BLOCKING): every pair of notes whose TF-IDF cosine similarity is ≥ 0.20 MUST be connected — either via `related:` (either direction), a body wikilink (either direction), or an explicit `unrelated:` opt-out (either direction). This is the safety net for "you don't know what you don't know": when you write a new note, the linter compares it against every existing note and flags semantic neighbors you didn't realize existed. Resolution is one of three: (1) add the missing `related:` link both ways, (2) add a body wikilink at first mention, or (3) if the overlap is genuinely coincidental (shared vocabulary, different topic), declare it via `unrelated:` on either side. **You cannot ignore the warning** — every above-threshold pair must be acknowledged. Threshold (0.20) was calibrated against the natural similarity cliff in the current vault; revisit if the false-positive rate grows. Algorithm details: title × 3 + aliases × 2 + masked body × 1, smoothed IDF, ~120 English stopwords, `index` notes excluded.
 - **Agents-mirror rule** (same linter, BLOCKING): `.github/copilot-instructions.md` MUST be a byte-identical copy of `AGENTS.md`. The mirror exists so VS Code Copilot Chat (which reads `.github/copilot-instructions.md` universally) gets the same conventions as agentic flows that read `AGENTS.md`. After any edit to `AGENTS.md`, run `cp AGENTS.md .github/copilot-instructions.md` and commit both. The linter fails CI on drift.
 - A note never wikilinks to itself. Self-mentions stay plain. **In-note cross-references** (e.g., a row in a reference table pointing to a worked example further down the same note) MUST use a plain markdown anchor link like `[the section below](#defaultvaluepipe)` — never `[[note#Heading]]`, which the linter treats as a self-wikilink and rejects.
 - **Reference-table linking rule**: when a note contains a reference table that enumerates entities (built-in pipes, built-in guards, decorators, common operators, etc.), every row whose entity is **demonstrated by a worked example** — either elsewhere in the same note or in another note — MUST link to that example from the row's notes/description column. Use a wikilink for cross-note targets (`[[nestjs/recipes/file-uploads|File uploads recipe]]`) and a plain anchor for in-note targets (`[composing pipes](#common-recipes)`). A row with no example to point to stays unlinked. Audit this every time you add a new example or a new table row: a freshly added example without a back-link from the table is a discoverability bug.
@@ -206,12 +201,6 @@ Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is
 5. **Single-line illustrative fragments are OK** only when the surrounding prose makes the context unambiguous (e.g., showing one decorator usage right after the full class). When in doubt, write the full snippet.
 
 When editing an existing snippet, audit the imports too — adding a new symbol means adding its import.
-
-## LLM ingest layer
-
-`quartz/static/llms.txt` follows the https://llmstxt.org spec. It is the canonical entrypoint for any LLM that needs the whole vault. When you add or remove a note, update it in the same commit.
-
-If the vault grows past ~50 notes and grep starts missing things, add a local embedding index (see `prioritized roadmap` in the research notes for this session). When that day comes, evaluate [chunkhound](https://github.com/ofriw/chunkhound) (MCP-native, queryable by the agent at write time) before rolling our own with `@xenova/transformers`. Until then, the deterministic source of truth is: **MOCs + tags + `related:` + this ritual**.
 
 ## When you finish
 

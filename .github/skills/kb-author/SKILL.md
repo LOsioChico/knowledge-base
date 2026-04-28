@@ -50,20 +50,16 @@ rg -n '^(tags|aliases|area|related):' content -A 4
 
 # 5. Read every candidate note that the searches surfaced
 bat content/<area>/<candidate>.md
-
-# 6. Check the LLM index for anything you missed
-bat quartz/static/llms.txt
 ```
 
-Only after these six steps may you draft. Then:
+Only after these five steps may you draft. Then:
 
-7. Add the note with the full frontmatter schema (see AGENTS.md).
-8. Update `related:` in EVERY note you linked from.
-9. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
-10. Update `quartz/static/llms.txt`.
-11. **Run the post-edit audit (Workflow 2).**
-12. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed (`cp AGENTS.md .github/copilot-instructions.md`).
-13. Run the linter: `npm run lint:wikilinks` (or whatever the repo defines).
+6. Add the note with the full frontmatter schema (see AGENTS.md).
+7. Update `related:` in EVERY note you linked from.
+8. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
+9. **Run the post-edit audit (Workflow 2).**
+10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed (`cp AGENTS.md .github/copilot-instructions.md`).
+11. Run the linter: `npm run lint:wikilinks` (or whatever the repo defines).
 
 ## Workflow 2 — Post-edit audit (BEFORE commit)
 

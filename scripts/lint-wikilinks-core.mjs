@@ -605,19 +605,6 @@ function validateFolderIndexes(result, contentRoot, dirs, fileSet, repoRoot) {
 }
 
 async function validateListingCompleteness(result, notes, repoRoot, indexedFolders) {
-  const llmsTxtPath = join(repoRoot, "quartz", "static", "llms.txt")
-  let llmsTxt = null
-  try {
-    llmsTxt = await readFile(llmsTxtPath, "utf8")
-  } catch {
-    addViolation(result, {
-      check: "listing-completeness",
-      file: "quartz/static/llms.txt",
-      line: 1,
-      message: "missing llms.txt",
-    })
-  }
-
   for (const { area, folder } of indexedFolders) {
     const areaIndex = notes.find((note) => note.rel === `${area}/index`)
     const folderIndex = `${area}/${folder}/index`
@@ -632,14 +619,6 @@ async function validateListingCompleteness(result, notes, repoRoot, indexedFolde
           file: areaIndex.file,
           line: 1,
           message: `missing entry for [[${folderNote.rel}]] (new ${folder.replace(/s$/, "")} not listed in area index)`,
-        })
-      }
-      if (llmsTxt !== null && !llmsTxt.includes(folderNote.rel)) {
-        addViolation(result, {
-          check: "listing-completeness",
-          file: "quartz/static/llms.txt",
-          line: 1,
-          message: `missing entry for ${folderNote.rel}`,
         })
       }
     }
@@ -953,7 +932,7 @@ export function formatHuman(result) {
 
   const listing = groupByCheck(errors, "listing-completeness")
   if (listing.length === 0) {
-    stdout.push("✓ listing-completeness: all recipes surfaced in area index and llms.txt")
+    stdout.push("✓ listing-completeness: all recipes surfaced in area index")
   } else {
     printGeneric(
       stderr,

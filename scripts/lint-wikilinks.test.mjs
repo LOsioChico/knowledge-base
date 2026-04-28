@@ -104,10 +104,6 @@ related:
 - [[nestjs/recipes/alpha]]
 `,
     "content/nestjs/recipes/alpha.md": note({ title: "Alpha Recipe" }),
-    "quartz/static/llms.txt": `# Test Vault
-
-- nestjs/recipes/alpha
-`,
     ...overrides,
   }
 }
@@ -115,9 +111,6 @@ related:
 function recipeVault(recipes) {
   const recipeLinks = Object.keys(recipes)
     .map((slug) => `- [[nestjs/recipes/${slug}]]`)
-    .join("\n")
-  const llmsEntries = Object.keys(recipes)
-    .map((slug) => `- nestjs/recipes/${slug}`)
     .join("\n")
 
   return {
@@ -158,10 +151,6 @@ related:
 # Recipes
 
 ${recipeLinks}
-`,
-    "quartz/static/llms.txt": `# Test Vault
-
-${llmsEntries}
 `,
     ...Object.fromEntries(
       Object.entries(recipes).map(([slug, content]) => [
@@ -224,11 +213,6 @@ related:
         related: '  - "[[nestjs/recipes/beta]]"\n',
       }),
       "content/nestjs/recipes/beta.md": note({ title: "Beta Recipe" }),
-      "quartz/static/llms.txt": `# Test Vault
-
-- nestjs/recipes/alpha
-- nestjs/recipes/beta
-`,
     }),
   )
   const result = await runLinter(repoRoot)
@@ -253,15 +237,13 @@ related:
 
 # NestJS
 `,
-      "quartz/static/llms.txt": "# Test Vault\n",
     }),
   )
   const result = await runLinter(repoRoot)
 
   assert.equal(result.code, 1)
-  assert.match(result.stderr, /listing-completeness: 2 missing entries/)
+  assert.match(result.stderr, /listing-completeness: 1 missing entry/)
   assert.match(result.stderr, /content\/nestjs\/index\.md/)
-  assert.match(result.stderr, /quartz\/static\/llms\.txt/)
 })
 
 test("fails when AGENTS.md and Copilot instructions drift", async () => {
@@ -549,11 +531,6 @@ related:
       title: "Recipe Target",
       body: "A unique recipe note.",
     }),
-    "quartz/static/llms.txt": `# Test Vault
-
-- nestjs/recipes/origin
-- nestjs/recipes/target
-`,
   })
   const result = await runLinter(repoRoot)
 
