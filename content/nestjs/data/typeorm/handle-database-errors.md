@@ -66,14 +66,14 @@ catch (err) {
 
 ## Driver error code reference
 
-| Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite `code` |
-| --- | --- | --- | --- |
-| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` |
-| Foreign key | `23503` | `1452` (`ER_NO_REFERENCED_ROW_2`) on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` |
-| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` |
-| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` |
-| Exclusion (PG only) | `23P01` | n/a | n/a |
-| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a |
+| Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite `code` | Mapped in |
+| --- | --- | --- | --- | --- |
+| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs), [Recipe 2 service](#recipe-2-catch-in-the-service-when-you-need-domain-context) |
+| Foreign key | `23503` | `1452` (`ER_NO_REFERENCED_ROW_2`) on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Exclusion (PG only) | `23P01` | n/a | n/a | not mapped |
+| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | [Retryable errors gotcha](#gotchas) |
 
 Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**.
 
