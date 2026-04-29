@@ -289,8 +289,8 @@ Sample response for a duplicate email:
 > [!warning]- Don't match on `err.message`
 > Driver messages are locale-dependent on MySQL and can change between Postgres minor versions. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
 
-> [!warning]- `err.driverError` is sometimes the same object, sometimes nested
-> Older TypeORM (<0.3) and certain drivers wrap differently. Reading from both `err.code` (flat, spread by `QueryFailedError`'s constructor) and `err.driverError.code` (original) keeps the code defensive across versions.
+> [!warning]- Driver props live in two places, by design
+> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value. Prefer the flat read; fall back to `err.driverError` only when you need to keep the original driver error object (e.g. to forward it to Sentry with its native shape).
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
 > If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.
