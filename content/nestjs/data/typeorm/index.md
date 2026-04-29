@@ -1,5 +1,5 @@
 ---
-title: TypeORM (in NestJS)
+title: TypeORM
 aliases: [typeorm, type-orm, nestjs typeorm]
 tags: [type/moc, tech/typeorm]
 area: nestjs
