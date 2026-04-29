@@ -8,6 +8,7 @@ related:
   - "[[nestjs/index]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/monorepo]]"
+  - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/recipes/serialization]]"
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
@@ -19,6 +20,7 @@ related:
 
 - [[nestjs/recipes/file-uploads|File uploads with Multer]]
 - [[nestjs/recipes/monorepo|NestJS CLI monorepos]]
+- [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
 - [[nestjs/recipes/trace-id|Request trace ID propagation]] (seed)
 - [[nestjs/recipes/validation|Request validation with class-validator]]

@@ -20,6 +20,7 @@ related:
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/typeorm/handle-database-errors]]"
 source:

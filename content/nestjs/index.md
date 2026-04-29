@@ -29,6 +29,7 @@ Task-oriented how-tos. See [[nestjs/recipes/index|all recipes]].
 
 - [[nestjs/recipes/file-uploads|File uploads with Multer]]
 - [[nestjs/recipes/monorepo|NestJS CLI monorepos]]
+- [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
 - [[nestjs/recipes/trace-id|Request trace ID propagation]]
 - [[nestjs/recipes/validation|Request validation with class-validator]]

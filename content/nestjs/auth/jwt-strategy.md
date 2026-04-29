@@ -22,6 +22,7 @@ related:
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/recipes/validation]]"
+  - "[[nestjs/recipes/rate-limiting]]"
 source:
   - https://docs.nestjs.com/recipes/passport
   - https://docs.nestjs.com/security/authentication
