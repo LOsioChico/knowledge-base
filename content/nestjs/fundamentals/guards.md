@@ -350,7 +350,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > [!warning]- `useGlobalGuards()` skips microservice/WebSocket gateways in hybrid apps
 > In a hybrid app (`createHybrid` or `connectMicroservice`), `app.useGlobalGuards()` does **not** apply to gateways or microservices by default. Use the `APP_GUARD` provider, or pass `{ inheritAppConfig: true }` when connecting microservices. Source: [Hybrid application](https://docs.nestjs.com/faq/hybrid-application).
 
-> [!warning]- Guards run **after** middleware
+> [!info]- Guards run **after** middleware
 > If your authentication logic lives in middleware, it runs first and can attach `request.user` before the guard reads it. The opposite is impossible: a guard cannot mutate the request in time for middleware. If both layers need shared context, decide which one owns it.
 
 > [!info]- Cross-transport guards: branch on `ctx.getType()`

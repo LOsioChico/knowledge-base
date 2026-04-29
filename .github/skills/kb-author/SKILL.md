@@ -42,6 +42,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **H** | "X vs Y" / lifecycle-rule sections lead with a concrete analogy or rule-of-thumb table | [audits/H-mental-model.md](audits/H-mental-model.md) |
 | **I** | Headlines and callout titles honestly describe what the code does | [audits/I-headline-vs-code.md](audits/I-headline-vs-code.md) |
 | **J** | Demo names (CLI paths, class names, file stubs) come from a domain the note endorses | [audits/J-demo-names.md](audits/J-demo-names.md) |
+| **K** | Callout severity matches reader stakes (warnings rare, infos common) | [audits/K-callout-severity.md](audits/K-callout-severity.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
@@ -119,6 +120,9 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
 - **Using the most familiar example name even when its domain contradicts the note** → `auth/jwt`
   is the canonical "nested path" demo across the Nest ecosystem, but it has no business in
   middleware.md (which disclaims authz). Run [Audit J](audits/J-demo-names.md).
+- **Marking every qualifier as `[!warning]`** → readers learn to skim past warnings, including
+  the real ones. Warnings are for actual footguns (silent failures, security, hangs); everything
+  else is `[!info]` or `[!tip]`. Run [Audit K](audits/K-callout-severity.md).
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.

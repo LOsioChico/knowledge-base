@@ -393,7 +393,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >
 > Rule: invoke `next.handle()` exactly **once** per request. To replay a value, capture it with `tap` or `shareReplay`, don't re-subscribe. To short-circuit, return a different observable (`of(x)`) instead of calling `next.handle()` at all.
 
-> [!warning]- Cross-transport interceptors must branch on `ctx.getType()`
+> [!info]- Cross-transport interceptors must branch on `ctx.getType()`
 > The same interceptor class can be applied to HTTP, microservice, WebSocket, and GraphQL handlers. The request shape and "response" semantics differ in each context — `switchToHttp().getResponse()` is meaningless in RPC, and the return value of an RPC handler doesn't become an HTTP body. Branch explicitly:
 >
 > ```typescript

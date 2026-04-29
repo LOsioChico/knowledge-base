@@ -84,7 +84,7 @@ A few things just changed:
 - Each app got its own `tsconfig.app.json` that extends the root `tsconfig.json`.
 - `nest-cli.json` switched to monorepo mode (`"monorepo": true`) and the original app was registered as the **default project** via the top-level `"root"` property. Source: [CLI properties](https://docs.nestjs.com/cli/monorepo#cli-properties).
 
-> [!warning]- Conversion only works on canonical layouts
+> [!info]- Conversion only works on canonical layouts
 > The schematic relocates `src/` and `test/` into `apps/<name>/`. If you've moved or renamed these folders, the conversion fails or produces unreliable results. Re-source from a fresh `nest new` if your project diverged. Source: [Monorepo conversion warning](https://docs.nestjs.com/cli/monorepo#monorepo-mode).
 
 After conversion, `nest-cli.json` looks roughly like this:
@@ -153,7 +153,7 @@ dist/
     my-app-2/main.js
 ```
 
-> [!warning]- `package.json` scripts target the default project only
+> [!info]- `package.json` scripts target the default project only
 > The original `start`, `start:dev`, `build`, `test` scripts that `nest new` generated still exist after conversion, and they still target only the default project (because they don't pass a name). Add per-app scripts yourself; see [step 4](#step-4-run-multiple-apps-in-one-terminal).
 
 ## Step 4: run multiple apps in one terminal
@@ -381,10 +381,10 @@ Cons:
 > [!warning]- Renaming the original app needs a vault-wide find-and-replace
 > The original project keeps its name (e.g., `my-app`) in `nest-cli.json`'s `"root"`, the `"projects"` map, every `tsconfig.app.json` path, and any npm scripts you've added. If you rename it, search the repo for the old name and update every match. The CLI does not provide a rename command.
 
-> [!warning]- Webpack is the default compiler in monorepos
+> [!info]- Webpack is the default compiler in monorepos
 > A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"builder": { "type": "tsc" }` in `nest-cli.json#compilerOptions`. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
 
-> [!warning]- The library prefix is global per workspace
+> [!info]- The library prefix is global per workspace
 > The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths — and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.
 
 > [!info]- You can layer `nx` or `turborepo` on top

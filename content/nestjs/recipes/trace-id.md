@@ -351,7 +351,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > [!warning]- Use `als.run()`, not `als.enterWith()`
 > `enterWith(store)` continues the store for the entire synchronous execution and **into the current async resource**. With Express, the **next** request handled on the same event-loop turn can see the previous request's store until it hits its own `enterWith()` call. `run(store, callback)` scopes the store to the callback's async tree and unwinds cleanly. Source: [Node docs: enterWith](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore).
 
-> [!warning]- Don't use `Scope.REQUEST` providers as a substitute
+> [!info]- Don't use `Scope.REQUEST` providers as a substitute
 > Request-scoped providers don't run in passport strategies, gateways, or scheduled tasks, and they recreate the entire DI subtree per request (significant CPU and GC cost). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`

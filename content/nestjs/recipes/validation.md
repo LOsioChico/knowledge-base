@@ -215,7 +215,7 @@ export class PaginationQuery {
 
 `GET /items?limit=10` → `limit` is the number `10`, not the string `"10"`. Without it, `@IsInt()` fails because `"10"` is a string.
 
-> [!warning]- Implicit conversion can mask bad input
+> [!info]- Implicit conversion can mask bad input
 > `enableImplicitConversion` will turn `?active=anything` into `true` for a `boolean` field. Pair with explicit decorators (`@IsBoolean()`, `@Transform(({ value }) => value === 'true')`) for fields where loose coercion would hurt.
 
 ## Validation groups — same DTO, different rules per route

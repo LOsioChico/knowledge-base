@@ -138,7 +138,7 @@ export class CatsController {
 
 `DefaultValuePipe` runs **first** so `ParseIntPipe` receives a number, not `undefined`. Reverse the order and `ParseIntPipe` would throw on missing query params.
 
-> [!warning] What "missing" means
+> [!info] What "missing" means
 > The default kicks in for `null`, `undefined`, and `NaN`. An **empty string** (`?page=`) is **not** nil, so it passes through and `ParseIntPipe` will throw. If you need to treat empty strings as missing, normalize upstream (e.g., a custom pipe).
 
 ## ValidationPipe
@@ -327,7 +327,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
 ## Gotchas
 
-> [!warning]- `enableImplicitConversion` does not handle every type
+> [!info]- `enableImplicitConversion` does not handle every type
 > [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Where it works and where it doesn't:
 >
 > - **`string`, `number`, `boolean`, `Date`**: implicit conversion is enough. `@Type()` not needed.
