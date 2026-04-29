@@ -53,13 +53,30 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 }
 ```
 
-So both work; prefer the flat access:
+So both work; prefer the flat access. Define a small augmentation type once and reuse it everywhere you read driver fields:
+
+```typescript
+// db-errors.types.ts
+import { QueryFailedError } from "typeorm"
+
+// QueryFailedError's typed properties are only query/parameters/driverError.
+// `code`, `detail`, `constraint`, etc. are spread onto the instance at runtime
+// by the constructor (Object.assign above), so we widen the type to expose them.
+export type PgQueryError = QueryFailedError & {
+  code?: string
+  detail?: string
+  constraint?: string
+  table?: string
+  column?: string
+}
+```
 
 ```typescript
 catch (err: unknown) {
   if (err instanceof QueryFailedError) {
-    const code = (err as any).code            // flat, spread from driverError
-    const code2 = (err.driverError as any).code // also valid, original location
+    const e = err as PgQueryError
+    const code = e.code              // typed access, no `any`
+    const code2 = (err.driverError as { code?: string }).code // also valid
   }
 }
 ```
@@ -95,6 +112,7 @@ import {
 } from "@nestjs/common"
 import { BaseExceptionFilter } from "@nestjs/core"
 import { QueryFailedError } from "typeorm"
+import { PgQueryError } from "./db-errors.types"
 
 // Postgres SQLSTATE codes — https://www.postgresql.org/docs/current/errcodes-appendix.html
 const PG = {
@@ -103,14 +121,6 @@ const PG = {
   NOT_NULL_VIOLATION: "23502",
   CHECK_VIOLATION: "23514",
 } as const
-
-type PgQueryError = QueryFailedError & {
-  code?: string
-  detail?: string
-  constraint?: string
-  table?: string
-  column?: string
-}
 
 @Catch(QueryFailedError)
 export class TypeOrmExceptionFilter extends BaseExceptionFilter {
@@ -230,6 +240,7 @@ With those names in place, the service can branch on `err.constraint`:
 import { ConflictException, Injectable } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
 import { QueryFailedError, Repository } from "typeorm"
+import { PgQueryError } from "./db-errors.types"
 import { User } from "./user.entity"
 
 @Injectable()
@@ -242,13 +253,15 @@ export class UsersService {
     try {
       return await this.users.save(this.users.create(data))
     } catch (err: unknown) {
-      if (err instanceof QueryFailedError && (err as any).code === "23505") {
-        const constraint = (err as any).constraint as string | undefined
-        if (constraint === "users_email_key") {
-          throw new ConflictException({ error: "EMAIL_TAKEN" })
-        }
-        if (constraint === "users_username_key") {
-          throw new ConflictException({ error: "USERNAME_TAKEN" })
+      if (err instanceof QueryFailedError) {
+        const e = err as PgQueryError
+        if (e.code === "23505") {
+          if (e.constraint === "users_email_key") {
+            throw new ConflictException({ error: "EMAIL_TAKEN" })
+          }
+          if (e.constraint === "users_username_key") {
+            throw new ConflictException({ error: "USERNAME_TAKEN" })
+          }
         }
       }
       throw err // Re-throw; the global filter handles the rest.
