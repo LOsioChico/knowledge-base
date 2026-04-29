@@ -280,6 +280,35 @@ Audit procedure:
 This audit pairs with Audit A (which checks the code is *complete*); Audit I checks the code is
 *honest*.
 
+### Audit J — Demo names match the note's domain
+
+Placeholder names trained the reader's eye through repetition. A note that disclaims domain X
+in its "When not to" section must not use X as the example name in CLI commands, class names,
+file paths, or imagined-scaffolding stubs. The disclaimer in prose loses the fight against the
+example in code every time.
+
+Real example caught in the wild: `nestjs/fundamentals/middleware.md` had `nest g mi auth/jwt`
+in CLI examples, while the same note's "When not to" section says "Authorization: use a guard."
+Reader copies `auth/jwt` as the obvious nested-path demo and walks away with the wrong
+association — even though the prose said the opposite.
+
+Audit procedure:
+
+1. Find each note's "When not to / When to reach for it / Why X, not Y" section. List the
+   anti-domains (concrete words, not abstractions: "authorization", "validation", "caching",
+   "logging", "exception handling").
+2. Grep the rest of the note for those words appearing as **placeholder names**: CLI demo paths
+   (`nest g mi auth/jwt`), class names (`AuthMiddleware`, `LoggingGuard`), file comments
+   (`// auth.middleware.ts`), constructor stubs (`constructor(private auth: AuthService)`).
+3. Skip occurrences that are: (a) the disclaimer prose itself, (b) a contrast/comparison table
+   row, (c) an explicit "what NOT to do" callout, (d) a wikilink to the correct layer's note.
+4. Replace flagged demo names with names from a domain the note **does** endorse. For middleware,
+   that's HTTP plumbing (`http/request-id`, `LoggerMiddleware`, `compression`). For guards,
+   it's authz (`RolesGuard`, `JwtAuthGuard`). Match the demo to the lesson.
+
+This audit is cheap, catches a high-cost bug (silent miseducation by repetition), and rarely
+fires once the vault is consistent. Run it on any note where you're naming things from scratch.
+
 ## Workflow 3 — When you discover a repeated bug pattern
 
 After fixing N≥2 instances of the same content bug (missing import, missing back-link from a
@@ -313,6 +342,10 @@ This is the "encode-then-audit" reflex. Don't wait for the user to ask.
   Softer rewrites bury the insight. When the user says "add this to the note", port the chat
   version VERBATIM (table, mental model, rule of thumb), then add cross-links. Reword only if
   it's chat-specific ("as I mentioned earlier", "great question").
+- **Using the most familiar example name even when its domain contradicts the note** → `auth/jwt`
+  is the canonical "nested path" demo across the Nest ecosystem, but it has no business in
+  middleware.md (which disclaims authz). Demo names train by repetition; pick names from a
+  domain the note endorses (Audit J).
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
