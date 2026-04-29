@@ -161,6 +161,9 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 
 Controller- and route-scoped bindings always resolve the interceptor through Nest's DI container (you pass the **class**, not an instance), so they can inject anything the module exposes. The catch is global scope.
 
+> [!warning] Pass the class, not an instance
+> `@UseInterceptors(LoggingInterceptor)` is resolved by Nest's DI container so the interceptor's constructor injections are wired up. `@UseInterceptors(new LoggingInterceptor())` skips DI: any injected dependency is `undefined` and the interceptor crashes the first time it touches it. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]]. The global-scope variant of this DI question (`useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR`) is covered in the tip below.
+
 > [!tip]- DI for global interceptors — what changes with vs. without
 > Say your interceptor needs to read a flag from `ConfigService`:
 >
