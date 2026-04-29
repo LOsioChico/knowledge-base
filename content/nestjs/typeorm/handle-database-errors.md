@@ -10,10 +10,10 @@ aliases:
     ER_DUP_ENTRY,
   ]
 tags: [type/recipe, tech/typeorm, tech/postgres, errors]
-area: typeorm
+area: nestjs
 status: evergreen
 related:
-  - "[[typeorm/index]]"
+  - "[[nestjs/typeorm/index]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/validation]]"
 source:
