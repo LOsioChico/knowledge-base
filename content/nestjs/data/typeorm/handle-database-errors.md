@@ -199,7 +199,15 @@ The filter responds:
 
 ## Recipe 2: Catch in the service (when you need domain context)
 
-The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints — `@Column({ unique: true })` produces auto-generated names like `UQ_2e7b7debda55a8a01581ff3a015`, which are brittle to branch on. Use the class-level `@Unique` decorator to name them explicitly:
+The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints so you can branch on `err.constraint`. TypeORM gives three ways to declare uniqueness, and only one of them is right for this job:
+
+| Decorator | What TypeORM registers | What Postgres emits | Naming control | Composite |
+| --- | --- | --- | --- | --- |
+| `@Column({ unique: true })` | a `uniques` metadata entry | `ADD CONSTRAINT "UQ_<hash>" UNIQUE (...)` | ❌ auto-named (`UQ_2e7b…`) | ❌ single column only |
+| `@Unique('name', ['col'])` (class-level) | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)` | ✅ | ✅ |
+| `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry | `CREATE UNIQUE INDEX "name" ON ...` | ✅ | ✅ |
+
+Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood), but the metadata location differs: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` — it matches what you're actually modeling ("no two users with the same email"), and `err.constraint` will report the constraint name directly.
 
 ```typescript
 // user.entity.ts
@@ -214,8 +222,6 @@ export class User {
   @Column() username!: string
 }
 ```
-
-`@Unique` emits a `UNIQUE` **constraint** (visible in `pg_constraint`); `@Index(..., { unique: true })` emits a unique **index** (visible in `pg_indexes`). Postgres enforces both identically — a constraint is implemented via a unique index under the hood — but `@Unique` matches what you're actually modeling: "no two users with the same email", not "this column is indexed".
 
 With those names in place, the service can branch on `err.constraint`:
 
