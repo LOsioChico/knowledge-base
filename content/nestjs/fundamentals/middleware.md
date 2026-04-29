@@ -192,9 +192,9 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 >
 > For a request-scoped logger that picks this up via `AsyncLocalStorage`, see the [[nestjs/recipes/trace-id|trace-id recipe]].
 
-> [!example]- Module-bound logger that injects a service
+> [!example]- Class middleware (so DI is available when you need it)
 >
-> Class middleware so `Logger` resolves through DI:
+> Function middleware can't take constructor-injected dependencies. Switch to a class for the option to inject services later. The snippet below doesn't inject anything yet — it's the **shape** that matters: `@Injectable` + module registration means Nest builds the instance through the container, so adding `constructor(private config: ConfigService) {}` later just works.
 >
 > ```typescript
 > // logger.middleware.ts
