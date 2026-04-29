@@ -192,9 +192,18 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 >
 > For a request-scoped logger that picks this up via `AsyncLocalStorage`, see the [[nestjs/recipes/trace-id|trace-id recipe]].
 
-> [!example]- Class middleware (so DI is available when you need it)
+> [!example]- Access log middleware (status, URL, duration)
 >
-> Function middleware can't take constructor-injected dependencies. Switch to a class for the option to inject services later. The snippet below doesn't inject anything yet — it's the **shape** that matters: `@Injectable` + module registration means Nest builds the instance through the container, so adding `constructor(private config: ConfigService) {}` later just works.
+> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware sees every request, including 404s, requests rejected by guards, and requests that blew up in pipes — an [[nestjs/fundamentals/interceptors|interceptor]] can't log those because the handler never ran.
+>
+> Rule of thumb:
+>
+> | Question | Where it belongs |
+> | --- | --- |
+> | "What did the **HTTP layer** do?" (method, URL, status, bytes) | Middleware (access log) |
+> | "What did **my code** do?" (which handler ran, what it returned, business events) | [[nestjs/fundamentals/interceptors\|Interceptor]] (application log) |
+>
+> Production apps usually have both. The class form is shown here so DI is available when you need it later (e.g. `constructor(private config: ConfigService) {}`); the snippet itself doesn't inject anything yet.
 >
 > ```typescript
 > // logger.middleware.ts
