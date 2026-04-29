@@ -167,6 +167,9 @@ Anything else you write yourself. The canonical example is a `RolesGuard`, cover
 
 Controller- and route-scoped bindings always resolve through Nest's DI container when you pass the **class** (`@UseGuards(RolesGuard)`). Pass an instance (`@UseGuards(new RolesGuard())`) and DI is bypassed.
 
+> [!warning] Pass the class, not an instance
+> `@UseGuards(RolesGuard)` is resolved by Nest's DI container, so the guard's constructor injections (`Reflector`, repositories, config services, anything else) are wired up. `@UseGuards(new RolesGuard())` looks identical at the call site but skips DI entirely: the guard runs with `undefined` dependencies and fails the first time it touches `this.reflector`. Same trap applies to `@UseInterceptors`, `@UsePipes`, and `@UseFilters`. Pass the class unless you genuinely need a pre-configured instance with no DI needs.
+
 ```typescript
 import { Controller, Get, UseGuards } from "@nestjs/common"
 import { RolesGuard } from "./roles.guard"
