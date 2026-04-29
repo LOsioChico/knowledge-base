@@ -53,10 +53,10 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 }
 ```
 
-So both work; prefer the flat access. Define a small augmentation type once and reuse it everywhere you read driver fields:
+So both work; prefer the flat access. Define a small augmentation type and a reusable type guard once, then read driver fields without `as any` anywhere:
 
 ```typescript
-// db-errors.types.ts
+// db-errors.ts
 import { QueryFailedError } from "typeorm"
 
 // QueryFailedError's typed properties are only query/parameters/driverError.
@@ -68,6 +68,24 @@ export type PgQueryError = QueryFailedError & {
   constraint?: string
   table?: string
   column?: string
+}
+
+export const PG = {
+  UNIQUE_VIOLATION: "23505",
+  FOREIGN_KEY_VIOLATION: "23503",
+  NOT_NULL_VIOLATION: "23502",
+  CHECK_VIOLATION: "23514",
+} as const
+
+/** True iff `err` is a Postgres unique-violation, optionally matching a named constraint. */
+export function isUniqueViolation(
+  err: unknown,
+  constraint?: string,
+): err is PgQueryError {
+  if (!(err instanceof QueryFailedError)) return false
+  const e = err as PgQueryError
+  if (e.code !== PG.UNIQUE_VIOLATION) return false
+  return constraint === undefined || e.constraint === constraint
 }
 ```
 
@@ -112,15 +130,9 @@ import {
 } from "@nestjs/common"
 import { BaseExceptionFilter } from "@nestjs/core"
 import { QueryFailedError } from "typeorm"
-import { PgQueryError } from "./db-errors.types"
+import { PG, PgQueryError } from "./db-errors"
 
 // Postgres SQLSTATE codes — https://www.postgresql.org/docs/current/errcodes-appendix.html
-const PG = {
-  UNIQUE_VIOLATION: "23505",
-  FOREIGN_KEY_VIOLATION: "23503",
-  NOT_NULL_VIOLATION: "23502",
-  CHECK_VIOLATION: "23514",
-} as const
 
 @Catch(QueryFailedError)
 export class TypeOrmExceptionFilter extends BaseExceptionFilter {
@@ -239,9 +251,15 @@ With those names in place, the service can branch on `err.constraint`:
 // users.service.ts
 import { ConflictException, Injectable } from "@nestjs/common"
 import { InjectRepository } from "@nestjs/typeorm"
-import { QueryFailedError, Repository } from "typeorm"
-import { PgQueryError } from "./db-errors.types"
+import { Repository } from "typeorm"
+import { isUniqueViolation } from "./db-errors"
 import { User } from "./user.entity"
+
+// Map each named unique constraint to a domain error code.
+const USER_CONFLICTS: Record<string, string> = {
+  users_email_key: "EMAIL_TAKEN",
+  users_username_key: "USERNAME_TAKEN",
+}
 
 @Injectable()
 export class UsersService {
@@ -253,16 +271,9 @@ export class UsersService {
     try {
       return await this.users.save(this.users.create(data))
     } catch (err: unknown) {
-      if (err instanceof QueryFailedError) {
-        const e = err as PgQueryError
-        if (e.code === "23505") {
-          if (e.constraint === "users_email_key") {
-            throw new ConflictException({ error: "EMAIL_TAKEN" })
-          }
-          if (e.constraint === "users_username_key") {
-            throw new ConflictException({ error: "USERNAME_TAKEN" })
-          }
-        }
+      if (isUniqueViolation(err) && err.constraint) {
+        const code = USER_CONFLICTS[err.constraint]
+        if (code) throw new ConflictException({ error: code })
       }
       throw err // Re-throw; the global filter handles the rest.
     }
