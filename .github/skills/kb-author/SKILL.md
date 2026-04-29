@@ -12,23 +12,46 @@ description: >
 
 # kb-author
 
-Workflow skill for editing a personal markdown knowledge base. The repo's `AGENTS.md` is the
-authority for invariants (frontmatter schema, controlled vocabulary, linker rules). This skill
-carries the **multi-step workflows** that AGENTS.md only summarizes: how to discover existing
-material before drafting, how to audit what you wrote before commit.
+Workflow companion to the repo's `AGENTS.md`. AGENTS.md owns invariants (frontmatter schema,
+controlled vocabulary, linker rules); this skill owns the **multi-step workflows**.
 
-Always read the repo's `AGENTS.md` first — it has invariants and a controlled vocabulary that
-override anything here.
+**Always read `AGENTS.md` first.** On conflict it wins.
+
+This skill uses **progressive disclosure**: the index lives here, full audits live in
+[`audits/`](audits/), full workflows in this file. Read an audit file only when you're about to
+run that audit.
 
 ## When to load
 
-Load this skill when the user:
+User asks to: add/edit/expand a note, write a recipe/fundamental/reference page, audit existing
+notes, or runs `/kb-author`. Also any mention of the knowledge base, vault, MOCs, or wikilinks.
 
-- Asks to add, edit, or expand a note
-- Asks to write a recipe, fundamental, or reference page
-- Asks to audit existing notes for missing imports, broken links, or undocumented references
-- Mentions the knowledge base, vault, MOCs, or wikilinks
-- Runs `/kb-author`
+## Audit index
+
+Run the relevant audits before commit on every note you touched (snippets inside callouts count).
+
+| Audit | One-line summary | Full procedure |
+| --- | --- | --- |
+| **A** | Code blocks have all imports, class wrappers, declared fields, no undefined refs | [audits/A-code-examples.md](audits/A-code-examples.md) |
+| **B** | Reference-table rows link to their worked examples | [audits/B-table-linking.md](audits/B-table-linking.md) |
+| **C** | First mention of a concept-with-its-own-note is a wikilink | enforced by `npm run lint:wikilinks` |
+| **D** | `related:` links are symmetric | enforced by `npm run lint:wikilinks` |
+| **E** | Every claim backed by a primary-source URL in `source:` (see AGENTS.md "Sourcing rule") | inline below |
+| **F** | Recipes show request + response payloads, not prose claims | [audits/F-show-dont-tell.md](audits/F-show-dont-tell.md) |
+| **G** | Snippet-specific callouts placed at first use, not in trailing clusters | [audits/G-callout-placement.md](audits/G-callout-placement.md) |
+| **H** | "X vs Y" / lifecycle-rule sections lead with a concrete analogy or rule-of-thumb table | [audits/H-mental-model.md](audits/H-mental-model.md) |
+| **I** | Headlines and callout titles honestly describe what the code does | [audits/I-headline-vs-code.md](audits/I-headline-vs-code.md) |
+| **J** | Demo names (CLI paths, class names, file stubs) come from a domain the note endorses | [audits/J-demo-names.md](audits/J-demo-names.md) |
+
+Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
+also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
+
+### Audit E — Sourcing (inline)
+
+Every technical claim must be backed by a primary source URL in the `source:` frontmatter list.
+Surprising or version-specific claims also get an inline link next to the claim. Never write
+from training-data memory. See [AGENTS.md "Sourcing rule"](../../../AGENTS.md) for the full
+non-negotiable contract.
 
 ## Workflow 1 — Pre-flight discovery ritual (BEFORE drafting any note)
 
@@ -57,286 +80,37 @@ Only after these five steps may you draft. Then:
 6. Add the note with the full frontmatter schema (see AGENTS.md).
 7. Update `related:` in EVERY note you linked from.
 8. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
-9. **Run the post-edit audit (Workflow 2).**
-10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed (`cp AGENTS.md .github/copilot-instructions.md`).
-11. Run the linter: `npm run lint:wikilinks` (or whatever the repo defines).
+9. **Run the post-edit audits (the index above).**
+10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
+    `cp AGENTS.md .github/copilot-instructions.md`.
+11. Run the linter: `npm run lint:wikilinks`.
 
-## Workflow 2 — Post-edit audit (BEFORE commit)
-
-Run these checks against every note you touched, including snippets inside
-`> [!warning]` / `> [!example]` / `> [!info]` callouts.
-
-### Audit A — Code examples (imports + wrappers + defined refs)
-
-For every fenced ` ```ts ` / ` ```typescript ` block in the diff, verify:
-
-1. **All imports are present.** Every symbol used (decorators, classes, RxJS operators,
-   third-party packages, Node built-ins) has a matching `import` line at the top of the snippet.
-2. **Class methods are wrapped in their container.** A `@Get()` / `@Post()` / `@Use()` method
-   lives inside `@Controller(...) export class FooController { ... }`. A `@Module({...})` snippet
-   has `export class FooModule {}`. No bare decorated methods floating outside a class.
-3. **Class fields and constructors are declared.** If the body uses `this.store`, the field
-   declaration must be visible. If `this.config` is accessed, the constructor must inject it.
-4. **No undefined references.** Every symbol must be (a) imported, (b) defined earlier in the
-   same snippet, or (c) explicitly commented as defined elsewhere.
-5. **Single-line illustrative fragments are OK** only if surrounding prose makes context
-   unambiguous. When in doubt, write the full snippet.
-
-Heuristic grep to spot floating decorators (run from repo root):
-
-```bash
-# Decorated methods that aren't preceded by a class line within ~6 lines
-rg -n -B6 '^\s*>?\s*@(Get|Post|Put|Patch|Delete|Use\w+|Inject\w*)\(' content | rg -B6 '@(Get|Post|Put|Patch|Delete|Use\w+|Inject\w*)\(' | head -80
-```
-
-When auditing a single file, just read every fenced block end-to-end.
-
-### Audit B — Reference-table linking
-
-When a note contains a reference table that enumerates entities (built-in pipes, built-in guards,
-decorators, common operators, error symptoms, config flags, etc.), every row whose entity is
-**demonstrated by a worked example** — same note OR another note — MUST link to that example from
-the row's notes/description column.
-
-- Cross-note targets: wikilink (`[[area/recipe-name|Recipe label]]`).
-- In-note targets: plain markdown anchor (`[label](#section-slug)`). **Never** `[[note#Heading]]`
-  on a self-reference — the linter rejects it.
-- A row with no example to point to stays unlinked.
-
-Audit procedure:
-
-1. For each table row, identify the entity (e.g., `RolesGuard`, `ParseIntPipe`).
-2. Search the vault: `rg -n '<EntityName>' content/`.
-3. If a worked example exists and the row doesn't link to it → add the link.
-
-### Audit C — First-mention wikilinks
-
-The first time a concept that has its own note appears in the body of another note, it MUST be a
-wikilink, not plain text. Subsequent mentions can stay plain. Code identifiers
-(e.g. `FileInterceptor`) are not concepts; the underlying concept is
-(`[[nestjs/fundamentals/interceptors|interceptor]]`). The lint catches this — but fix proactively
-so the lint output stays empty.
-
-### Audit D — `related:` ↔ body wikilinks consistency
-
-If a body wikilink → `[[guards]]` exists, the target must be in `related:` of the source AND the
-source must be in `related:` of the target (symmetry, enforced by lint).
-
-### Audit E — Sourcing
-
-Every technical claim must be backed by a primary source URL in the `source:` frontmatter list.
-Surprising or version-specific claims also get an inline link next to the claim. Never write from
-training-data memory.
-
-### Audit F — Show, don't tell (recipes only)
-
-For notes tagged `type/recipe`: every section that describes an observable behavior change
-("returns 400", "strips field X", "rejects Y", "the response becomes Z") MUST include the
-concrete request payload AND the resulting response payload in fenced blocks (JSON, curl, or a
-constructed instance). Prose claims like "returns 400 with both messages" without the actual JSON
-are the smell.
-
-Audit procedure:
-
-1. Search the diff for behavior-claim phrasing: `rg -n 'returns|strips|rejects|fails|coerce|becomes'`.
-2. For each hit, check whether a request and response block sit next to it.
-3. If not, add a `Request:` block (JSON / curl / constructed instance) and a `Response:` block
-   (JSON / status code / error shape). Then trim the prose.
-
-Fundamentals (`type/concept`, `type/pattern`) can stay narrative when the snippet alone makes the
-behavior obvious.
-
-### Audit G — Callout placement (place at first use, not in topical clusters)
-
-A callout (`> [!warning]-`, `> [!info]-`, `> [!tip]-`, `> [!example]-`) explains, qualifies, or
-elaborates on something the reader just encountered. Its placement signals what triggers it.
-
-Two valid placements:
-
-1. **Inline (preferred for snippet-specific callouts).** A callout that elaborates on a specific
-   line, snippet, flag, or claim sits **immediately after the trigger** — the line that
-   introduces the thing it's about. The reader hits the trigger, then the callout, then keeps
-   going. Example: a `[!info]- The -c flag controls prefix colors` callout belongs right after
-   the first `concurrently -c auto …` snippet, not three sections later.
-2. **Trailing "Gotchas" / "See also" cluster (only for cross-cutting callouts).** A callout that
-   warns about a concern that applies across the whole recipe (or to a configuration choice the
-   reader hasn't seen yet but will hit eventually) can live in a trailing `## Gotchas` section.
-   Example: "useGlobalGuards skips microservice gateways in hybrid apps" applies to anyone using
-   the recipe with a hybrid app — there's no single trigger line.
-
-The smell:
-
-- A callout in a trailing cluster whose first sentence references **a specific snippet, file,
-  flag, or step earlier in the note** ("the `-c` flag", "step 4's `nest g app` command", "the
-  `main.ts` you generated above"). That callout's trigger is in the body — move it next to the
-  trigger.
-- Multiple callouts stacked back-to-back with no prose between them, all about different
-  triggers. Split them and place each next to its trigger.
-- A reader having to scroll down to learn that a snippet they just ran has a known footgun. If
-  the footgun bites *the moment they run the snippet*, the callout was placed too late.
-
-Audit procedure:
-
-1. List every callout in the diff: `rg -n '^> \[!' <file>`.
-2. For each, read its first sentence. Does it reference a specific line/snippet/flag earlier in
-   the note?
-   - **Yes** → move it to immediately after that line. Tweak the wording so it points forward
-     ("see [step N](#…)") instead of backward ("the snippet above").
-   - **No** (it's a general concern that applies broadly) → leave it in the trailing cluster.
-3. After moving, verify no two callouts in the trailing cluster collapse to "this only applies
-   if you used config X" — those should also migrate to where X is introduced.
-
-Trailing-cluster sections (`## Gotchas`, `## See also`) are still valuable: they catch readers
-who land via search and skim from the bottom up. Keep callouts there when they're cross-cutting.
-
-### Audit H — Conceptual sections lead with a mental model
-
-Any section that compares two similar concepts ("X vs Y"), explains a counterintuitive rule
-(reversed resolution order, opposite-direction lifecycle), or introduces an abstract layer
-should open with a one-sentence concrete analogy or framing **before** the technical details.
-
-Examples that earned their hook:
-
-- "Correlation ID = sticker, trace ID = sticker + GPS tracker" + a `Question → What you need` table.
-- "Interceptors are the **sandwich**: bread (pre-phase) → filling (the handler) → bread (post-phase)."
-- "Filters are the **last-chance handler**; the most specific filter wins, the global is the safety net."
-- "`useGlobal*` is the **shortcut**; `APP_*` is the **DI-aware** version."
-
-The smell: a section heading that's a comparison ("Why X, not Y"), an order/lifecycle rule, or a
-"vs" table whose first paragraph dives into jargon (`ExecutionContext`, `useFactory`, `Reflector`,
-`Scope.TRANSIENT`) without naming what the reader should picture first.
-
-Audit procedure:
-
-1. Skim every `##` / `###` heading in the diff. Flag any that compares concepts, contrasts a rule
-   with the rest of the lifecycle, or names two similar things side-by-side.
-2. For each flagged section, read the first paragraph. If it opens with technical detail, prepend
-   a one-sentence analogy or "role" framing. Keep it concrete (sticker, sandwich, checkpoint,
-   safety net, gatekeeper, GPS tracker) — abstract framings ("a unified abstraction over…")
-   defeat the purpose.
-3. If the comparison is a table, consider adding a `Question you want to answer | What you need`
-   row pair above or below it — readers reach for the table when they have a real question.
-
-The **rule-of-thumb table** is the highest-leverage shape this audit produces. Use it whenever
-two lifecycle layers, two APIs, or two patterns serve different purposes that readers routinely
-confuse:
-
-```markdown
-> Rule of thumb:
->
-> | Question | Where it belongs |
-> | --- | --- |
-> | "What did the **HTTP layer** do?" | Middleware (access log) |
-> | "What did **my code** do?" | Interceptor (application log) |
-```
-
-Why this shape works: the left column is the user's actual mental query ("what am I trying to
-log?"), not a feature name. The right column maps it to the concrete tool. Readers don't have
-to know the API to find the answer; they just have to know what they want.
-
-4. Skip: procedural step-by-step recipes, reference tables of built-ins, code-only sections, and
-   sections that already lead with a clear analogy.
-
-The rule is "every comparison earns one analogy", not "sprinkle metaphors everywhere". One sharp
-sentence beats a paragraph of cleverness.
-
-### Audit I — Headline matches code
-
-Every section heading, callout title (`> [!example]- ...`), and prose sentence that immediately
-precedes a fenced code block must accurately describe what the code does. A title that promises
-a technique the snippet doesn't actually demonstrate is a high-severity bug — readers copy code
-believing it does what the title says.
-
-Real example caught in the wild: a callout titled "Module-bound logger that injects a service"
-with code that did `private readonly logger = new Logger("HTTP")` — a hand-rolled `new`, no DI,
-no injected service. The class was `@Injectable` (so it COULD inject later), but the snippet
-didn't. Title promised injection; code showed instantiation.
-
-Common promise-vs-reality mismatches:
-
-| Title promises | Code must show |
-| --- | --- |
-| "...that injects X" / "Using DI to..." | A constructor parameter that resolves X from the container |
-| "Async X" / "With await" | At least one `await` or returned `Promise` |
-| "Custom X with config" | A non-default options object passed in |
-| "Validated X" | A validation decorator, pipe, or explicit check |
-| "Scoped" / "Per-request" / "Singleton" | The matching `Scope.X` enum value |
-| "Guarded" / "Protected" | `@UseGuards` or guard registration |
-| "Streaming" | A stream API, not buffering into memory |
-| "Cached" | An actual cache call |
-
-Audit procedure:
-
-1. For every `##` / `###` heading, callout title, and one-line prose intro before a fenced block
-   in the diff, extract the **specific behavioral claim** (not the topic — the verb).
-2. Read the code that follows. Does it do that thing?
-   - **Yes** → keep.
-   - **No** → either rewrite the code to match the title (preferred when the title's promise is
-     the actual lesson) or rename the title/intro to honestly describe what the snippet shows
-     (preferred when the snippet is intentionally a stepping-stone).
-3. Be conservative: "here's how X works" is a soft promise; "X that does Y" is a hard one.
-   Flag only hard promises.
-
-This audit pairs with Audit A (which checks the code is *complete*); Audit I checks the code is
-*honest*.
-
-### Audit J — Demo names match the note's domain
-
-Placeholder names trained the reader's eye through repetition. A note that disclaims domain X
-in its "When not to" section must not use X as the example name in CLI commands, class names,
-file paths, or imagined-scaffolding stubs. The disclaimer in prose loses the fight against the
-example in code every time.
-
-Real example caught in the wild: `nestjs/fundamentals/middleware.md` had `nest g mi auth/jwt`
-in CLI examples, while the same note's "When not to" section says "Authorization: use a guard."
-Reader copies `auth/jwt` as the obvious nested-path demo and walks away with the wrong
-association — even though the prose said the opposite.
-
-Audit procedure:
-
-1. Find each note's "When not to / When to reach for it / Why X, not Y" section. List the
-   anti-domains (concrete words, not abstractions: "authorization", "validation", "caching",
-   "logging", "exception handling").
-2. Grep the rest of the note for those words appearing as **placeholder names**: CLI demo paths
-   (`nest g mi auth/jwt`), class names (`AuthMiddleware`, `LoggingGuard`), file comments
-   (`// auth.middleware.ts`), constructor stubs (`constructor(private auth: AuthService)`).
-3. Skip occurrences that are: (a) the disclaimer prose itself, (b) a contrast/comparison table
-   row, (c) an explicit "what NOT to do" callout, (d) a wikilink to the correct layer's note.
-4. Replace flagged demo names with names from a domain the note **does** endorse. For middleware,
-   that's HTTP plumbing (`http/request-id`, `LoggerMiddleware`, `compression`). For guards,
-   it's authz (`RolesGuard`, `JwtAuthGuard`). Match the demo to the lesson.
-
-This audit is cheap, catches a high-cost bug (silent miseducation by repetition), and rarely
-fires once the vault is consistent. Run it on any note where you're naming things from scratch.
-
-## Workflow 3 — When you discover a repeated bug pattern
+## Workflow 2 — Encode-then-audit (when you discover a repeated bug pattern)
 
 After fixing N≥2 instances of the same content bug (missing import, missing back-link from a
-reference table, undefined symbol):
+reference table, undefined symbol, headline-vs-code mismatch):
 
 1. STOP further piecemeal fixes.
-2. Propose encoding the rule in `AGENTS.md` (and mirror to `.github/copilot-instructions.md`).
+2. Propose encoding the rule in `AGENTS.md` (and mirror to `.github/copilot-instructions.md`),
+   or as a new audit under `audits/`.
 3. Run a vault-wide audit pass against the new rule.
 4. Fix everything the pass surfaces.
 5. THEN resume normal work.
 
-This is the "encode-then-audit" reflex. Don't wait for the user to ask.
+Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
 
 ## Common pitfalls
 
 - **Skipping discovery ritual** → duplicate notes, broken backlinks, asymmetric `related:`.
-- **Drafting code without final audit** → readers can't run the snippet (missing imports).
-- **Adding a worked example without back-linking from the reference table** → discoverability bug.
+- **Drafting code without final audit** → readers can't run the snippet. Run [Audit A](audits/A-code-examples.md).
+- **Adding a worked example without back-linking from the reference table** → discoverability
+  bug. Run [Audit B](audits/B-table-linking.md).
 - **Stacking callouts in a trailing Gotchas section when each one applies to a specific earlier
-  snippet** → readers hit the footgun before reaching the warning. Place callouts at first use
-  (Audit G).
+  snippet** → readers hit the footgun before reaching the warning. Run [Audit G](audits/G-callout-placement.md).
 - **Comparison or "X vs Y" section that opens with jargon and no analogy** → reader has to
-  build the mental model from technical details. Lead with a one-sentence concrete framing
-  (Audit H).
-- **Callout title or section heading that promises a technique the code doesn't show** ("injects
-  a service" with no constructor injection, "async" with no `await`, "validated" with no
-  validator) → reader copies misleading code. Either fix the code to match the title or rename
-  the title to match the code (Audit I).
+  build the mental model from scratch. Run [Audit H](audits/H-mental-model.md).
+- **Callout title or section heading that promises a technique the code doesn't show** → reader
+  copies misleading code. Run [Audit I](audits/I-headline-vs-code.md).
 - **Rewriting a chat-derived explanation when porting it to a note** → the chat version was
   written for someone who just asked the question, which is exactly the reader of the note.
   Softer rewrites bury the insight. When the user says "add this to the note", port the chat
@@ -344,13 +118,12 @@ This is the "encode-then-audit" reflex. Don't wait for the user to ask.
   it's chat-specific ("as I mentioned earlier", "great question").
 - **Using the most familiar example name even when its domain contradicts the note** → `auth/jwt`
   is the canonical "nested path" demo across the Nest ecosystem, but it has no business in
-  middleware.md (which disclaims authz). Demo names train by repetition; pick names from a
-  domain the note endorses (Audit J).
+  middleware.md (which disclaims authz). Run [Audit J](audits/J-demo-names.md).
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
-- **Trusting schematic `schema.json` for `nest g` defaults** → the CLI action layer overrides them.
-  Always run `--dry-run` first and trust terminal output.
+- **Trusting schematic `schema.json` for `nest g` defaults** → the CLI action layer overrides
+  them. Always run `--dry-run` first and trust terminal output.
 
 ## Boundaries
 
