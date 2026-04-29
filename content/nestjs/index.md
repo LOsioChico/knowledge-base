@@ -45,7 +45,7 @@ Architecture patterns that NestJS enables but does not enforce.
 ## Data
 
 - [[nestjs/data/prisma|Prisma: setup, transactions, soft delete (planned)]]
-- [[nestjs/typeorm/index|TypeORM]]: integration, error handling, relations
+- [[nestjs/data/typeorm/index|TypeORM]]: integration, error handling, relations
 - [[nestjs/data/caching|Caching: CacheModule + Redis (planned)]]
 
 ## Auth

@@ -12,7 +12,7 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/exception-filters]]"
-  - "[[nestjs/typeorm/handle-database-errors]]"
+  - "[[nestjs/data/typeorm/handle-database-errors]]"
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
 source:

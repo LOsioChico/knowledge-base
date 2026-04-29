@@ -6,7 +6,7 @@ area: nestjs
 status: evergreen
 related:
   - "[[nestjs/index]]"
-  - "[[nestjs/typeorm/handle-database-errors]]"
+  - "[[nestjs/data/typeorm/handle-database-errors]]"
 source:
   - https://docs.nestjs.com/techniques/database
   - https://typeorm.io
@@ -16,7 +16,7 @@ NestJS + TypeORM patterns: integration glue (`TypeOrmModule`, `@InjectRepository
 
 ## Available
 
-- [[nestjs/typeorm/handle-database-errors|Handle database errors (unique, FK, check)]]
+- [[nestjs/data/typeorm/handle-database-errors|Handle database errors (unique, FK, check)]]
 
 ## Pending
 

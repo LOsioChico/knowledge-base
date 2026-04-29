@@ -13,7 +13,7 @@ tags: [type/recipe, tech/typeorm, tech/postgres, errors]
 area: nestjs
 status: evergreen
 related:
-  - "[[nestjs/typeorm/index]]"
+  - "[[nestjs/data/typeorm/index]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/recipes/validation]]"
 source:
