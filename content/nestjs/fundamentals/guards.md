@@ -47,7 +47,7 @@ export class AuthGuard implements CanActivate {
 It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 
 > [!example]- Return shapes: one example each
-> The same contract ("give me something that resolves to a boolean") is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`. Same union as [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]] use for their own returns.
+> The same contract ("give me something that resolves to a boolean") is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`. Same union as a controller handler can return — Nest treats guard returns with the same sync/Promise/Observable flexibility it gives route methods.
 >
 > **`boolean`**: synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise.
 >
@@ -110,7 +110,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **Why a union and not just `Promise<boolean>`?** Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. The same `T | Promise<T> | Observable<T>` shape is used by interceptors, pipes, and [[nestjs/fundamentals/middleware|middleware]], so guards follow the convention and the same logic can move between layers without rewriting return types.
+> **Why a union and not just `Promise<boolean>`?** Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. Note that the related Nest constructs use **different** unions: [[nestjs/fundamentals/interceptors|interceptors]] return `Observable<R> | Promise<Observable<R>>` (the Observable is required); [[nestjs/fundamentals/pipes|pipes]] return `R | Promise<R>` (no Observable); [[nestjs/fundamentals/middleware|middleware]] returns nothing and signals via `next()`. Guards mirror the controller-handler union because they gate the same request path.
 
 ## Generate with the CLI
 
