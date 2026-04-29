@@ -69,6 +69,8 @@ The container instantiates the component, so it can inject other providers, run 
 
 ## Side-by-side
 
+`useGlobal*` is the **shortcut**: instantiate it yourself, no DI, no surprises. `APP_*` is the **DI-aware** version: the container builds it, so it can inject providers, take request scope, and apply to hybrid apps. Same effect on the wire; different powers under the hood.
+
 | Concern                                                                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }` |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------- |
 | Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                    | ✅                                 |

@@ -28,7 +28,9 @@ source:
   - https://docs.nestjs.com/cli/usages
 ---
 
-> Catch unhandled exceptions and turn them into HTTP responses. The **only** lifecycle component whose binding scopes resolve **bottom-up** (route → controller → global), and the only one that runs both for thrown errors *and* for rejections from any earlier layer ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, the response interceptor chain).
+> Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other lifecycle component is a forward checkpoint that runs in order; a filter runs *only* when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
+>
+> Two things make filters unique: (1) bindings resolve **bottom-up** (route → controller → global, the opposite of every other layer), and (2) only the most specific filter wins — once it catches the exception, no other filter sees it. The most specific gets first dibs; the global filter is the safety net underneath.
 
 ## What runs by default
 
