@@ -320,3 +320,4 @@ export class AppModule {}
 - [[nestjs/fundamentals/exception-filters|Exception filters]]: for customizing the `429` response shape or adding `Retry-After`.
 - [[nestjs/auth/jwt-strategy|JWT strategy]]: the natural pairing for per-user throttling (auth runs first, throttler reads `req.user`).
 - Official: [Rate limiting](https://docs.nestjs.com/security/rate-limiting), [`@nestjs/throttler` repo](https://github.com/nestjs/throttler).
+- Extended walkthrough: [Rate limiting NestJS using Throttler](https://www.telerik.com/blogs/rate-limiting-nestjs-using-throttler) (Telerik, Christian Nwamba). Adds a conceptual primer on rate-limiting algorithms and a worked Nginx + Docker Compose + Redis multi-instance demo. Note: it sets blanket `app.set('trust proxy', true)`, which this recipe argues against.
