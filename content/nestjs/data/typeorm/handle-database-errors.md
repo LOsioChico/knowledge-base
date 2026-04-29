@@ -56,7 +56,7 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 So both work; prefer the flat access:
 
 ```typescript
-catch (err) {
+catch (err: unknown) {
   if (err instanceof QueryFailedError) {
     const code = (err as any).code            // flat, spread from driverError
     const code2 = (err.driverError as any).code // also valid, original location
@@ -241,7 +241,7 @@ export class UsersService {
   async create(data: Pick<User, "email" | "username">): Promise<User> {
     try {
       return await this.users.save(this.users.create(data))
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof QueryFailedError && (err as any).code === "23505") {
         const constraint = (err as any).constraint as string | undefined
         if (constraint === "users_email_key") {
