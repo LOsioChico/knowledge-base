@@ -174,7 +174,7 @@ export class AppModule {}
 
 ### What the client sees
 
-Given a unique constraint `users_email_key` on `users.email`, posting a duplicate email:
+Given a unique index on `users.email` (named `users_email_key` — see [Recipe 2](#recipe-2-catch-in-the-service-when-you-need-domain-context) for why naming matters), posting a duplicate email:
 
 ```http
 POST /users
@@ -199,7 +199,23 @@ The filter responds:
 
 ## Recipe 2: Catch in the service (when you need domain context)
 
-The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the username is taken; that one means the slug is"), catch in the service:
+The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique indexes — schema-generated names like `UQ_2e7b7debda55a8a01581ff3a015` are brittle, so name them explicitly on the entity:
+
+```typescript
+// user.entity.ts
+import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm"
+
+@Entity()
+@Index("users_email_key", ["email"], { unique: true })
+@Index("users_username_key", ["username"], { unique: true })
+export class User {
+  @PrimaryGeneratedColumn("uuid") id!: string
+  @Column() email!: string
+  @Column() username!: string
+}
+```
+
+With those names in place, the service can branch on `err.constraint`:
 
 ```typescript
 // users.service.ts
@@ -219,7 +235,6 @@ export class UsersService {
       return await this.users.save(this.users.create(data))
     } catch (err) {
       if (err instanceof QueryFailedError && (err as any).code === "23505") {
-        // Branch on the constraint name to give a domain-meaningful error.
         const constraint = (err as any).constraint as string | undefined
         if (constraint === "users_email_key") {
           throw new ConflictException({ error: "EMAIL_TAKEN" })
@@ -239,23 +254,6 @@ Sample response for a duplicate email:
 ```json
 { "statusCode": 409, "error": "EMAIL_TAKEN" }
 ```
-
-> [!info]- Name your constraints
-> Schema-generated names like `UQ_2e7b7debda55a8a01581ff3a015` make this brittle. Name unique indexes explicitly so the service code reads as `users_email_key`, not a hash:
->
-> ```typescript
-> // user.entity.ts
-> import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm"
->
-> @Entity()
-> @Index("users_email_key", ["email"], { unique: true })
-> @Index("users_username_key", ["username"], { unique: true })
-> export class User {
->   @PrimaryGeneratedColumn("uuid") id!: string
->   @Column() email!: string
->   @Column() username!: string
-> }
-> ```
 
 ## When to use which
 
