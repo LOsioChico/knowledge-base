@@ -21,6 +21,7 @@ related:
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[typeorm/handle-database-errors]]"
 source:
   - https://docs.nestjs.com/exception-filters
   - https://docs.nestjs.com/fundamentals/execution-context

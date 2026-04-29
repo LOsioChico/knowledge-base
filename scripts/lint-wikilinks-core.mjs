@@ -30,6 +30,8 @@ const VALID_TAGS = new Set([
   "tech/class-transformer",
   "tech/asynclocalstorage",
   "tech/nest-cli",
+  "tech/typeorm",
+  "tech/postgres",
   "lifecycle",
   "events",
   "cqrs",
