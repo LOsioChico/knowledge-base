@@ -216,6 +216,24 @@ Audit procedure:
    defeat the purpose.
 3. If the comparison is a table, consider adding a `Question you want to answer | What you need`
    row pair above or below it — readers reach for the table when they have a real question.
+
+The **rule-of-thumb table** is the highest-leverage shape this audit produces. Use it whenever
+two lifecycle layers, two APIs, or two patterns serve different purposes that readers routinely
+confuse:
+
+```markdown
+> Rule of thumb:
+>
+> | Question | Where it belongs |
+> | --- | --- |
+> | "What did the **HTTP layer** do?" | Middleware (access log) |
+> | "What did **my code** do?" | Interceptor (application log) |
+```
+
+Why this shape works: the left column is the user's actual mental query ("what am I trying to
+log?"), not a feature name. The right column maps it to the concrete tool. Readers don't have
+to know the API to find the answer; they just have to know what they want.
+
 4. Skip: procedural step-by-step recipes, reference tables of built-ins, code-only sections, and
    sections that already lead with a clear analogy.
 
@@ -290,6 +308,11 @@ This is the "encode-then-audit" reflex. Don't wait for the user to ask.
   a service" with no constructor injection, "async" with no `await`, "validated" with no
   validator) → reader copies misleading code. Either fix the code to match the title or rename
   the title to match the code (Audit I).
+- **Rewriting a chat-derived explanation when porting it to a note** → the chat version was
+  written for someone who just asked the question, which is exactly the reader of the note.
+  Softer rewrites bury the insight. When the user says "add this to the note", port the chat
+  version VERBATIM (table, mental model, rule of thumb), then add cross-links. Reword only if
+  it's chat-specific ("as I mentioned earlier", "great question").
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
