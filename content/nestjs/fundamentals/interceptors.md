@@ -164,7 +164,7 @@ Controller- and route-scoped bindings always resolve the interceptor through Nes
 > [!warning] Pass the class, not an instance
 > `@UseInterceptors(LoggingInterceptor)` is resolved by Nest's DI container so the interceptor's constructor injections are wired up. `@UseInterceptors(new LoggingInterceptor())` skips DI: any injected dependency is `undefined` and the interceptor crashes the first time it touches it. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
-The global-scope variant of the same DI question — `useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
+The global-scope variant of the same DI question — `useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: an interceptor that reads config|worked example of an interceptor that reads config]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalInterceptors` vs `APP_INTERCEPTOR`.
 
 ## Order: the FILO trick
 

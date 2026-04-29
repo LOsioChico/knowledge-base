@@ -178,6 +178,43 @@ export class AppModule {}
 
 `app.useGlobalGuards(new TenantGuard(/* what do I pass here? */))` is unreachable: there is no request to inject, and `TenantService` lives in the container.
 
+## Worked example: an interceptor that reads config
+
+A common case: an interceptor whose behavior depends on a runtime flag from `ConfigService`.
+
+```ts
+// audit.interceptor.ts
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
+import { ConfigService } from "@nestjs/config"
+
+@Injectable()
+export class AuditInterceptor implements NestInterceptor {
+  constructor(private readonly config: ConfigService) {}
+
+  intercept(ctx: ExecutionContext, next: CallHandler) {
+    if (!this.config.get<boolean>("AUDIT_ENABLED")) return next.handle()
+    // …log to your audit sink
+    return next.handle()
+  }
+}
+```
+
+```ts
+// app.module.ts
+import { Module } from "@nestjs/common"
+import { APP_INTERCEPTOR } from "@nestjs/core"
+import { AuditInterceptor } from "./audit.interceptor"
+
+@Module({
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
+})
+export class AppModule {}
+```
+
+`app.useGlobalInterceptors(new AuditInterceptor(/* ??? */))` is unreachable: you'd be calling `new` yourself with no `ConfigService` in scope. Rule of thumb: **if the interceptor has any constructor dependency, use `APP_INTERCEPTOR`**. Same logic applies to a guard with `Reflector` plus an injected `UsersService`, a filter that needs the request-scoped `Logger`, and so on.
+
 ## Hybrid apps gotcha
 
 > [!warning] `app.useGlobalX()` does not cover gateways or microservice transports by default

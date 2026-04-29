@@ -182,7 +182,7 @@ export class CatsController {
 }
 ```
 
-The global-scope variant of the same DI question — `useGlobalGuards(new X())` vs `APP_GUARD` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
+The global-scope variant of the same DI question — `useGlobalGuards(new X())` vs `APP_GUARD` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: a guard that reads the current request|worked example of a guard that injects a request-scoped service]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalGuards` vs `APP_GUARD`.
 
 ## Order
 
