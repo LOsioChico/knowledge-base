@@ -100,6 +100,8 @@ All exported from `@nestjs/common`.
 > [!warning] Pass the class to `@UsePipes`, not an instance
 > `@UsePipes(MyPipe)` is resolved by Nest's DI container so the pipe's constructor injections work. `@UsePipes(new MyPipe())` skips DI: any injected dependency is `undefined` and the pipe crashes the first time it touches it. The param-level form `@Body(new ValidationPipe({ whitelist: true }))` is a deliberate exception — built-in pipes like `ValidationPipe` take a stateless options object rather than DI-resolved dependencies, so the instance form is idiomatic there. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
+The global-scope variant of the same DI question — `useGlobalPipes(new X())` vs `APP_PIPE` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
+
 ## Order: the param level reversal
 
 Standard order is global, controller, route. But at the **route parameter level**, pipes run from the **last parameter to the first**:

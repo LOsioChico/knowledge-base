@@ -159,6 +159,8 @@ For platform-agnostic filters that work across both Express and Fastify, prefer 
 > [!warning] Pass the class, not an instance
 > `@UseFilters(HttpExceptionFilter)` is resolved by Nest's DI container so the filter's constructor and field injections are wired up. `@UseFilters(new HttpExceptionFilter())` skips DI: any injected dependency is `undefined`. For a filter extending `BaseExceptionFilter`, the symptom is the "no http adapter" crash documented in [common errors](#common-errors) below — both `applicationRef` (constructor arg) and `httpAdapterHost` (`@Optional() @Inject()` field) end up undefined. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
+The global-scope variant of the same DI question — `useGlobalFilters(new X())` vs `APP_FILTER` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
+
 ```typescript
 import { Controller, Get, UseFilters } from "@nestjs/common"
 import { HttpExceptionFilter } from "./http-exception.filter"

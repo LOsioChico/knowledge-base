@@ -162,50 +162,9 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 Controller- and route-scoped bindings always resolve the interceptor through Nest's DI container (you pass the **class**, not an instance), so they can inject anything the module exposes. The catch is global scope.
 
 > [!warning] Pass the class, not an instance
-> `@UseInterceptors(LoggingInterceptor)` is resolved by Nest's DI container so the interceptor's constructor injections are wired up. `@UseInterceptors(new LoggingInterceptor())` skips DI: any injected dependency is `undefined` and the interceptor crashes the first time it touches it. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]]. The global-scope variant of this DI question (`useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR`) is covered in the tip below.
+> `@UseInterceptors(LoggingInterceptor)` is resolved by Nest's DI container so the interceptor's constructor injections are wired up. `@UseInterceptors(new LoggingInterceptor())` skips DI: any injected dependency is `undefined` and the interceptor crashes the first time it touches it. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
-> [!tip]- DI for global interceptors — what changes with vs. without
-> Say your interceptor needs to read a flag from `ConfigService`:
->
-> ```typescript
-> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-> import { ConfigService } from "@nestjs/config"
->
-> @Injectable()
-> export class AuditInterceptor implements NestInterceptor {
->   constructor(private readonly config: ConfigService) {}
->
->   intercept(ctx: ExecutionContext, next: CallHandler) {
->     if (!this.config.get<boolean>("AUDIT_ENABLED")) return next.handle()
->     // …log to your audit sink
->     return next.handle()
->   }
-> }
-> ```
->
-> **Without DI** — `main.ts`:
->
-> ```typescript
-> app.useGlobalInterceptors(new AuditInterceptor(/* ??? */))
-> ```
->
-> You're calling `new` yourself, so Nest never wires `ConfigService`. `this.config` is `undefined` → runtime crash. Same goes for `Logger`, repositories, HTTP clients, anything provided by a module.
->
-> **With DI** — register as a provider in any module (commonly `AppModule`):
->
-> ```typescript
-> import { Module } from "@nestjs/common"
-> import { APP_INTERCEPTOR } from "@nestjs/core"
->
-> @Module({
->   providers: [
->     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor }, // AuditInterceptor from the class above
->   ],
-> })
-> export class AppModule {}
-> ```
->
-> Nest instantiates `AuditInterceptor` through the container, resolves `ConfigService` from its constructor, and applies it globally. Rule of thumb: if the interceptor has **any** constructor dependency, use `APP_INTERCEPTOR`. Source: [Binding interceptors](https://docs.nestjs.com/interceptors#binding-interceptors).
+The global-scope variant of the same DI question — `useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
 ## Order: the FILO trick
 

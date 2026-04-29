@@ -182,50 +182,7 @@ export class CatsController {
 }
 ```
 
-> [!tip]- DI for global guards — what changes with vs. without
-> Say your guard needs `Reflector` plus an injected `UsersService`:
->
-> ```typescript
-> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-> import { Reflector } from "@nestjs/core"
-> import { UsersService } from "./users.service"
->
-> @Injectable()
-> export class RolesGuard implements CanActivate {
->   constructor(
->     private readonly reflector: Reflector,
->     private readonly users: UsersService,
->   ) {}
->
->   canActivate(ctx: ExecutionContext): boolean {
->     // …
->     return true
->   }
-> }
-> ```
->
-> **Without DI** — `main.ts`:
->
-> ```typescript
-> app.useGlobalGuards(new RolesGuard(/* ??? */))
-> ```
->
-> You're calling `new` yourself, so Nest never wires `Reflector` or `UsersService`. Both are `undefined` → runtime crash. Same trap applies to any provider.
->
-> **With DI** — register through `APP_GUARD`:
->
-> ```typescript
-> import { Module } from "@nestjs/common"
-> import { APP_GUARD } from "@nestjs/core"
-> import { RolesGuard } from "./roles.guard"
->
-> @Module({
->   providers: [{ provide: APP_GUARD, useClass: RolesGuard }],
-> })
-> export class AppModule {}
-> ```
->
-> The guard is global regardless of the module that registers it — pick the module that **defines** the guard and its dependencies. Source: [Binding guards](https://docs.nestjs.com/guards#binding-guards).
+The global-scope variant of the same DI question — `useGlobalGuards(new X())` vs `APP_GUARD` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
 ## Order
 
