@@ -193,6 +193,19 @@ Top-level options (passed as `ThrottlerModule.forRoot({ throttlers: [...], ...to
 
 Time helpers exported from `@nestjs/throttler`: `seconds`, `minutes`, `hours`, `days`, `weeks`. They just multiply by the right constant: `seconds(5) === 5000`. Prefer them over raw numbers; `60000` reads as "what unit?".
 
+## How the storage key is built
+
+Every counter in the store lives under a key shaped like:
+
+```
+sha256("<ControllerClass>-<handler>-<throttlerName>-<tracker>")
+```
+
+Where `<tracker>` is whatever `getTracker(req, ctx)` returns (default: `req.ip`) and `<throttlerName>` is the `name` you set in `forRoot` (default: `"default"`). Two consequences worth internalizing:
+
+- **Buckets are per route, per throttler.** `/users` and `/orders` get separate counters even for the same client; the `short` and `long` named throttlers from the [previous section](#multiple-named-throttlers) also get separate counters. That's the right default for a global guard, but it means "10 req/min" is enforced per handler, not across the whole app.
+- **The tracker is the only knob that identifies the client.** If `req.ip` is wrong (proxies, see below) or too coarse (one IP for an office), every counter in every bucket is wrong. Fix the tracker, not the throttler config.
+
 ## Proxies and `trust proxy`
 
 The default tracker is `req.ip`. Behind a load balancer or reverse proxy, that's the proxy's IP: every client looks identical and you'll throttle the entire world as one. Two-step fix:
