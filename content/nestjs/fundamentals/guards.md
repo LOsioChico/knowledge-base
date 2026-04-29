@@ -44,7 +44,73 @@ export class AuthGuard implements CanActivate {
 - `false` → Nest throws `ForbiddenException` (`403 Forbidden`).
 - A thrown exception → caught by [[nestjs/fundamentals/exception-filters|exception filters]], same as anywhere else.
 
-It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
+### Return shapes
+
+The same contract — "give me something that resolves to a boolean" — is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`. Same union as [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]] use for their own returns.
+
+**`boolean`** — synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise.
+
+```typescript
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
+import { Request } from "express"
+
+@Injectable()
+export class AdminGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): boolean {
+    const req = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>()
+    return req.user?.roles?.includes("admin") ?? false
+  }
+}
+```
+
+**`Promise<boolean>`** — anything `async`. The common case: verify a JWT, hit the DB, call an auth service.
+
+```typescript
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
+import { Request } from "express"
+import { UsersService } from "./users.service"
+
+@Injectable()
+export class TokenGuard implements CanActivate {
+  constructor(private readonly users: UsersService) {}
+
+  async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const req = ctx.switchToHttp().getRequest<Request & { user?: unknown }>()
+    const token = req.headers.authorization?.replace(/^Bearer\s+/i, "")
+    if (!token) return false
+    const user = await this.users.findByToken(token)
+    if (!user) return false
+    req.user = user
+    return true
+  }
+}
+```
+
+**`Observable<boolean>`** — the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based cache lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
+
+```typescript
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
+import { HttpService } from "@nestjs/axios"
+import { Request } from "express"
+import { Observable, map } from "rxjs"
+
+@Injectable()
+export class RemoteAuthzGuard implements CanActivate {
+  constructor(private readonly http: HttpService) {}
+
+  canActivate(ctx: ExecutionContext): Observable<boolean> {
+    const req = ctx.switchToHttp().getRequest<Request>()
+    return this.http
+      .get<{ allowed: boolean }>("https://authz.internal/check", {
+        headers: { authorization: req.headers.authorization ?? "" },
+      })
+      .pipe(map((res) => res.data.allowed))
+  }
+}
+```
+
+> [!tip]- Why a union and not just `Promise<boolean>`
+> Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. The same `T | Promise<T> | Observable<T>` shape is used by interceptors, pipes, and middleware — guards follow the convention so the same logic can move between layers without rewriting return types.
 
 ## Generate with the CLI
 
