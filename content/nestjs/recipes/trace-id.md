@@ -339,6 +339,11 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 >
 > A **trace ID** is the same sticker plus a GPS tracker: every step also records `spanId`, `parentSpanId`, and start/end timestamps, so a tracing backend can reconstruct the call tree (gateway → orders → inventory → DB) with timings per hop. The ID itself is identical; the spans are what's added.
 >
+> | Question you want to answer | What you need |
+> | --- | --- |
+> | "Show me all logs for that one failed checkout." | Correlation ID |
+> | "Which of the 8 services in that checkout was slow, and what called what?" | Trace ID |
+>
 > This recipe builds the correlation-ID flavor and exposes it under the `trace-id` name because the wire format and the lookup workflow are the same. Distributed tracing with W3C `traceparent` and OpenTelemetry spans is a planned separate recipe.
 
 ## Gotchas
