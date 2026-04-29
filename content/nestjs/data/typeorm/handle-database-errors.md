@@ -199,21 +199,23 @@ The filter responds:
 
 ## Recipe 2: Catch in the service (when you need domain context)
 
-The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique indexes — schema-generated names like `UQ_2e7b7debda55a8a01581ff3a015` are brittle, so name them explicitly on the entity:
+The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints — `@Column({ unique: true })` produces auto-generated names like `UQ_2e7b7debda55a8a01581ff3a015`, which are brittle to branch on. Use the class-level `@Unique` decorator to name them explicitly:
 
 ```typescript
 // user.entity.ts
-import { Column, Entity, Index, PrimaryGeneratedColumn } from "typeorm"
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm"
 
 @Entity()
-@Index("users_email_key", ["email"], { unique: true })
-@Index("users_username_key", ["username"], { unique: true })
+@Unique("users_email_key", ["email"])
+@Unique("users_username_key", ["username"])
 export class User {
   @PrimaryGeneratedColumn("uuid") id!: string
   @Column() email!: string
   @Column() username!: string
 }
 ```
+
+`@Unique` emits a `UNIQUE` **constraint** (visible in `pg_constraint`); `@Index(..., { unique: true })` emits a unique **index** (visible in `pg_indexes`). Postgres enforces both identically — a constraint is implemented via a unique index under the hood — but `@Unique` matches what you're actually modeling: "no two users with the same email", not "this column is indexed".
 
 With those names in place, the service can branch on `err.constraint`:
 
