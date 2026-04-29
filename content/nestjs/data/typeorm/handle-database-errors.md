@@ -53,22 +53,12 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 }
 ```
 
-So both work; prefer the flat access. Define a small augmentation type and a reusable type guard once, then read driver fields without `as any` anywhere:
+Both reads return the same value, but only one is properly typed. The `pg` package already exports a fully-typed `DatabaseError` class with `code`, `constraint`, `detail`, `table`, `column`, etc. (all `string | undefined`). Read through `err.driverError` and you get the official driver type with zero casts; read through `err.code` and you get `any`. Skip the augmentation type entirely:
 
 ```typescript
 // db-errors.ts
+import { DatabaseError } from "pg"
 import { QueryFailedError } from "typeorm"
-
-// QueryFailedError's typed properties are only query/parameters/driverError.
-// `code`, `detail`, `constraint`, etc. are spread onto the instance at runtime
-// by the constructor (Object.assign above), so we widen the type to expose them.
-export type PgQueryError = QueryFailedError & {
-  code?: string
-  detail?: string
-  constraint?: string
-  table?: string
-  column?: string
-}
 
 export const PG = {
   UNIQUE_VIOLATION: "23505",
@@ -77,25 +67,26 @@ export const PG = {
   CHECK_VIOLATION: "23514",
 } as const
 
+/** Narrow `unknown` to a TypeORM-wrapped Postgres error. */
+export function isPgError(
+  err: unknown,
+): err is QueryFailedError<DatabaseError> {
+  return (
+    err instanceof QueryFailedError &&
+    err.driverError instanceof DatabaseError
+  )
+}
+
 /** True iff `err` is a Postgres unique-violation, optionally matching a named constraint. */
 export function isUniqueViolation(
   err: unknown,
   constraint?: string,
-): err is PgQueryError {
-  if (!(err instanceof QueryFailedError)) return false
-  const e = err as PgQueryError
-  if (e.code !== PG.UNIQUE_VIOLATION) return false
-  return constraint === undefined || e.constraint === constraint
-}
-```
-
-```typescript
-catch (err: unknown) {
-  if (err instanceof QueryFailedError) {
-    const e = err as PgQueryError
-    const code = e.code              // typed access, no `any`
-    const code2 = (err.driverError as { code?: string }).code // also valid
-  }
+): err is QueryFailedError<DatabaseError> {
+  if (!isPgError(err)) return false
+  if (err.driverError.code !== PG.UNIQUE_VIOLATION) return false
+  return (
+    constraint === undefined || err.driverError.constraint === constraint
+  )
 }
 ```
 
@@ -129,8 +120,9 @@ import {
   UnprocessableEntityException,
 } from "@nestjs/common"
 import { BaseExceptionFilter } from "@nestjs/core"
+import { DatabaseError } from "pg"
 import { QueryFailedError } from "typeorm"
-import { PG, PgQueryError } from "./db-errors"
+import { isPgError, PG } from "./db-errors"
 
 // Postgres SQLSTATE codes — https://www.postgresql.org/docs/current/errcodes-appendix.html
 
@@ -138,18 +130,22 @@ import { PG, PgQueryError } from "./db-errors"
 export class TypeOrmExceptionFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(TypeOrmExceptionFilter.name)
 
-  catch(exception: PgQueryError, host: ArgumentsHost): void {
-    const mapped = this.toHttp(exception)
+  catch(exception: QueryFailedError, host: ArgumentsHost): void {
+    if (!isPgError(exception)) {
+      super.catch(new InternalServerErrorException(), host)
+      return
+    }
+    const mapped = this.toHttp(exception.driverError)
     if (mapped instanceof InternalServerErrorException) {
       this.logger.error(
-        `Unmapped DB error code=${exception.code} detail=${exception.detail}`,
+        `Unmapped DB error code=${exception.driverError.code} detail=${exception.driverError.detail}`,
         exception.stack,
       )
     }
     super.catch(mapped, host)
   }
 
-  private toHttp(err: PgQueryError): HttpException {
+  private toHttp(err: DatabaseError): HttpException {
     switch (err.code) {
       case PG.UNIQUE_VIOLATION:
         return new ConflictException({
@@ -271,8 +267,8 @@ export class UsersService {
     try {
       return await this.users.save(this.users.create(data))
     } catch (err: unknown) {
-      if (isUniqueViolation(err) && err.constraint) {
-        const code = USER_CONFLICTS[err.constraint]
+      if (isUniqueViolation(err) && err.driverError.constraint) {
+        const code = USER_CONFLICTS[err.driverError.constraint]
         if (code) throw new ConflictException({ error: code })
       }
       throw err // Re-throw; the global filter handles the rest.
@@ -301,7 +297,7 @@ Sample response for a duplicate email:
 > Driver messages are locale-dependent on MySQL and can change between Postgres minor versions. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
 
 > [!warning]- Driver props live in two places, by design
-> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value. Prefer the flat read; fall back to `err.driverError` only when you need to keep the original driver error object (e.g. to forward it to Sentry with its native shape).
+> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`** — `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
 > If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.
