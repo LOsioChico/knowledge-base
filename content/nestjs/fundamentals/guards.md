@@ -46,9 +46,9 @@ export class AuthGuard implements CanActivate {
 
 ### Return shapes
 
-The same contract — "give me something that resolves to a boolean" — is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`. Same union as [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]] use for their own returns.
+The same contract ("give me something that resolves to a boolean") is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`. Same union as [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]] use for their own returns.
 
-**`boolean`** — synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise.
+**`boolean`**: synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise.
 
 ```typescript
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
@@ -63,7 +63,7 @@ export class AdminGuard implements CanActivate {
 }
 ```
 
-**`Promise<boolean>`** — anything `async`. The common case: verify a JWT, hit the DB, call an auth service.
+**`Promise<boolean>`**: anything `async`. The common case: verify a JWT, hit the DB, call an auth service.
 
 ```typescript
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
@@ -86,7 +86,7 @@ export class TokenGuard implements CanActivate {
 }
 ```
 
-**`Observable<boolean>`** — the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based cache lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
+**`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based cache lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
 
 ```typescript
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
@@ -110,7 +110,7 @@ export class RemoteAuthzGuard implements CanActivate {
 ```
 
 > [!tip]- Why a union and not just `Promise<boolean>`
-> Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. The same `T | Promise<T> | Observable<T>` shape is used by interceptors, pipes, and middleware — guards follow the convention so the same logic can move between layers without rewriting return types.
+> Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. The same `T | Promise<T> | Observable<T>` shape is used by interceptors, pipes, and [[nestjs/fundamentals/middleware|middleware]], so guards follow the convention and the same logic can move between layers without rewriting return types.
 
 ## Generate with the CLI
 
