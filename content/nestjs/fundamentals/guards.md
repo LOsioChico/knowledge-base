@@ -270,6 +270,16 @@ Routes without `@Roles()` are treated as public: `getAllAndOverride` returns `un
 
 The target list `[ctx.getHandler(), ctx.getClass()]` is the conventional order: handler first, controller second, so route-level metadata overrides controller-level. Source: [Reflection and metadata](https://docs.nestjs.com/fundamentals/execution-context#reflection-and-metadata).
 
+"First non-empty wins" means `getAllAndOverride` walks the targets **in order** and returns the value from the first one that has the metadata defined. Targets without it are skipped, later targets are never consulted, and nothing is merged. Concretely:
+
+| `@Roles()` placement                              | `getAllAndOverride(Roles, [handler, class])` returns |
+| ------------------------------------------------- | ---------------------------------------------------- |
+| `@Roles('admin')` on class only                   | `['admin']` (handler empty, falls through to class)  |
+| `@Roles('user')` on handler, `@Roles('admin')` on class | `['user']` (handler wins, class never read)    |
+| Neither                                           | `undefined`                                          |
+
+Use `getAllAndMerge` instead when you want the union (e.g. `['user', 'admin']` for the second row).
+
 ### Low-level `@SetMetadata`
 
 `Reflector.createDecorator` is the recommended path. `@SetMetadata('roles', [...])` is the older string-keyed alternative — fine for one-off cases, but loses type safety:
