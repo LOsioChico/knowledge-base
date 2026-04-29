@@ -47,8 +47,8 @@ The `use()` method can be sync, return a `Promise`, or end the response. **Never
 nest generate middleware logger      # full form
 nest g mi logger                     # short alias → src/logger/logger.middleware.ts
 nest g mi logger --flat              # no wrapping folder → src/logger.middleware.ts
-nest g mi auth/jwt                   # nested path → src/auth/jwt/jwt.middleware.ts
-nest g mi auth/jwt --flat            # nested + flat → src/auth/jwt.middleware.ts
+nest g mi http/request-id            # nested path → src/http/request-id/request-id.middleware.ts
+nest g mi http/request-id --flat     # nested + flat → src/http/request-id.middleware.ts
 nest g mi logger --no-spec           # skip the *.spec.ts test file
 nest g mi logger --dry-run           # preview the file plan, write nothing
 ```
