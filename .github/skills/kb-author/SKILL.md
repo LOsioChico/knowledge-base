@@ -43,6 +43,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **I** | Headlines and callout titles honestly describe what the code does | [audits/I-headline-vs-code.md](audits/I-headline-vs-code.md) |
 | **J** | Demo names (CLI paths, class names, file stubs) come from a domain the note endorses | [audits/J-demo-names.md](audits/J-demo-names.md) |
 | **K** | Callout severity matches reader stakes (warnings rare, infos common) | [audits/K-callout-severity.md](audits/K-callout-severity.md) |
+| **L** | Comparative claims ("same as X", "mirrors X", "X also returns Y") verified against the comparator's primary source, or dropped | [audits/L-comparative-claims.md](audits/L-comparative-claims.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
@@ -123,6 +124,10 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
 - **Marking every qualifier as `[!warning]`** → readers learn to skim past warnings, including
   the real ones. Warnings are for actual footguns (silent failures, security, hangs); everything
   else is `[!info]` or `[!tip]`. Run [Audit K](audits/K-callout-severity.md).
+- **Comparative claims written from memory** ("same union as X", "X also returns Y", "mirrors
+  the X convention") → you only verified the subject, not the comparator. The natural failure
+  mode is shipping a confident-sounding lie about X. Run [Audit L](audits/L-comparative-claims.md);
+  default to dropping the comparison and linking to the comparator's note.
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
