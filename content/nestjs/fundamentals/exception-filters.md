@@ -354,7 +354,7 @@ Override the response shape by passing `exceptionFactory` to `ValidationPipe` (p
 ## Gotchas
 
 > [!warning]- `useGlobalFilters()` skips microservice/WebSocket gateways in hybrid apps
-> In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application), `app.useGlobalFilters()` does **not** apply to gateways or microservices. Register via the [[nestjs/fundamentals/global-providers|`APP_FILTER` provider]] (or pass `{ inheritAppConfig: true }` when connecting microservices) so the filter covers every transport.
+> Same trap, same fix as the other lifecycle components. Use `APP_FILTER` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
 
 > [!warning]- Filter caught the exception → no further filter runs
 > Filters do **not** chain. Once a filter's `catch()` returns (or sends the response), no other filter sees the exception. To compose behaviors (log + reshape), inherit from `BaseExceptionFilter` and call `super.catch()` instead of binding two separate filters.

@@ -375,7 +375,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > Nest converts `false` into `ForbiddenException`. If the route is unauthenticated (no token) the correct status is `401 Unauthorized` — throw `new UnauthorizedException()` instead of returning `false`. See the official [putting it all together](https://docs.nestjs.com/guards#putting-it-all-together) note.
 
 > [!warning]- `useGlobalGuards()` skips microservice/WebSocket gateways in hybrid apps
-> In a hybrid app (`createHybrid` or `connectMicroservice`), `app.useGlobalGuards()` does **not** apply to gateways or microservices by default. Use the `APP_GUARD` provider, or pass `{ inheritAppConfig: true }` when connecting microservices. Source: [Hybrid application](https://docs.nestjs.com/faq/hybrid-application).
+> Same trap, same fix as the other lifecycle components. Use `APP_GUARD` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
 
 > [!info]- Guards run **after** middleware
 > If your authentication logic lives in middleware, it runs first and can attach `request.user` before the guard reads it. The opposite is impossible: a guard cannot mutate the request in time for middleware. If both layers need shared context, decide which one owns it.
