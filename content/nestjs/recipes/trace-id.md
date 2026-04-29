@@ -334,6 +334,13 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 - You're already using OpenTelemetry: prefer the OTel `traceparent` header and span IDs. They subsume request IDs and add propagation across more transports.
 - Per-request DB transactions or per-request cached values: use `Scope.REQUEST` providers or a transactional outbox. `AsyncLocalStorage` is for **observability** context, not business state.
 
+> [!info]- Correlation ID vs trace ID
+> Think of a **correlation ID** as a sticker: you slap the same value on every log line for one request, then grep by it. Flat list of logs.
+>
+> A **trace ID** is the same sticker plus a GPS tracker: every step also records `spanId`, `parentSpanId`, and start/end timestamps, so a tracing backend can reconstruct the call tree (gateway → orders → inventory → DB) with timings per hop. The ID itself is identical; the spans are what's added.
+>
+> This recipe builds the correlation-ID flavor and exposes it under the `trace-id` name because the wire format and the lookup workflow are the same. Distributed tracing with W3C `traceparent` and OpenTelemetry spans is a planned separate recipe.
+
 ## Gotchas
 
 > [!warning]- Use `als.run()`, not `als.enterWith()`

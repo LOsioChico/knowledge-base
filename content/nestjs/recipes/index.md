@@ -25,6 +25,7 @@ related:
 
 ## Pending
 
+- Distributed tracing with OpenTelemetry (W3C `traceparent`, spans, exporter setup)
 - Serve a React (or Next) app and NestJS on the same port
 - Stream large files without blowing up memory
 - Background jobs with BullMQ
