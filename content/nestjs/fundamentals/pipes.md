@@ -16,6 +16,7 @@ related:
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/typeorm/handle-database-errors]]"
 source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation

@@ -15,12 +15,17 @@ status: evergreen
 related:
   - "[[nestjs/data/typeorm/index]]"
   - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/recipes/validation]]"
 source:
   - https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
+  - https://www.postgresql.org/docs/current/protocol-error-fields.html
   - https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
+  - https://www.sqlite.org/rescode.html
   - https://docs.nestjs.com/exception-filters
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
+  - https://docs.nestjs.com/techniques/database
 ---
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.
@@ -28,9 +33,11 @@ source:
 ## Setup
 
 ```bash
-npm install typeorm pg
+npm install @nestjs/typeorm typeorm pg
 npm install --save-dev @types/pg
 ```
+
+`@nestjs/typeorm` provides `TypeOrmModule.forRoot/forFeature` and `@InjectRepository`. The recipes below use both.
 
 ## The shape of a `QueryFailedError`
 
@@ -47,11 +54,13 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
     super(/* ...message... */)
     if (driverError) {
       const { name: _, ...otherProperties } = driverError
-      Object.assign(this, { ...otherProperties }) // ← spread onto `this`
+      ObjectUtils.assign(this, { ...otherProperties }) // ← spread onto `this`
     }
   }
 }
 ```
+
+`ObjectUtils.assign` is TypeORM's small wrapper around `Object.assign`; the runtime behavior is the same.
 
 Both reads return the same value, but only one is properly typed. The `pg` package already exports a fully-typed `DatabaseError` class with `code`, `constraint`, `detail`, `table`, `column`, etc. (all `string | undefined`). Read through `err.driverError` and you get the official driver type with zero casts; read through `err.code` and you get `any`. Skip the augmentation type entirely:
 
@@ -92,16 +101,16 @@ export function isUniqueViolation(
 
 ## Driver error code reference
 
-| Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite `code` | Mapped in |
+| Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite extended code | Mapped by Recipe 1 (PG only) |
 | --- | --- | --- | --- | --- |
-| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs), [Recipe 2 service](#recipe-2-catch-in-the-service-when-you-need-domain-context) |
-| Foreign key | `23503` | `1452` (`ER_NO_REFERENCED_ROW_2`) on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` | [Recipe 1 filter](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Exclusion (PG only) | `23P01` | n/a | n/a | not mapped |
-| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | [Retryable errors gotcha](#gotchas) |
+| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` (2067) | [yes \u2192 409 + named constraint](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Foreign key | `23503` | `1452` on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` (787) | [yes \u2192 409](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` (1299) | [yes \u2192 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` (275) | [yes \u2192 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Exclusion (PG only) | `23P01` | n/a | n/a | no \u2192 falls through to 500 |
+| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | no \u2014 see [Retryable errors](#gotchas) |
 
-Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**.
+Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver — `better-sqlite3` exposes the symbolic name (e.g. `"SQLITE_CONSTRAINT_UNIQUE"`), `node-sqlite3` returns the primary code (`19` / `"SQLITE_CONSTRAINT"`) unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) are enabled. The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
 
 ## Recipe 1: Centralize in an exception filter (recommended for NestJS)
 
@@ -149,23 +158,27 @@ export class TypeOrmExceptionFilter extends BaseExceptionFilter {
     switch (err.code) {
       case PG.UNIQUE_VIOLATION:
         return new ConflictException({
+          statusCode: 409,
           error: "DUPLICATE",
           constraint: err.constraint,
           detail: err.detail,
         })
       case PG.FOREIGN_KEY_VIOLATION:
         return new ConflictException({
+          statusCode: 409,
           error: "FK_VIOLATION",
           constraint: err.constraint,
           detail: err.detail,
         })
       case PG.NOT_NULL_VIOLATION:
         return new UnprocessableEntityException({
+          statusCode: 422,
           error: "NOT_NULL",
           column: err.column,
         })
       case PG.CHECK_VIOLATION:
         return new UnprocessableEntityException({
+          statusCode: 422,
           error: "CHECK",
           constraint: err.constraint,
         })
@@ -225,7 +238,7 @@ The filter approach is generic. When you need to attach domain meaning (e.g., "t
 | `@Unique('name', ['col'])` (class-level) | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)` | ✅ | ✅ |
 | `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry | `CREATE UNIQUE INDEX "name" ON ...` | ✅ | ✅ |
 
-Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood), but the metadata location differs: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` — it matches what you're actually modeling ("no two users with the same email"), and `err.constraint` will report the constraint name directly.
+Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them** — [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says *"indexes are treated as constraints"* for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email" — it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
 
 ```typescript
 // user.entity.ts
@@ -269,7 +282,7 @@ export class UsersService {
     } catch (err: unknown) {
       if (isUniqueViolation(err) && err.driverError.constraint) {
         const code = USER_CONFLICTS[err.driverError.constraint]
-        if (code) throw new ConflictException({ error: code })
+        if (code) throw new ConflictException({ statusCode: 409, error: code })
       }
       throw err // Re-throw; the global filter handles the rest.
     }
@@ -282,6 +295,9 @@ Sample response for a duplicate email:
 ```json
 { "statusCode": 409, "error": "EMAIL_TAKEN" }
 ```
+
+> [!warning]- `HttpException` does NOT auto-inject `statusCode` into object payloads
+> When you pass an object to `new ConflictException({ ... })`, Nest's `BaseExceptionFilter` sends it as-is — only when you pass a string does it wrap it in `{ statusCode, message }`. So you have to put `statusCode` in the object yourself if you want it in the response body. Source: [`base-exception-filter.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts) (`isObject(res) ? res : { statusCode, message: res }`).
 
 ## When to use which
 
@@ -301,6 +317,12 @@ Sample response for a duplicate email:
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
 > If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.
+
+> [!info]- FK violations: 409 vs 422 depends on direction
+> Recipe 1 maps `23503` to `409 Conflict` uniformly. That's right when the violation comes from a **delete** with surviving dependents (the resource state conflicts with the request). For an **insert** that references a missing parent, `422 Unprocessable Entity` (or `400`) is more accurate \u2014 the input is well-formed but semantically invalid. Postgres doesn't distinguish the two cases in the error code itself; if you care, branch on the operation in the service layer or inspect `err.detail` (which contains `Key (...)=(...) is not present in table "..."` for inserts vs `Key (...)=(...) is still referenced from table "..."` for deletes).
+
+> [!info]- NOT NULL violations usually mean [[nestjs/recipes/validation|validation]] failed
+> If `23502` reaches the database, your DTO validation didn't require the field. Returning `422` keeps the client contract sane, but log the violation at `warn` or `error` — it's a server-side gap, not a client bug. The [[nestjs/fundamentals/pipes|validation pipe]] should have caught it first.
 
 > [!info]- Retryable errors
 > Postgres `40001` (`could_not_serialize`) and MySQL `1213` (deadlock) are recoverable: retry the transaction with backoff. Map them to a 503 with `Retry-After` rather than 500.
