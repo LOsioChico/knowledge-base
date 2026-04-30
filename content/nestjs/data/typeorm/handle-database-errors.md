@@ -69,6 +69,7 @@ Both reads return the same value, but only one is properly typed. The `pg` packa
 import { DatabaseError } from "pg"
 import { QueryFailedError } from "typeorm"
 
+  // SQLSTATE codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
 export const PG = {
   UNIQUE_VIOLATION: "23505",
   FOREIGN_KEY_VIOLATION: "23503",
@@ -103,14 +104,14 @@ export function isUniqueViolation(
 
 | Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite extended code | Mapped by Recipe 1 (PG only) |
 | --- | --- | --- | --- | --- |
-| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` (2067) | [yes \u2192 409 + named constraint](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Foreign key | `23503` | `1452` on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` (787) | [yes \u2192 409](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` (1299) | [yes \u2192 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` (275) | [yes \u2192 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Exclusion (PG only) | `23P01` | n/a | n/a | no \u2192 falls through to 500 |
-| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | no \u2014 see [Retryable errors](#gotchas) |
+| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` (2067) | [yes → 409 + named constraint](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Foreign key | `23503` | `1452` on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` (787) | [yes → 409](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` (1299) | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` (275) | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Exclusion (PG only) | `23P01` | n/a | n/a | no, falls through to 500 |
+| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | no; see [Retryable errors](#gotchas) |
 
-Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver — `better-sqlite3` exposes the symbolic name (e.g. `"SQLITE_CONSTRAINT_UNIQUE"`), `node-sqlite3` returns the primary code (`19` / `"SQLITE_CONSTRAINT"`) unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) are enabled. The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
+Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver: `better-sqlite3` exposes the symbolic name (e.g. `"SQLITE_CONSTRAINT_UNIQUE"`), `node-sqlite3` returns the primary code (`19` / `"SQLITE_CONSTRAINT"`) unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) are enabled. The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
 
 ## Recipe 1: Centralize in an exception filter (recommended for NestJS)
 
@@ -122,7 +123,6 @@ import {
   ArgumentsHost,
   Catch,
   ConflictException,
-  ExceptionFilter,
   HttpException,
   InternalServerErrorException,
   Logger,
@@ -132,8 +132,6 @@ import { BaseExceptionFilter } from "@nestjs/core"
 import { DatabaseError } from "pg"
 import { QueryFailedError } from "typeorm"
 import { isPgError, PG } from "./db-errors"
-
-// Postgres SQLSTATE codes — https://www.postgresql.org/docs/current/errcodes-appendix.html
 
 @Catch(QueryFailedError)
 export class TypeOrmExceptionFilter extends BaseExceptionFilter {
@@ -205,7 +203,7 @@ export class AppModule {}
 
 ### What the client sees
 
-Given a unique index on `users.email` (named `users_email_key` — see [Recipe 2](#recipe-2-catch-in-the-service-when-you-need-domain-context) for why naming matters), posting a duplicate email:
+Given a unique index on `users.email` (named `users_email_key`; see [Recipe 2](#recipe-2-catch-in-the-service-when-you-need-domain-context) for why naming matters), posting a duplicate email:
 
 ```http
 POST /users
@@ -238,7 +236,7 @@ The filter approach is generic. When you need to attach domain meaning (e.g., "t
 | `@Unique('name', ['col'])` (class-level) | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)` | ✅ | ✅ |
 | `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry | `CREATE UNIQUE INDEX "name" ON ...` | ✅ | ✅ |
 
-Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them** — [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says *"indexes are treated as constraints"* for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email" — it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
+Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says *"indexes are treated as constraints"* for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
 
 ```typescript
 // user.entity.ts
@@ -297,7 +295,7 @@ Sample response for a duplicate email:
 ```
 
 > [!warning]- `HttpException` does NOT auto-inject `statusCode` into object payloads
-> When you pass an object to `new ConflictException({ ... })`, Nest's `BaseExceptionFilter` sends it as-is — only when you pass a string does it wrap it in `{ statusCode, message }`. So you have to put `statusCode` in the object yourself if you want it in the response body. Source: [`base-exception-filter.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts) (`isObject(res) ? res : { statusCode, message: res }`).
+> When you pass an object to `new ConflictException({ ... })`, Nest's `BaseExceptionFilter` sends it as-is; only when you pass a string does it wrap it in `{ statusCode, message }`. So you have to put `statusCode` in the object yourself if you want it in the response body. Source: [`base-exception-filter.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts) (`isObject(res) ? res : { statusCode, message: res }`).
 
 ## When to use which
 
@@ -313,16 +311,16 @@ Sample response for a duplicate email:
 > Driver messages are locale-dependent on MySQL and can change between Postgres minor versions. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
 
 > [!warning]- Driver props live in two places, by design
-> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`** — `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
+> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`**: `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
 > If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.
 
 > [!info]- FK violations: 409 vs 422 depends on direction
-> Recipe 1 maps `23503` to `409 Conflict` uniformly. That's right when the violation comes from a **delete** with surviving dependents (the resource state conflicts with the request). For an **insert** that references a missing parent, `422 Unprocessable Entity` (or `400`) is more accurate \u2014 the input is well-formed but semantically invalid. Postgres doesn't distinguish the two cases in the error code itself; if you care, branch on the operation in the service layer or inspect `err.detail` (which contains `Key (...)=(...) is not present in table "..."` for inserts vs `Key (...)=(...) is still referenced from table "..."` for deletes).
+> Recipe 1 maps `23503` to `409 Conflict` uniformly. That's right when the violation comes from a **delete** with surviving dependents (the resource state conflicts with the request). For an **insert** that references a missing parent, `422 Unprocessable Entity` (or `400`) is more accurate: the input is well-formed but semantically invalid. Postgres doesn't distinguish the two cases in the error code itself; if you care, branch on the operation in the service layer or inspect `err.detail` (which contains `Key (...)=(...) is not present in table "..."` for inserts vs `Key (...)=(...) is still referenced from table "..."` for deletes).
 
 > [!info]- NOT NULL violations usually mean [[nestjs/recipes/validation|validation]] failed
-> If `23502` reaches the database, your DTO validation didn't require the field. Returning `422` keeps the client contract sane, but log the violation at `warn` or `error` — it's a server-side gap, not a client bug. The [[nestjs/fundamentals/pipes|validation pipe]] should have caught it first.
+> If `23502` reaches the database, your DTO validation didn't require the field. Returning `422` keeps the client contract sane, but log the violation at `warn` or `error`: it's a server-side gap, not a client bug. The [[nestjs/fundamentals/pipes|validation pipe]] should have caught it first.
 
 > [!info]- Retryable errors
 > Postgres `40001` (`could_not_serialize`) and MySQL `1213` (deadlock) are recoverable: retry the transaction with backoff. Map them to a 503 with `Retry-After` rather than 500.
