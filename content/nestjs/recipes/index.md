@@ -22,7 +22,7 @@ related:
 - [[nestjs/recipes/monorepo|NestJS CLI monorepos]]
 - [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
-- [[nestjs/recipes/trace-id|Request trace ID propagation]] (seed)
+- [[nestjs/recipes/trace-id|Request trace ID propagation]]
 - [[nestjs/recipes/validation|Request validation with class-validator]]
 
 ## Pending
