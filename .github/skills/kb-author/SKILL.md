@@ -45,6 +45,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **K** | Callout severity matches reader stakes (warnings rare, infos common) | [audits/K-callout-severity.md](audits/K-callout-severity.md) |
 | **L** | Comparative claims ("same as X", "mirrors X", "X also returns Y") verified against the comparator's primary source, or dropped | [audits/L-comparative-claims.md](audits/L-comparative-claims.md) |
 | **M** | Wikilinks point at the right concept, not just the matching word; rephrase prose for vocabulary collisions instead of accepting the link or silencing with `unrelated:` | [audits/M-ambiguous-wikilinks.md](audits/M-ambiguous-wikilinks.md) |
+| **N** | Re-fetch every URL in `source:` and diff prose against the live doc; mandatory for recipes, security, auth, error-handling, and version-specific notes | [audits/N-source-verification.md](audits/N-source-verification.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
@@ -137,6 +138,10 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   not to accept the link, add a disambiguating wikilink, or silence with `unrelated:`.
   `unrelated:` is for genuine semantic neighbors, not vocabulary collisions you authored. Run
   [Audit M](audits/M-ambiguous-wikilinks.md).
+- **Treating Audit E as sufficient because every section has a `source:` URL** → E checks that
+  citations exist; it does NOT check that they back the claim. Memory-vs-source drift hides in
+  exactly the unsurprising claims you didn't think to verify. Run [Audit N](audits/N-source-verification.md)
+  on every recipe and every note touching auth/security/error-handling/version-specific behavior.
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
