@@ -193,7 +193,17 @@ export class CatchEverythingFilter implements ExceptionFilter {
 ```
 
 > [!warning]- Order matters when mixing catch-all with typed filters
-> When `@UseFilters(CatchEverything, HttpExceptionFilter)` lists the catch-all first, the typed filter still wins for `HttpException` because Nest matches each filter's `@Catch(...)` against the exception type. Reverse the order and the catch-all silently swallows everything before the typed filter is checked. Declare the broadest filter first. Source: [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything).
+> Nest **reverses** the `@UseFilters(...)` array before searching it (see [`router-exception-filters.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts): `setCustomFilters(filters.reverse())`), then picks the first match via `Array.find` ([`select-exception-filter-metadata.util.ts`](https://github.com/nestjs/nest/blob/master/packages/common/utils/select-exception-filter-metadata.util.ts)). A catch-all (`@Catch()` with no args) matches **anything**, so it must be searched **last**, which means it must be written **first** in `@UseFilters(...)`.
+>
+> ```typescript
+> // ✅ Catch-all first → reversed to [Http, CatchEverything] → typed wins for HttpException, catch-all handles the rest
+> @UseFilters(CatchEverythingFilter, HttpExceptionFilter)
+>
+> // ❌ Catch-all last → reversed to [CatchEverything, Http] → catch-all swallows every HttpException before Http is checked
+> @UseFilters(HttpExceptionFilter, CatchEverythingFilter)
+> ```
+>
+> Source: [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything).
 
 ## Common recipes
 
