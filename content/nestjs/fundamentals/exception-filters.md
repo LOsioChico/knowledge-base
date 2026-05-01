@@ -88,29 +88,29 @@ The schematic emits an empty `@Catch()` filter (catch-all) by default. Source: [
 
 All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and the default global filter responds with the right status:
 
-| Status | Class                            |
-| -----: | -------------------------------- |
-|    400 | `BadRequestException`            |
-|    401 | `UnauthorizedException`          |
-|    402 | `PaymentRequiredException`       |
-|    403 | `ForbiddenException`             |
-|    404 | `NotFoundException`              |
-|    405 | `MethodNotAllowedException`      |
-|    406 | `NotAcceptableException`         |
-|    408 | `RequestTimeoutException`        |
-|    409 | `ConflictException`              |
-|    410 | `GoneException`                  |
-|    412 | `PreconditionFailedException`    |
-|    413 | `PayloadTooLargeException`       |
-|    415 | `UnsupportedMediaTypeException`  |
-|    418 | `ImATeapotException`             |
-|    422 | `UnprocessableEntityException`   |
-|    500 | `InternalServerErrorException`   |
-|    501 | `NotImplementedException`        |
-|    502 | `BadGatewayException`            |
-|    503 | `ServiceUnavailableException`    |
-|    504 | `GatewayTimeoutException`        |
-|    505 | `HttpVersionNotSupportedException` |
+| Status | Class                            | Worked example |
+| -----: | -------------------------------- | -------------- |
+|    400 | `BadRequestException`            | [[nestjs/recipes/validation#Customizing the error response\|Customizing the validation error response]] |
+|    401 | `UnauthorizedException`          | [[nestjs/auth/jwt-strategy\|JWT auth strategy]] |
+|    402 | `PaymentRequiredException`       | |
+|    403 | `ForbiddenException`             | [[nestjs/fundamentals/guards#Common recipes\|Custom guard exception]] |
+|    404 | `NotFoundException`              | |
+|    405 | `MethodNotAllowedException`      | |
+|    406 | `NotAcceptableException`         | |
+|    408 | `RequestTimeoutException`        | [[nestjs/fundamentals/interceptors#Common recipes\|Timeout interceptor]] |
+|    409 | `ConflictException`              | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB unique-violation filter]] |
+|    410 | `GoneException`                  | |
+|    412 | `PreconditionFailedException`    | |
+|    413 | `PayloadTooLargeException`       | |
+|    415 | `UnsupportedMediaTypeException`  | |
+|    418 | `ImATeapotException`             | |
+|    422 | `UnprocessableEntityException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB constraint-violation filter]] |
+|    500 | `InternalServerErrorException`   | |
+|    501 | `NotImplementedException`        | |
+|    502 | `BadGatewayException`            | |
+|    503 | `ServiceUnavailableException`    | |
+|    504 | `GatewayTimeoutException`        | |
+|    505 | `HttpVersionNotSupportedException` | |
 
 All accept `(message?, options?)` where `options = { cause?, description? }`. With a description:
 
@@ -193,7 +193,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
 ```
 
 > [!warning]- Order matters when mixing catch-all with typed filters
-> If you bind a catch-all (`@Catch()`) **and** a typed filter (`@Catch(HttpException)`) at the same scope, declare the **catch-all first** in the `@UseFilters(...)` list. Otherwise the catch-all eats the exception before the typed filter gets a chance. Source: [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything).
+> When `@UseFilters(CatchEverything, HttpExceptionFilter)` lists the catch-all first, the typed filter still wins for `HttpException` because Nest matches each filter's `@Catch(...)` against the exception type. Reverse the order and the catch-all silently swallows everything before the typed filter is checked. Declare the broadest filter first. Source: [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything).
 
 ## Common recipes
 
@@ -356,11 +356,8 @@ Override the response shape by passing `exceptionFactory` to `ValidationPipe` (p
 > [!warning]- `useGlobalFilters()` skips microservice/WebSocket gateways in hybrid apps
 > Same trap, same fix as the other lifecycle components. Use `APP_FILTER` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
 
-> [!warning]- Filter caught the exception → no further filter runs
-> Filters do **not** chain. Once a filter's `catch()` returns (or sends the response), no other filter sees the exception. To compose behaviors (log + reshape), inherit from `BaseExceptionFilter` and call `super.catch()` instead of binding two separate filters.
-
-> [!warning]- `@Catch()` empty must come *before* typed filters at the same scope
-> When `@UseFilters(CatchEverything, HttpExceptionFilter)` lists the catch-all first, the typed filter still wins for `HttpException` because Nest tries each filter against the exception type. Reverse the order and the catch-all silently swallows everything. Declare the broadest filter first.
+> [!info]- Filter caught the exception → no further filter runs
+> Filters do **not** chain. Once a filter's `catch()` returns (or sends the response), no other filter sees the exception. To compose behaviors (log + reshape), inherit from `BaseExceptionFilter` and call `super.catch()` instead of binding two separate filters. Source: [`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) (`invokeCustomFilters` selects one filter and returns).
 
 > [!warning]- `BaseExceptionFilter` subclasses cannot be `new`'d at controller/route scope
 > They depend on the `HttpAdapter` injected by Nest. Use `@UseFilters(MyFilter)` (the **class**, not an instance) or register globally via `APP_FILTER`. Source: [Inheritance](https://docs.nestjs.com/exception-filters#inheritance).
