@@ -38,6 +38,13 @@ source:
 
 ```ts
 // main.ts
+import { NestFactory } from "@nestjs/core"
+import { ValidationPipe } from "@nestjs/common"
+import { AppModule } from "./app.module"
+import { AuthGuard } from "./auth.guard"
+import { LoggingInterceptor } from "./logging.interceptor"
+import { HttpExceptionFilter } from "./http-exception.filter"
+
 const app = await NestFactory.create(AppModule)
 app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
 app.useGlobalGuards(new AuthGuard())
@@ -52,7 +59,11 @@ The component is `new`'d **outside the DI container**. Nest never sees its const
 
 ```ts
 // app.module.ts
+import { Module, ValidationPipe } from "@nestjs/common"
 import { APP_PIPE, APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core"
+import { AuthGuard } from "./auth.guard"
+import { LoggingInterceptor } from "./logging.interceptor"
+import { HttpExceptionFilter } from "./http-exception.filter"
 
 @Module({
   providers: [
