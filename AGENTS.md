@@ -217,5 +217,15 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 ## When you finish
 
 - Run `cd quartz && npx quartz build --serve -d ../content` if you changed plugins or config. Skip for content-only edits unless requested.
-- Commit. Push to `main`. GitHub Pages rebuilds in 1-2 minutes.
+- Commit. Do NOT push: pushing is the user's call.
+- After committing any change under `content/`, run the LLM audit on the touched files and surface findings in chat for triage. CI no longer runs this; it's a chat-driven step:
+
+  ```bash
+  set -a; source .env; set +a   # loads CURSOR_API_KEY (gitignored)
+  cd scripts/audit-notes
+  yarn start --json ../../content/<path>.md [more.md ...] > /tmp/audit.json 2> /tmp/audit.err
+  ```
+
+  Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings get reviewed and fixed if valid; advisory findings are dismissable.
+- If the user asks to push, GitHub Pages rebuilds in 1-2 minutes.
 - If you established a new convention, update this file in the same commit.
