@@ -1,0 +1,15 @@
+{
+  "search.exclude": {
+    "quartz/quartz/**": true,
+    "quartz/node_modules/**": true,
+    "quartz/public/**": true,
+    "quartz/docs/**": true,
+    "quartz/.quartz-cache/**": true
+  },
+  "files.watcherExclude": {
+    "**/quartz/quartz/**": true,
+    "**/quartz/node_modules/**": true,
+    "**/quartz/public/**": true,
+    "**/quartz/.quartz-cache/**": true
+  }
+}

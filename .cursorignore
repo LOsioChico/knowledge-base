@@ -1,0 +1,4 @@
+quartz/quartz/**
+quartz/node_modules/**
+quartz/public/**
+quartz/docs/**
