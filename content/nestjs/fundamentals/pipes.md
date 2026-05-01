@@ -74,7 +74,7 @@ All exported from `@nestjs/common`.
 | `ParseIntPipe`     | string → integer                                             | Regex `^-?\d+$`. Throws `BadRequestException` by default. See [composing pipes](#common-recipes)                                                                  |
 | `ParseFloatPipe`   | string → float                                               | `parseFloat` + `isFinite` check                                                                                                                                   |
 | `ParseBoolPipe`    | `"true"`/`"false"` → boolean                                 | Only those two strings (or actual booleans) pass                                                                                                                  |
-| `ParseArrayPipe`   | string → array                                               | Splits on `,` by default; override with `new ParseArrayPipe({ separator: ';' })`. Wraps a `ValidationPipe({ transform: true })` to coerce items                   |
+| `ParseArrayPipe`   | string → array                                               | Splits on `,` by default; override with `new ParseArrayPipe({ separator: ';' })`. Wraps a `ValidationPipe({ transform: true })` to coerce items. See [validating an array body](#gotchas)                   |
 | `ParseUUIDPipe`    | UUID string validation                                       | `version?: '3' \| '4' \| '5' \| '7'` (default: any version)                                                                                                       |
 | `ParseEnumPipe`    | enum membership check                                        | Constructor requires the enum. See [composing pipes](#common-recipes)                                                                                             |
 | `ParseDatePipe`    | string/number → `Date`                                       | `new Date(value)`; supports `default: () => Date`                                                                                                                 |
@@ -186,6 +186,8 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > [!example]- Recommended global setup
 >
 > ```typescript
+> import { ValidationPipe } from "@nestjs/common"
+>
 > app.useGlobalPipes(
 >   new ValidationPipe({
 >     whitelist: true,
