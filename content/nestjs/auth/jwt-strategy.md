@@ -41,7 +41,7 @@ source:
 | Nest wrapper            | `@nestjs/passport`               | Adapts Passport to Nest: `PassportStrategy` base class, `AuthGuard(name)`   |
 | Your code               | `JwtStrategy` + `JwtAuthGuard`   | Subclass `PassportStrategy(Strategy)`; subclass `AuthGuard('jwt')`          |
 
-`AuthGuard('jwt')` does **not** "do JWT" — it asks Passport to run whatever strategy is registered under the name `'jwt'`. Your `JwtStrategy` claims that name (it's the default for `passport-jwt`). Swap it for any other strategy and `AuthGuard('jwt')` would invoke that one instead.
+`AuthGuard('jwt')` does **not** "do JWT": it asks Passport to run whatever strategy is registered under the name `'jwt'`. Your `JwtStrategy` claims that name (it's the default for `passport-jwt`). Swap it for any other strategy and `AuthGuard('jwt')` would invoke that one instead.
 
 `@nestjs/jwt` is a **separate** package: a thin wrapper around [`jsonwebtoken`](https://github.com/auth0/node-jsonwebtoken) used to **sign** tokens at login. The strategy package (`passport-jwt`) handles **verification** at request time. Both must be configured with the same secret.
 
@@ -54,7 +54,7 @@ npm install --save-dev @types/passport-jwt
 
 ## Login endpoint
 
-The login flow is plain controller code: validate credentials, sign a JWT, return it. No Passport guard on this route — Passport's job starts on the **next** request.
+The login flow is plain controller code: validate credentials, sign a JWT, return it. No Passport guard on this route: Passport's job starts on the **next** request.
 
 ```typescript
 // auth/auth.module.ts
@@ -179,10 +179,10 @@ What each option does:
 | `ignoreExpiration`  | `false` (default) lets Passport reject expired tokens with `401` automatically            |
 | `secretOrKey`       | Same secret used in `JwtModule.register({ secret })` for signing                          |
 
-`validate(payload)` is called **only after** the signature check passes — Passport guarantees the token is authentic. The return value becomes `request.user`. Throw `UnauthorizedException` here to reject otherwise-valid tokens (e.g., revoked-token list, banned users).
+`validate(payload)` is called **only after** the signature check passes: Passport guarantees the token is authentic. The return value becomes `request.user`. Throw `UnauthorizedException` here to reject otherwise-valid tokens (e.g., revoked-token list, banned users).
 
 > [!info]- `JwtStrategy.validate()` runs **after** signature verification, not before
-> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here — focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throw `UnauthorizedException` to reject; throwing anything else still becomes 401 but loses the explicit semantics.
+> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here: focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throw `UnauthorizedException` to reject; throwing anything else still becomes 401 but loses the explicit semantics.
 
 > [!info]- Returning `null`/`undefined` from `validate()` produces `Unauthorized`
 > `@nestjs/passport`'s default `handleRequest` throws `UnauthorizedException` whenever the strategy returns a falsy value or `info` indicates failure. To return a custom error (e.g., `403 Forbidden` for inactive users), override `handleRequest(err, user, info)` on the guard. Source: [Extending guards](https://docs.nestjs.com/recipes/passport#extending-guards).
@@ -258,7 +258,7 @@ Response (`200 OK`):
 { "userId": 1, "username": "john" }
 ```
 
-The body matches whatever `JwtStrategy.validate()` returned — that's the contract.
+The body matches whatever `JwtStrategy.validate()` returned: that's the contract.
 
 ## Global guard with `@Public()` opt-out
 
@@ -349,7 +349,7 @@ The `getAllAndOverride` order `[handler, class]` means a class-level `@Public()`
 > Passport registers strategies on a global instance, so request-scoped strategies are never instantiated. If you need per-request data inside `validate()`, inject `ModuleRef` and resolve dependencies via `ContextIdFactory.getByRequest(request)` (also requires `passReqToCallback: true` in the strategy options). Source: [Request-scoped strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies).
 
 > [!warning]- Without `@Public()`, the login route also requires a token
-> When `JwtAuthGuard` is the global `APP_GUARD`, every route — including `/auth/login` — runs through it. Forgetting `@Public()` on the login handler returns `401 Unauthorized` to every client and you'll think Passport is broken. Add `@Public()` to login, signup, and any health/status endpoints.
+> When `JwtAuthGuard` is the global `APP_GUARD`, every route: including `/auth/login`: runs through it. Forgetting `@Public()` on the login handler returns `401 Unauthorized` to every client and you'll think Passport is broken. Add `@Public()` to login, signup, and any health/status endpoints.
 
 > [!info]- The strategy's default name is `'jwt'`, override with the second `PassportStrategy` arg
 > `PassportStrategy(Strategy, 'myjwt')` registers the strategy under the name `'myjwt'` and you'd then use `AuthGuard('myjwt')`. Useful when you have multiple JWT strategies (e.g., user tokens vs service tokens with different secrets).

@@ -194,7 +194,7 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 
 > [!example]- Access log middleware (status, URL, duration)
 >
-> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware sees every request, including 404s, requests rejected by guards, and requests that blew up in pipes — an [[nestjs/fundamentals/interceptors|interceptor]] can't log those because the handler never ran.
+> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware sees every request, including 404s, requests rejected by guards, and requests that blew up in pipes: an [[nestjs/fundamentals/interceptors|interceptor]] can't log those because the handler never ran.
 >
 > Rule of thumb:
 >

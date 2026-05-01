@@ -175,11 +175,11 @@ Then import `UsersModule` from `AppModule`'s `imports`.
 `autoLoadEntities: true` (set in Step 2) tells `@nestjs/typeorm` to collect every entity passed to any `forFeature` call and add it to the connection's `entities` array automatically. Without it, you'd need to maintain an `entities: [User, Post, ...]` list on `forRoot` and re-import every domain class into the root module, which leaks domain boundaries.
 
 > [!warning]- `autoLoadEntities` does NOT include unregistered relation targets
-> If `User` has `@OneToMany(() => Post, ...)` but no module ever calls `TypeOrmModule.forFeature([Post])`, `Post` is **not** loaded — TypeORM will throw "Entity metadata for User#posts was not found" at startup. Either register `Post` in some `forFeature` (even a module that doesn't use the repository) or fall back to an explicit `entities` array. Source: [docs.nestjs.com/techniques/database#auto-load-entities](https://docs.nestjs.com/techniques/database#auto-load-entities).
+> If `User` has `@OneToMany(() => Post, ...)` but no module ever calls `TypeOrmModule.forFeature([Post])`, `Post` is **not** loaded: TypeORM will throw "Entity metadata for User#posts was not found" at startup. Either register `Post` in some `forFeature` (even a module that doesn't use the repository) or fall back to an explicit `entities` array. Source: [docs.nestjs.com/techniques/database#auto-load-entities](https://docs.nestjs.com/techniques/database#auto-load-entities).
 
 ## Step 4: Repository pattern and CRUD
 
-Inject the repository with `@InjectRepository(Entity)`. The token under the hood is `getRepositoryToken(User)` — useful for mocking in tests.
+Inject the repository with `@InjectRepository(Entity)`. The token under the hood is `getRepositoryToken(User)`: useful for mocking in tests.
 
 ```typescript
 // users/users.service.ts
@@ -289,7 +289,7 @@ Content-Type: application/json
 }
 ```
 
-A duplicate email returns Postgres SQLSTATE `23505` wrapped in `QueryFailedError`. Handle it centrally with the filter from [[nestjs/data/typeorm/handle-database-errors|handle database errors]] — don't try/catch in every controller.
+A duplicate email returns Postgres SQLSTATE `23505` wrapped in `QueryFailedError`. Handle it centrally with the filter from [[nestjs/data/typeorm/handle-database-errors|handle database errors]]: don't try/catch in every controller.
 
 ## Step 5: Migrations from a standalone `DataSource`
 
@@ -426,4 +426,4 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 - [NestJS database techniques](https://docs.nestjs.com/techniques/database): canonical reference for `TypeOrmModule` options.
 - [TypeORM data source options](https://typeorm.io/data-source-options): every option `forRoot` accepts, per dialect.
 - [TypeORM migrations](https://typeorm.io/migrations): generating, running, and reverting migrations from the CLI.
-- [Telerik: Learning NestJS Part 2 — Connecting to Database](https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database): walkthrough-style alternative covering CRUD endpoints with `@Res()`-style controllers (this note prefers Nest's default response handling).
+- [Telerik: Learning NestJS Part 2: Connecting to Database](https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database): walkthrough-style alternative covering CRUD endpoints with `@Res()`-style controllers (this note prefers Nest's default response handling).

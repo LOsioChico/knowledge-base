@@ -111,7 +111,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **Why a union and not just `Promise<boolean>`?** Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. Other Nest constructs in the [[nestjs/fundamentals/request-lifecycle|request pipeline]] use their own, different unions — see each note for the exact signature: [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/middleware|middleware]].
+> **Why a union and not just `Promise<boolean>`?** Forcing every guard to return a `Promise` would add a tick to every request even for trivial checks. Accepting `Observable<boolean>` means RxJS-native sources (HTTP, gRPC, WebSocket, microservices) don't need a paradigm bridge. Other Nest constructs in the [[nestjs/fundamentals/request-lifecycle|request pipeline]] use their own, different unions: see each note for the exact signature: [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/middleware|middleware]].
 
 ## Generate with the CLI
 
@@ -133,7 +133,7 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 ## Built-in guards
 
-Nest core ships **none**. Authorization is application-specific, so you write your own — or pull one from a peer package.
+Nest core ships **none**. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
 | Guard                 | Package             | Purpose                                                                                                                                                                 |
 | --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -182,7 +182,7 @@ export class CatsController {
 }
 ```
 
-The global-scope variant of the same DI question — `useGlobalGuards(new X())` vs `APP_GUARD` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: a guard that reads the current request|worked example of a guard that injects a request-scoped service]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalGuards` vs `APP_GUARD`.
+The global-scope variant of the same DI question: `useGlobalGuards(new X())` vs `APP_GUARD`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: a guard that reads the current request|worked example of a guard that injects a request-scoped service]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalGuards` vs `APP_GUARD`.
 
 ## Order
 
@@ -192,7 +192,7 @@ Multiple guards run in this order:
 2. Controller guards (left-to-right inside `@UseGuards()`).
 3. Route guards (left-to-right inside `@UseGuards()`).
 
-The chain stops at the **first** guard that returns `false`, throws, or rejects a returned `Promise` — later guards do not run.
+The chain stops at the **first** guard that returns `false`, throws, or rejects a returned `Promise`: later guards do not run.
 
 ```typescript
 import { Controller, Get, UseGuards } from "@nestjs/common"
@@ -264,7 +264,7 @@ Routes without `@Roles()` are treated as public: `getAllAndOverride` returns `un
 
 | Method                       | When to use                                                                                               |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `get(decorator, target)`     | Single target — handler **or** class. Returns `undefined` if absent. See the [`@SetMetadata` snippet](#low-level-setmetadata) |
+| `get(decorator, target)`     | Single target: handler **or** class. Returns `undefined` if absent. See the [`@SetMetadata` snippet](#low-level-setmetadata) |
 | `getAllAndOverride(d, [..])` | Multiple targets, **first non-empty wins**. Use when route metadata should override controller defaults. See the [`RolesGuard` example](#strongly-typed-decorators-with-reflectorcreatedecorator) and the [`IS_PUBLIC` recipe](#common-recipes) |
 | `getAllAndMerge(d, [..])`    | Multiple targets, **merge** arrays/objects. Use when you want both controller and route metadata combined |
 
@@ -282,7 +282,7 @@ Use `getAllAndMerge` instead when you want the union (e.g. `['user', 'admin']` f
 
 ### Low-level `@SetMetadata`
 
-`Reflector.createDecorator` is the recommended path. `@SetMetadata('roles', [...])` is the older string-keyed alternative — fine for one-off cases, but loses type safety:
+`Reflector.createDecorator` is the recommended path. `@SetMetadata('roles', [...])` is the older string-keyed alternative: fine for one-off cases, but loses type safety:
 
 ```typescript
 import { SetMetadata } from "@nestjs/common"
@@ -371,18 +371,18 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 
 | Symptom                                              | Likely cause                                                                                                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `403 Forbidden resource` on every request            | Guard returns `false` (or `undefined` — falsy). Check `canActivate` actually returns `true`                  |
+| `403 Forbidden resource` on every request            | Guard returns `false` (or `undefined`: falsy). Check `canActivate` actually returns `true`                  |
 | Global guard's injected provider is `undefined`      | Registered via `useGlobalGuards(new X())` instead of `APP_GUARD` provider                                    |
-| `Reflector` returns `undefined` for known decorator  | Looking up the wrong target — used `getHandler()` when the metadata is on the class (`getClass()`)           |
+| `Reflector` returns `undefined` for known decorator  | Looking up the wrong target: used `getHandler()` when the metadata is on the class (`getClass()`)           |
 | Controller-level metadata ignored                    | Used `reflector.get(d, ctx.getHandler())` instead of `getAllAndOverride(d, [getHandler(), getClass()])`      |
 | Guard runs but `request.user` is `undefined`         | Authentication middleware/guard didn't run first, or no upstream layer attached `user`                       |
-| Guard doesn't run for WebSocket/microservice handler | Wrong context — verify with `ctx.getType()` and use `switchToWs()` / `switchToRpc()` for the right transport |
+| Guard doesn't run for WebSocket/microservice handler | Wrong context: verify with `ctx.getType()` and use `switchToWs()` / `switchToRpc()` for the right transport |
 | `cannot read property of undefined` inside guard     | Calling `switchToHttp()` in a non-HTTP context. Branch on `ctx.getType()` for cross-transport guards         |
 
 ## Gotchas
 
 > [!warning]- Returning `false` always yields `403`, never `401`
-> Nest converts `false` into `ForbiddenException`. If the route is unauthenticated (no token) the correct status is `401 Unauthorized` — throw `new UnauthorizedException()` instead of returning `false`. See the official [putting it all together](https://docs.nestjs.com/guards#putting-it-all-together) note.
+> Nest converts `false` into `ForbiddenException`. If the route is unauthenticated (no token) the correct status is `401 Unauthorized`: throw `new UnauthorizedException()` instead of returning `false`. See the official [putting it all together](https://docs.nestjs.com/guards#putting-it-all-together) note.
 
 > [!warning]- `useGlobalGuards()` skips microservice/WebSocket gateways in hybrid apps
 > Same trap, same fix as the other lifecycle components. Use `APP_GUARD` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
@@ -435,7 +435,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 - Mutating the raw request, attaching correlation IDs: use [[nestjs/fundamentals/middleware|middleware]].
 - Validating or coercing input shape: use [[nestjs/fundamentals/pipes|a pipe]].
 - Logging, caching, or wrapping the handler with timing: use [[nestjs/fundamentals/interceptors|an interceptor]].
-- Turning a thrown error into an HTTP response: that's an [[nestjs/fundamentals/exception-filters|exception filter]] — the guard's job ends at "throw".
+- Turning a thrown error into an HTTP response: that's an [[nestjs/fundamentals/exception-filters|exception filter]]: the guard's job ends at "throw".
 
 ## See also
 

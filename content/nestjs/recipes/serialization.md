@@ -102,7 +102,7 @@ export class UsersController {
 { "id": 1, "email": "a@b.c" }
 ```
 
-`password` and `passwordResetToken` are stripped on the way out by the globally-bound `ClassSerializerInterceptor`. The handler still has access to them inside the controller — the stripping happens after `return`.
+`password` and `passwordResetToken` are stripped on the way out by the globally-bound `ClassSerializerInterceptor`. The handler still has access to them inside the controller: the stripping happens after `return`.
 
 ### `@Expose()` and `excludeAll` strategy
 
@@ -189,7 +189,7 @@ The `value` argument is the raw property; the function returns whatever should a
 
 ## The class-instance gotcha
 
-Those decorators only fire when the controller returns a **class instance**. Return a plain object and the interceptor silently skips it — every field leaks.
+Those decorators only fire when the controller returns a **class instance**. Return a plain object and the interceptor silently skips it: every field leaks.
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
@@ -235,7 +235,7 @@ Same data, different type, very different blast radius.
 
 ### How your ORM affects this
 
-The handler is free to use every field of a class instance — `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances.
+The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances.
 
 | Source                                            | What you get back                       | `@Exclude()` works? | Fix                                          |
 | ------------------------------------------------- | --------------------------------------- | :-----------------: | -------------------------------------------- |
@@ -307,10 +307,10 @@ Same entity, two payloads, zero conditional code in the controller.
 > The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` no-ops and every field reaches the wire. Always `return new Entity(...)` or `plainToInstance(Entity, raw)`. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
 
 > [!warning]- Nested objects need `@Type()` or their decorators don't run
-> If a field is another class instance — `items: OrderItem[]`, `address: Address` — `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.
+> If a field is another class instance: `items: OrderItem[]`, `address: Address`: `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.
 
 > [!warning]- `@SerializeOptions()` is inert without `ClassSerializerInterceptor`
-> Adding `@SerializeOptions({ groups: [...] })` to a route does nothing on its own. The metadata is only read by `ClassSerializerInterceptor`. Forget to register the interceptor (globally or via `@UseInterceptors`) and group-based views silently degrade to "no filtering" — admin-only fields ship to every caller.
+> Adding `@SerializeOptions({ groups: [...] })` to a route does nothing on its own. The metadata is only read by `ClassSerializerInterceptor`. Forget to register the interceptor (globally or via `@UseInterceptors`) and group-based views silently degrade to "no filtering": admin-only fields ship to every caller.
 
 > [!info]- `reflect-metadata` must be imported before any decorator runs
 > Required at the top of `main.ts`. Nest's CLI scaffolds this; the failure mode (a thrown error at startup) is loud, not silent, but worth knowing if you're hand-bootstrapping.
@@ -320,7 +320,7 @@ Same entity, two payloads, zero conditional code in the controller.
 
 ## See also
 
-- [[nestjs/recipes/validation|Request validation with class-validator]] — the inbound twin: same `class-transformer`/`class-validator` pair, with the parallel `groups` mechanism for per-route rules.
+- [[nestjs/recipes/validation|Request validation with class-validator]]: the inbound twin: same `class-transformer`/`class-validator` pair, with the parallel `groups` mechanism for per-route rules.
 - [[nestjs/fundamentals/interceptors|Interceptors]] for the interceptor lifecycle and how `ClassSerializerInterceptor` plugs into it.
 - [Official serialization docs](https://docs.nestjs.com/techniques/serialization)
 - [`class-transformer` README](https://github.com/typestack/class-transformer)

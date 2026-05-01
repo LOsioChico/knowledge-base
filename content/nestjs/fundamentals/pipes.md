@@ -99,9 +99,9 @@ All exported from `@nestjs/common`.
 | Param      | `@Body(new ValidationPipe())`                     |
 
 > [!warning] Pass the class to `@UsePipes`, not an instance
-> `@UsePipes(MyPipe)` is resolved by Nest's DI container so the pipe's constructor injections work. `@UsePipes(new MyPipe())` skips DI: any injected dependency is `undefined` and the pipe crashes the first time it touches it. The param-level form `@Body(new ValidationPipe({ whitelist: true }))` is a deliberate exception — built-in pipes like `ValidationPipe` take a stateless options object rather than DI-resolved dependencies, so the instance form is idiomatic there. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
+> `@UsePipes(MyPipe)` is resolved by Nest's DI container so the pipe's constructor injections work. `@UsePipes(new MyPipe())` skips DI: any injected dependency is `undefined` and the pipe crashes the first time it touches it. The param-level form `@Body(new ValidationPipe({ whitelist: true }))` is a deliberate exception: built-in pipes like `ValidationPipe` take a stateless options object rather than DI-resolved dependencies, so the instance form is idiomatic there. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
-The global-scope variant of the same DI question — `useGlobalPipes(new X())` vs `APP_PIPE` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
+The global-scope variant of the same DI question: `useGlobalPipes(new X())` vs `APP_PIPE`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
 ## Order: the param level reversal
 
@@ -150,7 +150,7 @@ export class CatsController {
 ## ValidationPipe
 
 > [!info] Deep dive lives in the [[nestjs/recipes/validation|validation recipe]]
-> This section is a reference for the option flags. For end-to-end DTO patterns — global setup, `whitelist`, `transform`, validation groups, nested objects, custom validators, `exceptionFactory` — see the recipe.
+> This section is a reference for the option flags. For end-to-end DTO patterns: global setup, `whitelist`, `transform`, validation groups, nested objects, custom validators, `exceptionFactory`: see the recipe.
 
 Install peer deps:
 
@@ -179,7 +179,7 @@ npm i class-validator class-transformer
 | `forbidUnknownValues`   | `false`     | Reject unknown objects. Nest forces `false` even though `class-validator`'s own default is `true` ([issue #10683](https://github.com/nestjs/nest/issues/10683))           |
 | `skipMissingProperties` | `false`     | Skip validation for null/undefined props                                                                                                                                  |
 | `stopAtFirstError`      | `false`     | Stop at the first failing decorator per property                                                                                                                          |
-| `groups`                | `undefined` | Validation groups — same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups — same DTO, different rules per route\|the validation recipe]] |
+| `groups`                | `undefined` | Validation groups: same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups: same DTO, different rules per route\|the validation recipe]] |
 
 Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
@@ -327,7 +327,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
 | Symptom                                 | Likely cause                                                                                                     |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| DTO instance methods are `undefined`    | Missing `transform: true` — you got a plain object                                                               |
+| DTO instance methods are `undefined`    | Missing `transform: true`: you got a plain object                                                               |
 | Numbers arrive as strings               | Add `transformOptions: { enableImplicitConversion: true }` or use `@Type(() => Number)` from `class-transformer` |
 | Extra fields appear in DTO              | Enable `whitelist: true` to strip them                                                                           |
 | Validation always passes                | Pipe not bound globally, or DTO class lacks decorators                                                           |
@@ -339,7 +339,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > [`class-transformer`](https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts) implicit conversion only triggers in `plain → class` direction, reads `Reflect.getMetadata('design:type', ...)` (so the property needs at least one decorator), and only knows how to convert `String`, `Number`, `Boolean`, `Date`, `Buffer`. Where it works and where it doesn't:
 >
 > - **`string`, `number`, `boolean`, `Date`**: implicit conversion is enough. `@Type()` not needed.
-> - **Branded types** (`string & { __brand: 'Id' }`): converts as the base type (`String`). The brand is compile-time only, no runtime guarantee — add `@IsUUID()`, regex, or a custom validator if you care.
+> - **Branded types** (`string & { __brand: 'Id' }`): converts as the base type (`String`). The brand is compile-time only, no runtime guarantee: add `@IsUUID()`, regex, or a custom validator if you care.
 > - **Nested class** (no circular imports): sometimes works implicitly, but **always declare `@Type(() => NestedClass)`** to be safe.
 > - **Array of classes** (`items: Item[]`): does not work. TS emits `design:type = Array` with no element info. `@Type(() => Item)` is **required**.
 > - **`interface` / structural type**: does not work. TS emits `design:type = Object`, the value stays as a plain object. Use a real class.
@@ -347,7 +347,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > Rule of thumb: implicit conversion is a primitive-coercion shortcut, not a substitute for `@Type()` on anything object-shaped.
 
 > [!warning]- Arrays of classes need both `@Type()` and `@ValidateNested({ each: true })`
-> The `Item[]` in TypeScript is invisible at runtime — class-transformer reads `Array.isArray(value)` and applies whatever `@Type()` says to **each element**. Without `@Type()`, elements stay as plain objects. Without `@ValidateNested({ each: true })` from [`class-validator`](https://github.com/typestack/class-validator#validating-nested-objects), the decorators inside `Item` (`@IsString()`, `@IsInt()`, etc.) **are not executed** on the children — silent pass.
+> The `Item[]` in TypeScript is invisible at runtime: class-transformer reads `Array.isArray(value)` and applies whatever `@Type()` says to **each element**. Without `@Type()`, elements stay as plain objects. Without `@ValidateNested({ each: true })` from [`class-validator`](https://github.com/typestack/class-validator#validating-nested-objects), the decorators inside `Item` (`@IsString()`, `@IsInt()`, etc.) **are not executed** on the children: silent pass.
 >
 > ```ts
 > import { Type } from "class-transformer"
@@ -388,7 +388,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > TypeScript erases generics and interfaces during compilation, so they leave nothing for `class-validator` to inspect. `ValidationPipe` will not validate `Partial<CreateCatDto>`, `Pick<...>`, a bare interface, or a union type. Use a concrete class (often via [`@nestjs/mapped-types`](https://docs.nestjs.com/openapi/mapped-types) helpers like `PartialType`, `PickType`, `OmitType`, `IntersectionType`). Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
 
 > [!warning]- `body: CreateUserDto[]` is not validated as an array of DTOs
-> `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array` — the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
+> `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array`: the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
 >
 > ```ts
 > import { Body, Controller, ParseArrayPipe, Post } from "@nestjs/common"
@@ -417,7 +417,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > Source: [Parsing and validating arrays](https://docs.nestjs.com/techniques/validation#parsing-and-validating-arrays).
 
 > [!warning]- `@Req()` / `@Res()` bypass the pipe layer
-> Pipes run on **decorator-extracted arguments** (`@Body`, `@Param`, `@Query`, custom decorators). When you grab `@Req()` or `@Res()` directly, you're working with the raw Express/Fastify objects — no metatype, no pipe runs. If you need validation, decorate properties (`@Body() body: Dto`) instead of reaching into `req.body` yourself.
+> Pipes run on **decorator-extracted arguments** (`@Body`, `@Param`, `@Query`, custom decorators). When you grab `@Req()` or `@Res()` directly, you're working with the raw Express/Fastify objects: no metatype, no pipe runs. If you need validation, decorate properties (`@Body() body: Dto`) instead of reaching into `req.body` yourself.
 
 ## When to reach for it
 
@@ -428,7 +428,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 ## When not to
 
 - Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|lifecycle]] and have no concept of "deny this request".
-- Mutating the raw request before any handler-level concern: use [[nestjs/fundamentals/middleware|middleware]] — pipes only see one argument at a time, not the whole request object.
+- Mutating the raw request before any handler-level concern: use [[nestjs/fundamentals/middleware|middleware]]: pipes only see one argument at a time, not the whole request object.
 - Wrapping the response or timing the handler: that's an [[nestjs/fundamentals/interceptors|interceptor]]. Pipes don't run on the way out.
 - Catching a thrown error to reshape it: use an [[nestjs/fundamentals/exception-filters|exception filter]]. A pipe's job ends at "throw".
 

@@ -20,7 +20,7 @@ source:
   - https://github.com/typestack/class-validator
 ---
 
-> Validate request bodies, query params, and path params against DTO classes — declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers [[nestjs/recipes/serialization|serialization]] on the way out and validation on the way in.
+> Validate request bodies, query params, and path params against DTO classes: declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers [[nestjs/recipes/serialization|serialization]] on the way out and validation on the way in.
 
 ## When to reach for it
 
@@ -123,14 +123,14 @@ Returns `400 Bad Request`:
 
 Nothing else to wire up.
 
-## `whitelist` and `forbidNonWhitelisted` — the security pair
+## `whitelist` and `forbidNonWhitelisted`: the security pair
 
 ```ts
 new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true })
 ```
 
-- **`whitelist: true`** — silently strips properties that aren't decorated on the DTO.
-- **`forbidNonWhitelisted: true`** — upgrades the silent strip to a `400`. Callers learn immediately that the field is unknown.
+- **`whitelist: true`**: silently strips properties that aren't decorated on the DTO.
+- **`forbidNonWhitelisted: true`**: upgrades the silent strip to a `400`. Callers learn immediately that the field is unknown.
 
 With `whitelist: true` only, this request:
 
@@ -157,9 +157,9 @@ Add `forbidNonWhitelisted: true` and the same request fails fast:
 Use both in production. Strip-only is fine for migrations where old clients still send deprecated fields you want to ignore.
 
 > [!warning]- Without `whitelist`, mass-assignment is a real bug
-> `Object.assign(user, dto)` on a DTO that wasn't whitelisted is how `isAdmin: true` ends up in your DB. The pipe defaults to letting unknown fields through — flip the switch.
+> `Object.assign(user, dto)` on a DTO that wasn't whitelisted is how `isAdmin: true` ends up in your DB. The pipe defaults to letting unknown fields through: flip the switch.
 
-## `transform: true` — DTOs become real class instances
+## `transform: true`: DTOs become real class instances
 
 By default, `@Body() dto: CreateUserDto` is a **plain object** that just happens to satisfy the type at compile time. With `transform: true`, the pipe runs `plainToInstance(CreateUserDto, body)` so `dto instanceof CreateUserDto` is true and any methods on the DTO actually work.
 
@@ -197,7 +197,7 @@ The pipe inspects the **metatype** of the parameter (the TS type Nest reflects f
 | `@Query('page') page: number`             | `Number`          |        ❌         | The raw string (`"2"`, not `2`)               |
 | `@UploadedFile() file: Express.Multer.File` | `Object`        |        ❌         | The raw [[nestjs/recipes/file-uploads|multer]] file (validate with `ParseFilePipe`) |
 
-For path/query coercion of a single primitive, reach for [[nestjs/fundamentals/pipes|`ParseIntPipe` / `ParseBoolPipe`]] instead — `ValidationPipe` won't touch them.
+For path/query coercion of a single primitive, reach for [[nestjs/fundamentals/pipes|`ParseIntPipe` / `ParseBoolPipe`]] instead: `ValidationPipe` won't touch them.
 
 ### `enableImplicitConversion: true`
 
@@ -219,7 +219,7 @@ export class PaginationQuery {
 > [!info]- Implicit conversion can mask bad input
 > `enableImplicitConversion` will turn `?active=anything` into `true` for a `boolean` field. Pair with explicit decorators (`@IsBoolean()`, `@Transform(({ value }) => value === 'true')`) for fields where loose coercion would hurt.
 
-## Validation groups — same DTO, different rules per route
+## Validation groups: same DTO, different rules per route
 
 This is the parallel to `class-transformer` groups in the [[nestjs/recipes/serialization#Role-based views with groups|serialization recipe]]. Same pattern, different library: serialization groups pick which fields **leave**, validation groups pick which rules **run**.
 
@@ -278,7 +278,7 @@ export class UsersController {
 }
 ```
 
-`PATCH /users/1` with the same body passes — the `update` group only requires `email`:
+`PATCH /users/1` with the same body passes: the `update` group only requires `email`:
 
 ```json
 { "email": "a@b.c" }
@@ -352,7 +352,7 @@ export class CreatePostDto {
 }
 ```
 
-For async rules that need DI (e.g., "is this email already taken?"), use `ValidatorConstraint` with `{ async: true }` and register the constraint class as a provider — see the [class-validator docs](https://github.com/typestack/class-validator#custom-validation-classes).
+For async rules that need DI (e.g., "is this email already taken?"), use `ValidatorConstraint` with `{ async: true }` and register the constraint class as a provider: see the [class-validator docs](https://github.com/typestack/class-validator#custom-validation-classes).
 
 ## Customizing the error response
 
@@ -378,7 +378,7 @@ In production, also set `disableErrorMessages: true` if you don't want the raw c
 
 ## See also
 
-- [[nestjs/fundamentals/pipes|Pipes fundamentals]] — `ValidationPipe` options table and binding scopes
-- [[nestjs/recipes/serialization|Response serialization]] — the `class-transformer` side of the same pair, including the parallel `groups` mechanism
+- [[nestjs/fundamentals/pipes|Pipes fundamentals]]: `ValidationPipe` options table and binding scopes
+- [[nestjs/recipes/serialization|Response serialization]]: the `class-transformer` side of the same pair, including the parallel `groups` mechanism
 - [Validation docs](https://docs.nestjs.com/techniques/validation)
 - [class-validator decorators reference](https://github.com/typestack/class-validator#validation-decorators)

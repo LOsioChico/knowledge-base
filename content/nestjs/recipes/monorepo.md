@@ -342,7 +342,7 @@ Response (and a `🍿` log line in the terminal):
 > `nest build popcorn` compiles the library standalone, useful in CI to gate library changes before the apps that consume it. Source: [Creating libraries](https://docs.nestjs.com/cli/libraries#creating-libraries).
 
 > [!info]- Libraries have no `main.ts`
-> A library is `"type": "library"` in `nest-cli.json` with `"entryFile": "index"` (vs `"main"` for apps). It can't run on its own — it's only useful when an app imports it. Source: [Libraries metadata](https://docs.nestjs.com/cli/libraries#creating-libraries).
+> A library is `"type": "library"` in `nest-cli.json` with `"entryFile": "index"` (vs `"main"` for apps). It can't run on its own: it's only useful when an app imports it. Source: [Libraries metadata](https://docs.nestjs.com/cli/libraries#creating-libraries).
 
 ## What gets shared, what stays per-app
 
@@ -385,7 +385,7 @@ Cons:
 > A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"builder": { "type": "tsc" }` in `nest-cli.json#compilerOptions`. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
 
 > [!info]- The library prefix is global per workspace
-> The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths — and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.
+> The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths: and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.
 
 > [!info]- You can layer `nx` or `turborepo` on top
 > Nest's monorepo mode is just folder layout + a CLI config. Nothing stops you from putting `nx.json` or `turbo.json` next to `nest-cli.json` and using their task graphs to orchestrate `nest build <name>` calls. The Nest CLI doesn't fight you.

@@ -22,7 +22,7 @@ source:
   - https://rxjs.dev/api/operators
 ---
 
-> Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice — built on RxJS, so the response stream is fair game.
+> Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.
 
 ## Signature
 
@@ -61,7 +61,7 @@ Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-s
 ## The pre/post pattern
 
 > [!info] One method, two halves
-> `intercept(context, next)` runs **once per request**. Code before `next.handle()` is the **pre** phase; RxJS operators piped onto the returned `Observable` are the **post** phase. NestJS calls this the AOP "Pointcut" pattern — the handler invocation is the pointcut, your interceptor wraps it.
+> `intercept(context, next)` runs **once per request**. Code before `next.handle()` is the **pre** phase; RxJS operators piped onto the returned `Observable` are the **post** phase. NestJS calls this the AOP "Pointcut" pattern: the handler invocation is the pointcut, your interceptor wraps it.
 
 ```text
 intercept(ctx, next) {
@@ -72,7 +72,7 @@ intercept(ctx, next) {
 }
 ```
 
-If you **never call** `next.handle()`, the handler is skipped — useful for caching (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
+If you **never call** `next.handle()`, the handler is skipped: useful for caching (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
 
 ### Pre-phase short-circuit
 
@@ -97,12 +97,12 @@ Same `ExecutionContext` that [[nestjs/fundamentals/guards|guards]] use. The meth
 
 | Method           | Returns                                                                                                             |
 | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `getHandler()`   | The handler `Function` about to run — key for `Reflector` metadata lookup                                           |
+| `getHandler()`   | The handler `Function` about to run: key for `Reflector` metadata lookup                                           |
 | `getClass()`     | The controller `Type` (the class, not an instance)                                                                  |
 | `switchToHttp()` | `HttpArgumentsHost` → `getRequest()`, `getResponse()`, `getNext()`                                                  |
 | `switchToRpc()`  | RPC context (microservices)                                                                                         |
 | `switchToWs()`   | WebSocket context                                                                                                   |
-| `getType()`      | `'http' \| 'rpc' \| 'ws'` (or `'graphql'` with `@nestjs/graphql`) — branch on this for cross-transport interceptors |
+| `getType()`      | `'http' \| 'rpc' \| 'ws'` (or `'graphql'` with `@nestjs/graphql`): branch on this for cross-transport interceptors |
 
 Reading route metadata works exactly like in a guard: inject `Reflector`, call `reflector.getAllAndOverride(decorator, [ctx.getHandler(), ctx.getClass()])`. See [[nestjs/fundamentals/guards#Reflector and custom decorators|Guards > Reflector and custom decorators]] for the full pattern.
 
@@ -149,13 +149,13 @@ Nest ships only one out of the box; the rest you compose yourself with RxJS.
 > Response body: `{ "id": 1, "email": "a@b.c" }`; `password` is stripped. Full coverage in [[nestjs/recipes/serialization|the serialization recipe]] (groups, `@Expose`, `@Transform`, `excludeAll`).
 
 > [!warning] `ClassSerializerInterceptor` only acts on **class instances**
-> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `instanceToPlain`. Returning a plain object (`return { id, email, password }`) bypasses it silently — `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dep.
+> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `instanceToPlain`. Returning a plain object (`return { id, email, password }`) bypasses it silently: `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dep.
 
 ## Binding
 
 | Scope      | How                                                                                                               |
 | ---------- | ----------------------------------------------------------------------------------------------------------------- |
-| Global     | `app.useGlobalInterceptors(new LoggingInterceptor())` or the `APP_INTERCEPTOR` provider (preferred — supports DI) |
+| Global     | `app.useGlobalInterceptors(new LoggingInterceptor())` or the `APP_INTERCEPTOR` provider (preferred: supports DI) |
 | Controller | `@UseInterceptors(LoggingInterceptor)` on the class                                                               |
 | Route      | `@UseInterceptors(LoggingInterceptor)` on the method                                                              |
 
@@ -164,7 +164,7 @@ Controller- and route-scoped bindings always resolve the interceptor through Nes
 > [!warning] Pass the class, not an instance
 > `@UseInterceptors(LoggingInterceptor)` is resolved by Nest's DI container so the interceptor's constructor injections are wired up. `@UseInterceptors(new LoggingInterceptor())` skips DI: any injected dependency is `undefined` and the interceptor crashes the first time it touches it. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
-The global-scope variant of the same DI question — `useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR` — has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: an interceptor that reads config|worked example of an interceptor that reads config]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalInterceptors` vs `APP_INTERCEPTOR`.
+The global-scope variant of the same DI question: `useGlobalInterceptors(new X())` vs `APP_INTERCEPTOR`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. See in particular the [[nestjs/fundamentals/global-providers#Worked example: an interceptor that reads config|worked example of an interceptor that reads config]] and the [[nestjs/fundamentals/global-providers#Side-by-side|side-by-side comparison]] of `useGlobalInterceptors` vs `APP_INTERCEPTOR`.
 
 ## Order: the FILO trick
 
@@ -201,7 +201,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 | `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)    |
 | `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)    |
 | `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`. See the [per-route timeout recipe](#common-recipes) |
-| `of(value)`      | Build a stream from a constant — used to short-circuit (cache). See the [cache recipe](#common-recipes)    |
+| `of(value)`      | Build a stream from a constant: used to short-circuit (cache). See the [cache recipe](#common-recipes)    |
 | `from(promise)`  | Convert a promise into an observable inside the pre phase           |
 | `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options. See the [retry recipe](#common-recipes) |
 | `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError` |
@@ -244,7 +244,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> Runs **before** [[exception-filters|exception filters]] — the filter sees the rethrown `BadGatewayException`, not the original.
+> Runs **before** [[exception-filters|exception filters]]: the filter sees the rethrown `BadGatewayException`, not the original.
 
 > [!example]- Per-route timeout
 >
@@ -291,7 +291,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> Returning a fresh `Observable` (here from `of`) means `next.handle()` is **never called** and the handler doesn't run. The `Map` is a stub — swap it for a real cache (`@nestjs/cache-manager`, Redis) in production.
+> Returning a fresh `Observable` (here from `of`) means `next.handle()` is **never called** and the handler doesn't run. The `Map` is a stub: swap it for a real cache (`@nestjs/cache-manager`, Redis) in production.
 
 > [!example]- Retry transient handler failures
 >
@@ -333,12 +333,12 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> Nest awaits the returned promise before subscribing. The handler is delayed until `recordStart` resolves, so don't `await` slow I/O here unless you mean to add latency to every request. Errors thrown from the awaited code skip `next.handle()` entirely (pre-phase throw — see above).
+> Nest awaits the returned promise before subscribing. The handler is delayed until `recordStart` resolves, so don't `await` slow I/O here unless you mean to add latency to every request. Errors thrown from the awaited code skip `next.handle()` entirely (pre-phase throw: see above).
 
 ## Gotchas
 
 > [!warning]- `@Res()` disables response mapping
-> If a handler injects `@Res()` and writes to the response directly, RxJS operators on the returned stream **don't run** — Nest never receives a return value to pipe through. Use `@Res({ passthrough: true })` when you need both raw access (cookies, streaming) and interceptors.
+> If a handler injects `@Res()` and writes to the response directly, RxJS operators on the returned stream **don't run**: Nest never receives a return value to pipe through. Use `@Res({ passthrough: true })` when you need both raw access (cookies, streaming) and interceptors.
 
 > [!warning]- Calling `next.handle()` more than once runs the handler more than once
 > Each call to `next.handle()` returns a fresh cold `Observable`; subscribing twice subscribes the handler twice. The naïve "try cache then fall back" pattern is the usual offender:
@@ -356,7 +356,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > Rule: invoke `next.handle()` exactly **once** per request. To replay a value, capture it with `tap` or `shareReplay`, don't re-subscribe. To short-circuit, return a different observable (`of(x)`) instead of calling `next.handle()` at all.
 
 > [!info]- Cross-transport interceptors must branch on `ctx.getType()`
-> The same interceptor class can be applied to HTTP, microservice, WebSocket, and GraphQL handlers. The request shape and "response" semantics differ in each context — `switchToHttp().getResponse()` is meaningless in RPC, and the return value of an RPC handler doesn't become an HTTP body. Branch explicitly:
+> The same interceptor class can be applied to HTTP, microservice, WebSocket, and GraphQL handlers. The request shape and "response" semantics differ in each context: `switchToHttp().getResponse()` is meaningless in RPC, and the return value of an RPC handler doesn't become an HTTP body. Branch explicitly:
 >
 > ```typescript
 > if (ctx.getType() === "http") {
@@ -368,21 +368,21 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > See [[nestjs/fundamentals/guards#Cross-transport guards: branch on `ctx.getType()`|Guards > Cross-transport]] for the full pattern.
 
 > [!info]- Pre-phase errors don't reach `catchError(next.handle())`
-> The pipeline `next.handle().pipe(catchError(...))` only catches errors **emitted by the handler stream**. An error thrown synchronously before `next.handle()` is invoked is a regular thrown exception — it bypasses RxJS entirely and lands in [[nestjs/fundamentals/exception-filters|exception filters]]. Use `try/catch` in the pre phase, or wrap the pre work in `defer(() => …)`.
+> The pipeline `next.handle().pipe(catchError(...))` only catches errors **emitted by the handler stream**. An error thrown synchronously before `next.handle()` is invoked is a regular thrown exception: it bypasses RxJS entirely and lands in [[nestjs/fundamentals/exception-filters|exception filters]]. Use `try/catch` in the pre phase, or wrap the pre work in `defer(() => …)`.
 
 ## Common errors
 
 | Symptom                                            | Likely cause                                                                                                                     |
 | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | Response transform doesn't apply                   | Handler uses `@Res()` without `{ passthrough: true }`, so Nest never sees the return value                                       |
-| `@Exclude()` fields appear in the response         | Handler returned a plain object, not a class instance — `ClassSerializerInterceptor` only acts on instances                      |
+| `@Exclude()` fields appear in the response         | Handler returned a plain object, not a class instance: `ClassSerializerInterceptor` only acts on instances                      |
 | Global interceptor can't inject                    | Registered via `useGlobalInterceptors(new X())` instead of `APP_INTERCEPTOR` provider                                            |
 | `catchError` doesn't fire                          | Error thrown in **pre** phase (before `next.handle()`); only `next.handle().pipe(catchError(…))` catches handler errors          |
-| Handler runs twice                                 | `next.handle()` called more than once (often `catchError(() => next.handle())` retry attempt) — use the `retry` operator instead |
+| Handler runs twice                                 | `next.handle()` called more than once (often `catchError(() => next.handle())` retry attempt): use the `retry` operator instead |
 | Logger fires twice for one request                 | Same interceptor bound at multiple scopes (e.g., globally **and** at controller level)                                           |
-| Outbound order surprises                           | Outbound is **FILO** — route post runs first, global post runs last. Don't bind the same interceptor at two scopes               |
-| `tap` runs on subscribe but value is missing       | Stream is hot/multi-subscribed elsewhere — use `share()` or rethink the pipeline                                                 |
-| `cannot read property of undefined` in interceptor | `switchToHttp()` called in non-HTTP context — branch on `ctx.getType()` for cross-transport interceptors                         |
+| Outbound order surprises                           | Outbound is **FILO**: route post runs first, global post runs last. Don't bind the same interceptor at two scopes               |
+| `tap` runs on subscribe but value is missing       | Stream is hot/multi-subscribed elsewhere: use `share()` or rethink the pipeline                                                 |
+| `cannot read property of undefined` in interceptor | `switchToHttp()` called in non-HTTP context: branch on `ctx.getType()` for cross-transport interceptors                         |
 
 ## When to reach for it
 

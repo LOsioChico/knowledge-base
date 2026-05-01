@@ -2,6 +2,7 @@
 title: Knowledge Base
 aliases: [home, vault]
 tags: [type/moc]
+area: root
 status: evergreen
 related:
   - "[[nestjs/index]]"

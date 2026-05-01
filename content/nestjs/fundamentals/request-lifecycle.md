@@ -44,7 +44,7 @@ flowchart TD
 > [!info]- The two interceptor boxes are the **same** interceptor
 > A single `intercept(context, next)` call wraps the handler. The "before" box is the code that runs prior to invoking the handler; the "after" box is the logic chained on the returned stream. Two boxes in the diagram, **one** method. Details in [[interceptors#The pre/post pattern|Interceptors > The pre/post pattern]].
 >
-> You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers — pre runs in registration order, post runs in **FILO** (first in, last out).
+> You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers: pre runs in registration order, post runs in **FILO** (first in, last out).
 
 > [!info]- Why [[middleware|middleware]] sits outside the exception zone
 > Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` inside middleware bubbles to the platform's default [[exception-filters|error handler]], **not** to your `@Catch()` filters. To route a middleware error through the filter chain, call `next(err)` explicitly so the platform forwards it to Nest's exception layer.
@@ -57,7 +57,7 @@ flowchart TD
 4. [[interceptors|Interceptors]] (before): global, controller, route.
 5. [[pipes|Pipes]]: global, controller, route, then route parameters in reverse order.
 6. **Controller handler** runs.
-7. [[interceptors|Interceptors]] (after): route, controller, global. FILO order — first interceptor in is the last one out.
+7. [[interceptors|Interceptors]] (after): route, controller, global. FILO order: first interceptor in is the last one out.
 8. If anything threw, [[exception-filters|Exception filters]] catch it, resolving from route up to global.
 9. Response is sent.
 
