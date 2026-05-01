@@ -260,12 +260,9 @@ export class AppModule {}
 ## Edge cases worth knowing
 
 - **Multiple registrations stack.** You can register the same `APP_*` token more than once across modules; all of them run. Good for layering (e.g., a `LoggingInterceptor` plus a `TimeoutInterceptor`).
-- **`useGlobalPipes` and an `APP_PIPE` provider together** both apply. Avoid mixing unless you have a reason: the relative order is implementation-defined and easy to get wrong.
+- **`useGlobalPipes` and an `APP_PIPE` provider together** both apply, but the relative order between them isn't documented by Nest. Pick one binding style per enhancer kind so you never have to care which runs first.
 - **No need to export `APP_*` providers.** They aren't consumed by other modules; the container picks them up by token automatically.
 - **Testing.** Provider-bound globals are visible to `Test.createTestingModule(...)`, so you can override them with `.overrideProvider(APP_GUARD).useClass(MockGuard)`. The `useGlobalX` form bypasses the testing module entirely.
-
-> [!todo]- Verify which enhancer runs first when `APP_*` provider and `useGlobalX(new T())` coexist
-> Empirical observation suggests the provider-bound enhancer runs first (resolved during module initialization) and the `useGlobalX` instance wraps it, but the framework docs don't pin this down. Confirm against `@nestjs/core/injector` source before stating it in prose; until then, "avoid mixing" is the safe guidance above.
 
 ## See also
 
