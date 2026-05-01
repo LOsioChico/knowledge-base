@@ -5,6 +5,7 @@
   "description": "Spike: use Cursor SDK (composer-2) to audit knowledge-base notes against AGENTS.md.",
   "scripts": {
     "start": "tsx audit-notes.ts",
+    "autofix": "tsx autofix.ts",
     "lint:content": "tsx pass0-all.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -19,5 +19,5 @@
     "lib": ["ES2023"],
     "types": ["node"]
   },
-  "include": ["audit-notes.ts", "deterministic.ts", "types.ts", "pass0-all.ts", "post-filter.ts", "ground.ts", "candidates/show-dont-tell.ts"]
+  "include": ["audit-notes.ts", "autofix.ts", "deterministic.ts", "types.ts", "pass0-all.ts", "post-filter.ts", "ground.ts", "candidates/show-dont-tell.ts"]
 }
