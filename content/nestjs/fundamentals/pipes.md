@@ -427,7 +427,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
 ## When not to
 
-- Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|lifecycle]] and have no concept of "deny this request".
+- Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|pipeline]] and have no concept of "deny this request".
 - Mutating the raw request before any handler-level concern: use [[nestjs/fundamentals/middleware|middleware]]: pipes only see one argument at a time, not the whole request object.
 - Wrapping the response or timing the handler: that's an [[nestjs/fundamentals/interceptors|interceptor]]. Pipes don't run on the way out.
 - Catching a thrown error to reshape it: use an [[nestjs/fundamentals/exception-filters|exception filter]]. A pipe's job ends at "throw".

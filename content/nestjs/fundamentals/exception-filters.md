@@ -30,7 +30,7 @@ source:
   - https://docs.nestjs.com/cli/usages
 ---
 
-> Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other lifecycle component is a forward checkpoint that runs in order; a filter runs *only* when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
+> Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other request-pipeline component is a forward checkpoint that runs in order; a filter runs *only* when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
 >
 > Two things make filters unique: (1) bindings resolve **bottom-up** (route → controller → global, the opposite of every other layer), and (2) only the most specific filter wins: once it catches the exception, no other filter sees it. The most specific gets first dibs; the global filter is the safety net underneath.
 
@@ -175,7 +175,7 @@ export class CatsController {
 
 ## Order: route first, then controller, then global
 
-Filters resolve **bottom-up**, the opposite of every other lifecycle component:
+Filters resolve **bottom-up**, the opposite of every other pipeline layer:
 
 1. Route-bound filter
 2. Controller-bound filter
@@ -366,7 +366,7 @@ Override the response shape by passing `exceptionFactory` to `ValidationPipe` (p
 ## Gotchas
 
 > [!warning]- `useGlobalFilters()` skips microservice/WebSocket gateways in hybrid apps
-> Same trap, same fix as the other lifecycle components. Use `APP_FILTER` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
+> Same trap, same fix as the other pipeline components. Use `APP_FILTER` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
 
 > [!info]- Filter caught the exception → no further filter runs
 > Filters do **not** chain. Once a filter's `catch()` returns (or sends the response), no other filter sees the exception. To compose behaviors (log + reshape), inherit from `BaseExceptionFilter` and call `super.catch()` instead of binding two separate filters. Source: [`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) (`invokeCustomFilters` selects one filter and returns).

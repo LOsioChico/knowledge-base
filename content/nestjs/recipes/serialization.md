@@ -321,6 +321,6 @@ Same entity, two payloads, zero conditional code in the controller.
 ## See also
 
 - [[nestjs/recipes/validation|Request validation with class-validator]]: the inbound twin: same `class-transformer`/`class-validator` pair, with the parallel `groups` mechanism for per-route rules.
-- [[nestjs/fundamentals/interceptors|Interceptors]] for the interceptor lifecycle and how `ClassSerializerInterceptor` plugs into it.
+- [[nestjs/fundamentals/interceptors|Interceptors]] for the interceptor pipeline and how `ClassSerializerInterceptor` plugs into it.
 - [Official serialization docs](https://docs.nestjs.com/techniques/serialization)
 - [`class-transformer` README](https://github.com/typestack/class-transformer)

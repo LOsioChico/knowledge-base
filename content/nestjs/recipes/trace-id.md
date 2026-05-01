@@ -378,7 +378,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 
 ## See also
 
-- [[nestjs/fundamentals/middleware|Middleware]]: where the context is opened. The lifecycle reason this is the only correct layer.
+- [[nestjs/fundamentals/middleware|Middleware]]: where the context is opened. The pipeline reason this is the only correct layer.
 - [[nestjs/fundamentals/exception-filters|Exception filters]]: where the trace ID lands in the error body.
 - [[nestjs/fundamentals/interceptors|Interceptors]]: where the trace ID prefixes timing and structured logs.
 - [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]: how `APP_FILTER` and `APP_INTERCEPTOR` register the trace-aware versions.

@@ -53,7 +53,7 @@ nest g mi logger --no-spec           # skip the *.spec.ts test file
 nest g mi logger --dry-run           # preview the file plan, write nothing
 ```
 
-Same shape as the other lifecycle generators (`gu`, `pi`, `in`). The CLI defaults to wrapping the file in a folder named after the element; `--flat` drops it directly in the target. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+Same shape as the other pipeline-component generators (`gu`, `pi`, `in`). The CLI defaults to wrapping the file in a folder named after the element; `--flat` drops it directly in the target. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
 
 ## Functional middleware
 
@@ -71,7 +71,7 @@ Functional middleware is bound the same way as class middleware: pass the functi
 
 ## Why middleware, not a [[nestjs/fundamentals/guards|guard]] or [[nestjs/fundamentals/interceptors|interceptor]]
 
-Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request lifecycle]] and sees only raw HTTP. It has **no `ExecutionContext`**: it cannot read decorator metadata, the controller class, or the handler reference. That makes it the right tool for cross-cutting HTTP concerns (helmet, compression, request IDs) and the wrong tool for anything that depends on which handler will run.
+Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request pipeline]] and sees only raw HTTP. It has **no `ExecutionContext`**: it cannot read decorator metadata, the controller class, or the handler reference. That makes it the right tool for cross-cutting HTTP concerns (helmet, compression, request IDs) and the wrong tool for anything that depends on which handler will run.
 
 | Need                                                                | Use                                                  |
 | ------------------------------------------------------------------- | ---------------------------------------------------- |
@@ -136,7 +136,7 @@ You can call `.apply(A, B, C)` to chain several middleware in one go; they run i
 
 ## Order
 
-Middleware runs **before** every other lifecycle layer. Inside the middleware tier:
+Middleware runs **before** every other pipeline layer. Inside the middleware tier:
 
 1. Global middleware bound via `app.use(...)` in `main.ts` (in bind order).
 2. Module-bound middleware from the root module's `configure()` (in `apply()` order).
@@ -348,6 +348,6 @@ Why `raw` matters for signed webhooks: signature verification recomputes an HMAC
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle hub]]
 - [[nestjs/fundamentals/guards|Guards]]: authorization, runs after middleware.
 - [[nestjs/fundamentals/interceptors|Interceptors]]: wrap the handler with timing, caching, response mapping.
-- [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]: middleware doesn't have an `APP_*` token, but the rest of the lifecycle does.
+- [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]: middleware doesn't have an `APP_*` token, but the rest of the pipeline does.
 - [[nestjs/recipes/trace-id|Trace-id recipe]]: pair a request-id middleware with `AsyncLocalStorage` for log correlation.
 - Official docs: [Middleware](https://docs.nestjs.com/middleware), [Helmet](https://docs.nestjs.com/security/helmet), [CORS](https://docs.nestjs.com/security/cors), [Compression](https://docs.nestjs.com/techniques/compression).

@@ -207,7 +207,7 @@ export class CatsController {
 // Execution: Guard1 → Guard2 → Guard3 (then interceptors/pipes/handler)
 ```
 
-In the [[nestjs/fundamentals/request-lifecycle|request lifecycle]], **all** guards run after middleware and before any [[nestjs/fundamentals/interceptors|interceptor]] or [[nestjs/fundamentals/pipes|pipe]].
+In the [[nestjs/fundamentals/request-lifecycle|request pipeline]], **all** guards run after middleware and before any [[nestjs/fundamentals/interceptors|interceptor]] or [[nestjs/fundamentals/pipes|pipe]].
 
 ## Reflector and custom decorators
 
@@ -385,7 +385,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > Nest converts `false` into `ForbiddenException`. If the route is unauthenticated (no token) the correct status is `401 Unauthorized`: throw `new UnauthorizedException()` instead of returning `false`. See the official [putting it all together](https://docs.nestjs.com/guards#putting-it-all-together) note.
 
 > [!warning]- `useGlobalGuards()` skips microservice/WebSocket gateways in hybrid apps
-> Same trap, same fix as the other lifecycle components. Use `APP_GUARD` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
+> Same trap, same fix as the other pipeline components. Use `APP_GUARD` or pass `{ inheritAppConfig: true }` to `connectMicroservice`. Full explanation in [[nestjs/fundamentals/global-providers#Hybrid apps gotcha|Global providers > Hybrid apps gotcha]].
 
 > [!info]- Guards run **after** middleware
 > If your authentication logic lives in middleware, it runs first and can attach `request.user` before the guard reads it. The opposite is impossible: a guard cannot mutate the request in time for middleware. If both layers need shared context, decide which one owns it.

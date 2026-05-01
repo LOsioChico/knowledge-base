@@ -85,7 +85,7 @@ The "skip the handler" pattern has two shapes:
 
 Interceptors are the **sandwich**: bread (pre-phase) → filling (the handler) → bread (post-phase). They're the only layer that wraps both sides of the handler with logic that can also see the return value. The other three each cover one slice:
 
-- [[nestjs/fundamentals/middleware|Middleware]] runs **before** the rest of the lifecycle, has no `ExecutionContext`, and can't read the response. Good for raw-request mutation, useless for response shaping or timing.
+- [[nestjs/fundamentals/middleware|Middleware]] runs **before** the rest of the pipeline, has no `ExecutionContext`, and can't read the response. Good for raw-request mutation, useless for response shaping or timing.
 - [[nestjs/fundamentals/pipes|Pipes]] transform a single argument **before** the handler. They can't see the response and don't run on the way out.
 - [[nestjs/fundamentals/exception-filters|Exception filters]] only run on a thrown error. Mapping the **success** value or timing the handler is not their job.
 
