@@ -264,8 +264,8 @@ Routes without `@Roles()` are treated as public: `getAllAndOverride` returns `un
 
 | Method                       | When to use                                                                                               |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `get(decorator, target)`     | Single target — handler **or** class. Returns `undefined` if absent                                       |
-| `getAllAndOverride(d, [..])` | Multiple targets, **first non-empty wins**. Use when route metadata should override controller defaults   |
+| `get(decorator, target)`     | Single target — handler **or** class. Returns `undefined` if absent. See the [`@SetMetadata` snippet](#low-level-setmetadata) |
+| `getAllAndOverride(d, [..])` | Multiple targets, **first non-empty wins**. Use when route metadata should override controller defaults. See the [`RolesGuard` example](#strongly-typed-decorators-with-reflectorcreatedecorator) and the [`IS_PUBLIC` recipe](#common-recipes) |
 | `getAllAndMerge(d, [..])`    | Multiple targets, **merge** arrays/objects. Use when you want both controller and route metadata combined |
 
 The target list `[ctx.getHandler(), ctx.getClass()]` is the conventional order: handler first, controller second, so route-level metadata overrides controller-level. Source: [Reflection and metadata](https://docs.nestjs.com/fundamentals/execution-context#reflection-and-metadata).
