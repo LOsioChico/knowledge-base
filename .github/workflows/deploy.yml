@@ -26,15 +26,18 @@ jobs:
         with:
           node-version: 22
       - name: Install dependencies
+        working-directory: quartz
         run: npm ci
       - name: Lint wikilinks (first-mention rule)
+        working-directory: quartz
         run: npm run lint:wikilinks
       - name: Build Quartz
-        run: npx quartz build
+        working-directory: quartz
+        run: npx quartz build -d ../content
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: quartz/public
 
   deploy:
     needs: build

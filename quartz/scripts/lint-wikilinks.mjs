@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 
 import { formatHuman, lintVault } from "./lint-wikilinks-core.mjs"
 
-const DEFAULT_REPO = fileURLToPath(new URL("..", import.meta.url))
+const DEFAULT_REPO = fileURLToPath(new URL("../..", import.meta.url))
 const repoRoot = process.env.WIKILINK_LINTER_REPO_ROOT
   ? resolve(process.env.WIKILINK_LINTER_REPO_ROOT)
   : DEFAULT_REPO

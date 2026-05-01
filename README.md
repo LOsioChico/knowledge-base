@@ -1,17 +1,27 @@
-# Quartz v4
+# Knowledge base
 
-> “[One] who works with the door open gets all kinds of interruptions, but [they] also occasionally gets clues as to what the world is and what might be important.” — Richard Hamming
+Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base.
 
-Quartz is a set of tools that helps you publish your [digital garden](https://jzhao.xyz/posts/networked-thought) and notes as a website for free.
+## Layout
 
-🔗 Read the documentation and get started: https://quartz.jzhao.xyz/
+- `content/` — source markdown notes.
+- `quartz/` — Quartz v4 vendored as the static site generator (config, framework source, `package.json`).
+- `scripts/` — repository tooling (wikilink linter).
+- `AGENTS.md` — operating contract for AI editors. Read it before touching any note.
 
-[Join the Discord Community](https://discord.gg/cRFFHYye7t)
+## Build locally
 
-## Sponsors
+```bash
+cd quartz
+npm ci
+npx quartz build --serve -d ../content
+```
 
-<p align="center">
-  <a href="https://github.com/sponsors/jackyzha0">
-    <img src="https://cdn.jsdelivr.net/gh/jackyzha0/jackyzha0/sponsorkit/sponsors.svg" />
-  </a>
-</p>
+## Lint
+
+```bash
+cd quartz
+npm run lint:wikilinks
+```
+
+Quartz upstream: https://github.com/jackyzha0/quartz (MIT).
