@@ -221,7 +221,7 @@ export class PaginationQuery {
 
 ## Validation groups — same DTO, different rules per route
 
-This is the parallel to `class-transformer` groups in the [[nestjs/recipes/serialization#Groups for role-based payloads|serialization recipe]]. Same pattern, different library: serialization groups pick which fields **leave**, validation groups pick which rules **run**.
+This is the parallel to `class-transformer` groups in the [[nestjs/recipes/serialization#Role-based views with groups|serialization recipe]]. Same pattern, different library: serialization groups pick which fields **leave**, validation groups pick which rules **run**.
 
 A real case: on `POST /users`, password is required. On `PATCH /users/:id`, the user is updating their profile and shouldn't have to re-send the password.
 
