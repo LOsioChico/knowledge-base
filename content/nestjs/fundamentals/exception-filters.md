@@ -94,7 +94,7 @@ All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and
 |    401 | `UnauthorizedException`          | [[nestjs/auth/jwt-strategy\|JWT auth strategy]] |
 |    402 | `PaymentRequiredException`       | |
 |    403 | `ForbiddenException`             | [[nestjs/fundamentals/guards#Common recipes\|Custom guard exception]] |
-|    404 | `NotFoundException`              | |
+|    404 | `NotFoundException`              | [[nestjs/fundamentals/pipes#Common recipes\|Param-to-entity lookup pipe]] |
 |    405 | `MethodNotAllowedException`      | |
 |    406 | `NotAcceptableException`         | |
 |    408 | `RequestTimeoutException`        | [[nestjs/fundamentals/interceptors#Common recipes\|Timeout interceptor]] |
@@ -105,9 +105,9 @@ All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and
 |    415 | `UnsupportedMediaTypeException`  | |
 |    418 | `ImATeapotException`             | |
 |    422 | `UnprocessableEntityException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB constraint-violation filter]] |
-|    500 | `InternalServerErrorException`   | |
+|    500 | `InternalServerErrorException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB error fallback]] |
 |    501 | `NotImplementedException`        | |
-|    502 | `BadGatewayException`            | |
+|    502 | `BadGatewayException`            | [[nestjs/fundamentals/interceptors#Common recipes\|Upstream-error interceptor]] |
 |    503 | `ServiceUnavailableException`    | |
 |    504 | `GatewayTimeoutException`        | |
 |    505 | `HttpVersionNotSupportedException` | |
@@ -186,6 +186,8 @@ Once a filter catches the exception, **no other filter sees it**. To layer behav
 ## When `@Catch()` is empty (catch-all)
 
 ```typescript
+import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common"
+
 @Catch()
 export class CatchEverythingFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void { /* … */ }
