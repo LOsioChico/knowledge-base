@@ -74,7 +74,7 @@ jobs:
           rel_files=()
           for f in "${files[@]}"; do rel_files+=("../../$f"); done
           if [ -f yarn.lock ]; then
-            yarn start --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
+            yarn --silent start --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
           else
             npx tsx audit-notes.ts --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
           fi
