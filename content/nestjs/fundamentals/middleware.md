@@ -87,9 +87,9 @@ Most apps wire the same handful of Express-ecosystem packages. Nest documents th
 
 | Middleware                                                    | Package           | Purpose                                              | Bind via                                                         |
 | ------------------------------------------------------------- | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------- |
-| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)     | `app.use(helmet())` in `main.ts`                                 |
-| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                  | `app.enableCors(options)` (not `app.use`)                        |
-| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/br response compression                         | `app.use(compression())` in `main.ts`                            |
+| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)     | `app.use(helmet())` in `main.ts` ([example](#common-recipes))    |
+| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                  | `app.enableCors(options)` ([example](#common-recipes))           |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/br response compression                         | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
 | `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`             | `app.use(cookieParser())`                                        |
 | `express-session`                                             | `express-session` | Server-side session store                            | `app.use(session(options))`                                      |
 | [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
@@ -249,7 +249,7 @@ A body parser is a piece of middleware that **reads the request stream once** an
 | ----------------------- | ------------------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
 | `express.json()`        | `application/json`                    | Parsed JS object (`{ amount: 1 }`) | 99% of REST endpoints. Auto-on under Nest.                                                  |
 | `express.urlencoded()`  | `application/x-www-form-urlencoded`   | Object from form fields           | HTML form posts. Auto-on under Nest.                                                         |
-| `express.raw()`         | Any (configurable, e.g. `application/json`) | `Buffer` of the original bytes    | Webhooks where a third party signs the byte-for-byte payload (Stripe, GitHub), or binary uploads |
+| `express.raw()`         | Any (configurable, e.g. `application/json`) | `Buffer` of the original bytes    | Webhooks where a third party signs the byte-for-byte payload (Stripe, GitHub), or binary uploads. See the [Stripe webhook recipe](#common-recipes) |
 | `express.text()`        | `text/plain` (configurable)           | UTF-8 `string`                    | Plain-text payloads, XML you'll parse yourself                                               |
 
 The request body is a one-shot stream: once a parser has consumed it, no other parser can. That's why mixing them on overlapping paths breaks: whichever runs first wins, and downstream code sees `req.body` already in that shape (or an empty `{}` if the type didn't match).
