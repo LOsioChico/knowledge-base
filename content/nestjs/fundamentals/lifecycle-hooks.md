@@ -60,7 +60,7 @@ Implement an interface, define the matching method. The interface itself disappe
 | `BeforeApplicationShutdown`  | `beforeApplicationShutdown(signal?: string): any` | terminate | yes              |
 | `OnApplicationShutdown`      | `onApplicationShutdown(signal?: string): any`     | terminate | yes              |
 
-> [!warning] Only the last two get the signal
+> [!info] Only the last two get the signal
 > The official docs say "with the corresponding signal as the first parameter" when describing the terminate phase, but `OnModuleDestroy.onModuleDestroy()` takes no arguments per its interface. If you need the signal name for cleanup decisions in `onModuleDestroy`, hoist it: capture it in `beforeApplicationShutdown` (which fires after) or stash it from your signal handler before `app.close()`.
 
 Hooks live on **modules, providers, and controllers**. Same class can implement multiple.
