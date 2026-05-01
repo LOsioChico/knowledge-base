@@ -303,11 +303,20 @@ Same entity, two payloads, zero conditional code in the controller.
 
 ## Gotchas
 
-- **Plain objects skip the interceptor.** The most common bug. Always return `new Entity(...)`.
-- **Nested objects need `@Type()`.** If a field is an array of another class (`@Type(() => OrderItem) items: OrderItem[]`), `class-transformer` needs the explicit type to apply the right decorators recursively.
-- **`reflect-metadata` import order.** It must be imported once at the top of `main.ts` before any decorator runs. Nest's CLI scaffolds this for you.
-- **`@SerializeOptions()` only works when the interceptor is bound.** Setting it without `ClassSerializerInterceptor` registered does nothing.
-- **DTOs vs entities.** Mixing serialization decorators into a TypeORM/Prisma entity couples DB shape to API shape. For non-trivial APIs, map entities to dedicated DTOs and decorate the DTO instead.
+> [!warning]- Plain objects skip the interceptor entirely
+> The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` no-ops and every field reaches the wire. Always `return new Entity(...)` or `plainToInstance(Entity, raw)`. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
+
+> [!warning]- Nested objects need `@Type()` or their decorators don't run
+> If a field is another class instance — `items: OrderItem[]`, `address: Address` — `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.
+
+> [!warning]- `@SerializeOptions()` is inert without `ClassSerializerInterceptor`
+> Adding `@SerializeOptions({ groups: [...] })` to a route does nothing on its own. The metadata is only read by `ClassSerializerInterceptor`. Forget to register the interceptor (globally or via `@UseInterceptors`) and group-based views silently degrade to "no filtering" — admin-only fields ship to every caller.
+
+> [!info]- `reflect-metadata` must be imported before any decorator runs
+> Required at the top of `main.ts`. Nest's CLI scaffolds this; the failure mode (a thrown error at startup) is loud, not silent, but worth knowing if you're hand-bootstrapping.
+
+> [!info]- Decorating entities couples DB shape to API shape
+> Mixing `@Exclude()` / `@Expose()` into a TypeORM or Prisma entity means renaming a column or splitting an entity ripples into your API contract. For non-trivial APIs, map entities to dedicated response DTOs and decorate the DTO. The recipe shows decorators on entities for brevity; production code usually shouldn't.
 
 ## See also
 
