@@ -1,0 +1,176 @@
+name: Audit notes (advisory PR comment)
+
+on:
+  pull_request:
+    paths:
+      - "content/**/*.md"
+      - "scripts/audit-notes/**"
+      - "AGENTS.md"
+      - ".github/skills/kb-author/audits/**"
+      - ".cursor/skills/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+# Cancel in-flight runs on the same PR when a new commit arrives.
+concurrency:
+  group: audit-notes-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-22.04
+    # Don't crash the workflow on the script's exit-1 (findings).
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install audit-notes deps
+        working-directory: scripts/audit-notes
+        run: |
+          if [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Compute changed markdown files
+        id: changed
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          mapfile -t files < <(git diff --name-only --diff-filter=AM "$base" "$head" -- 'content/**/*.md')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no markdown changes; skipping audit"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s\n' "${files[@]}"
+          {
+            echo "files<<EOF"
+            printf '%s\n' "${files[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run audit pipeline
+        if: steps.changed.outputs.skip != '1'
+        id: audit
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        working-directory: scripts/audit-notes
+        run: |
+          set +e
+          # shellcheck disable=SC2086
+          mapfile -t files <<< "${{ steps.changed.outputs.files }}"
+          # Convert repo-relative paths to script-relative.
+          rel_files=()
+          for f in "${files[@]}"; do rel_files+=("../../$f"); done
+          if [ -f yarn.lock ]; then
+            yarn --silent start --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
+          else
+            npx tsx audit-notes.ts --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
+          fi
+          status=$?
+          echo "exit=$status"
+          # `exit=1` means findings, `exit=2` means error. Both pass through to comment.
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # Strip yarn header lines so JSON parses.
+          sed -n '/^{/,$p' /tmp/audit.json > /tmp/audit-clean.json || true
+          cp /tmp/audit-clean.json /tmp/audit.json || true
+          {
+            echo "json<<JSONEOF"
+            cat /tmp/audit.json
+            echo
+            echo "JSONEOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post / update PR comment
+        if: steps.changed.outputs.skip != '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const status = "${{ steps.audit.outputs.status }}";
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync("/tmp/audit.json", "utf8"));
+            } catch (err) {
+              report = null;
+            }
+
+            const marker = "<!-- audit-notes-comment -->";
+            let body;
+            if (status === "2" || report === null) {
+              const errLog = fs.existsSync("/tmp/audit.err")
+                ? fs.readFileSync("/tmp/audit.err", "utf8").slice(-3000)
+                : "(no log)";
+              body = `${marker}\n## kb-auditor: pipeline error\n\n\`\`\`\n${errLog}\n\`\`\``;
+            } else {
+              const files = report.files || [];
+              const all = files.flatMap((f) =>
+                (f.findings ?? []).map((x) => ({ ...x, path: f.path })),
+              );
+              const high = all.filter((x) => x.tier === "high");
+              const advisory = all.filter((x) => x.tier !== "high");
+
+              if (all.length === 0) {
+                body = `${marker}\n## kb-auditor\n\nNo findings on changed notes. ✓`;
+              } else {
+                const renderGroup = (items) => {
+                  const byPath = new Map();
+                  for (const x of items) {
+                    if (!byPath.has(x.path)) byPath.set(x.path, []);
+                    byPath.get(x.path).push(x);
+                  }
+                  return [...byPath.entries()]
+                    .map(([path, xs]) => {
+                      const lines = xs
+                        .map((x) => {
+                          const ev = x.evidence
+                            ? `<br>\`${x.evidence.replace(/`/g, "\\\`")}\``
+                            : "";
+                          return `- **${x.rule}** L${x.line}: ${x.message}${ev}`;
+                        })
+                        .join("\n");
+                      return `### \`${path}\`\n\n${lines}`;
+                    })
+                    .join("\n\n");
+                };
+
+                const sections = [];
+                sections.push(
+                  `${marker}\n## kb-auditor: ${high.length} high-confidence, ${advisory.length} advisory`,
+                );
+                if (high.length > 0) {
+                  sections.push(
+                    `### 🔴 High-confidence findings (verified)\n\n_Objective rules: imports, table-link, express-first. Worth fixing before merge._\n\n${renderGroup(high)}`,
+                  );
+                }
+                if (advisory.length > 0) {
+                  sections.push(
+                    `### 💡 Reader-experience suggestions (advisory)\n\n_Subjective rules: show-don't-tell, callout placement, mental model, etc. May be opinionated — dismiss if you disagree._\n\n${renderGroup(advisory)}`,
+                  );
+                }
+                body = sections.join("\n\n");
+              }
+            }
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }

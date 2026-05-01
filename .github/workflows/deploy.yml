@@ -31,6 +31,20 @@ jobs:
       - name: Lint wikilinks (first-mention rule)
         working-directory: quartz
         run: npm run lint:wikilinks
+      - name: Lint content (Pass 0 — em-dashes, frontmatter)
+        # TODO: flip continue-on-error to false once the existing 79-finding
+        # backlog is cleaned up. See `scripts/audit-notes/pass0-all.ts`.
+        continue-on-error: true
+        working-directory: scripts/audit-notes
+        run: |
+          if [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+            yarn lint:content
+          else
+            npm install --no-audit --no-fund
+            npm run lint:content
+          fi
       - name: Build Quartz
         working-directory: quartz
         run: npx quartz build -d ../content

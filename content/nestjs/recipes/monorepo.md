@@ -366,8 +366,8 @@ Pros:
 
 - Zero extra tooling: it's just the Nest CLI.
 - Shared `node_modules`, lint, CI, and types.
-- Libraries are first-class — `@app/<name>` works in every editor.
-- Convert standard → monorepo with one command, no migration script.
+- Libraries are first-class: `@app/<name>` works in every editor.
+- Convert standard to monorepo with one command, no migration script.
 
 Cons:
 

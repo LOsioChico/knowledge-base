@@ -1,0 +1,230 @@
+name: Audit notes (push to main → auto-PR)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "content/**/*.md"
+      - "scripts/audit-notes/**"
+      - "AGENTS.md"
+      - ".cursor/skills/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+# One run at a time per branch; never two concurrent auto-PR pipelines.
+concurrency:
+  group: audit-on-push-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit-and-pr:
+    runs-on: ubuntu-22.04
+    if: github.event.head_commit.author.name != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          # Need a token that can push and open PRs. Default GITHUB_TOKEN works
+          # for both with the `permissions:` block above.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install audit-notes deps
+        working-directory: scripts/audit-notes
+        run: |
+          if [ -f yarn.lock ]; then
+            corepack enable
+            yarn install --frozen-lockfile
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Compute changed markdown files
+        id: changed
+        run: |
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+          # First push or force-push that loses history: fall back to scanning
+          # every markdown file. Otherwise diff the push range.
+          if [ -z "$before" ] || [ "$before" = "0000000000000000000000000000000000000000" ]; then
+            mapfile -t files < <(git ls-files 'content/**/*.md')
+          else
+            mapfile -t files < <(git diff --name-only --diff-filter=AM "$before" "$after" -- 'content/**/*.md')
+          fi
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "no markdown changes; skipping"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s\n' "${files[@]}"
+          {
+            echo "files<<EOF"
+            printf '%s\n' "${files[@]}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Apply deterministic auto-fixes
+        if: steps.changed.outputs.skip != '1'
+        id: autofix
+        working-directory: scripts/audit-notes
+        run: |
+          mapfile -t files <<< "${{ steps.changed.outputs.files }}"
+          rel_files=()
+          for f in "${files[@]}"; do rel_files+=("../../$f"); done
+          if [ -f yarn.lock ]; then
+            yarn --silent autofix "${rel_files[@]}" > /tmp/fixed.txt
+          else
+            npx tsx autofix.ts "${rel_files[@]}" > /tmp/fixed.txt
+          fi
+          fixed_count=$(wc -l < /tmp/fixed.txt | tr -d ' ')
+          echo "fixed_count=$fixed_count" >> "$GITHUB_OUTPUT"
+          cat /tmp/fixed.txt
+
+      - name: Run full audit pipeline
+        if: steps.changed.outputs.skip != '1'
+        id: audit
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        working-directory: scripts/audit-notes
+        run: |
+          set +e
+          mapfile -t files <<< "${{ steps.changed.outputs.files }}"
+          rel_files=()
+          for f in "${files[@]}"; do rel_files+=("../../$f"); done
+          if [ -f yarn.lock ]; then
+            yarn --silent start --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
+          else
+            npx tsx audit-notes.ts --json "${rel_files[@]}" > /tmp/audit.json 2> /tmp/audit.err
+          fi
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # Strip non-JSON noise just in case.
+          sed -n '/^{/,/^}$/p' /tmp/audit.json > /tmp/audit-clean.json || true
+          cp /tmp/audit-clean.json /tmp/audit.json || true
+
+      - name: Build PR body and decide whether to open
+        if: steps.changed.outputs.skip != '1'
+        id: plan
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const status = "${{ steps.audit.outputs.status }}";
+            const fixedCount = parseInt("${{ steps.autofix.outputs.fixed_count }}", 10) || 0;
+
+            let report = null;
+            try { report = JSON.parse(fs.readFileSync("/tmp/audit.json", "utf8")); }
+            catch (_) { /* leave null */ }
+
+            const all = (report?.files ?? []).flatMap((f) =>
+              (f.findings ?? []).map((x) => ({ ...x, path: f.path })),
+            );
+            const high = all.filter((x) => x.tier === "high");
+            const advisory = all.filter((x) => x.tier !== "high");
+
+            // Nothing to do: no auto-fixes AND no findings.
+            if (fixedCount === 0 && all.length === 0) {
+              core.setOutput("open_pr", "0");
+              return;
+            }
+
+            const renderGroup = (items) => {
+              const byPath = new Map();
+              for (const x of items) {
+                if (!byPath.has(x.path)) byPath.set(x.path, []);
+                byPath.get(x.path).push(x);
+              }
+              return [...byPath.entries()]
+                .map(([p, xs]) => {
+                  const lines = xs
+                    .map((x) => {
+                      const ev = x.evidence
+                        ? `<br>\`${String(x.evidence).replace(/`/g, "\\\`")}\``
+                        : "";
+                      return `- [ ] **${x.rule}** \`${p}\` L${x.line}: ${x.message}${ev}`;
+                    })
+                    .join("\n");
+                  return `### \`${p}\`\n\n${lines}`;
+                })
+                .join("\n\n");
+            };
+
+            const sections = [];
+            sections.push(
+              `Auto-generated by \`audit-on-push.yml\` from commit ${context.sha.slice(0, 7)}.`,
+            );
+            if (fixedCount > 0) {
+              sections.push(
+                `### ✏️ Auto-fixes applied to ${fixedCount} file(s)\n\nDeterministic rules: em-dash, double-hyphen. Diff is in this PR.`,
+              );
+            }
+            if (status === "2" || report === null) {
+              const errLog = fs.existsSync("/tmp/audit.err")
+                ? fs.readFileSync("/tmp/audit.err", "utf8").slice(-3000)
+                : "(no log)";
+              sections.push(
+                `### ⚠️ Audit pipeline error\n\n\`\`\`\n${errLog}\n\`\`\``,
+              );
+            } else {
+              if (high.length > 0) {
+                sections.push(
+                  `### 🔴 ${high.length} high-confidence finding(s) — verified\n\n${renderGroup(high)}`,
+                );
+              }
+              if (advisory.length > 0) {
+                sections.push(
+                  `### 💡 ${advisory.length} reader-experience suggestion(s)\n\n_Subjective. Dismiss if you disagree._\n\n${renderGroup(advisory)}`,
+                );
+              }
+            }
+
+            fs.writeFileSync("/tmp/pr-body.md", sections.join("\n\n"));
+            core.setOutput("open_pr", "1");
+            core.setOutput("fixed_count", String(fixedCount));
+            core.setOutput("findings_count", String(all.length));
+
+      - name: Commit fixes (if any) and open PR
+        if: steps.changed.outputs.skip != '1' && steps.plan.outputs.open_pr == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          short_sha="$(git rev-parse --short HEAD)"
+          branch="kb-auditor/auto-${short_sha}"
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # If this auto-branch already exists (re-run), delete and recreate.
+          git fetch origin "$branch" 2>/dev/null || true
+          git branch -D "$branch" 2>/dev/null || true
+          git checkout -b "$branch"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add -A
+            git commit -m "fix: kb-auditor auto-fixes from ${short_sha}"
+          else
+            git commit --allow-empty -m "chore: kb-auditor findings only from ${short_sha}"
+          fi
+          git push -f origin "$branch"
+
+          fixed="${{ steps.plan.outputs.fixed_count }}"
+          findings="${{ steps.plan.outputs.findings_count }}"
+          title="kb-auditor: ${fixed} fix(es), ${findings} finding(s) on ${short_sha}"
+
+          # Avoid duplicate PR if one is already open from this branch.
+          if existing=$(gh pr list --head "$branch" --state open --json number -q '.[0].number'); then
+            if [ -n "$existing" ]; then
+              gh pr edit "$existing" --title "$title" --body-file /tmp/pr-body.md
+              exit 0
+            fi
+          fi
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "$title" \
+            --body-file /tmp/pr-body.md
