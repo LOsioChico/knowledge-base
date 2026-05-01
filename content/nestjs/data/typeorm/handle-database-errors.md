@@ -70,7 +70,7 @@ Both reads return the same value, but only one is properly typed. The `pg` packa
 import { DatabaseError } from "pg"
 import { QueryFailedError } from "typeorm"
 
-  // SQLSTATE codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
+// SQLSTATE codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
 export const PG = {
   UNIQUE_VIOLATION: "23505",
   FOREIGN_KEY_VIOLATION: "23503",
