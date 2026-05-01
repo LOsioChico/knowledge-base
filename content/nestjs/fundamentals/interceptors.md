@@ -42,7 +42,7 @@ export class LoggingInterceptor implements NestInterceptor {
 }
 ```
 
-`NestInterceptor<T, R>` is generic: `T` is the type emitted by the handler (`Observable<T>`) and `R` is what your interceptor emits downstream (`Observable<R>`). Both methods can be `async`.
+`NestInterceptor<T, R>` is generic: `T` is the type emitted by the handler (`Observable<T>`) and `R` is what your interceptor emits downstream (`Observable<R>`). `intercept()` can be `async` (return `Promise<Observable<R>>`); the handler stream itself is always an `Observable`.
 
 ## Generate with the CLI
 
