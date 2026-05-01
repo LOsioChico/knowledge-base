@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/index]]"
   - "[[nestjs/data/typeorm/handle-database-errors]]"
+  - "[[nestjs/data/typeorm/postgresql-setup]]"
 source:
   - https://docs.nestjs.com/techniques/database
   - https://typeorm.io
@@ -16,13 +17,12 @@ NestJS + TypeORM patterns: integration glue (`TypeOrmModule`, `@InjectRepository
 
 ## Available
 
+- [[nestjs/data/typeorm/postgresql-setup|PostgreSQL setup with TypeORM]]: connection, entities, repositories, CRUD, migrations
 - [[nestjs/data/typeorm/handle-database-errors|Handle database errors (unique, FK, check)]]
 
 ## Pending
 
-- `TypeOrmModule.forRoot` setup with config checks
-- `@InjectRepository` and custom repositories
 - Transactions: `dataSource.transaction()` vs `@Transactional` decorators
 - Relations and eager/lazy loading
 - Query builder patterns
-- Migrations workflow
+- Custom repositories

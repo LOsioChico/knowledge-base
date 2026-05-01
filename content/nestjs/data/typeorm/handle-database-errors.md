@@ -14,6 +14,7 @@ area: nestjs
 status: evergreen
 related:
   - "[[nestjs/data/typeorm/index]]"
+  - "[[nestjs/data/typeorm/postgresql-setup]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/recipes/validation]]"
