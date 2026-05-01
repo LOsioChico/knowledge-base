@@ -11,6 +11,7 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/lifecycle-hooks]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/trace-id]]"
 source:

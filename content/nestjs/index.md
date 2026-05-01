@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[index]]"
   - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/lifecycle-hooks]]"
   - "[[nestjs/recipes/index]]"
 source:
   - https://docs.nestjs.com
@@ -20,7 +21,7 @@ What you need to master before any advanced pattern.
 
 - [[nestjs/fundamentals/modules|Modules: feature, shared, core (planned)]]
 - [[nestjs/fundamentals/di-container|DI container: providers, scopes, custom providers (planned)]]
-- [[nestjs/fundamentals/lifecycle|Lifecycle hooks: OnModuleInit, OnApplicationBootstrap (planned)]]
+- [[nestjs/fundamentals/lifecycle-hooks|Application lifecycle hooks: OnModuleInit, OnApplicationBootstrap, shutdown]]
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/exception-filters|filters]]
 - [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]
 
