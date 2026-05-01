@@ -32,9 +32,6 @@ jobs:
         working-directory: quartz
         run: npm run lint:wikilinks
       - name: Lint content (Pass 0 — em-dashes, frontmatter)
-        # TODO: flip continue-on-error to false once the existing 79-finding
-        # backlog is cleaned up. See `scripts/audit-notes/pass0-all.ts`.
-        continue-on-error: true
         working-directory: scripts/audit-notes
         run: |
           if [ -f yarn.lock ]; then
