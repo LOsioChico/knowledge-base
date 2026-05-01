@@ -44,6 +44,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **J** | Demo names (CLI paths, class names, file stubs) come from a domain the note endorses | [audits/J-demo-names.md](audits/J-demo-names.md) |
 | **K** | Callout severity matches reader stakes (warnings rare, infos common) | [audits/K-callout-severity.md](audits/K-callout-severity.md) |
 | **L** | Comparative claims ("same as X", "mirrors X", "X also returns Y") verified against the comparator's primary source, or dropped | [audits/L-comparative-claims.md](audits/L-comparative-claims.md) |
+| **M** | Wikilinks point at the right concept, not just the matching word; rephrase prose for vocabulary collisions instead of accepting the link or silencing with `unrelated:` | [audits/M-ambiguous-wikilinks.md](audits/M-ambiguous-wikilinks.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
@@ -128,6 +129,14 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   the X convention") → you only verified the subject, not the comparator. The natural failure
   mode is shipping a confident-sounding lie about X. Run [Audit L](audits/L-comparative-claims.md);
   default to dropping the comparison and linking to the comparator's note.
+- **Reflexively accepting a first-mention wikilink suggestion** → the linter matches by note
+  title/alias/filename, so words like "validation", "guards", "pipes", "middleware" trigger
+  links to their Nest-specific notes even when the surrounding sentence is about a different
+  concept (Joi env checks, TS type guards, shell pipes, Express middleware in a non-Nest
+  context). The fix is to **rephrase the prose** ("check the shape of" instead of "validate"),
+  not to accept the link, add a disambiguating wikilink, or silence with `unrelated:`.
+  `unrelated:` is for genuine semantic neighbors, not vocabulary collisions you authored. Run
+  [Audit M](audits/M-ambiguous-wikilinks.md).
 - **Using `[[note#Heading]]` for in-note anchors** → linter rejects as self-wikilink. Use
   `[label](#slug)` instead.
 - **Editing AGENTS.md without mirroring** → CI fails on `agents-mirror` lint check.
