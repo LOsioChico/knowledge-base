@@ -256,6 +256,7 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   ```
 
   All three must pass before `git commit`. If formatting fails, run `yarn format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores `quartz/` (the framework manages its own format) and the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+- After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
 - Commit. Do NOT push: pushing is the user's call.
 - After committing any change under `content/`, run the LLM audit on the touched files and surface findings in chat for triage. CI no longer runs this; it's a chat-driven step:
 

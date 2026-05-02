@@ -14,8 +14,8 @@ source:
   - https://github.com/typestack/class-transformer
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/package.json
-  - https://github.com/typeorm/typeorm/blob/master/docs/repository-api.md
-  - https://github.com/prisma/docs/blob/main/content/200-orm/200-prisma-client/100-queries/050-crud.mdx
+  - https://github.com/typeorm/typeorm/blob/master/docs/docs/working-with-entity-manager/6-repository-api.md
+  - https://www.prisma.io/docs/orm/prisma-client/queries/crud
   - https://github.com/Automattic/mongoose/blob/master/docs/tutorials/lean.md
   - https://typeorm.io/repository-api
   - https://www.prisma.io/docs/orm/prisma-client/queries
