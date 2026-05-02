@@ -149,7 +149,11 @@ async function runAgent(prompt: string, label: string): Promise<string> {
     try {
       await using agent = await Agent.create({
         apiKey,
-        model: { id: "composer-2" },
+        // Per `Cursor.models.list()` (queried 2026-05-02), `composer-2` exposes
+        // a single `fast: "true" | "false"` parameter and `fast=true` is the
+        // default variant (`isDefault: true`). Passing it explicitly pins the
+        // selection so the audit doesn't drift if Cursor changes the default.
+        model: { id: "composer-2", params: [{ id: "fast", value: "true" }] },
         local: { cwd: REPO_ROOT, settingSources: ["project"] },
       });
       const run: Run = await agent.send(prompt);
