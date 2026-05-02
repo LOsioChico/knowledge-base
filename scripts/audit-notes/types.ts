@@ -15,6 +15,7 @@ export type RuleId =
   | "demo-names" //           audit J
   | "callout-severity" //     audit K
   | "ambiguous-wikilink" //   audit M
+  | "source-verification" //  audit N (opt-in via --verify-sources)
   | "express-first";
 
 export interface Finding {
@@ -58,6 +59,7 @@ export const OBJECTIVE_LLM_RULES: ReadonlySet<RuleId> = new Set<RuleId>([
   "code-imports",
   "table-link",
   "express-first",
+  "source-verification",
 ]);
 
 export const SUBJECTIVE_LLM_RULES: ReadonlySet<RuleId> = new Set<RuleId>([

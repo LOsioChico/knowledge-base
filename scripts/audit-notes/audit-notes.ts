@@ -24,6 +24,7 @@ import { postFilter } from "./post-filter.js";
 import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
 import { groundFindings } from "./ground.js";
+import { runSourceVerifyPass } from "./source-verify.js";
 import type {
   ConfidenceTier,
   FileReport,
@@ -48,12 +49,14 @@ interface Args {
   targets: string[];
   noVerify: boolean;
   jsonOnly: boolean;
+  verifySources: boolean;
 }
 
 function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
   const noVerify: boolean = argv.includes("--no-verify");
   const jsonOnly: boolean = argv.includes("--json");
+  const verifySources: boolean = argv.includes("--verify-sources");
   const positional: string[] = argv.filter(
     (a: string): boolean => !a.startsWith("--"),
   );
@@ -69,7 +72,7 @@ function parseArgs(): Args {
     log(`error: file(s) not found: ${missing.join(", ")}`);
     process.exit(2);
   }
-  return { targets, noVerify, jsonOnly };
+  return { targets, noVerify, jsonOnly, verifySources };
 }
 
 let JSON_ONLY: boolean = false;
@@ -337,6 +340,7 @@ async function main(): Promise<void> {
   log(`[audit] cwd=${REPO_ROOT}`);
   log(`[audit] targets=${args.targets.join(", ")}`);
   log(`[audit] verify=${!args.noVerify}`);
+  log(`[audit] verifySources=${args.verifySources}`);
 
   // Pass 0: deterministic
   log("\n--- pass 0 (deterministic) ---");
@@ -353,6 +357,21 @@ async function main(): Promise<void> {
 
   // Pass 1a: deterministic candidate finder + binary judge for show-dont-tell.
   const sdtFindings: FlatFinding[] = await runShowDontTellPass(args.targets);
+
+  // Pass 1b: source verification (opt-in). Fetches each note's `source:`
+  // URLs (cached) and asks the LLM to flag claims not supported by them.
+  let sourceFindings: FlatFinding[] = [];
+  if (args.verifySources) {
+    log("\n--- pass 1b (source verification) ---");
+    sourceFindings = await runSourceVerifyPass({
+      repoRoot: REPO_ROOT,
+      targets: args.targets,
+      runAgent,
+      extractJson,
+      log,
+    });
+    log(`[pass-1b] ${sourceFindings.length} finding(s)`);
+  }
 
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.
@@ -436,6 +455,12 @@ async function main(): Promise<void> {
       }),
     ),
     ...groundedSdt.kept.map(
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+        ...f,
+        tier: "high",
+      }),
+    ),
+    ...sourceFindings.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
         ...f,
         tier: "high",
