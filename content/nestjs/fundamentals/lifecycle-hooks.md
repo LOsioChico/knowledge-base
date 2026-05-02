@@ -83,11 +83,12 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
 
 ## Init: order and async
 
-Within a single class, `onModuleInit` runs first, then later `onApplicationBootstrap`. Across the app, hooks fire in **module import order**, and Nest awaits each module's hook chain before moving on. The practical rule:
+Within a single class, `onModuleInit` runs first, then later `onApplicationBootstrap`. Across the app, Nest walks the module dependency graph **deepest-first**: a module's hooks run only after every module it imports has finished. The practical rule:
 
-- A module's hooks run only **after** every module it imports has finished its own hooks.
+- For a graph `A → B → C` (A depends on B, B depends on C), init order is `C → B → A`.
 - Inside one module, hook execution is sequential: bootstrap waits for init.
 - Both hooks may return a `Promise` (or be `async`); Nest will not move on until it resolves or rejects.
+- Global modules are treated as a dependency of every other module: they initialize **first** and shut down **last**.
 
 If you need "this provider should be ready before that controller starts handling requests", `onApplicationBootstrap` is the safer slot: by the time it runs, **every** module has finished `onModuleInit`.
 
@@ -113,6 +114,9 @@ After `enableShutdownHooks()`, receiving a signal triggers the terminate sequenc
 2. `beforeApplicationShutdown` runs next, with the signal name. Nest awaits.
 3. Connections close (`app.close()` resolves internally).
 4. `onApplicationShutdown` runs last, with the signal name.
+
+> [!warning] Termination order reversed since [[nestjs/releases/v11|v11]]
+> For a graph `A → B → C` (A depends on B, B depends on C), init goes `C → B → A` but destroy now goes `A → B → C`. Dependents shut down **before** their dependencies, so a service can still call its DB inside its own `onModuleDestroy`. Global modules destroy **last**, mirroring init. Pre-v11 code that relied on the old reversed-init destroy order will see hooks fire in a new sequence after the upgrade.
 
 `app.close()` only triggers the destroy/shutdown chain. It does **not** kill the Node process. If timers, open intervals, or background workers are still alive, the process keeps running. Either let your hooks clear them, or follow `await app.close()` with `process.exit(0)` once you're confident there's nothing to drain.
 
