@@ -13,6 +13,7 @@ related:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/recipes/rate-limiting]]"
+  - "[[nestjs/releases/v11]]"
 source:
   - https://docs.nestjs.com/techniques/caching
   - https://github.com/nestjs/cache-manager

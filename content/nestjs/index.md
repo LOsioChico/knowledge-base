@@ -9,6 +9,7 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/lifecycle-hooks]]"
   - "[[nestjs/recipes/index]]"
+  - "[[nestjs/releases/index]]"
 source:
   - https://docs.nestjs.com
 ---
@@ -74,6 +75,10 @@ Architecture patterns that NestJS enables but does not enforce.
 - [[nestjs/deployment/docker|Docker: multistage builds (planned)]]
 - [[nestjs/deployment/graceful-shutdown|Graceful shutdown (planned)]]
 - [[nestjs/deployment/config-validation|Config validation with Zod (planned)]]
+
+## Releases
+
+- [[nestjs/releases/v11|NestJS 11: what's new and what broke]]
 
 ## Gotchas
 

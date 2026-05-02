@@ -16,6 +16,7 @@ related:
   - "[[nestjs/fundamentals/index]]"
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/index]]"
+  - "[[nestjs/releases/v11]]"
 source:
   - https://docs.nestjs.com/fundamentals/lifecycle-events
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-init.interface.ts
