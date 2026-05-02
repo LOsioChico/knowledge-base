@@ -5,6 +5,7 @@ export type RuleId =
   | "frontmatter-schema"
   | "style-em-dash"
   | "style-double-hyphen"
+  | "style-hedge" //          advisory: hedge phrases that flag the audit-fix anti-pattern
   // Pass 1 (LLM auditor) — letters map to .github/skills/kb-author/audits/*
   | "code-imports" //         audit A
   | "table-link" //           audit B
@@ -70,6 +71,7 @@ export const SUBJECTIVE_LLM_RULES: ReadonlySet<RuleId> = new Set<RuleId>([
   "demo-names",
   "callout-severity",
   "ambiguous-wikilink",
+  "style-hedge",
 ]);
 
 export interface TieredFinding extends FlatFinding {

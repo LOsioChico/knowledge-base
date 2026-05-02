@@ -1,6 +1,7 @@
 // Pass 0: deterministic checks. No LLM. Rules grep can do correctly:
-// - style-em-dash, style-double-hyphen
-// - frontmatter-schema (required fields, no `area/*` tag)
+// - style-em-dash, style-double-hyphen   (blocking, exit-1 in pass0-all.ts)
+// - style-hedge                          (advisory, surfaced only via the main audit runner)
+// - frontmatter-schema
 
 import { readFileSync } from "node:fs";
 import type { FileReport, Finding } from "./types.js";
@@ -23,6 +24,26 @@ export function runDeterministic(
   findings.push(...checkFrontmatter(text));
   findings.push(...checkProseStyle(text));
 
+  findings.sort((a: Finding, b: Finding): number => a.line - b.line);
+  return { path: repoRelative, findings };
+}
+
+// Advisory deterministic pass: hedge phrases that signal the audit-fix
+// anti-pattern (softening a claim instead of citing it). Kept separate from
+// `runDeterministic` so the blocking pass-0 lint stays narrow; existing
+// hedges in the vault would otherwise wedge CI on first run.
+//
+// Phrase list is multi-word on purpose. Bare "may" / "often" / "might" /
+// "broadly" carry too much false-positive risk in technical prose. The shapes
+// below are the ones that bit us in practice (see AGENTS.md "Cite, don't
+// hedge"): they're nearly always the result of softening a specific claim
+// rather than citing it.
+export function runDeterministicAdvisory(
+  absolutePath: string,
+  repoRelative: string,
+): FileReport {
+  const text: string = readFileSync(absolutePath, "utf8");
+  const findings: Finding[] = checkHedges(text);
   findings.sort((a: Finding, b: Finding): number => a.line - b.line);
   return { path: repoRelative, findings };
 }
@@ -180,4 +201,63 @@ function excerptAround(line: string, needle: string): string {
   const start: number = Math.max(0, idx - 30);
   const end: number = Math.min(line.length, idx + 30);
   return line.slice(start, end).trim();
+}
+
+// Hedge phrases. Each entry is a case-insensitive regex tested against the
+// inline-code/url-stripped line. Multi-word only — bare "may" / "often" are
+// too noisy. See AGENTS.md "Cite, don't hedge" for the full rationale.
+const HEDGE_PATTERNS: ReadonlyArray<{ re: RegExp; phrase: string }> = [
+  { re: /\bmay apply\b/i, phrase: "may apply" },
+  { re: /\bin (?:some|many) cases\b/i, phrase: "in some/many cases" },
+  { re: /\btends? to\b/i, phrase: "tends to" },
+  { re: /\bdepending on\b/i, phrase: "depending on" },
+  { re: /\bgenerally speaking\b/i, phrase: "generally speaking" },
+  { re: /\bbroadly speaking\b/i, phrase: "broadly speaking" },
+  { re: /\bfor the most part\b/i, phrase: "for the most part" },
+  { re: /\bmore or less\b/i, phrase: "more or less" },
+  { re: /\bin most cases\b/i, phrase: "in most cases" },
+  { re: /\bsomewhat\b/i, phrase: "somewhat" },
+];
+
+function checkHedges(text: string): Finding[] {
+  const findings: Finding[] = [];
+  const lines: string[] = text.split("\n");
+
+  let inFrontmatter: boolean = false;
+  let inFence: boolean = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw: string | undefined = lines[i];
+    if (raw === undefined) continue;
+    const lineNo: number = i + 1;
+
+    if (i === 0 && raw === "---") {
+      inFrontmatter = true;
+      continue;
+    }
+    if (inFrontmatter) {
+      if (raw === "---") inFrontmatter = false;
+      continue;
+    }
+    if (/^\s{0,3}(```|~~~)/.test(raw)) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+
+    const stripped: string = stripInlineCodeAndUrls(raw);
+    for (const { re, phrase } of HEDGE_PATTERNS) {
+      const m: RegExpExecArray | null = re.exec(stripped);
+      if (m === null) continue;
+      findings.push({
+        rule: "style-hedge",
+        line: lineNo,
+        message: `Hedge phrase "${phrase}" — if this softens a previously specific claim, restore the specific and add an inline primary-source citation. See AGENTS.md "Cite, don't hedge". Dismiss if the hedge is the genuinely correct framing.`,
+        evidence: excerptAround(raw, m[0]),
+      });
+      break; // one finding per line is enough
+    }
+  }
+
+  return findings;
 }

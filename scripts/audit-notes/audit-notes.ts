@@ -22,7 +22,7 @@ import { existsSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runDeterministic } from "./deterministic.js";
+import { runDeterministic, runDeterministicAdvisory } from "./deterministic.js";
 import { postFilter } from "./post-filter.js";
 import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
@@ -393,6 +393,15 @@ async function main(): Promise<void> {
   const detFlat: FlatFinding[] = flatten({ files: det });
   log(`[pass-0] ${detFlat.length} findings`);
 
+  // Pass 0b: deterministic advisory (hedge sniff). Routed to the advisory
+  // tier so existing hedges in the vault don't wedge CI.
+  const detAdvisory: FileReport[] = args.targets.map(
+    (p: string): FileReport =>
+      runDeterministicAdvisory(resolve(REPO_ROOT, p), p),
+  );
+  const detAdvisoryFlat: FlatFinding[] = flatten({ files: detAdvisory });
+  log(`[pass-0b] ${detAdvisoryFlat.length} advisory hedge findings`);
+
   // Pass 1, 1a, 1b run concurrently — they're independent and all network-bound.
   log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1b (source verify) in parallel ---");
   const [audit, sdtFindings, sourceFindings] = await Promise.all([
@@ -505,6 +514,12 @@ async function main(): Promise<void> {
       }),
     ),
     ...subjectiveCandidates.map(
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+        ...f,
+        tier: "advisory",
+      }),
+    ),
+    ...detAdvisoryFlat.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
         ...f,
         tier: "advisory",
