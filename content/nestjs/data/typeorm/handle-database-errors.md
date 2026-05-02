@@ -20,10 +20,13 @@ related:
   - "[[nestjs/recipes/validation]]"
 source:
   - https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts
+  - https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.postgresql.org/docs/current/protocol-error-fields.html
   - https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
   - https://www.sqlite.org/rescode.html
+  - https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
   - https://docs.nestjs.com/exception-filters
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
   - https://docs.nestjs.com/techniques/database
@@ -61,9 +64,9 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 }
 ```
 
-`ObjectUtils.assign` is TypeORM's small wrapper around `Object.assign`; the runtime behavior is the same.
+`ObjectUtils.assign` is TypeORM's small wrapper that delegates to `Object.assign` ([source](https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts)).
 
-Both reads return the same value, but only one is properly typed. The `pg` package already exports a fully-typed `DatabaseError` class with `code`, `constraint`, `detail`, `table`, `column`, etc. (all `string | undefined`). Read through `err.driverError` and you get the official driver type with zero casts; read through `err.code` and you get `any`. Skip the augmentation type entirely:
+Both reads return the same value, but only one is properly typed. The [`pg` package exports a `DatabaseError` class](https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts) with `code`, `constraint`, `detail`, `table`, `column`, etc. (typed as `string | undefined`). Read through `err.driverError` and you get the official driver type with zero casts; read through `err.code` and you get `any`. Skip the augmentation type entirely:
 
 ```typescript
 // db-errors.ts
@@ -112,7 +115,7 @@ export function isUniqueViolation(
 | Exclusion (PG only) | `23P01` | n/a | n/a | no, falls through to 500 |
 | Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | no; see [Retryable errors](#gotchas) |
 
-Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver: `better-sqlite3` exposes the symbolic name (e.g. `"SQLITE_CONSTRAINT_UNIQUE"`), `node-sqlite3` returns the primary code (`19` / `"SQLITE_CONSTRAINT"`) unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) are enabled. The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
+Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver. Check your driver's docs (e.g. [better-sqlite3](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) exposes the symbolic name; node-sqlite3 historically returned the primary code unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) were enabled). The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
 
 ## Recipe 1: Centralize in an exception filter (recommended for NestJS)
 
@@ -309,7 +312,7 @@ Sample response for a duplicate email:
 ## Gotchas
 
 > [!warning]- Don't match on `err.message`
-> Driver messages are locale-dependent on MySQL and can change between Postgres minor versions. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
+> Driver messages can change between versions and (on some drivers) vary with server locale settings. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
 
 > [!warning]- Driver props live in two places, by design
 > `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`**: `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
