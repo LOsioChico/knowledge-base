@@ -57,7 +57,7 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
 }
 ```
 
-`ObjectUtils.assign` is TypeORM's small wrapper that copies every own property from each source onto the target via a `for (prop of Object.getOwnPropertyNames(source))` loop ([source](https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts)). The effect is similar to `Object.assign` but it walks own properties (including non-enumerable ones) rather than only enumerable own keys.
+`ObjectUtils.assign` is TypeORM's small wrapper that copies every own property from each source onto the target via a `for (prop of Object.getOwnPropertyNames(source))` loop ([source](https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts)). Note that the source here is `{ ...otherProperties }`, the result of an object rest spread on `driverError`: spread only copies enumerable own keys, so any non-enumerable property on the underlying driver error is filtered out before `ObjectUtils.assign` ever sees it. Net effect on the wrapper is the same as `Object.assign` for the typical case.
 
 Both reads return the same value, but only one is properly typed. The [`pg` package exports a `DatabaseError` class](https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts) with `code`, `constraint`, `detail`, `table`, `column`, etc. (typed as `string | undefined`). Read through `err.driverError` and you get the official driver type with zero casts; read through `err.code` and you get `any`. Skip the augmentation type entirely:
 
