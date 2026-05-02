@@ -19,7 +19,10 @@ related:
 source:
   - https://docs.nestjs.com/guards
   - https://docs.nestjs.com/fundamentals/execution-context
+  - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/tree/master/packages/core/guards
+  - https://github.com/nestjs/nest/tree/master/packages/common
+  - https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json
 ---
 
 > Decide whether a request reaches the route handler. Used for **authorization**: roles, permissions, ownership, anything that should short-circuit before the handler runs.
@@ -89,7 +92,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest treats the Observable like the `Promise` case ([source: `guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) wraps the return in `Promise.resolve` and `await`s it; an Observable is converted via `lastValueFrom`-style behavior in newer versions — verify against your installed version).
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
@@ -126,7 +129,7 @@ nest g gu roles --no-spec      # skip the *.spec.ts test file
 nest g gu roles --dry-run      # preview the file plan, write nothing
 ```
 
-Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source for the schematic options and CLI overrides: [`@nestjs/schematics` guard schema](https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json), [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to see the exact file plan.
 
 ## Why a guard, not [[nestjs/fundamentals/middleware|middleware]]
 
@@ -134,7 +137,7 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 ## Built-in guards
 
-Nest core ships **none**. Authorization is application-specific, so you write your own: or pull one from a peer package.
+Nest core ships **none**: the [`@nestjs/common` exports](https://github.com/nestjs/nest/tree/master/packages/common) include the `CanActivate` interface and the `@UseGuards` decorator, but no shipped guard classes. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
 | Guard                 | Package             | Purpose                                                                                                                                                                 |
 | --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -187,7 +190,7 @@ The global-scope variant of the same DI question: `useGlobalGuards(new X())` vs 
 
 ## Order
 
-Multiple guards run in this order:
+Multiple guards run in this order ([source: `guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts) merges global → controller → method; [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) iterates and short-circuits on the first non-truthy/throwing result):
 
 1. Global guards (registration order).
 2. Controller guards (left-to-right inside `@UseGuards()`).
@@ -196,7 +199,12 @@ Multiple guards run in this order:
 The chain stops at the **first** guard that returns `false`, throws, or rejects a returned `Promise`: later guards do not run.
 
 ```typescript
-import { Controller, Get, UseGuards } from "@nestjs/common"
+import { CanActivate, Controller, ExecutionContext, Get, UseGuards } from "@nestjs/common"
+
+// Three placeholder guards — imagine each as a real CanActivate implementation.
+class Guard1 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
+class Guard2 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
+class Guard3 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
 
 @UseGuards(Guard1, Guard2)
 @Controller("cats")
@@ -372,7 +380,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 
 | Symptom                                              | Likely cause                                                                                                 |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `403 Forbidden resource` on every request            | Guard returns `false` (or `undefined`: falsy). Check `canActivate` actually returns `true`                  |
+| `403 Forbidden resource` on every request            | Guard returns `false` (or any falsy value such as `undefined`). Check `canActivate` actually returns `true`                  |
 | Global guard's injected provider is `undefined`      | Registered via `useGlobalGuards(new X())` instead of `APP_GUARD` provider                                    |
 | `Reflector` returns `undefined` for known decorator  | Looking up the wrong target: used `getHandler()` when the metadata is on the class (`getClass()`)           |
 | Controller-level metadata ignored                    | Used `reflector.get(d, ctx.getHandler())` instead of `getAllAndOverride(d, [getHandler(), getClass()])`      |
