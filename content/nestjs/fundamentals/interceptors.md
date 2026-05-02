@@ -20,8 +20,11 @@ related:
   - "[[nestjs/releases/v10]]"
 source:
   - https://docs.nestjs.com/interceptors
+  - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
-  - https://rxjs.dev/api/operators
+  - https://github.com/nestjs/nest/tree/master/packages/core/interceptors
+  - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
+  - https://rxjs.dev/api/operators/retry
 ---
 
 > Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.
@@ -58,7 +61,7 @@ nest g itc logging --no-spec        # skip the *.spec.ts test file
 nest g itc logging --dry-run        # preview the file plan, write nothing
 ```
 
-Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Sources: [`@nestjs/schematics` interceptor schema](https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json), [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the exact file plan.
 
 ## The pre/post pattern
 
@@ -110,7 +113,7 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 
 ## Built-in interceptors
 
-Nest ships only one out of the box; the rest you compose yourself with RxJS.
+[`@nestjs/common`](https://github.com/nestjs/nest/tree/master/packages/common) ships only one interceptor class out of the box (`ClassSerializerInterceptor`); the rest you compose yourself with RxJS.
 
 | Interceptor                  | Package          | Purpose                                                                                                                                                    |
 | ---------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -170,7 +173,7 @@ The global-scope variant of the same DI question: `useGlobalInterceptors(new X()
 
 ## Order: the FILO trick
 
-The same wrap-around shape applies across multiple interceptors.
+The same wrap-around shape applies across multiple interceptors. Nest builds the chain global → controller → route ([`interceptors-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts)) and the consumer composes them as nested `next.handle()` calls, so the post phase unwinds in reverse ([`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts)).
 
 - **Inbound** (pre code, before `next.handle()`): global → controller → route.
 - **Outbound** (RxJS operators, after the handler emits): route → controller → global. First in, last out.
@@ -246,7 +249,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> Runs **before** [[exception-filters|exception filters]]: the filter sees the rethrown `BadGatewayException`, not the original.
+> Runs **before** [[exception-filters|exception filters]] reach the error: the `catchError` operator is on the handler stream itself, so the rethrown `BadGatewayException` is what propagates up to the filter chain (see the official [Exception mapping](https://docs.nestjs.com/interceptors#exception-mapping) section).
 
 > [!example]- Per-route timeout
 >
@@ -315,7 +318,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> `retry` resubscribes the source on error, which **re-invokes the handler**. Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry. Source: [`rxjs` retry](https://rxjs.dev/api/operators/retry).
+> [`retry`](https://rxjs.dev/api/operators/retry) resubscribes to the source observable on error. Because the source here is `next.handle()`, resubscribing **re-invokes the handler** ([`route-paramtypes.enum.ts` aside: subscription is what triggers handler execution in `RouterExecutionContext`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts)). Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry.
 
 > [!example]- Async pre phase (returning `Promise<Observable>`)
 >
