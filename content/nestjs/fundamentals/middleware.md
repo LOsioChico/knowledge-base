@@ -154,17 +154,18 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 
 ## Route matching
 
-| Pattern            | Matches                                       | Notes                                                                            |
-| ------------------ | --------------------------------------------- | -------------------------------------------------------------------------------- |
-| `'cats'`           | exact path                                    | Plain string                                                                     |
-| `'cats/*splat'`    | `cats/1`, `cats/abc`, `cats/a/b` (not `cats`) | Required named wildcard. The bare base path does **not** match.                  |
-| `'cats/{*splat}'`  | `cats` and any subpath under it               | Braces make the wildcard optional. Use this when the base path should match too. |
-| `{ path, method }` | path + HTTP method                            | Use `RequestMethod.GET`, `POST`, etc.                                            |
-| `CatsController`   | every route declared by the controller        | Pass the class, not an instance                                                  |
+| Pattern            | Matches                                                     | Notes                                                                    |
+| ------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `'cats'`           | exact path                                                  | Plain string                                                             |
+| `'cats/:id'`       | `cats/1`, `cats/abc` (not `cats`, not `cats/a/b`)           | Named **parameter**. Matches **exactly one** segment (delimiter is `/`). |
+| `'cats/*splat'`    | `cats/1`, `cats/abc`, `cats/a/b`, `cats/a/b/c` (not `cats`) | Named **wildcard**. Matches **one or more** segments, greedy across `/`. |
+| `'cats/{*splat}'`  | `cats` and any subpath (`cats/1`, `cats/a/b`, ...)          | Braces make the wildcard optional → **zero or more** segments.           |
+| `{ path, method }` | path + HTTP method                                          | Use `RequestMethod.GET`, `POST`, etc.                                    |
+| `CatsController`   | every route declared by the controller                      | Pass the class, not an instance                                          |
 
-`splat` is just the parameter name (any identifier works). Patterns use the path-to-regexp v6 syntax that ships with Express v5; pre-v11 forms like `'cats/*'` still work via Nest's compatibility layer but emit a startup warning.
+The parameter / wildcard distinction is the one that bites: `:id` stops at the next `/`, `*splat` swallows everything to the end of the path. `splat` and `id` are just parameter names: pick any identifier. Patterns use the path-to-regexp syntax that ships with Express v5; pre-v11 forms like `'cats/*'` still work via Nest's compatibility layer but emit a startup warning. Source: [path-to-regexp - Parameters & Wildcard](https://github.com/pillarjs/path-to-regexp#parameters), [Middleware - Route wildcards](https://docs.nestjs.com/middleware#route-wildcards).
 
-`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Route wildcards](https://docs.nestjs.com/middleware#route-wildcards), [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
+`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
 
 ## Common recipes
 
