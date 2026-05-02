@@ -154,14 +154,17 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 
 ## Route matching
 
-| Pattern            | Matches                                | Notes                                             |
-| ------------------ | -------------------------------------- | ------------------------------------------------- |
-| `'cats'`           | exact path                             | Plain string                                      |
-| `'cats/{*splat}'`  | any subpath under `cats`               | Named wildcard segment (path-to-regexp v6 syntax) |
-| `{ path, method }` | path + HTTP method                     | Use `RequestMethod.GET`, `POST`, etc.             |
-| `CatsController`   | every route declared by the controller | Pass the class, not an instance                   |
+| Pattern            | Matches                                       | Notes                                                                            |
+| ------------------ | --------------------------------------------- | -------------------------------------------------------------------------------- |
+| `'cats'`           | exact path                                    | Plain string                                                                     |
+| `'cats/*splat'`    | `cats/1`, `cats/abc`, `cats/a/b` (not `cats`) | Required named wildcard. The bare base path does **not** match.                  |
+| `'cats/{*splat}'`  | `cats` and any subpath under it               | Braces make the wildcard optional. Use this when the base path should match too. |
+| `{ path, method }` | path + HTTP method                            | Use `RequestMethod.GET`, `POST`, etc.                                            |
+| `CatsController`   | every route declared by the controller        | Pass the class, not an instance                                                  |
 
-`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
+`splat` is just the parameter name (any identifier works). Patterns use the path-to-regexp v6 syntax that ships with Express v5; pre-v11 forms like `'cats/*'` still work via Nest's compatibility layer but emit a startup warning.
+
+`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Route wildcards](https://docs.nestjs.com/middleware#route-wildcards), [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
 
 ## Common recipes
 
