@@ -16,6 +16,10 @@ related:
 - [Everything about barrel exports in JavaScript](https://4markdown.com/everything-about-barrel-exports-in-javascript/): when `index.ts` re-exports help vs hurt (bundle size, circular deps, IDE perf). Likely a `typescript/patterns/barrel-exports` note.
 - [Consider using type imports in TypeScript](https://4markdown.com/consider-using-type-imports-in-typescript/): `import type` vs runtime imports; effect on bundling and `verbatimModuleSyntax`. Short `typescript/gotchas` candidate.
 - [Exhaustiveness checking and discriminant property](https://4markdown.com/exhaustiveness-checking-and-discriminant-property-the-complete-guide/): discriminated unions + `never` for exhaustive `switch`. Likely a `typescript/patterns/exhaustiveness-check` note.
+- [Trilon: Dependency Inversion Principle in NestJS](https://trilon.io/blog/dependency-inversion-principle): the "D" of SOLID applied to Nest providers (depend on abstract tokens / interfaces, not concrete classes). Candidate `nestjs/patterns/dependency-inversion` note; cross-link from `global-providers` and the existing DI material.
+- [Trilon: Avoiding circular dependencies in NestJS](https://trilon.io/blog/avoiding-circular-dependencies-in-nestjs): `forwardRef`, module restructuring, and the design smells that cause cycles. Likely a `nestjs/gotchas/circular-dependencies` note (or a section under a future modules deep-dive).
+- [Trilon: NestJS + Drizzle ORM](https://trilon.io/blog/nestjs-drizzleorm-a-great-match): Drizzle wiring (module, schema, repository pattern) as an alternative to TypeORM/Prisma. Lands as `nestjs/data/drizzle` once verified against current Drizzle docs; useful even before then to anchor a "choose your ORM" comparison from the data MOC.
+- [Trilon: ElevenLabs voice AI integration with NestJS](https://trilon.io/blog/elevenlabs-nestjs-voice-ai-integration): streaming third-party SDK responses through a Nest service. Probably too vendor-specific for its own note; mine for the **streaming pattern** (chunked response, backpressure, abort handling) and fold into a future `nestjs/recipes/streaming-responses` note rather than a vendor recipe.
 
 ## Videos
 
