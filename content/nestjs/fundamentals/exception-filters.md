@@ -189,10 +189,16 @@ Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`rou
 2. Controller-bound filter
 3. Global filter
 
-Once a filter catches the exception, **no other filter sees it**. To layer behavior (e.g., always log, then format), use class inheritance from `BaseExceptionFilter`, not stacking. This is the opposite of [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], and [[nestjs/fundamentals/interceptors|interceptors]], where every applicable instance runs.
+Once a filter catches the exception, **no other filter at the same handler sees it**: per-route, controller-bound, and global filters are merged into one list per handler and Nest picks **one** match (`Array.find` over the reversed list, see [`select-exception-filter-metadata.util.ts`](https://github.com/nestjs/nest/blob/master/packages/common/utils/select-exception-filter-metadata.util.ts)). To layer behavior (e.g., always log, then format), use class inheritance from `BaseExceptionFilter`, not stacking. This is the opposite of [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], and [[nestjs/fundamentals/interceptors|interceptors]], where every applicable instance runs.
 
-> [!warning]- Rethrowing from a filter does **not** cascade to the next filter
-> Nest picks **one** filter via `selectExceptionFilterMetadata` and calls it without a try/catch ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts)). A `throw` inside `catch()` escapes the filter chain entirely and bubbles to the platform's default handler (Express/Fastify), the same failure mode as throwing in [[middleware|middleware]]. Worse: `filter.func(...)` is **not awaited**, so an `async catch()` that rejects becomes an unhandled promise rejection and the response is never sent. To layer behavior, extend `BaseExceptionFilter` and call `super.catch(exception, host)` (see the [example below](#common-recipes)).
+> [!warning]- Rethrowing from a filter falls through to the **global** layer, not to the next sibling
+> The selected filter is invoked **without a try/catch** ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts)). A `throw` inside `catch()` escapes the per-handler chain; Nest's outer error layer then runs the **global** filters (and finally `BaseExceptionFilter`) against the **rethrown** exception. Concrete consequences:
+>
+> - Route and controller-bound filters do **not** re-fire against the rethrown exception.
+> - Globals see the new exception, not the original. Wrap or preserve `cause` if you need it.
+> - An `async catch()` that rejects is worse: `invokeCustomFilters` calls `filter.func(...)` **without awaiting**, so the rejection becomes an unhandled promise rejection and the response is never sent (Node ≥15 also crashes the process by default).
+>
+> To layer behavior, extend `BaseExceptionFilter` and call `super.catch(exception, host)` (see the [example below](#common-recipes)).
 
 ## When `@Catch()` is empty (catch-all)
 
