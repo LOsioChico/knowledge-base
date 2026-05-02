@@ -13,6 +13,7 @@ related:
 source:
   - https://docs.nestjs.com/security/rate-limiting
   - https://github.com/nestjs/throttler
+  - https://www.telerik.com/blogs/rate-limiting-nestjs-using-throttler
 ---
 
 > Cap how many requests a single client can fire at your API in a time window. `@nestjs/throttler` ships a [[nestjs/fundamentals/guards|guard]] you bind globally; per-route overrides come from two decorators. In-memory store by default, Redis when you scale past one instance.
