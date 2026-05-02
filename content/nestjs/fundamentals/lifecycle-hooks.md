@@ -24,6 +24,9 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-destroy.interface.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/before-application-shutdown.interface.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-application-shutdown.interface.ts
+  - https://github.com/nestjs/nest/releases/tag/v11.0.0
+  - https://github.com/nestjs/nest/pull/14111
+  - https://trilon.io/blog/announcing-nestjs-11-whats-new
 ---
 
 > Hooks for **application** lifetime: when modules wake up, when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]], which fires once per HTTP call.
@@ -88,7 +91,7 @@ Within a single class, `onModuleInit` runs first, then later `onApplicationBoots
 - For an import graph `A → B → C` (A depends on B, B depends on C), init effectively goes `C → B → A` because Nest awaits each imported module before the importer.
 - Inside one module, hook execution is sequential: bootstrap waits for init.
 - Both hooks may return a `Promise` (or be `async`); Nest will not move on until it resolves or rejects.
-- `@Global()` modules are imported implicitly by every other module, so they sit at the deepest level of the graph: they finish init **first** and (mirroring) tear down **last**. Verified empirically; the docs don't call this out explicitly. If you depend on the order, write a smoke test that logs from each hook.
+- `@Global()` modules are imported implicitly by every other module, so they sit at the deepest level of the graph. The official docs don't pin down their position in the init/destroy walk, but the import-graph rule above implies they finish init first and tear down last (mirroring). If the order is load-bearing for your code, write a smoke test that logs from each hook rather than relying on this.
 
 If you need "this provider should be ready before that controller starts handling requests", `onApplicationBootstrap` is the safer slot: by the time it runs, **every** module has finished `onModuleInit`.
 
@@ -116,7 +119,7 @@ After `enableShutdownHooks()`, receiving a signal triggers the terminate sequenc
 4. `onApplicationShutdown` runs last, with the signal name.
 
 > [!warning] Termination order reversed since [[nestjs/releases/v11|v11]]
-> Pre-v11, init and destroy walked the module graph in the same direction (deepest-first). Since v11 the destroy walk is the reverse: for an import graph `A → B → C`, init still goes `C → B → A`, but `onModuleDestroy` now goes `A → B → C` so dependents shut down **before** their dependencies and a service can still call its DB inside its own `onModuleDestroy`. Global modules destroy **last**, mirroring init. See the [v11 release notes](https://github.com/nestjs/nest/releases) and the [v11 announcement](https://trilon.io/blog/announcing-nestjs-11-whats-new) for the change description; if you maintained code against the pre-v11 order it will visibly fire in a new sequence after the upgrade.
+> Pre-v11, init and destroy walked the module graph in the same direction (deepest-first). Since v11 the destroy walk is the reverse: for an import graph `A → B → C`, init still goes `C → B → A`, but `onModuleDestroy` now goes `A → B → C` so dependents shut down **before** their dependencies and a service can still call its DB inside its own `onModuleDestroy`. Source: [v11.0.0 release notes](https://github.com/nestjs/nest/releases/tag/v11.0.0) (PR [#14111](https://github.com/nestjs/nest/pull/14111) "Order of module destroy should be the reverse of module init") and the [v11 announcement](https://trilon.io/blog/announcing-nestjs-11-whats-new). If you maintained code against the pre-v11 order it will visibly fire in a new sequence after the upgrade.
 
 `app.close()` only triggers the destroy/shutdown chain. It does **not** kill the Node process. If timers, open intervals, or background workers are still alive, the process keeps running. Either let your hooks clear them, or follow `await app.close()` with `process.exit(0)` once you're confident there's nothing to drain.
 
