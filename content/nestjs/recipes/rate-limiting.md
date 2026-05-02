@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
@@ -58,7 +59,7 @@ export class AppModule {}
 Two pieces:
 
 - `ThrottlerModule.forRoot([{ ttl, limit }])` configures one bucket: `ttl` is the window in **milliseconds**, `limit` is the max requests in that window.
-- The `APP_GUARD` provider registers `ThrottlerGuard` globally, so it runs on every route without `@UseGuards()` clutter. Always register through the provider rather than `useGlobalGuards(new ThrottlerGuard())`; see [[nestjs/fundamentals/guards|Guards]] for the full DI rationale.
+- The `APP_GUARD` provider registers `ThrottlerGuard` globally, so it runs on every route without `@UseGuards()` clutter. Any [[nestjs/fundamentals/guards|guard binding]] works (the docs explicitly say so), but `APP_GUARD` is the recommended path because it's DI-aware: `useGlobalGuards(new ThrottlerGuard())` instantiates the guard outside the container, so anything `ThrottlerGuard` injects (`ThrottlerStorage`, `Reflector`, your custom `getTracker` deps) is missing. See [[nestjs/fundamentals/global-providers|DI-aware globals]] for the full rationale.
 
 The 11th request inside the same minute returns:
 
@@ -223,7 +224,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-**2. (Fastify only)** Override the tracker because Fastify exposes the chain at `req.ips`, not `req.ip`:
+**2. Override the tracker if you need the leftmost forwarded IP.** The snippet below works with both Express and Fastify, but it's only **required** for Fastify because Fastify exposes the chain at `req.ips` rather than auto-populating `req.ip` from `X-Forwarded-For`:
 
 ```typescript
 // throttler-behind-proxy.guard.ts
@@ -281,7 +282,7 @@ ThrottlerModule.forRoot({
 ```
 
 > [!info]- The in-memory store is fine for single-process apps and dev
-> If you're running one pod, one container, no horizontal scaling, the default store is correct. The trade-off is memory growth proportional to active trackers; the store cleans expired entries lazily. Switch to Redis when you add a second instance, not before.
+> If you're running one pod, one container, no horizontal scaling, the default store is correct. The trade-off is memory growth proportional to active trackers; entries are evicted once their TTL expires. Switch to Redis when you add a second instance, not before.
 
 ## Async configuration
 

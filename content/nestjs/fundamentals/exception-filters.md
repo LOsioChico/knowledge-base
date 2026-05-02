@@ -80,7 +80,7 @@ nest g f http-exception --no-spec        # skip the *.spec.ts test file
 nest g f http-exception --dry-run        # preview the file plan, write nothing
 ```
 
-The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/tree/master/src/lib/filter/files)).
+The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts)).
 
 ## Built-in HTTP exceptions
 
@@ -189,7 +189,7 @@ Once a filter catches the exception, **no other filter at the same handler sees 
 >
 > - Route and controller-bound filters do **not** re-fire against the rethrown exception.
 > - Globals see the new exception, not the original. Wrap or preserve `cause` if you need it.
-> - An `async catch()` that rejects is worse: `invokeCustomFilters` calls `filter.func(...)` **without awaiting**, so the rejection becomes an unhandled promise rejection and the response is never sent (Node ≥15 also crashes the process by default).
+> - An `async catch()` that rejects is worse: `invokeCustomFilters` calls `filter.func(...)` **without awaiting**, so the rejection becomes an unhandled promise rejection and the response is never sent ([Node 15+ terminates the process by default on unhandled rejections](https://nodejs.org/en/blog/release/v15.0.0#unhandled-rejections-are-thrown)).
 >
 > To layer behavior, extend `BaseExceptionFilter` and call `super.catch(exception, host)` (see the [example below](#common-recipes)).
 

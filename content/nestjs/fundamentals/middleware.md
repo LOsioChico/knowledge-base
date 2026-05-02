@@ -23,7 +23,11 @@ source:
   - https://docs.nestjs.com/security/cors
   - https://docs.nestjs.com/techniques/compression
   - https://docs.nestjs.com/faq/raw-body
+  - https://docs.nestjs.com/faq/hybrid-application
   - https://docs.nestjs.com/cli/usages
+  - https://github.com/pillarjs/path-to-regexp#parameters
+  - https://github.com/pillarjs/path-to-regexp#wildcard
+  - https://expressjs.com/en/5x/api.html#path-route-matching
 ---
 
 > Express-style functions called **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the route handler. They receive raw `req`/`res` objects and either call `next()` or end the response.

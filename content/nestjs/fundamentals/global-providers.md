@@ -14,6 +14,7 @@ related:
   - "[[nestjs/fundamentals/middleware]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/pipes#global-scoped-pipes

@@ -17,6 +17,11 @@ related:
   - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/faq/request-lifecycle
+  - https://docs.nestjs.com/middleware
+  - https://docs.nestjs.com/exception-filters
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
+  - https://expressjs.com/en/guide/error-handling.html
+  - https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks
 ---
 
 How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.
