@@ -20,8 +20,13 @@ related:
 source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation
+  - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/tree/master/packages/common/pipes
   - https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
+  - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://github.com/typestack/class-validator
   - https://github.com/typestack/class-transformer
 ---

@@ -21,10 +21,14 @@ related:
 source:
   - https://docs.nestjs.com/interceptors
   - https://docs.nestjs.com/cli/usages
+  - https://docs.nestjs.com/fundamentals/execution-context
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
   - https://github.com/nestjs/nest/tree/master/packages/core/interceptors
+  - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/helpers/execution-context.helper.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
   - https://rxjs.dev/api/operators/retry
+  - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
 ---
 
 > Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.

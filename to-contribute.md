@@ -98,7 +98,7 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
 
 ### 6. Nest cache-manager docs say `get()` returns `null`; v7 returns `undefined`
 
-- **Status: filed as [nestjs/docs.nestjs.com#3415](https://github.com/nestjs/docs.nestjs.com/pull/3415) (May 2026).** Awaiting maintainer review.
+- **Status: merged as [nestjs/docs.nestjs.com#3415](https://github.com/nestjs/docs.nestjs.com/pull/3415) (May 2026).**
 - Repo: [`nestjs/docs.nestjs.com`](https://github.com/nestjs/docs.nestjs.com)
 - Evidence:
   - [Cache docs](https://docs.nestjs.com/techniques/caching) state: *"If the item does not exist in the cache, `null` will be returned."*

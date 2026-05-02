@@ -21,8 +21,11 @@ source:
   - https://docs.nestjs.com/fundamentals/execution-context
   - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/tree/master/packages/core/guards
+  - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
   - https://github.com/nestjs/nest/tree/master/packages/common
   - https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json
+  - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
 ---
 
 > Decide whether a request reaches the route handler. Used for **authorization**: roles, permissions, ownership, anything that should short-circuit before the handler runs.

@@ -23,6 +23,11 @@ source:
   - https://docs.nestjs.com/exception-filters#binding-filters
   - https://docs.nestjs.com/faq/hybrid-application
   - https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers
+  - https://github.com/nestjs/nest/blob/master/packages/core/constants.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts
 ---
 
 > Two ways to register a global pipe / guard / interceptor / exception filter. They look interchangeable. They are not.
