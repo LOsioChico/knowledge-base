@@ -64,7 +64,7 @@ flowchart TD
 9. Response is sent.
 
 > [!info]- Filters resolve in the **opposite** direction
-> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter.
+> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter. Rethrowing from inside a filter does **not** cascade to the next filter: it escapes the chain to the platform handler. See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]].
 
 ## Why the order matters
 
