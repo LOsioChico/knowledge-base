@@ -6,6 +6,7 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
 
 ### 1. `PaymentRequiredException` (HTTP 402) missing from `@nestjs/common`
 
+- **Status: filed as [nestjs/nest#16878](https://github.com/nestjs/nest/pull/16878) (May 2026).** Awaiting maintainer review.
 - Repo: [`nestjs/nest`](https://github.com/nestjs/nest)
 - Evidence (verified against `nestjs/nest@52030c9`):
   - The HTTP-status enum already lists 402: [`packages/common/enums/http-status.enum.ts#L28`](https://github.com/nestjs/nest/blob/52030c9f4fbceadaf1f20011831ae8a10faee75c/packages/common/enums/http-status.enum.ts#L28) declares `PAYMENT_REQUIRED = 402`.
@@ -97,6 +98,7 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
 
 ### 6. Nest cache-manager docs say `get()` returns `null`; v7 returns `undefined`
 
+- **Status: filed as [nestjs/docs.nestjs.com#3415](https://github.com/nestjs/docs.nestjs.com/pull/3415) (May 2026).** Awaiting maintainer review.
 - Repo: [`nestjs/docs.nestjs.com`](https://github.com/nestjs/docs.nestjs.com)
 - Evidence:
   - [Cache docs](https://docs.nestjs.com/techniques/caching) state: *"If the item does not exist in the cache, `null` will be returned."*
@@ -114,6 +116,7 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
 ## Workflow
 
 1. Pick one. Re-grep the upstream `master` branch first: any of items 1–6 may already be fixed in a release I haven't checked.
-2. Open as an issue first (not a PR) for items 1, 2, 3 — they're API/behavior decisions the maintainers should weigh in on.
-3. Items 4, 5, 6 are pure docs/README edits; PRs are fine without an issue.
-4. Cite the source-file path + line in the issue body so maintainers can verify in one click.
+2. **Read `CONTRIBUTING.md` and `.github/PULL_REQUEST_TEMPLATE.md` in the target repo before drafting anything.** The Nest org repos all have a strict PR template (PR Checklist / PR Type / current vs new behavior / breaking-change toggle / other info) and a strict commit-message format (`<type>(<scope>): <subject>`, lowercase, imperative, no trailing dot, ≤100 chars; scope is the package name like `common`, `core`, `cache`). Commitlint enforces `subject-case` to a **single** style — a subject mixing lowercase prose with `PascalCaseIdentifiers` is rejected (PR #16878 had to be re-committed after `add PaymentRequiredException for HTTP 402` failed; the lowercased `add payment required exception for http 402` passed). Drafting a freeform PR body and having to refile it is a wasted round-trip — see the post-mortem on PR #3415.
+3. Open as an issue first (not a PR) for items 1, 2, 3 — they're API/behavior decisions the maintainers should weigh in on. CONTRIBUTING.md for `nestjs/nest` makes this explicit for features ("submit an issue with a proposal for your work first"); only "small features" go straight to PR.
+4. Items 4, 5, 6 are pure docs/README edits; PRs are fine without an issue.
+5. Cite the source-file path + line in the issue/PR body so maintainers can verify in one click.
