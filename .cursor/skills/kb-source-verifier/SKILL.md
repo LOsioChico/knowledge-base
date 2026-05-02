@@ -6,7 +6,7 @@ description: >
   caches each source URL, strips it to plain text, and hands you (a) the note body with
   line numbers and (b) the extracted source contents. You decide which specific claims in
   the note are unsupported by, or contradicted by, the cited sources. Returns a strict
-  JSON `Report`. Triggered by the orchestrator when run with `--verify-sources`.
+  JSON `Report`. Triggered by the orchestrator on every audit run (Pass 1b is mandatory).
 ---
 
 # kb-source-verifier

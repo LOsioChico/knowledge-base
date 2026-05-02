@@ -10,9 +10,11 @@
 //   CURSOR_API_KEY=... yarn start <file.md> [more.md ...]
 //
 // Flags:
-//   --no-verify           skip Pass 2 verifier (faster; useful for local debugging)
-//   --no-verify-sources   skip Pass 1b source verification (default: ON)
-//   --json                emit only the final JSON to stdout (for CI piping)
+//   --no-verify   skip Pass 2 verifier (faster; useful for local debugging)
+//   --json        emit only the final JSON to stdout (for CI piping)
+//
+// Source verification (Pass 1b) is always on. CURSOR_API_KEY must be set;
+// the script exits non-zero on missing key or any auth/network failure.
 
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
@@ -50,14 +52,12 @@ interface Args {
   targets: string[];
   noVerify: boolean;
   jsonOnly: boolean;
-  verifySources: boolean;
 }
 
 function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
   const noVerify: boolean = argv.includes("--no-verify");
   const jsonOnly: boolean = argv.includes("--json");
-  const verifySources: boolean = !argv.includes("--no-verify-sources");
   const positional: string[] = argv.filter(
     (a: string): boolean => !a.startsWith("--"),
   );
@@ -73,7 +73,7 @@ function parseArgs(): Args {
     log(`error: file(s) not found: ${missing.join(", ")}`);
     process.exit(2);
   }
-  return { targets, noVerify, jsonOnly, verifySources };
+  return { targets, noVerify, jsonOnly };
 }
 
 let JSON_ONLY: boolean = false;
@@ -208,6 +208,10 @@ async function runAgent(prompt: string, label: string): Promise<string> {
       const elapsed: string = ((Date.now() - t0) / 1000).toFixed(1);
       const msg: string = err instanceof Error ? err.message : String(err);
       log(`[${label}] attempt ${attempt} failed after ${elapsed}s: ${msg}`);
+      if (/\b(401|403|unauthor|forbidden|invalid.*api.*key|api.*key.*invalid|authentication)\b/i.test(msg)) {
+        log("error: CURSOR_API_KEY appears invalid; aborting (source verification is mandatory)");
+        process.exit(2);
+      }
       if (attempt < maxAttempts) {
         const backoffMs: number = 2000 * 2 ** (attempt - 1);
         log(`[${label}] retrying in ${backoffMs}ms`);
@@ -373,14 +377,13 @@ async function main(): Promise<void> {
   JSON_ONLY = args.jsonOnly;
 
   if ((process.env["CURSOR_API_KEY"] ?? "") === "") {
-    log("error: CURSOR_API_KEY is not set");
+    log("error: CURSOR_API_KEY is not set; source verification is mandatory");
     process.exit(2);
   }
 
   log(`[audit] cwd=${REPO_ROOT}`);
   log(`[audit] targets=${args.targets.join(", ")}`);
   log(`[audit] verify=${!args.noVerify}`);
-  log(`[audit] verifySources=${args.verifySources}`);
 
   // Pass 0: deterministic
   log("\n--- pass 0 (deterministic) ---");
@@ -398,20 +401,17 @@ async function main(): Promise<void> {
   // Pass 1a: deterministic candidate finder + binary judge for show-dont-tell.
   const sdtFindings: FlatFinding[] = await runShowDontTellPass(args.targets);
 
-  // Pass 1b: source verification (opt-in). Fetches each note's `source:`
+  // Pass 1b: source verification (always on). Fetches each note's `source:`
   // URLs (cached) and asks the LLM to flag claims not supported by them.
-  let sourceFindings: FlatFinding[] = [];
-  if (args.verifySources) {
-    log("\n--- pass 1b (source verification) ---");
-    sourceFindings = await runSourceVerifyPass({
-      repoRoot: REPO_ROOT,
-      targets: args.targets,
-      runAgent,
-      extractJson,
-      log,
-    });
-    log(`[pass-1b] ${sourceFindings.length} finding(s)`);
-  }
+  log("\n--- pass 1b (source verification) ---");
+  const sourceFindings: FlatFinding[] = await runSourceVerifyPass({
+    repoRoot: REPO_ROOT,
+    targets: args.targets,
+    runAgent,
+    extractJson,
+    log,
+  });
+  log(`[pass-1b] ${sourceFindings.length} finding(s)`);
 
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.

@@ -15,7 +15,7 @@ export type RuleId =
   | "demo-names" //           audit J
   | "callout-severity" //     audit K
   | "ambiguous-wikilink" //   audit M
-  | "source-verification" //  audit N (default-on; disable with --no-verify-sources)
+  | "source-verification" //  audit N (always on; requires CURSOR_API_KEY)
   | "express-first";
 
 export interface Finding {

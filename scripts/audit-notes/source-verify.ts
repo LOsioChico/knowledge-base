@@ -8,7 +8,7 @@
 //      `kb-source-verifier` skill.
 //   5. Parse JSON response into `source-verification` findings.
 //
-// Default-on. Disable per-run with `--no-verify-sources`.
+// Always on. CURSOR_API_KEY must be set or the script exits non-zero.
 // Network + ~10-30k extra tokens per note.
 
 import { createHash } from "node:crypto";
