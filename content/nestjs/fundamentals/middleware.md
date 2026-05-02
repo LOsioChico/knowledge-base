@@ -60,7 +60,7 @@ nest g mi logger --no-spec           # skip the *.spec.ts test file
 nest g mi logger --dry-run           # preview the file plan, write nothing
 ```
 
-Same shape as the other pipeline-component generators (`gu`, `pi`, `in`). The CLI defaults to wrapping the file in a folder named after the element; `--flat` drops it directly in the target. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+Same shape as the other pipeline-component generators (`gu`, `pi`, `itc`). The CLI defaults to wrapping the file in a folder named after the element; `--flat` drops it directly in the target. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
 
 ## Functional middleware
 

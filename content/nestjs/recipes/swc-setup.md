@@ -16,6 +16,7 @@ source:
   - https://github.com/swc-project/swc
   - https://trilon.io/blog/nestjs-10-is-now-available
   - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts
+  - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts
 ---
 
 > [SWC](https://swc.rs) is a Rust-based TS/JS compiler that's roughly **20× faster** than `tsc` on Nest builds. The Nest CLI has built-in support since [[nestjs/releases/v10|v10]]: opt in with one flag, then layer `tsc --noEmit` on top for type-checking. This is the default builder for new and existing Nest projects in this knowledge base; reach for `tsc` or `webpack` only when noted.
@@ -23,10 +24,10 @@ source:
 ## Setup
 
 ```shell
-npm i --save-dev @swc/core
+npm i --save-dev @swc/core @swc/cli
 ```
 
-That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI shells out to `@swc/core` directly via [`swcDefaultsFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts), so you don't need `@swc/cli` unless you want to invoke the standalone `swc` binary outside the Nest CLI (e.g. `npx swc src -d dist`). The official recipe still tells you to install `@swc/cli` alongside `@swc/core`; that package is harmless but unused by `nest start`.
+That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI loads SWC via [`swcDefaultsFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts) and invokes the compiler through `@swc/cli` (`SwcCompiler#loadSwcCliBinary` does [`require('@swc/cli/lib/swc/dir')`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts#L198-L207) and exits with an install hint if either package is missing), so both packages are required for `nest start -b swc`.
 
 ## Minimal working example
 
