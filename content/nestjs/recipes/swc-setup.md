@@ -58,7 +58,7 @@ After that, `nest start`, `nest start --watch`, and `nest build` all use SWC aut
 
 ## What `--type-check` actually does
 
-SWC strips and emits TypeScript fast because it does **no type checking**: it doesn't even build a type graph. `--type-check` (or `typeCheck: true`) tells the Nest CLI to spawn `tsc --noEmit` alongside SWC so type errors still surface in your terminal. The two run in parallel; SWC's emit isn't gated on `tsc`, so startup stays fast even on a large codebase.
+SWC strips and emits TypeScript fast because it does **no type checking**: it doesn't even build a type graph. `--type-check` (or `typeCheck: true`) tells the Nest CLI to spawn `tsc --noEmit` alongside SWC so type errors still surface in your terminal. The two run in parallel; the SWC emit doesn't wait on `tsc`, so the dev loop only blocks on the parser pass.
 
 ```shell
 # Without --type-check: build is fast, but `const x: string = 1` ships
@@ -188,7 +188,7 @@ export default defineConfig({
 
 ## Using SWC in a CLI [[nestjs/recipes/monorepo|monorepo]]
 
-The Nest CLI defaults to `webpack` in monorepo mode (`"webpack": true` in `nest-cli.json`) and the `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
+The Nest CLI defaults to `webpack` in monorepo mode (the official [SWC recipe → Monorepo](https://docs.nestjs.com/recipes/swc#monorepo) tells you to keep webpack and use `swc-loader`), so the `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
 
 ```shell
 npm i --save-dev swc-loader

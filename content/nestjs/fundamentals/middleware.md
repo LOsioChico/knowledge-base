@@ -64,7 +64,7 @@ Same shape as the other pipeline-component generators (`gu`, `pi`, `in`). The CL
 
 ## Functional middleware
 
-Class middleware can inject providers from the same module. If the middleware needs no dependencies, a plain function is shorter and the [official docs prefer it](https://docs.nestjs.com/middleware#functional-middleware) for that case:
+Class middleware can inject providers from the same module. If the middleware needs no dependencies, a plain function is shorter and the [official docs note this is the right shape for that case](https://docs.nestjs.com/middleware#functional-middleware):
 
 ```typescript
 import { NextFunction, Request, Response } from "express";
@@ -96,12 +96,12 @@ Most apps wire the same handful of Express-ecosystem packages. Nest documents th
 | ------------------------------------------------------------- | ----------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
 | [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)    | `app.use(helmet())` in `main.ts` ([example](#common-recipes))      |
 | [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                 | `app.enableCors(options)` ([example](#common-recipes))             |
-| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/br response compression                        | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip response compression                           | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
 | `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`            | `app.use(cookieParser())`                                          |
 | `express-session`                                             | `express-session` | Server-side session store                           | `app.use(session(options))`                                        |
 | [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on) | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
 
-CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`, because the platform adapter wires it before any user middleware.
+CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`. Use the helper rather than the raw package so the platform adapter can install the headers consistently across Express and Fastify; `app.use(cors())` works on Express only.
 
 ## Binding
 
@@ -208,7 +208,7 @@ The parameter / wildcard distinction is the one that bites: `:id` stops at the n
 
 > [!example]- Access log middleware (status, URL, duration)
 >
-> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware sees every request, including 404s, requests rejected by guards, and requests that blew up in pipes: an [[nestjs/fundamentals/interceptors|interceptor]] can't log those because the handler never ran.
+> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|pipeline]] and so sees responses an [[nestjs/fundamentals/interceptors|interceptor]] never gets a chance at: route-not-found 404s and any 4xx/5xx that fires before the handler runs.
 >
 > Rule of thumb:
 >
@@ -268,7 +268,7 @@ A body parser is a piece of middleware that **reads the request stream once** an
 
 The request body is a one-shot stream: once a parser has consumed it, no other parser can. That's why mixing them on overlapping paths breaks: whichever runs first wins, and downstream code sees `req.body` already in that shape (or an empty `{}` if the type didn't match).
 
-Why `raw` matters for signed webhooks: signature verification recomputes an HMAC over the **exact bytes** the sender hashed. `JSON.stringify(req.body)` is not guaranteed to reproduce those bytes (key order, whitespace, unicode escapes can all differ), so a re-serialized body will fail the check. `express.raw()` keeps the original `Buffer` so you can verify, then `JSON.parse(req.body.toString())` yourself.
+Why `raw` matters for signed webhooks: signature verification recomputes an HMAC over the **exact bytes** the sender hashed. `JSON.stringify(req.body)` is not byte-for-byte stable (key order, whitespace, and escape choices depend on the producer), so a re-serialized body will fail the check. `express.raw()` keeps the original `Buffer` so you can verify, then `JSON.parse(req.body.toString())` yourself.
 
 > [!example]- Capture the raw body for a Stripe webhook
 >
@@ -337,7 +337,7 @@ Why `raw` matters for signed webhooks: signature verification recomputes an HMAC
 > With the Express adapter, Nest registers `express.json()` and `express.urlencoded()` automatically. To customize parsing (raw bodies for webhooks, multipart, custom limits), pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser. See [Raw body](https://docs.nestjs.com/faq/raw-body).
 
 > [!warning]- Middleware does not run on microservices or WebSocket gateways
-> `app.use()` and `MiddlewareConsumer` are HTTP-only. Microservice transports and WebSocket gateways have no middleware concept; use guards, interceptors, or pipes there. In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application) the HTTP middleware chain still applies to the HTTP side only.
+> `app.use()` and `MiddlewareConsumer` are HTTP-only. Microservice transports and WebSocket gateways have no middleware concept; use guards, interceptors, or pipes there. In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application) HTTP-bound middleware does not run on connected microservice or gateway transports.
 
 > [!info]- No `ExecutionContext` in middleware
 > Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata, the controller class, or the handler reference, it belongs in a guard or interceptor.

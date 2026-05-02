@@ -85,7 +85,7 @@ nest g f http-exception --no-spec        # skip the *.spec.ts test file
 nest g f http-exception --dry-run        # preview the file plan, write nothing
 ```
 
-The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts)).
+The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts)). Verify any path with `--dry-run`; the [Nest CLI usages](https://docs.nestjs.com/cli/usages) doc lists the flags but not the per-name output paths, so `--dry-run` is the source of truth for the actual layout.
 
 ## Built-in HTTP exceptions
 
@@ -163,7 +163,7 @@ For platform-agnostic filters that work across both Express and Fastify, prefer 
 | Route      | `@UseFilters(X)` on the method                                                                       |
 
 > [!warning] Pass the class, not an instance
-> `@UseFilters(HttpExceptionFilter)` is resolved by Nest's DI container so the filter's constructor and field injections are wired up. `@UseFilters(new HttpExceptionFilter())` skips DI: any injected dependency is `undefined`. For a filter extending `BaseExceptionFilter`, the symptom is the "no http adapter" crash documented in [common errors](#common-errors) below: both `applicationRef` (constructor arg) and `httpAdapterHost` (`@Optional() @Inject()` field) end up undefined. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
+> `@UseFilters(HttpExceptionFilter)` is resolved by Nest's DI container so the filter's constructor and field injections are wired up. `@UseFilters(new HttpExceptionFilter())` skips DI: any injected dependency is `undefined`. For a filter extending [`BaseExceptionFilter`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts) the symptom is the "no http adapter" crash documented in [common errors](#common-errors): the constructor argument and the `@Optional() @Inject()` field that resolve `HttpAdapterHost` both end up undefined when DI is bypassed. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
 
 The global-scope variant of the same DI question: `useGlobalFilters(new X())` vs `APP_FILTER`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
@@ -187,7 +187,7 @@ Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`rou
 2. Controller-bound filter
 3. Global filter
 
-Once a filter catches the exception, **no other filter at the same handler sees it**: per-route, controller-bound, and global filters are merged into one list per handler and Nest picks **one** match (`Array.find` over the reversed list, see [`select-exception-filter-metadata.util.ts`](https://github.com/nestjs/nest/blob/master/packages/common/utils/select-exception-filter-metadata.util.ts)). To layer behavior (e.g., always log, then format), use class inheritance from `BaseExceptionFilter`, not stacking. This is the opposite of [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], and [[nestjs/fundamentals/interceptors|interceptors]], where every applicable instance runs.
+Once a filter catches the exception, **no other filter at the same handler sees it**: per-route, controller-bound, and global filters are merged into one list per handler and Nest picks **one** match (`Array.find` over the reversed list, see [`select-exception-filter-metadata.util.ts`](https://github.com/nestjs/nest/blob/master/packages/common/utils/select-exception-filter-metadata.util.ts)). Compare with [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], and [[nestjs/fundamentals/interceptors|interceptors]], where every applicable instance in the resolved list participates. To layer behavior here (e.g., always log, then format), use class inheritance from `BaseExceptionFilter` instead of stacking.
 
 > [!warning]- Throwing from a filter escapes to the platform, not to another Nest filter
 > The selected filter is invoked **without a try/catch** ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func(exception, ctx)` once and returns). The merged filter list already contains the global filters (`router-exception-filters.ts` calls `getGlobalMetadata()`), so there is no separate "outer global layer" left to retry. A `throw` inside `catch()` escapes `invokeCustomFilters`, escapes `exceptionsHandler.next()`, escapes the `try` in [`router-proxy.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-proxy.ts), and lands on the platform's default error handler. Concrete consequences:
@@ -305,7 +305,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
 > export class AppModule {}
 > ```
 >
-> `HttpAdapterHost` is only available after `NestFactory.create()` finishes wiring the adapter, which is why the official docs resolve it inside `catch()` rather than holding `httpAdapter` on the filter instance. See [HTTP adapter](https://docs.nestjs.com/faq/http-adapter).
+> `HttpAdapterHost` may be `undefined` if read inside the constructor (the official [catch-everything example](https://docs.nestjs.com/exception-filters#catch-everything) destructures `httpAdapter` inside `catch()` rather than holding it as a field, with a comment to that effect). Resolve it lazily inside `catch()` to avoid the ordering trap. See [HTTP adapter](https://docs.nestjs.com/faq/http-adapter).
 
 > [!example]- Extend `BaseExceptionFilter` to add logging without losing default behavior
 >

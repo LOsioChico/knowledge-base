@@ -26,7 +26,7 @@ source:
   - https://expressjs.com/en/guide/migrating-5.html
 ---
 
-> Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". Zero dependencies beyond `node:async_hooks`.
+> Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". The propagation layer relies only on built-in `node:async_hooks` (`AsyncLocalStorage`) plus `randomUUID` from `node:crypto`.
 
 ## How it works
 
@@ -354,7 +354,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a meaningful CPU/GC cost. The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
-> Cryptographically random from day one means the ID is safe to use later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
+> Cryptographically random IDs (per [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions)) are safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
 
 > [!info]- Old C++ bindings can drop the async context
 > Most actively-maintained libraries propagate context cleanly because Node's [async_hooks](https://nodejs.org/api/async_hooks.html) integrates at the platform level. Older callback-style libraries that schedule work from native bindings without registering an [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on libraries you're likely to use today.
@@ -367,7 +367,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 | Symptom                                                           | Likely cause                                                                                                                                                                                                                      |
 | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getTraceId()` returns `undefined` in the controller              | `TraceMiddleware` not registered, or registered for the wrong path. Use `forRoutes('{*splat}')` (Express v5 / Nest 11 wildcard)                                                                                                   |
-| `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a [hybrid app](https://docs.nestjs.com/faq/hybrid-application): `useGlobal*` skips microservice/WebSocket layers. Use `APP_FILTER` instead so the filter runs on every transport |
+| `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a [hybrid app](https://docs.nestjs.com/faq/hybrid-application) without `inheritAppConfig: true`. Register via `APP_FILTER` instead so the filter is picked up on every transport |
 | `getTraceId()` returns `undefined` in a queue consumer            | HTTP middleware doesn't run for queue handlers. Open the context manually with `traceStorage.run()` in the processor                                                                                                              |
 | `getTraceId()` returns `undefined` after `await someThirdParty()` | Library doesn't preserve async context. Wrap with `new AsyncResource('lib').runInAsyncScope(...)`                                                                                                                                 |
 | Two concurrent requests show the same trace ID in logs            | Used `enterWith()` instead of `run()`. Switch to `run()`                                                                                                                                                                          |

@@ -242,7 +242,7 @@ Same data, different type, very different blast radius.
 
 ### How your ORM affects this
 
-The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances. Behaviors below were verified against each library's own docs ([TypeORM `Repository.find`](https://typeorm.io/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html)).
+The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `classToPlain(user)`. The trap: not every ORM gives you class instances. The exact return shapes are documented per library: [TypeORM `Repository` API](https://typeorm.io/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html).
 
 | Source                                             | What you get back                | `@Exclude()` works? | Fix                                        |
 | -------------------------------------------------- | -------------------------------- | :-----------------: | ------------------------------------------ |
@@ -332,13 +332,13 @@ Same entity, two payloads, zero conditional code in the controller.
 > The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` still calls `class-transformer`'s `classToPlain`, but `class-transformer` keys decorator behavior off the **class metadata** of the value: a plain object has no class, so `@Exclude()` matches nothing and every field reaches the wire (per the [Nest docs](https://docs.nestjs.com/techniques/serialization#overview): "If the body returned isn't an instance of an entity class, `ClassSerializerInterceptor` will not be able to properly serialize it"). Either `return new Entity(...)` / `plainToInstance(Entity, raw)`, or annotate the route with `@SerializeOptions({ type: Entity })` so the interceptor converts the plain object before serializing. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
 
 > [!warning]- Nested objects need `@Type()` or their decorators don't run
-> If a field is another class instance: `items: OrderItem[]`, `address: Address`: `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.
+> If a field is another class instance: `items: OrderItem[]`, `address: Address`: `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to during the plain ↔ class round-trip; see [class-transformer README → Working with nested objects](https://github.com/typestack/class-transformer#working-with-nested-objects). Without it the nested object is treated as a plain bag and the same "plain object slips through" failure mode applies one level deep.
 
 > [!warning]- `@SerializeOptions()` is inert without `ClassSerializerInterceptor`
 > Adding `@SerializeOptions({ groups: [...] })` to a route does nothing on its own. The metadata is only read by `ClassSerializerInterceptor`. Forget to register the interceptor (globally or via `@UseInterceptors`) and group-based views silently degrade to "no filtering": admin-only fields ship to every caller.
 
 > [!info]- `reflect-metadata` must be imported before any decorator runs
-> Required at the top of `main.ts`. Nest's CLI scaffolds this; the failure mode (a thrown error at startup) is loud, not silent, but worth knowing if you're hand-bootstrapping.
+> Required at the top of `main.ts` so `class-transformer`'s decorators have metadata to read; see [class-transformer README → Installation](https://github.com/typestack/class-transformer#installation). Nest's bootstrap scaffolding imports it for you; if you hand-roll `main.ts`, omitting the import surfaces as a startup error rather than a silent miss.
 
 > [!info]- Decorating entities couples DB shape to API shape
 > Mixing `@Exclude()` / `@Expose()` into a TypeORM or Prisma entity means renaming a column or splitting an entity ripples into your API contract. For non-trivial APIs, map entities to dedicated response DTOs and decorate the DTO. The recipe shows decorators on entities for brevity; production code usually shouldn't.

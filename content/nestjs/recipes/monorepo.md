@@ -66,7 +66,7 @@ This is a single-project layout: `src/`, `test/`, `package.json`, `tsconfig.json
 nest g app my-app-2
 ```
 
-The schematic detects you're in a single-project workspace and **rewrites the layout in place**:
+The schematic detects you're in a single-project workspace and **rewrites the layout in place** ([Nest CLI → Workspaces](https://docs.nestjs.com/cli/monorepo#workspaces) describes the conversion: the original `src/` and `test/` folders are moved under `apps/<name>/`):
 
 ```
 apps/
@@ -88,7 +88,7 @@ A few things just changed:
 - The original `src/` and `test/` were moved under `apps/my-app/`.
 - A new `apps/my-app-2/` was created with the standard starter structure.
 - Each app got its own `tsconfig.app.json` that extends the root `tsconfig.json`.
-- `nest-cli.json` switched to monorepo mode (`"monorepo": true`) and the original app was registered as the **default project** via the top-level `"root"` property. Source: [CLI properties](https://docs.nestjs.com/cli/monorepo#cli-properties).
+- `nest-cli.json` switched to monorepo mode (`"monorepo": true`) and the original app was registered as the **default project** via the top-level `"root"` property ([CLI properties](https://docs.nestjs.com/cli/monorepo#cli-properties) lists `monorepo`, `root`, `compilerOptions`, and the `projects` map).
 
 > [!info]- Conversion only works on canonical layouts
 > The schematic relocates `src/` and `test/` into `apps/<name>/`. If you've moved or renamed these folders, the conversion fails or produces unreliable results. Re-source from a fresh `nest new` if your project diverged. Source: [Monorepo conversion warning](https://docs.nestjs.com/cli/monorepo#monorepo-mode).
@@ -126,7 +126,7 @@ After conversion, `nest-cli.json` looks roughly like this:
 
 Two facts to internalize from this file:
 
-- `"webpack": true` is the **monorepo default** (in standard mode the default is `tsc`). Nest assumes monorepos benefit from webpack's bundling. You can flip it to `tsc` or `swc` via the `builder` field. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
+- `"webpack": true` is the **monorepo default**: standard projects build with `tsc` ([Nest CLI → build](https://docs.nestjs.com/cli/usages#nest-build)) while [monorepos default to webpack](https://docs.nestjs.com/cli/monorepo#specified-compiler) for bundling. Flip it to `tsc` or `swc` via the `builder` field if you'd rather not bundle.
 - The top-level `"root"` points at the **default project**. Every `nest` command without a project name targets it.
 
 > [!warning]- Both apps default to port 3000
@@ -220,7 +220,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `pnpm:<script>` | `pnpm run <script>` | `pnpm add -D concurrently` / `pnpm start:dev`   |
 > | `bun:<script>`  | `bun run <script>`  | `bun add -d concurrently` / `bun run start:dev` |
 >
-> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts any package manager name: see [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts). The interactive prompt offers `npm`, `yarn`, `pnpm`; bun is not in the prompt. For bun, scaffold with `npm` then re-install with `bun install`.
+> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts a package-manager name through the [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts) flag. Bun isn't a built-in option there; for bun-managed installs, scaffold with `npm` first and then re-install with `bun install`.
 
 ## Step 5: share code with libraries
 
@@ -377,7 +377,7 @@ Pros:
 
 Cons:
 
-- No task graph: the CLI doesn't know which apps depend on which libraries, so a library change always rebuilds everything.
+- No task graph: the Nest CLI's monorepo mode doesn't track app/library dependency edges, so editing a library forces a rebuild of any app you target rather than only the affected ones.
 - No remote build artifact reuse, no affected-only commands. If you need either, reach for `nx` or `turborepo` (you can layer them **on top** of Nest's monorepo mode).
 - Single `package.json`: every app gets every dep. You can't isolate a footgun dep to one app.
 - No built-in `start all`: you wire `concurrently` yourself. (`nest build --all` does exist for the build half.)

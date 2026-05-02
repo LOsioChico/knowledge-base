@@ -95,7 +95,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest treats the Observable like the `Promise` case: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) checks the return: a `boolean` is used directly; anything else goes through `pickResult`, which calls `lastValueFrom(result)` for an Observable and otherwise awaits the Promise.
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest treats the Observable like the `Promise` case: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) wraps the return value with `defer(...).pipe(filter(...))` and subscribes once, awaiting any Promise and exhausting any Observable.
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
@@ -132,7 +132,7 @@ nest g gu roles --no-spec      # skip the *.spec.ts test file
 nest g gu roles --dry-run      # preview the file plan, write nothing
 ```
 
-Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. The schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json#L29)) but the CLI overrides that default to `false` in [`actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts) (`const flatValue = !!flat?.value` makes an absent flag resolve to `false`), so the schema default is unreachable through `nest g`. Trust `--dry-run` over the schema. Reference: [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to see the exact file plan.
+Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. The schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json#L29)) but the CLI's [`actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L59) overrides it with `const flatValue = !!flat?.value`, so an absent flag resolves to `false` and the runtime default is folder-wrapped output. Trust `--dry-run` over the schema. Reference: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
 
 ## Why a guard, not [[nestjs/fundamentals/middleware|middleware]]
 
@@ -140,7 +140,7 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 ## Built-in guards
 
-Nest core ships **none**: the [`@nestjs/common` exports](https://github.com/nestjs/nest/tree/master/packages/common) include the `CanActivate` interface and the `@UseGuards` decorator, but no shipped guard classes. Authorization is application-specific, so you write your own: or pull one from a peer package.
+Nest core ships **no concrete guard classes**: the [`@nestjs/common` package](https://github.com/nestjs/nest/tree/master/packages/common) exposes the `CanActivate` interface and the `@UseGuards` decorator but no ready-to-use guard implementations. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
 | Guard                 | Package             | Purpose                                                                                                                                                                                                                  |
 | --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
@@ -193,7 +193,7 @@ The global-scope variant of the same DI question: `useGlobalGuards(new X())` vs 
 
 ## Order
 
-Multiple guards run in this order ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) iterates the resolved guard list and short-circuits on the first non-truthy/throwing result; the list is built per scope from `GUARDS_METADATA` and the global guard list, concatenated by the caller in `router-execution-context.ts`):
+Multiple guards run in this order. [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) iterates the resolved list and short-circuits on the first non-truthy / throwing result; the merged list is assembled per request from global + controller + method scopes by [`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts):
 
 1. Global guards (registration order).
 2. Controller guards (left-to-right inside `@UseGuards()`).

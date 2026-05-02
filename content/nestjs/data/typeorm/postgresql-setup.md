@@ -125,7 +125,7 @@ import * as Joi from "joi";
 export class AppModule {}
 ```
 
-[`ConfigService.getOrThrow`](https://github.com/nestjs/config/blob/master/lib/config.service.ts) fails fast at boot if a key is missing, so you don't ship an app that crashes on the first query. Joi's `validationSchema` runs before any provider resolves, which means a typo in `.env` blocks startup with a readable error instead of a connection timeout three seconds later.
+[`ConfigService.getOrThrow`](https://github.com/nestjs/config/blob/master/lib/config.service.ts) fails fast at boot if a key is missing, so you don't ship an app that crashes on the first query. Joi's `validationSchema` runs as part of `ConfigModule.forRoot()` so a typo in `.env` blocks startup with a readable error instead of a connection timeout three seconds later (see [Configuration → Schema validation](https://docs.nestjs.com/techniques/configuration#schema-validation)).
 
 `migrationsRun: true` runs pending migrations on boot. Convenient for production; in dev, run them manually with the CLI so you control timing.
 
@@ -285,7 +285,7 @@ Content-Type: application/json
 }
 ```
 
-A duplicate email returns Postgres SQLSTATE `23505` wrapped in `QueryFailedError`. Handle it centrally with the filter from [[nestjs/data/typeorm/handle-database-errors|handle database errors]]: don't try/catch in every controller.
+A duplicate email surfaces as Postgres SQLSTATE [`23505` (unique_violation)](https://www.postgresql.org/docs/current/errcodes-appendix.html) wrapped in `QueryFailedError`. Handle it centrally with the filter from [[nestjs/data/typeorm/handle-database-errors|handle database errors]]: don't try/catch in every controller.
 
 ## Step 5: Migrations from a standalone `DataSource`
 
@@ -381,13 +381,13 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 ## Gotchas
 
 > [!warning]- One `forRoot`, many `forFeature`
-> Call `TypeOrmModule.forRoot(...)` exactly once, in `AppModule` (or a dedicated `DatabaseModule`). Each feature module calls `TypeOrmModule.forFeature([Entity])` to register its repositories. `@nestjs/typeorm` registers each `forRoot` against a `DataSourceNameRegistry` ([typeorm-core.module.ts](https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts)), so a second call with the **same** name throws at startup. For multiple databases, give each connection a `name` and pass that name to `forFeature(entities, name)`.
+> Call `TypeOrmModule.forRoot(...)` exactly once, in `AppModule` (or a dedicated `DatabaseModule`). Each feature module calls `TypeOrmModule.forFeature([Entity])` to register its repositories. `@nestjs/typeorm` tracks each connection via a `DataSourceNameRegistry` ([typeorm-core.module.ts](https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts)); calling `forRoot` twice for the **same** connection name registers two roots against the same key and surfaces as a startup error. For multiple databases, give each connection a `name` and pass that name to `forFeature(entities, name)`.
 
 > [!warning]- `Repository` outside its module
 > A repository registered via `forFeature([User])` is only visible inside that module. To use `@InjectRepository(User)` in a different module, the owning module has to `exports: [TypeOrmModule]` (the whole `TypeOrmModule`, not just `User`). Source: [docs.nestjs.com/techniques/database#repository-pattern](https://docs.nestjs.com/techniques/database#repository-pattern).
 
 > [!warning]- `synchronize` and migrations don't mix
-> If `synchronize: true` and you also have migrations, TypeORM applies the schema sync first (changing tables to match entities) and then runs migrations against an already-mutated schema. Result: migrations succeed locally but fail in any environment that started from the migration history alone. Pick one strategy per environment.
+> If `synchronize: true` runs alongside migrations, the schema is mutated by the synchronize pass on every boot, so migration history no longer matches what's in the database. The TypeORM docs warn against using `synchronize` outside development for exactly this reason ([Synchronization](https://typeorm.io/data-source-options#common-data-source-options) entry: "do not use ... in production"). Pick one strategy per environment.
 
 > [!info]- `pg` driver vs `postgres` (`postgres.js`)
 > TypeORM's Postgres driver loads `require("pg")` ([source](https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts)), not the newer [`postgres.js`](https://github.com/porsager/postgres). Installing `postgres` does nothing for TypeORM. The `@types/pg` dev dependency is what gives you the typed `DatabaseError` used in [[nestjs/data/typeorm/handle-database-errors|handle database errors]].
@@ -410,7 +410,7 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 > See [node-postgres pool docs](https://node-postgres.com/apis/pool) for the full list.
 
 > [!info]- `EntityNotFoundError` vs `QueryFailedError`
-> `repository.findOneOrFail()` throws `EntityNotFoundError`, which is **not** a `QueryFailedError` and won't be caught by the database-error filter. Either use `findOne` + a manual `NotFoundException` (as in Step 4) or add a second `@Catch(EntityNotFoundError)` filter that maps to 404.
+> `repository.findOneOrFail()` throws [`EntityNotFoundError`](https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts), which is **not** a `QueryFailedError` and won't be caught by the database-error filter. Either use `findOne` + a manual `NotFoundException` (as in Step 4) or add a second `@Catch(EntityNotFoundError)` filter that maps to 404.
 
 > [!todo]- Verify on TypeORM 0.4 release
 > `forRootAsync` factory shape and `autoLoadEntities` semantics have been stable through TypeORM 0.3.x and `@nestjs/typeorm` 10.x. Re-check on the next major.

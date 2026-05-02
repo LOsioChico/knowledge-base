@@ -109,24 +109,24 @@ If the work has a "before AND after" shape, or it operates on the handler's retu
 
 Same `ExecutionContext` that [[nestjs/fundamentals/guards|guards]] use. The methods you'll actually call:
 
-| Method           | Returns                                                                                                            |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `getHandler()`   | The handler `Function` about to run: key for `Reflector` metadata lookup                                           |
-| `getClass()`     | The controller `Type` (the class, not an instance)                                                                 |
-| `switchToHttp()` | `HttpArgumentsHost` → `getRequest()`, `getResponse()`, `getNext()`                                                 |
-| `switchToRpc()`  | RPC context (microservices)                                                                                        |
-| `switchToWs()`   | WebSocket context                                                                                                  |
-| `getType()`      | `'http' \| 'rpc' \| 'ws'` (or `'graphql'` with `@nestjs/graphql`): branch on this for cross-transport interceptors |
+| Method           | Returns                                                                                                                                                                                                                                                           |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getHandler()`   | The handler `Function` about to run: key for `Reflector` metadata lookup                                                                                                                                                                                          |
+| `getClass()`     | The controller `Type` (the class, not an instance)                                                                                                                                                                                                                |
+| `switchToHttp()` | `HttpArgumentsHost` → `getRequest()`, `getResponse()`, `getNext()`                                                                                                                                                                                                |
+| `switchToRpc()`  | RPC context (microservices)                                                                                                                                                                                                                                       |
+| `switchToWs()`   | WebSocket context                                                                                                                                                                                                                                                 |
+| `getType()`      | `'http' \| 'rpc' \| 'ws'` (extended to `'graphql'` by `@nestjs/graphql`): branch on this for cross-transport interceptors. [Source: `ExecutionContextHost.getType()`](https://github.com/nestjs/nest/blob/master/packages/core/helpers/execution-context-host.ts) |
 
 Reading route metadata works exactly like in a guard: inject `Reflector`, call `reflector.getAllAndOverride(decorator, [ctx.getHandler(), ctx.getClass()])`. See [[nestjs/fundamentals/guards#Reflector and custom decorators|Guards > Reflector and custom decorators]] for the full pattern.
 
 ## Built-in interceptors
 
-[`@nestjs/common`](https://github.com/nestjs/nest/tree/master/packages/common) ships only one interceptor class out of the box (`ClassSerializerInterceptor`); the rest you compose yourself with RxJS.
+[`@nestjs/common`](https://github.com/nestjs/nest/tree/master/packages/common/serializer) ships `ClassSerializerInterceptor` as the lone built-in; the rest you compose yourself with RxJS.
 
-| Interceptor                  | Package          | Purpose                                                                                                                                                                                                                    |
-| ---------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `instanceToPlain` on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
+| Interceptor                  | Package          | Purpose                                                                                                                                                                                                                                                         |
+| ---------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`) on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
 
 > [!example]- Excluding fields from the response
 >
@@ -352,7 +352,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 ## Gotchas
 
 > [!warning]- `@Res()` disables response mapping
-> If a handler injects `@Res()` and writes to the response directly, RxJS operators on the returned stream **don't run**: Nest never receives a return value to pipe through. Use `@Res({ passthrough: true })` when you need both raw access (cookies, streaming) and interceptors.
+> If a handler injects `@Res()` and writes to the response directly, RxJS operators on the returned stream **don't run**: Nest's [response controller](https://docs.nestjs.com/controllers#library-specific-approach) detects `@Res()` and skips the standard return-value pipeline. Pass `@Res({ passthrough: true })` to keep the standard pipeline (and therefore your interceptors) while still getting the raw response object for cookies, headers, or streaming.
 
 > [!warning]- Calling `next.handle()` more than once runs the handler more than once
 > Each call to `next.handle()` returns a fresh cold `Observable`; subscribing twice subscribes the handler twice. The naïve "try cache then fall back" pattern is the usual offender:

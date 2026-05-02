@@ -91,7 +91,7 @@ Within a single class, `onModuleInit` runs first, then later `onApplicationBoots
 - For an import graph `A → B → C` (A depends on B, B depends on C), init effectively goes `C → B → A` because Nest awaits each imported module before the importer.
 - Inside one module, hook execution is sequential: bootstrap waits for init.
 - Both hooks may return a `Promise` (or be `async`); Nest will not move on until it resolves or rejects.
-- `@Global()` modules are imported implicitly by every other module, so they sit at the deepest level of the graph. The official docs don't pin down their position in the init/destroy walk, but the import-graph rule above implies they finish init first and tear down last (mirroring). If the order is load-bearing for your code, write a smoke test that logs from each hook rather than relying on this.
+- `@Global()` modules are visible to every other module without an explicit `imports:` entry, so the documented "order depends on the order of module imports" rule doesn't pin down where they fall in the walk. If the position matters for your code, write a smoke test that logs from each hook rather than relying on a particular ordering.
 
 If you need "this provider should be ready before that controller starts handling requests", `onApplicationBootstrap` is the safer slot: by the time it runs, **every** module has finished `onModuleInit`.
 
