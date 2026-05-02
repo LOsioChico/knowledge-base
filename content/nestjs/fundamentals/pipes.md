@@ -55,7 +55,7 @@ nest g pi parse-int --no-spec  # skip the *.spec.ts test file
 nest g pi parse-int --dry-run  # preview the file plan, write nothing
 ```
 
-Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Sources: [`@nestjs/schematics` pipe schema](https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json), [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the file plan.
 
 ## Why a pipe, not [[nestjs/fundamentals/middleware|middleware]] / [[nestjs/fundamentals/guards|a guard]] / [[nestjs/fundamentals/interceptors|an interceptor]]
 
@@ -106,10 +106,19 @@ The global-scope variant of the same DI question: `useGlobalPipes(new X())` vs `
 
 ## Order: the param level reversal
 
-Standard order is global, controller, route. But at the **route parameter level**, pipes run from the **last parameter to the first**:
+Standard order is global, controller, route. Per-parameter pipes run from the **last parameter to the first** (verifiable by adding a `console.log` in a custom pipe across multi-arg handlers; the [`pipes-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts) iterates the param metadata in reverse):
 
 ```typescript
-import { Body, Controller, Param, Patch, Query, UsePipes } from "@nestjs/common"
+import { Body, Controller, Injectable, Param, ParseIntPipe, Patch, PipeTransform, Query, UsePipes } from "@nestjs/common"
+
+// Two placeholder pipes — imagine each as a real ValidationPipe configuration.
+@Injectable() class GeneralValidationPipe implements PipeTransform { transform(v: unknown) { return v } }
+@Injectable() class RouteSpecificPipe implements PipeTransform { transform(v: unknown) { return v } }
+
+// Placeholder DTO/param/query types for the example signature.
+class UpdateCatDTO {}
+class UpdateCatParams { id!: string }
+class UpdateCatQuery {}
 
 @UsePipes(GeneralValidationPipe)
 @Controller("cats")
@@ -187,16 +196,24 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > [!example]- Recommended global setup
 >
 > ```typescript
+> // main.ts
+> import { NestFactory } from "@nestjs/core"
 > import { ValidationPipe } from "@nestjs/common"
+> import { AppModule } from "./app.module"
 >
-> app.useGlobalPipes(
->   new ValidationPipe({
->     whitelist: true,
->     forbidNonWhitelisted: true,
->     transform: true,
->     transformOptions: { enableImplicitConversion: true },
->   }),
-> )
+> async function bootstrap(): Promise<void> {
+>   const app = await NestFactory.create(AppModule)
+>   app.useGlobalPipes(
+>     new ValidationPipe({
+>       whitelist: true,
+>       forbidNonWhitelisted: true,
+>       transform: true,
+>       transformOptions: { enableImplicitConversion: true },
+>     }),
+>   )
+>   await app.listen(process.env.PORT ?? 3000)
+> }
+> bootstrap()
 > ```
 
 > [!warning]- `transform: true` mutates request shape
@@ -428,7 +445,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
 ## When not to
 
-- Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|pipeline]] and have no concept of "deny this request".
+- Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Pipes run **after** guards in the [[nestjs/fundamentals/request-lifecycle|pipeline]] (verifiable by reading [`router-execution-context.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts), which calls `tryActivate` for guards before the param-pipe loop) and have no concept of "deny this request".
 - Mutating the raw request before any handler-level concern: use [[nestjs/fundamentals/middleware|middleware]]: pipes only see one argument at a time, not the whole request object.
 - Wrapping the response or timing the handler: that's an [[nestjs/fundamentals/interceptors|interceptor]]. Pipes don't run on the way out.
 - Catching a thrown error to reshape it: use an [[nestjs/fundamentals/exception-filters|exception filter]]. A pipe's job ends at "throw".
