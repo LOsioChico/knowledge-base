@@ -1,0 +1,20 @@
+# Quartz framework manages its own formatting (see quartz/.prettierrc).
+quartz/
+
+# Generated / vendored.
+node_modules/
+**/node_modules/
+**/.cache/
+**/dist/
+**/public/
+
+# Test scaffolds (not vault content).
+test/
+test-project/
+
+# Top-level docs that aren't vault notes.
+README.md
+to-contribute.md
+AGENTS.md
+CLAUDE.md
+.github/

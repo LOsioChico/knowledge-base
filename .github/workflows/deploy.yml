@@ -37,9 +37,11 @@ jobs:
             corepack enable
             yarn install --frozen-lockfile
             yarn lint:content
+            yarn lint:format
           else
             npm install --no-audit --no-fund
             npm run lint:content
+            npm run lint:format
           fi
 
   # 2. Build Quartz site.

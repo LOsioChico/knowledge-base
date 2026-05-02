@@ -249,13 +249,13 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 ## When you finish
 
 - Run `cd quartz && npx quartz build --serve -d ../content` if you changed plugins or config. Skip for content-only edits unless requested.
-- ALWAYS run BOTH local linters before each content commit; CI runs both and will fail the push otherwise. Forbidden: committing after running only `lint:wikilinks` (Pass-0 catches em-dashes / `--` that wikilinks ignores) or only `lint:content` (wikilinks catches broken links / asymmetric `related:` that Pass-0 ignores). One-liner from repo root:
+- ALWAYS run ALL local linters before each content commit; CI runs them and will fail the push otherwise. Three checks, all blocking: `lint:wikilinks` (broken links, asymmetric `related:`, backticks-in-wikilinks, etc.), `lint:content` (Pass-0: em-dashes, `--`), and `lint:format` (Prettier on `content/`). Forbidden: committing after running only a subset. One-liner from repo root:
 
   ```bash
-  (cd quartz && npm run lint:wikilinks) && (cd scripts/audit-notes && yarn lint:content)
+  (cd quartz && npm run lint:wikilinks) && (cd scripts/audit-notes && yarn lint:content && yarn lint:format)
   ```
 
-  Both must pass before `git commit`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+  All three must pass before `git commit`. If formatting fails, run `yarn format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores `quartz/` (the framework manages its own format) and the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
 - Commit. Do NOT push: pushing is the user's call.
 - After committing any change under `content/`, run the LLM audit on the touched files and surface findings in chat for triage. CI no longer runs this; it's a chat-driven step:
 
