@@ -15,6 +15,10 @@ source:
   - https://docs.nestjs.com/openapi/types-and-parameters#file-upload
   - https://github.com/expressjs/multer
   - https://github.com/nestjs/nest/tree/master/packages/common/pipes/file
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/decorators/upload.decorator.ts
+  - https://github.com/fastify/fastify-multipart
   - https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
 ---
 

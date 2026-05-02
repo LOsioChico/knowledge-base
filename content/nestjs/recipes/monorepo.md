@@ -22,6 +22,9 @@ source:
   - https://docs.nestjs.com/cli/monorepo
   - https://docs.nestjs.com/cli/libraries
   - https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md
+  - https://github.com/open-cli-tools/concurrently/blob/main/README.md
+  - https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts
+  - https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts
   - https://www.youtube.com/watch?v=3_jJK5NMGzs
 ---
 
@@ -196,7 +199,7 @@ Output (interleaved with auto-assigned colored prefixes):
 How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every script whose name matches the pattern. `npm:start:dev:*` matches `start:dev:my-app` and `start:dev:my-app-2`, runs both in parallel, and uses whatever the `*` matched as each process's prefix. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
 
 > [!info]- The `-c` flag controls prefix colors
-> `-c` (alias of `--prefix-colors`) decides how each process's `[name]` prefix is colored. Three forms:
+> `-c` (alias of `--prefix-colors`) decides how each process's `[name]` prefix is colored ([concurrently README → "Coloring of prefixes"](https://github.com/open-cli-tools/concurrently/blob/main/README.md)). Three forms:
 >
 > | Form                      | Behavior                                                                                                                                                           |
 > | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -393,7 +396,7 @@ Cons:
 > Nest's monorepo mode is just folder layout + a CLI config. Nothing stops you from putting `nx.json` or `turbo.json` next to `nest-cli.json` and using their task graphs to orchestrate `nest build <name>` calls. The Nest CLI doesn't fight you.
 
 > [!info]- Libraries can be built standalone for publishing
-> If you ever want to publish a library to npm, `nest build <lib>` produces a clean dist you can ship. Add a per-library `package.json` and you're done. The reverse path (npm package → workspace library) is not supported by the CLI; you'd copy the source in manually.
+> If you ever want to publish a library to npm, [`nest build <lib>`](https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts) produces a clean dist you can ship. Add a per-library `package.json` and you're done. The reverse path (npm package → workspace library) is not supported by the CLI; you'd copy the source in manually.
 
 ## Common errors
 

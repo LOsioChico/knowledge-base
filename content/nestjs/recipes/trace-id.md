@@ -17,8 +17,13 @@ related:
 source:
   - https://docs.nestjs.com/recipes/async-local-storage
   - https://nodejs.org/api/async_context.html
+  - https://nodejs.org/api/crypto.html#cryptorandomuuidoptions
   - https://docs.nestjs.com/techniques/logger
   - https://docs.nestjs.com/techniques/http-module
+  - https://docs.nestjs.com/recipes/passport
+  - https://docs.nestjs.com/fundamentals/injection-scopes
+  - https://docs.nestjs.com/faq/hybrid-application
+  - https://expressjs.com/en/guide/migrating-5.html
 ---
 
 > Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". Zero dependencies beyond `node:async_hooks`.

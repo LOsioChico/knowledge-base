@@ -14,6 +14,8 @@ related:
 source:
   - https://docs.nestjs.com/security/rate-limiting
   - https://github.com/nestjs/throttler
+  - https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts
+  - https://github.com/nestjs/throttler/blob/master/src/throttler.exception.ts
   - https://www.telerik.com/blogs/rate-limiting-nestjs-using-throttler
 ---
 
@@ -59,7 +61,7 @@ export class AppModule {}
 Two pieces:
 
 - `ThrottlerModule.forRoot([{ ttl, limit }])` configures one bucket: `ttl` is the window in **milliseconds**, `limit` is the max requests in that window.
-- The `APP_GUARD` provider registers `ThrottlerGuard` globally, so it runs on every route without `@UseGuards()` clutter. Any [[nestjs/fundamentals/guards|guard binding]] works (the docs explicitly say so), but `APP_GUARD` is the recommended path because it's DI-aware: `useGlobalGuards(new ThrottlerGuard())` instantiates the guard outside the container, so anything `ThrottlerGuard` injects (`ThrottlerStorage`, `Reflector`, your custom `getTracker` deps) is missing. See [[nestjs/fundamentals/global-providers|DI-aware globals]] for the full rationale.
+- The `APP_GUARD` provider registers `ThrottlerGuard` globally, so it runs on every route without `@UseGuards()` clutter. Any [[nestjs/fundamentals/guards|guard binding]] works (the docs explicitly say so), but `APP_GUARD` is the recommended path because it's DI-aware: `useGlobalGuards(new ThrottlerGuard())` instantiates the guard outside the container, so anything `ThrottlerGuard` injects (`ThrottlerStorage`, `ThrottlerModuleOptions`, `Reflector`, see [`throttler.guard.ts` constructor](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts)) is missing. See [[nestjs/fundamentals/global-providers|DI-aware globals]] for the full rationale.
 
 The 11th request inside the same minute returns:
 
@@ -73,7 +75,7 @@ Content-Type: application/json
 }
 ```
 
-The exception is `ThrottlerException` extending `HttpException(429)`, so any [[nestjs/fundamentals/exception-filters|exception filter]] that catches `HttpException` will see it.
+The exception is `ThrottlerException` extending [`HttpException` with `HttpStatus.TOO_MANY_REQUESTS` (429)](https://github.com/nestjs/throttler/blob/master/src/throttler.exception.ts), so any [[nestjs/fundamentals/exception-filters|exception filter]] that catches `HttpException` will see it.
 
 ## Per-route overrides
 
@@ -322,13 +324,13 @@ export class AppModule {}
 > [!warning]- WebSockets need a custom subclass and can't use `APP_GUARD`
 > The default `ThrottlerGuard` reads from the HTTP context. For WebSockets, extend it and override `handleRequest` to pull the client from `context.switchToWs()`. The guard cannot be registered via `APP_GUARD` or `app.useGlobalGuards()`: bind it on the gateway with `@UseGuards()` instead. See the [official WebSockets snippet](https://docs.nestjs.com/security/rate-limiting#websockets) for the full `handleRequest` shape.
 
-> [!info]- The `429` body is generic by default
-> The default response is `{ "statusCode": 429, "message": "ThrottlerException: Too Many Requests" }`. There's no `Retry-After` header out of the box. If you need one (most public APIs do), override via the `errorMessage` option or write a small filter on `ThrottlerException` that sets the header from `ThrottlerLimitDetail.timeToExpire`.
+> [!info]- The `429` body is generic by default; rate-limit headers are sent automatically
+> The default response body is `{ "statusCode": 429, "message": "ThrottlerException: Too Many Requests" }`. The guard does set headers automatically when `setHeaders` is on (it defaults to `true`): `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` on every response, and `Retry-After` on a 429 (value comes from `timeToBlockExpire`). See [`throttler.guard.ts` `handleRequest`](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts). To customize the body, override via the `errorMessage` option or write a small filter on `ThrottlerException`.
 
 ## See also
 
 - [[nestjs/fundamentals/guards|Guards]]: `ThrottlerGuard` is just another guard; the binding rules and DI traps apply.
-- [[nestjs/fundamentals/exception-filters|Exception filters]]: for customizing the `429` response shape or adding `Retry-After`.
+- [[nestjs/fundamentals/exception-filters|Exception filters]]: for customizing the `429` response body shape.
 - [[nestjs/auth/jwt-strategy|JWT strategy]]: the natural pairing for per-user throttling (auth runs first, throttler reads `req.user`).
 - Official: [Rate limiting](https://docs.nestjs.com/security/rate-limiting), [`@nestjs/throttler` repo](https://github.com/nestjs/throttler).
 - Extended walkthrough: [Rate limiting NestJS using Throttler](https://www.telerik.com/blogs/rate-limiting-nestjs-using-throttler) (Telerik, Christian Nwamba). Adds a conceptual primer on rate-limiting algorithms and a worked Nginx + Docker Compose + Redis multi-instance demo. Note: it sets blanket `app.set('trust proxy', true)`, which this recipe argues against.

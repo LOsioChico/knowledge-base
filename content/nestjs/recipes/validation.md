@@ -18,6 +18,8 @@ related:
 source:
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/typestack/class-validator
+  - https://github.com/typestack/class-transformer
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts
 ---
 
 > Validate request bodies, query params, and path params against DTO classes: declaratively, with one global pipe. The same `class-transformer`/`class-validator` pair powers [[nestjs/recipes/serialization|serialization]] on the way out and validation on the way in.
