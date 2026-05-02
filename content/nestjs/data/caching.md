@@ -39,10 +39,10 @@ Register `CacheModule` globally so any provider can inject the cache without re-
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { CacheModule } from "@nestjs/cache-manager"
-import { BooksController } from "./books.controller"
-import { BooksService } from "./books.service"
+import { Module } from "@nestjs/common";
+import { CacheModule } from "@nestjs/cache-manager";
+import { BooksController } from "./books.controller";
+import { BooksService } from "./books.service";
 
 @Module({
   imports: [
@@ -61,17 +61,17 @@ Use the cache imperatively from a service:
 
 ```typescript
 // books.service.ts
-import { Inject, Injectable } from "@nestjs/common"
-import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager"
+import { Inject, Injectable } from "@nestjs/common";
+import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager";
 
 export interface Book {
-  id: string
-  title: string
+  id: string;
+  title: string;
 }
 
 @Injectable()
 export class BooksService {
-  private readonly key = "books:all"
+  private readonly key = "books:all";
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
@@ -79,21 +79,21 @@ export class BooksService {
   ) {}
 
   async findAll(): Promise<Book[]> {
-    const hit = await this.cache.get<Book[]>(this.key)
-    if (hit) return hit
+    const hit = await this.cache.get<Book[]>(this.key);
+    if (hit) return hit;
 
-    const books = await this.fetchFromDb()
-    await this.cache.set(this.key, books, 60_000) // 60s override
-    return books
+    const books = await this.fetchFromDb();
+    await this.cache.set(this.key, books, 60_000); // 60s override
+    return books;
   }
 
   async invalidate(): Promise<void> {
-    await this.cache.del(this.key)
+    await this.cache.del(this.key);
   }
 
   private async fetchFromDb(): Promise<Book[]> {
     // ...query the DB
-    return []
+    return [];
   }
 }
 ```
@@ -109,9 +109,9 @@ If all you want is "cache this endpoint's response by URL", skip the imperative 
 
 ```typescript
 // books.controller.ts
-import { Controller, Get, UseInterceptors } from "@nestjs/common"
-import { CacheInterceptor, CacheTTL, CacheKey } from "@nestjs/cache-manager"
-import { BooksService, Book } from "./books.service"
+import { Controller, Get, UseInterceptors } from "@nestjs/common";
+import { CacheInterceptor, CacheTTL, CacheKey } from "@nestjs/cache-manager";
+import { BooksService, Book } from "./books.service";
 
 @Controller("books")
 @UseInterceptors(CacheInterceptor)
@@ -121,14 +121,14 @@ export class BooksController {
   @Get()
   @CacheTTL(60_000) // override the module default for this route
   findAll(): Promise<Book[]> {
-    return this.books.findAll()
+    return this.books.findAll();
   }
 
   @Get("featured")
   @CacheKey("books:featured") // explicit key instead of the URL
   @CacheTTL(5 * 60_000)
   featured(): Promise<Book[]> {
-    return this.books.findFeatured()
+    return this.books.findFeatured();
   }
 }
 ```
@@ -137,9 +137,9 @@ Bind globally instead of per-controller via the [[nestjs/fundamentals/global-pro
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_INTERCEPTOR } from "@nestjs/core"
-import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager"
+import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
+import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager";
 
 @Module({
   imports: [CacheModule.register({ isGlobal: true, ttl: 30_000 })],
@@ -166,19 +166,19 @@ export class AppModule {}
 
 ## Configuration reference
 
-| Option       | Type                          | Default           | Notes                                                                           |
-| ------------ | ----------------------------- | ----------------- | ------------------------------------------------------------------------------- |
-| `ttl`        | `number`                      | `0` (never)       | Default expiration in **milliseconds**. Override per call with `set(k, v, ttl)` |
-| `isGlobal`   | `boolean`                     | `false`           | Skip re-importing `CacheModule` in feature modules                              |
-| `stores`     | `Keyv[]`                      | in-memory         | One or more [Keyv](https://keyv.org/docs/) stores. See [the Redis section below](#distributed-cache-with-redis)         |
+| Option     | Type      | Default     | Notes                                                                                                           |
+| ---------- | --------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `ttl`      | `number`  | `0` (never) | Default expiration in **milliseconds**. Override per call with `set(k, v, ttl)`                                 |
+| `isGlobal` | `boolean` | `false`     | Skip re-importing `CacheModule` in feature modules                                                              |
+| `stores`   | `Keyv[]`  | in-memory   | One or more [Keyv](https://keyv.org/docs/) stores. See [the Redis section below](#distributed-cache-with-redis) |
 
 The per-route decorators from `@nestjs/cache-manager`:
 
-| Decorator             | Scope                  | Purpose                                                            |
-| --------------------- | ---------------------- | ------------------------------------------------------------------ |
-| `@UseInterceptors(CacheInterceptor)` | Controller/method | Enable auto-caching on the bound surface              |
-| `@CacheKey(key)`      | Method or controller   | Override the auto-generated URL-based key                          |
-| `@CacheTTL(ms)`       | Method or controller   | Override the module-level TTL. Method wins over controller         |
+| Decorator                            | Scope                | Purpose                                                    |
+| ------------------------------------ | -------------------- | ---------------------------------------------------------- |
+| `@UseInterceptors(CacheInterceptor)` | Controller/method    | Enable auto-caching on the bound surface                   |
+| `@CacheKey(key)`                     | Method or controller | Override the auto-generated URL-based key                  |
+| `@CacheTTL(ms)`                      | Method or controller | Override the module-level TTL. Method wins over controller |
 
 ## Distributed cache with Redis
 
@@ -190,11 +190,11 @@ npm i @keyv/redis keyv cacheable
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { CacheModule } from "@nestjs/cache-manager"
-import { Keyv } from "keyv"
-import KeyvRedis from "@keyv/redis"
-import { KeyvCacheableMemory } from "cacheable"
+import { Module } from "@nestjs/common";
+import { CacheModule } from "@nestjs/cache-manager";
+import { Keyv } from "keyv";
+import KeyvRedis from "@keyv/redis";
+import { KeyvCacheableMemory } from "cacheable";
 
 @Module({
   imports: [
@@ -226,11 +226,11 @@ When the cache config depends on `ConfigService` (or any other provider), use `r
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { CacheModule } from "@nestjs/cache-manager"
-import { ConfigModule, ConfigService } from "@nestjs/config"
-import { Keyv } from "keyv"
-import KeyvRedis from "@keyv/redis"
+import { Module } from "@nestjs/common";
+import { CacheModule } from "@nestjs/cache-manager";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { Keyv } from "keyv";
+import KeyvRedis from "@keyv/redis";
 
 @Module({
   imports: [
@@ -255,17 +255,17 @@ Default `CacheInterceptor` keys by request URL. To key by something else (e.g., 
 
 ```typescript
 // http-cache.interceptor.ts
-import { ExecutionContext, Injectable } from "@nestjs/common"
-import { CacheInterceptor } from "@nestjs/cache-manager"
-import { Request } from "express"
+import { ExecutionContext, Injectable } from "@nestjs/common";
+import { CacheInterceptor } from "@nestjs/cache-manager";
+import { Request } from "express";
 
 @Injectable()
 export class HttpCacheInterceptor extends CacheInterceptor {
   trackBy(context: ExecutionContext): string | undefined {
-    const req = context.switchToHttp().getRequest<Request & { user?: { id: string } }>()
-    if (req.method !== "GET") return undefined // skip non-GETs explicitly
-    const userId = req.user?.id ?? "anon"
-    return `${userId}:${req.originalUrl}`
+    const req = context.switchToHttp().getRequest<Request & { user?: { id: string } }>();
+    if (req.method !== "GET") return undefined; // skip non-GETs explicitly
+    const userId = req.user?.id ?? "anon";
+    return `${userId}:${req.originalUrl}`;
   }
 }
 ```

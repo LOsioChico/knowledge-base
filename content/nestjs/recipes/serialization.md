@@ -43,15 +43,14 @@ npm i class-transformer reflect-metadata
 Bind it globally so every endpoint runs through the serializer. No more `@UseInterceptors(ClassSerializerInterceptor)` per controller.
 
 ```typescript
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
-import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import { ClassSerializerInterceptor, Module } from "@nestjs/common";
+import { APP_INTERCEPTOR, Reflector } from "@nestjs/core";
 
 @Module({
   providers: [
     {
       provide: APP_INTERCEPTOR,
-      useFactory: (reflector: Reflector) =>
-        new ClassSerializerInterceptor(reflector),
+      useFactory: (reflector: Reflector) => new ClassSerializerInterceptor(reflector),
       inject: [Reflector],
     },
   ],
@@ -72,8 +71,8 @@ Decorate the entity / DTO class with `class-transformer` decorators. The interce
 Drops the field from the response. Apply per-property or at class level.
 
 ```typescript
-import { Controller, Get, Param } from '@nestjs/common';
-import { Exclude } from 'class-transformer';
+import { Controller, Get, Param } from "@nestjs/common";
+import { Exclude } from "class-transformer";
 
 export class UserEntity {
   id: number;
@@ -86,16 +85,16 @@ export class UserEntity {
   }
 }
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
-  @Get(':id')
-  findOne(@Param('id') id: string): UserEntity {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserEntity {
     // The handler still sees password/passwordResetToken on the instance.
     return new UserEntity({
       id: Number(id),
-      email: 'a@b.c',
-      password: 'hunter2',
-      passwordResetToken: 'abc123',
+      email: "a@b.c",
+      password: "hunter2",
+      passwordResetToken: "abc123",
     });
   }
 }
@@ -114,8 +113,8 @@ export class UsersController {
 Flip the default: hide everything, then opt fields in. Safer for accidental leaks when you add a new column to the entity.
 
 ```typescript
-import { Controller, Get, Param } from '@nestjs/common';
-import { Exclude, Expose, plainToInstance } from 'class-transformer';
+import { Controller, Get, Param } from "@nestjs/common";
+import { Exclude, Expose, plainToInstance } from "class-transformer";
 
 @Exclude()
 export class UserDto {
@@ -125,16 +124,16 @@ export class UserDto {
   internalNote: string; // same
 }
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
-  @Get(':id')
-  findOne(@Param('id') id: string): UserDto {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserDto {
     // Pretend this came from the database.
     const row = {
       id: Number(id),
-      email: 'a@b.c',
-      passwordHash: '$2b$...',
-      internalNote: 'flagged for review',
+      email: "a@b.c",
+      passwordHash: "$2b$...",
+      internalNote: "flagged for review",
     };
     return plainToInstance(UserDto, row);
   }
@@ -154,8 +153,8 @@ Adding a new column to the entity now defaults to **hidden** until someone expli
 Reshape a value on the way out: format dates, mask digits, derive fields.
 
 ```typescript
-import { Controller, Get, Param } from '@nestjs/common';
-import { plainToInstance, Transform } from 'class-transformer';
+import { Controller, Get, Param } from "@nestjs/common";
+import { plainToInstance, Transform } from "class-transformer";
 
 export class UserDto {
   id: number;
@@ -167,14 +166,14 @@ export class UserDto {
   apiKey: string;
 }
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
-  @Get(':id')
-  findOne(@Param('id') id: string): UserDto {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserDto {
     return plainToInstance(UserDto, {
       id: Number(id),
-      createdAt: new Date('2025-01-15T09:30:00Z'),
-      apiKey: 'sk_live_abcdef1234567890',
+      createdAt: new Date("2025-01-15T09:30:00Z"),
+      apiKey: "sk_live_abcdef1234567890",
     });
   }
 }
@@ -194,11 +193,11 @@ The `value` argument is the raw property; the function returns whatever should a
 
 ## The class-instance gotcha
 
-Those decorators only fire when the controller returns a **class instance** *or* the route declares `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor still runs `classToPlain(...)`, but `class-transformer` has no class metadata to consult, so every field passes through untouched ([`class-serializer.interceptor.ts:transformToPlain`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) calls `classToPlain` unconditionally when `options.type` is unset; the no-op happens inside `class-transformer`, not in the guard).
+Those decorators only fire when the controller returns a **class instance** _or_ the route declares `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor still runs `classToPlain(...)`, but `class-transformer` has no class metadata to consult, so every field passes through untouched ([`class-serializer.interceptor.ts:transformToPlain`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) calls `classToPlain` unconditionally when `options.type` is unset; the no-op happens inside `class-transformer`, not in the guard).
 
 ```typescript
-import { Controller, Get } from '@nestjs/common';
-import { Exclude } from 'class-transformer';
+import { Controller, Get } from "@nestjs/common";
+import { Exclude } from "class-transformer";
 
 export class UserEntity {
   id: number;
@@ -210,16 +209,16 @@ export class UserEntity {
   }
 }
 
-@Controller('users')
+@Controller("users")
 export class UsersController {
-  @Get('plain')
+  @Get("plain")
   leaks() {
-    return { id: 1, email: 'a@b.c', password: 'secret' };
+    return { id: 1, email: "a@b.c", password: "secret" };
   }
 
-  @Get('instance')
+  @Get("instance")
   safe(): UserEntity {
-    return new UserEntity({ id: 1, email: 'a@b.c', password: 'secret' });
+    return new UserEntity({ id: 1, email: "a@b.c", password: "secret" });
   }
 }
 ```
@@ -242,13 +241,13 @@ Same data, different type, very different blast radius.
 
 The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances. Behaviors below were verified against each library's own docs ([TypeORM `Repository.find`](https://typeorm.io/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html)).
 
-| Source                                            | What you get back                       | `@Exclude()` works? | Fix                                          |
-| ------------------------------------------------- | --------------------------------------- | :-----------------: | -------------------------------------------- |
-| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance              |          ✅          | None needed                                  |
-| Prisma `prisma.user.findUnique(...)`              | Plain object (generated TS type)        |          ❌          | `return plainToInstance(UserEntity, user)`   |
-| Mongoose `.lean()`                                | Plain object                            |          ❌          | `return plainToInstance(UserEntity, doc)`    |
-| Raw SQL via `dataSource.query(...)`               | Plain object                            |          ❌          | `return plainToInstance(UserEntity, row)`    |
-| `fetch()` / external HTTP call                    | Plain object                            |          ❌          | `return plainToInstance(UserEntity, body)`   |
+| Source                                             | What you get back                | `@Exclude()` works? | Fix                                        |
+| -------------------------------------------------- | -------------------------------- | :-----------------: | ------------------------------------------ |
+| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance       |         ✅          | None needed                                |
+| Prisma `prisma.user.findUnique(...)`               | Plain object (generated TS type) |         ❌          | `return plainToInstance(UserEntity, user)` |
+| Mongoose `.lean()`                                 | Plain object                     |         ❌          | `return plainToInstance(UserEntity, doc)`  |
+| Raw SQL via `dataSource.query(...)`                | Plain object                     |         ❌          | `return plainToInstance(UserEntity, row)`  |
+| `fetch()` / external HTTP call                     | Plain object                     |         ❌          | `return plainToInstance(UserEntity, body)` |
 
 Mental check: if `console.log(returned instanceof UserEntity)` would print `false` right before `return`, serialization is silently skipped. Wrap with `plainToInstance(UserEntity, raw)` (or `new UserEntity(raw)` if your constructor copies fields).
 
@@ -259,30 +258,48 @@ For arrays, map: `return rows.map((r) => plainToInstance(UserEntity, r))`.
 `@Expose({ groups: [...] })` plus `@SerializeOptions({ groups: [...] })` on the route gives you per-role response shapes from a single entity.
 
 ```typescript
-import { ClassSerializerInterceptor, Controller, Get, SerializeOptions, UseInterceptors } from '@nestjs/common';
-import { Exclude, Expose } from 'class-transformer';
+import {
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  SerializeOptions,
+  UseInterceptors,
+} from "@nestjs/common";
+import { Exclude, Expose } from "class-transformer";
 
 export class UserEntity {
   @Expose() id: number;
   @Expose() email: string;
-  @Expose({ groups: ['admin'] }) role: string;
-  @Expose({ groups: ['admin'] }) lastLoginIp: string;
+  @Expose({ groups: ["admin"] }) role: string;
+  @Expose({ groups: ["admin"] }) lastLoginIp: string;
   @Exclude() password: string;
 }
 
-@Controller('users')
+@Controller("users")
 @UseInterceptors(ClassSerializerInterceptor)
 export class UsersController {
-  @Get('me')
-  @SerializeOptions({ groups: ['user'] })
+  @Get("me")
+  @SerializeOptions({ groups: ["user"] })
   me(): UserEntity {
-    return Object.assign(new UserEntity(), { id: 1, email: 'a@b.c', role: 'admin', lastLoginIp: '1.2.3.4', password: 'secret' });
+    return Object.assign(new UserEntity(), {
+      id: 1,
+      email: "a@b.c",
+      role: "admin",
+      lastLoginIp: "1.2.3.4",
+      password: "secret",
+    });
   }
 
-  @Get('admin')
-  @SerializeOptions({ groups: ['admin'] })
+  @Get("admin")
+  @SerializeOptions({ groups: ["admin"] })
   asAdmin(): UserEntity {
-    return Object.assign(new UserEntity(), { id: 1, email: 'a@b.c', role: 'admin', lastLoginIp: '1.2.3.4', password: 'secret' });
+    return Object.assign(new UserEntity(), {
+      id: 1,
+      email: "a@b.c",
+      role: "admin",
+      lastLoginIp: "1.2.3.4",
+      password: "secret",
+    });
   }
 }
 ```

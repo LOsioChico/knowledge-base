@@ -47,8 +47,8 @@ The smallest possible setup. Useful as a smoke test; replace with `forRootAsync`
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { TypeOrmModule } from "@nestjs/typeorm"
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
 @Module({
   imports: [
@@ -84,10 +84,10 @@ Move the credentials to env, check their shape at boot with a Joi schema, and in
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { ConfigModule, ConfigService } from "@nestjs/config"
-import { TypeOrmModule } from "@nestjs/typeorm"
-import * as Joi from "joi"
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import * as Joi from "joi";
 
 @Module({
   imports: [
@@ -100,9 +100,7 @@ import * as Joi from "joi"
         DATABASE_PASSWORD: Joi.string().required(),
         DATABASE_NAME: Joi.string().required(),
         DATABASE_SSL: Joi.boolean().default(false),
-        NODE_ENV: Joi.string()
-          .valid("development", "test", "production")
-          .default("development"),
+        NODE_ENV: Joi.string().valid("development", "test", "production").default("development"),
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -114,9 +112,7 @@ import * as Joi from "joi"
         username: config.getOrThrow<string>("DATABASE_USER"),
         password: config.getOrThrow<string>("DATABASE_PASSWORD"),
         database: config.getOrThrow<string>("DATABASE_NAME"),
-        ssl: config.get<boolean>("DATABASE_SSL")
-          ? { rejectUnauthorized: false }
-          : false,
+        ssl: config.get<boolean>("DATABASE_SSL") ? { rejectUnauthorized: false } : false,
         autoLoadEntities: true,
         synchronize: false,
         migrationsRun: config.get("NODE_ENV") === "production",
@@ -137,32 +133,32 @@ export class AppModule {}
 
 ```typescript
 // users/user.entity.ts
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm"
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity({ name: "users" })
 @Unique("users_email_key", ["email"])
 export class User {
   @PrimaryGeneratedColumn("uuid")
-  id!: string
+  id!: string;
 
   @Column()
-  email!: string
+  email!: string;
 
   @Column()
-  name!: string
+  name!: string;
 
   @Column({ default: true })
-  isActive!: boolean
+  isActive!: boolean;
 }
 ```
 
 ```typescript
 // users/users.module.ts
-import { Module } from "@nestjs/common"
-import { TypeOrmModule } from "@nestjs/typeorm"
-import { UsersController } from "./users.controller"
-import { UsersService } from "./users.service"
-import { User } from "./user.entity"
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
+import { User } from "./user.entity";
 
 @Module({
   imports: [TypeOrmModule.forFeature([User])],
@@ -186,39 +182,37 @@ Inject the repository with `@InjectRepository(Entity)`. The token under the hood
 
 ```typescript
 // users/users.service.ts
-import { Injectable, NotFoundException } from "@nestjs/common"
-import { InjectRepository } from "@nestjs/typeorm"
-import { Repository } from "typeorm"
-import { User } from "./user.entity"
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { User } from "./user.entity";
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User) private readonly users: Repository<User>,
-  ) {}
+  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
   create(data: Pick<User, "email" | "name">): Promise<User> {
-    return this.users.save(this.users.create(data))
+    return this.users.save(this.users.create(data));
   }
 
   findAll(): Promise<User[]> {
-    return this.users.find()
+    return this.users.find();
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.users.findOneBy({ id })
-    if (!user) throw new NotFoundException(`User ${id} not found`)
-    return user
+    const user = await this.users.findOneBy({ id });
+    if (!user) throw new NotFoundException(`User ${id} not found`);
+    return user;
   }
 
   async update(id: string, data: Partial<User>): Promise<User> {
-    await this.users.update(id, data)
-    return this.findOne(id)
+    await this.users.update(id, data);
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.users.delete(id)
-    if (!result.affected) throw new NotFoundException(`User ${id} not found`)
+    const result = await this.users.delete(id);
+    if (!result.affected) throw new NotFoundException(`User ${id} not found`);
   }
 }
 ```
@@ -235,9 +229,9 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
-} from "@nestjs/common"
-import { UsersService } from "./users.service"
-import { User } from "./user.entity"
+} from "@nestjs/common";
+import { UsersService } from "./users.service";
+import { User } from "./user.entity";
 
 @Controller("users")
 export class UsersController {
@@ -245,31 +239,28 @@ export class UsersController {
 
   @Post()
   create(@Body() body: Pick<User, "email" | "name">): Promise<User> {
-    return this.users.create(body)
+    return this.users.create(body);
   }
 
   @Get()
   findAll(): Promise<User[]> {
-    return this.users.findAll()
+    return this.users.findAll();
   }
 
   @Get(":id")
   findOne(@Param("id", ParseUUIDPipe) id: string): Promise<User> {
-    return this.users.findOne(id)
+    return this.users.findOne(id);
   }
 
   @Patch(":id")
-  update(
-    @Param("id", ParseUUIDPipe) id: string,
-    @Body() body: Partial<User>,
-  ): Promise<User> {
-    return this.users.update(id, body)
+  update(@Param("id", ParseUUIDPipe) id: string, @Body() body: Partial<User>): Promise<User> {
+    return this.users.update(id, body);
   }
 
   @Delete(":id")
   @HttpCode(204)
   remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
-    return this.users.remove(id)
+    return this.users.remove(id);
   }
 }
 ```
@@ -300,8 +291,8 @@ Migrations live outside the Nest DI container. The TypeORM CLI needs its own `Da
 
 ```typescript
 // src/data-source.ts
-import "dotenv/config"
-import { DataSource } from "typeorm"
+import "dotenv/config";
+import { DataSource } from "typeorm";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -314,7 +305,7 @@ export const AppDataSource = new DataSource({
   migrations: ["src/migrations/*.{ts,js}"],
   synchronize: false,
   migrationsTableName: "typeorm_migrations",
-})
+});
 ```
 
 Add CLI scripts. The TypeORM CLI runs under `ts-node` so it can read `.ts` entity files without a build step.
@@ -327,8 +318,8 @@ Add CLI scripts. The TypeORM CLI runs under `ts-node` so it can read `.ts` entit
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:create": "npm run typeorm -- migration:create",
     "migration:run": "npm run typeorm -- migration:run",
-    "migration:revert": "npm run typeorm -- migration:revert"
-  }
+    "migration:revert": "npm run typeorm -- migration:revert",
+  },
 }
 ```
 
@@ -348,7 +339,7 @@ The Nest app and the CLI are now two separate `DataSource` definitions pointing 
 
 ```typescript
 // src/db-options.ts
-import { DataSourceOptions } from "typeorm"
+import { DataSourceOptions } from "typeorm";
 
 export function dbOptions(): DataSourceOptions {
   return {
@@ -360,7 +351,7 @@ export function dbOptions(): DataSourceOptions {
     database: process.env.DATABASE_NAME!,
     migrations: ["dist/migrations/*.js"],
     migrationsTableName: "typeorm_migrations",
-  }
+  };
 }
 ```
 
@@ -368,20 +359,20 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 
 ## Common configuration options
 
-| Option | Purpose | Default | When to change |
-| --- | --- | --- | --- |
-| `type` | Driver dialect | required | Use `"postgres"` for Postgres; `pg` is auto-loaded |
-| `host` / `port` | TCP target | required | Change per env |
-| `ssl` | TLS to the server | `false` | Set to `{ rejectUnauthorized: false }` for managed Postgres (RDS, Supabase, Neon) with self-signed certs; tighten for prod |
-| `synchronize` | Auto-derive schema from entities | `false` | Dev-only, never prod (see [Step 1 warning](#step-1-quick-start-with-forroot-hardcoded)) |
-| `autoLoadEntities` | Pull entities from `forFeature` calls | `false` | Almost always `true`; see [Step 3 warning](#step-3-define-entities-and-register-them-per-feature) for the relation-target gap |
-| `migrations` | Glob for migration files | `[]` | Required if you use `migrationsRun` or the CLI |
-| `migrationsRun` | Run pending migrations on boot | `false` | `true` in production; `false` in dev (run manually) |
-| `migrationsTableName` | Table that records applied migrations | `"migrations"` | Rename if you have multiple apps sharing one schema |
-| `retryAttempts` | Connection retry count | `10` | Lower in tests for faster failure |
-| `retryDelay` | Delay between retries (ms) | `3000` | |
-| `logging` | Query logging | `false` | `["error", "warn"]` is a good prod baseline; `true` in dev |
-| `namingStrategy` | Column/table name conventions | TypeORM default (camelCase columns) | Set to `SnakeNamingStrategy` from `typeorm-naming-strategies` if you want `snake_case` columns |
+| Option                | Purpose                               | Default                             | When to change                                                                                                                |
+| --------------------- | ------------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `type`                | Driver dialect                        | required                            | Use `"postgres"` for Postgres; `pg` is auto-loaded                                                                            |
+| `host` / `port`       | TCP target                            | required                            | Change per env                                                                                                                |
+| `ssl`                 | TLS to the server                     | `false`                             | Set to `{ rejectUnauthorized: false }` for managed Postgres (RDS, Supabase, Neon) with self-signed certs; tighten for prod    |
+| `synchronize`         | Auto-derive schema from entities      | `false`                             | Dev-only, never prod (see [Step 1 warning](#step-1-quick-start-with-forroot-hardcoded))                                       |
+| `autoLoadEntities`    | Pull entities from `forFeature` calls | `false`                             | Almost always `true`; see [Step 3 warning](#step-3-define-entities-and-register-them-per-feature) for the relation-target gap |
+| `migrations`          | Glob for migration files              | `[]`                                | Required if you use `migrationsRun` or the CLI                                                                                |
+| `migrationsRun`       | Run pending migrations on boot        | `false`                             | `true` in production; `false` in dev (run manually)                                                                           |
+| `migrationsTableName` | Table that records applied migrations | `"migrations"`                      | Rename if you have multiple apps sharing one schema                                                                           |
+| `retryAttempts`       | Connection retry count                | `10`                                | Lower in tests for faster failure                                                                                             |
+| `retryDelay`          | Delay between retries (ms)            | `3000`                              |                                                                                                                               |
+| `logging`             | Query logging                         | `false`                             | `["error", "warn"]` is a good prod baseline; `true` in dev                                                                    |
+| `namingStrategy`      | Column/table name conventions         | TypeORM default (camelCase columns) | Set to `SnakeNamingStrategy` from `typeorm-naming-strategies` if you want `snake_case` columns                                |
 
 `forRoot` accepts every option from the underlying TypeORM `DataSourceOptions`, plus a handful of NestJS-specific extras (`name`, `retryAttempts`, `retryDelay`, `toRetry`, `verboseRetryLog`, `autoLoadEntities`, `manualInitialization`) defined in the [`TypeOrmModuleOptions` interface](https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts). See the [data source options reference](https://typeorm.io/data-source-options) for the per-dialect TypeORM list.
 
@@ -411,7 +402,7 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 >     idleTimeoutMillis: 30_000,
 >     statement_timeout: 5_000,
 >   },
-> })
+> });
 > ```
 >
 > See [node-postgres pool docs](https://node-postgres.com/apis/pool) for the full list.

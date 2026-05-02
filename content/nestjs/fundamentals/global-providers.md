@@ -1,14 +1,6 @@
 ---
 title: Global pipes, guards, interceptors, and filters via DI
-aliases:
-  [
-    APP_PIPE,
-    APP_GUARD,
-    APP_INTERCEPTOR,
-    APP_FILTER,
-    global providers,
-    DI-aware globals,
-  ]
+aliases: [APP_PIPE, APP_GUARD, APP_INTERCEPTOR, APP_FILTER, global providers, DI-aware globals]
 tags: [type/concept, tech/typescript]
 area: nestjs
 status: evergreen
@@ -40,19 +32,19 @@ source:
 
 ```ts
 // main.ts
-import { NestFactory } from "@nestjs/core"
-import { ValidationPipe } from "@nestjs/common"
-import { AppModule } from "./app.module"
-import { AuthGuard } from "./auth.guard"
-import { LoggingInterceptor } from "./logging.interceptor"
-import { HttpExceptionFilter } from "./http-exception.filter"
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
+import { AuthGuard } from "./auth.guard";
+import { LoggingInterceptor } from "./logging.interceptor";
+import { HttpExceptionFilter } from "./http-exception.filter";
 
-const app = await NestFactory.create(AppModule)
-app.useGlobalPipes(new ValidationPipe({ whitelist: true }))
-app.useGlobalGuards(new AuthGuard())
-app.useGlobalInterceptors(new LoggingInterceptor())
-app.useGlobalFilters(new HttpExceptionFilter())
-await app.listen(3000)
+const app = await NestFactory.create(AppModule);
+app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+app.useGlobalGuards(new AuthGuard());
+app.useGlobalInterceptors(new LoggingInterceptor());
+app.useGlobalFilters(new HttpExceptionFilter());
+await app.listen(3000);
 ```
 
 The component is `new`'d **outside the DI container**. Nest never sees its constructor. Whatever you pass is what you get.
@@ -61,11 +53,11 @@ The component is `new`'d **outside the DI container**. Nest never sees its const
 
 ```ts
 // app.module.ts
-import { Module, ValidationPipe } from "@nestjs/common"
-import { APP_PIPE, APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core"
-import { AuthGuard } from "./auth.guard"
-import { LoggingInterceptor } from "./logging.interceptor"
-import { HttpExceptionFilter } from "./http-exception.filter"
+import { Module, ValidationPipe } from "@nestjs/common";
+import { APP_PIPE, APP_GUARD, APP_INTERCEPTOR, APP_FILTER } from "@nestjs/core";
+import { AuthGuard } from "./auth.guard";
+import { LoggingInterceptor } from "./logging.interceptor";
+import { HttpExceptionFilter } from "./http-exception.filter";
 
 @Module({
   providers: [
@@ -84,13 +76,13 @@ The container instantiates the component, so it can inject other providers, run 
 
 `useGlobal*` is the **shortcut**: instantiate it yourself, no DI, no surprises. `APP_*` is the **DI-aware** version: the container builds it, so it can inject providers, take request scope, and apply to hybrid apps. Same effect on the wire; different powers under the hood.
 
-| Concern                                                                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }` |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------- |
-| Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                    | ✅                                 |
-| Supports request scope                                                                             | ❌                                    | ✅                                 |
-| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`    | ✅ (community-confirmed; not in the official hybrid-app page — verify on your transport) |
-| Where it lives                                                                                     | `main.ts`, near `NestFactory.create` | Any module's `providers` array    |
-| Can pass options as a literal object                                                               | ✅ trivially                          | ⚠️ via `useValue` or `useFactory` |
+| Concern                                                                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }`                                                        |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                   | ✅                                                                                       |
+| Supports request scope                                                                             | ❌                                   | ✅                                                                                       |
+| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`   | ✅ (community-confirmed; not in the official hybrid-app page — verify on your transport) |
+| Where it lives                                                                                     | `main.ts`, near `NestFactory.create` | Any module's `providers` array                                                           |
+| Can pass options as a literal object                                                               | ✅ trivially                         | ⚠️ via `useValue` or `useFactory`                                                        |
 
 Rule of thumb: **stateless component + static config → either works**. **Needs DI or request scope → `APP_*` provider**.
 
@@ -100,16 +92,16 @@ A stock `ValidationPipe` with literal options. No injection needed:
 
 ```ts
 // main.ts
-import { NestFactory } from "@nestjs/core"
-import { ValidationPipe } from "@nestjs/common"
-import { AppModule } from "./app.module"
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))
-  await app.listen(3000)
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  await app.listen(3000);
 }
-bootstrap()
+bootstrap();
 ```
 
 ## Worked example: when you must use `APP_PIPE`
@@ -118,9 +110,9 @@ Suppose `whitelist` should be on in production but off locally so QA can post ex
 
 ```ts
 // validation.config.ts
-import { ValidationPipe } from "@nestjs/common"
-import { ConfigService } from "@nestjs/config"
-import { APP_PIPE } from "@nestjs/core"
+import { ValidationPipe } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { APP_PIPE } from "@nestjs/core";
 
 export const validationPipeProvider = {
   provide: APP_PIPE,
@@ -130,14 +122,14 @@ export const validationPipeProvider = {
       whitelist: config.get<boolean>("STRICT_VALIDATION", true),
       transform: true,
     }),
-}
+};
 ```
 
 ```ts
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { ConfigModule } from "@nestjs/config"
-import { validationPipeProvider } from "./validation.config"
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { validationPipeProvider } from "./validation.config";
 
 @Module({
   imports: [ConfigModule.forRoot()],
@@ -154,10 +146,10 @@ Request-scoped components only work when the container constructs them. A `Tenan
 
 ```ts
 // tenant.guard.ts
-import { CanActivate, ExecutionContext, Inject, Injectable, Scope } from "@nestjs/common"
-import { REQUEST } from "@nestjs/core"
-import type { Request } from "express"
-import { TenantService } from "./tenant.service"
+import { CanActivate, ExecutionContext, Inject, Injectable, Scope } from "@nestjs/common";
+import { REQUEST } from "@nestjs/core";
+import type { Request } from "express";
+import { TenantService } from "./tenant.service";
 
 @Injectable({ scope: Scope.REQUEST })
 export class TenantGuard implements CanActivate {
@@ -167,24 +159,21 @@ export class TenantGuard implements CanActivate {
   ) {}
 
   async canActivate(_: ExecutionContext): Promise<boolean> {
-    const tenantId = this.req.header("x-tenant-id")
-    return tenantId ? this.tenants.exists(tenantId) : false
+    const tenantId = this.req.header("x-tenant-id");
+    return tenantId ? this.tenants.exists(tenantId) : false;
   }
 }
 ```
 
 ```ts
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_GUARD } from "@nestjs/core"
-import { TenantGuard } from "./tenant.guard"
-import { TenantService } from "./tenant.service"
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { TenantGuard } from "./tenant.guard";
+import { TenantService } from "./tenant.service";
 
 @Module({
-  providers: [
-    TenantService,
-    { provide: APP_GUARD, useClass: TenantGuard },
-  ],
+  providers: [TenantService, { provide: APP_GUARD, useClass: TenantGuard }],
 })
 export class AppModule {}
 ```
@@ -197,31 +186,29 @@ A common case: an interceptor whose behavior depends on a runtime flag from `Con
 
 ```ts
 // audit.interceptor.ts
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-import { ConfigService } from "@nestjs/config"
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(private readonly config: ConfigService) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler) {
-    if (!this.config.get<boolean>("AUDIT_ENABLED")) return next.handle()
+    if (!this.config.get<boolean>("AUDIT_ENABLED")) return next.handle();
     // …log to your audit sink
-    return next.handle()
+    return next.handle();
   }
 }
 ```
 
 ```ts
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_INTERCEPTOR } from "@nestjs/core"
-import { AuditInterceptor } from "./audit.interceptor"
+import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
+import { AuditInterceptor } from "./audit.interceptor";
 
 @Module({
-  providers: [
-    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
-  ],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: AuditInterceptor }],
 })
 export class AppModule {}
 ```
@@ -238,11 +225,11 @@ export class AppModule {}
 
 ## Picking between `useClass`, `useValue`, and `useFactory`
 
-| Form         | When to reach for it                                                                 |
-| ------------ | ------------------------------------------------------------------------------------ |
-| `useClass`   | Your component has a constructor and Nest can resolve every dep from the container.  |
+| Form         | When to reach for it                                                                  |
+| ------------ | ------------------------------------------------------------------------------------- |
+| `useClass`   | Your component has a constructor and Nest can resolve every dep from the container.   |
 | `useValue`   | You need a pre-built instance with literal options (e.g., `new ValidationPipe({…})`). |
-| `useFactory` | Construction depends on async work, env vars, or providers you must inject manually. |
+| `useFactory` | Construction depends on async work, env vars, or providers you must inject manually.  |
 
 ```ts
 // useClass: most common

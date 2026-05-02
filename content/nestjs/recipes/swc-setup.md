@@ -1,6 +1,7 @@
 ---
 title: SWC builder for NestJS
-aliases: ["swc", "swc setup", "swc compiler", "nest start swc", "fast nest builds", "@swc/core nest"]
+aliases:
+  ["swc", "swc setup", "swc compiler", "nest start swc", "fast nest builds", "@swc/core nest"]
 tags: [type/recipe, tech/typescript, tech/nest-cli]
 area: nestjs
 status: evergreen
@@ -74,11 +75,11 @@ nest start -b swc --type-check
 
 Default to `swc` and only fall back when you hit a known incompatibility or you're inside a CLI [[nestjs/recipes/monorepo|monorepo]] (where `compilerOptions.builder` is ignored and `webpack` runs the build via [`swc-loader`](#monorepo-use-swc-loader-inside-webpack)).
 
-| Builder | Speed | Type-checks | When to use |
-| --- | --- | --- | --- |
-| `swc` | ~20× `tsc` | No (pair with `--type-check`) | **Default for single-app projects.** New projects, dev loop, simple builds. |
-| `tsc` | Baseline | Yes | Fallback when `swc` triggers a known incompatibility (legacy decorator emit edge cases, custom transformers). |
-| `webpack` | Slow | Via `ts-loader` / `swc-loader` | **CLI monorepo default** (`"webpack": true` in `nest-cli.json`). Use [`swc-loader`](#monorepo-use-swc-loader-inside-webpack) to keep SWC's speed. Source: [[nestjs/recipes/monorepo|monorepo recipe]]. |
+| Builder   | Speed      | Type-checks                    | When to use                                                                                                                                                                         |
+| --------- | ---------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| `swc`     | ~20× `tsc` | No (pair with `--type-check`)  | **Default for single-app projects.** New projects, dev loop, simple builds.                                                                                                         |
+| `tsc`     | Baseline   | Yes                            | Fallback when `swc` triggers a known incompatibility (legacy decorator emit edge cases, custom transformers).                                                                       |
+| `webpack` | Slow       | Via `ts-loader` / `swc-loader` | **CLI monorepo default** (`"webpack": true` in `nest-cli.json`). Use [`swc-loader`](#monorepo-use-swc-loader-inside-webpack) to keep SWC's speed. Source: [[nestjs/recipes/monorepo | monorepo recipe]]. |
 
 ## Tests: SWC + Jest
 
@@ -133,9 +134,9 @@ npm i --save-dev vitest unplugin-swc @swc/core @vitest/coverage-v8
 
 ```typescript
 // vitest.config.ts
-import { resolve } from "node:path"
-import swc from "unplugin-swc"
-import { defineConfig } from "vitest/config"
+import { resolve } from "node:path";
+import swc from "unplugin-swc";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -150,15 +151,15 @@ export default defineConfig({
     // Vitest does NOT auto-resolve TS path aliases like "src/*" — declare them
     alias: { src: resolve(__dirname, "./src") },
   },
-})
+});
 ```
 
 E2E config is the same with an `include` filter:
 
 ```typescript
 // vitest.config.e2e.ts
-import swc from "unplugin-swc"
-import { defineConfig } from "vitest/config"
+import swc from "unplugin-swc";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
@@ -167,7 +168,7 @@ export default defineConfig({
     root: "./",
   },
   plugins: [swc.vite()],
-})
+});
 ```
 
 ```json
@@ -196,8 +197,7 @@ npm i --save-dev swc-loader
 ```javascript
 // webpack.config.js (project root)
 const swcDefaultConfig =
-  require("@nestjs/cli/lib/compiler/defaults/swc-defaults").swcDefaultsFactory()
-    .swcOptions
+  require("@nestjs/cli/lib/compiler/defaults/swc-defaults").swcDefaultsFactory().swcOptions;
 
 module.exports = {
   module: {
@@ -209,7 +209,7 @@ module.exports = {
       },
     ],
   },
-}
+};
 ```
 
 CLI Plugins don't auto-run under `swc-loader`. If you use `@nestjs/swagger` or `@nestjs/graphql`, see [Monorepo and CLI plugins](https://docs.nestjs.com/recipes/swc#monorepo-and-cli-plugins) for the manual `PluginMetadataGenerator` step.
@@ -222,13 +222,13 @@ See also: [[nestjs/recipes/monorepo|NestJS CLI monorepos]] for the surrounding m
 > SWC saves the type of every decorated property in metadata, so a `@OneToOne(() => Profile)` on `User` plus a `@OneToOne(() => User)` on `Profile` triggers a circular import at runtime under SWC even when `tsc` was happy. Wrap the type to suppress metadata emission:
 >
 > ```typescript
-> import { Entity, OneToOne, Relation } from "typeorm" // or your own WrapperType<T> = T
-> import { Profile } from "./profile.entity"
+> import { Entity, OneToOne, Relation } from "typeorm"; // or your own WrapperType<T> = T
+> import { Profile } from "./profile.entity";
 >
 > @Entity()
 > export class User {
 >   @OneToOne(() => Profile, (profile) => profile.user)
->   profile: Relation<Profile>   // not just `Profile`
+>   profile: Relation<Profile>; // not just `Profile`
 > }
 > ```
 >

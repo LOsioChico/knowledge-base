@@ -36,12 +36,12 @@ source:
 
 ## The four-layer stack (this is the #1 source of confusion)
 
-| Layer                   | Package                          | What it does                                                                |
-| ----------------------- | -------------------------------- | --------------------------------------------------------------------------- |
-| Orchestrator            | `passport`                       | Maintains the registry of named strategies and runs the verify callback     |
-| Strategy implementation | `passport-jwt`                   | Knows how to extract a JWT from a request and verify its signature          |
-| Nest wrapper            | `@nestjs/passport`               | Adapts Passport to Nest: `PassportStrategy` base class, `AuthGuard(name)`   |
-| Your code               | `JwtStrategy` + `JwtAuthGuard`   | Subclass `PassportStrategy(Strategy)`; subclass `AuthGuard('jwt')`          |
+| Layer                   | Package                        | What it does                                                              |
+| ----------------------- | ------------------------------ | ------------------------------------------------------------------------- |
+| Orchestrator            | `passport`                     | Maintains the registry of named strategies and runs the verify callback   |
+| Strategy implementation | `passport-jwt`                 | Knows how to extract a JWT from a request and verify its signature        |
+| Nest wrapper            | `@nestjs/passport`             | Adapts Passport to Nest: `PassportStrategy` base class, `AuthGuard(name)` |
+| Your code               | `JwtStrategy` + `JwtAuthGuard` | Subclass `PassportStrategy(Strategy)`; subclass `AuthGuard('jwt')`        |
 
 `AuthGuard('jwt')` does **not** "do JWT": it asks Passport to run whatever strategy is registered under the name `'jwt'`. Your `JwtStrategy` claims that name (it's the default for `passport-jwt`). Swap it for any other strategy and `AuthGuard('jwt')` would invoke that one instead.
 
@@ -60,12 +60,12 @@ The login flow is plain controller code: validate credentials, sign a JWT, retur
 
 ```typescript
 // auth/auth.module.ts
-import { Module } from "@nestjs/common"
-import { JwtModule } from "@nestjs/jwt"
-import { AuthController } from "./auth.controller"
-import { AuthService } from "./auth.service"
-import { UsersModule } from "../users/users.module"
-import { jwtConstants } from "./constants"
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
+import { UsersModule } from "../users/users.module";
+import { jwtConstants } from "./constants";
 
 @Module({
   imports: [
@@ -85,9 +85,9 @@ export class AuthModule {}
 
 ```typescript
 // auth/auth.service.ts
-import { Injectable, UnauthorizedException } from "@nestjs/common"
-import { JwtService } from "@nestjs/jwt"
-import { UsersService } from "../users/users.service"
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
 
 @Injectable()
 export class AuthService {
@@ -97,20 +97,20 @@ export class AuthService {
   ) {}
 
   async signIn(username: string, pass: string): Promise<{ access_token: string }> {
-    const user = await this.usersService.findOne(username)
+    const user = await this.usersService.findOne(username);
     if (user?.password !== pass) {
-      throw new UnauthorizedException()
+      throw new UnauthorizedException();
     }
-    const payload = { sub: user.userId, username: user.username }
-    return { access_token: await this.jwtService.signAsync(payload) }
+    const payload = { sub: user.userId, username: user.username };
+    return { access_token: await this.jwtService.signAsync(payload) };
   }
 }
 ```
 
 ```typescript
 // auth/auth.controller.ts
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common"
-import { AuthService } from "./auth.service"
+import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { AuthService } from "./auth.service";
 
 @Controller("auth")
 export class AuthController {
@@ -119,7 +119,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post("login")
   signIn(@Body() signInDto: { username: string; password: string }) {
-    return this.authService.signIn(signInDto.username, signInDto.password)
+    return this.authService.signIn(signInDto.username, signInDto.password);
   }
 }
 ```
@@ -152,10 +152,10 @@ The strategy tells Passport **how** to extract and verify the token, and what us
 
 ```typescript
 // auth/jwt.strategy.ts
-import { Injectable } from "@nestjs/common"
-import { PassportStrategy } from "@nestjs/passport"
-import { ExtractJwt, Strategy } from "passport-jwt"
-import { jwtConstants } from "./constants"
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { jwtConstants } from "./constants";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -164,22 +164,22 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: jwtConstants.secret,
-    })
+    });
   }
 
   async validate(payload: { sub: number; username: string }) {
-    return { userId: payload.sub, username: payload.username }
+    return { userId: payload.sub, username: payload.username };
   }
 }
 ```
 
 What each option does:
 
-| Option              | Purpose                                                                                                                          |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `jwtFromRequest`    | Where to read the token. `fromAuthHeaderAsBearerToken()` reads `Authorization: Bearer …`                                          |
-| `ignoreExpiration`  | Defaults to `false` per [passport-jwt's options](https://github.com/mikenicholson/passport-jwt#configure-strategy). On expiry, passport-jwt rejects with `TokenExpiredError`; `@nestjs/passport`'s default `handleRequest` rethrows that error (it's not normalized to `UnauthorizedException`), so the default Nest exception filter renders it as `500` unless you override `handleRequest` to map it. |
-| `secretOrKey`       | Same secret used in `JwtModule.register({ secret })` for signing                                                                  |
+| Option             | Purpose                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `jwtFromRequest`   | Where to read the token. `fromAuthHeaderAsBearerToken()` reads `Authorization: Bearer …`                                                                                                                                                                                                                                                                                                                 |
+| `ignoreExpiration` | Defaults to `false` per [passport-jwt's options](https://github.com/mikenicholson/passport-jwt#configure-strategy). On expiry, passport-jwt rejects with `TokenExpiredError`; `@nestjs/passport`'s default `handleRequest` rethrows that error (it's not normalized to `UnauthorizedException`), so the default Nest exception filter renders it as `500` unless you override `handleRequest` to map it. |
+| `secretOrKey`      | Same secret used in `JwtModule.register({ secret })` for signing                                                                                                                                                                                                                                                                                                                                         |
 
 `validate(payload)` is called **only after** the signature check passes: Passport guarantees the token is authentic. The return value becomes `request.user`. Throw `UnauthorizedException` here to reject otherwise-valid tokens (e.g., revoked-token list, banned users).
 
@@ -193,8 +193,8 @@ Register the strategy in `AuthModule`:
 
 ```typescript
 // auth/auth.module.ts (additions)
-import { PassportModule } from "@nestjs/passport"
-import { JwtStrategy } from "./jwt.strategy"
+import { PassportModule } from "@nestjs/passport";
+import { JwtStrategy } from "./jwt.strategy";
 
 @Module({
   imports: [/* … */ PassportModule],
@@ -211,8 +211,8 @@ Wrap the strategy in a named guard, then apply it.
 
 ```typescript
 // auth/jwt-auth.guard.ts
-import { Injectable } from "@nestjs/common"
-import { AuthGuard } from "@nestjs/passport"
+import { Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard("jwt") {}
@@ -220,15 +220,15 @@ export class JwtAuthGuard extends AuthGuard("jwt") {}
 
 ```typescript
 // auth/auth.controller.ts (addition)
-import { Controller, Get, Request, UseGuards } from "@nestjs/common"
-import { JwtAuthGuard } from "./jwt-auth.guard"
+import { Controller, Get, Request, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 
 @Controller("auth")
 export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get("profile")
   getProfile(@Request() req: { user: { userId: number; username: string } }) {
-    return req.user
+    return req.user;
   }
 }
 ```
@@ -268,39 +268,39 @@ Once more than a few routes need auth, flip the default: protect everything via 
 
 ```typescript
 // auth/public.decorator.ts
-import { SetMetadata } from "@nestjs/common"
-export const IS_PUBLIC_KEY = "isPublic"
-export const Public = () => SetMetadata(IS_PUBLIC_KEY, true)
+import { SetMetadata } from "@nestjs/common";
+export const IS_PUBLIC_KEY = "isPublic";
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 ```
 
 ```typescript
 // auth/jwt-auth.guard.ts (replaces the trivial version)
-import { ExecutionContext, Injectable } from "@nestjs/common"
-import { Reflector } from "@nestjs/core"
-import { AuthGuard } from "@nestjs/passport"
-import { IS_PUBLIC_KEY } from "./public.decorator"
+import { ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { AuthGuard } from "@nestjs/passport";
+import { IS_PUBLIC_KEY } from "./public.decorator";
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard("jwt") {
   constructor(private readonly reflector: Reflector) {
-    super()
+    super();
   }
 
   canActivate(context: ExecutionContext) {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
-    ])
-    if (isPublic) return true
-    return super.canActivate(context)
+    ]);
+    if (isPublic) return true;
+    return super.canActivate(context);
   }
 }
 ```
 
 ```typescript
 // auth/auth.module.ts (additions)
-import { APP_GUARD } from "@nestjs/core"
-import { JwtAuthGuard } from "./jwt-auth.guard"
+import { APP_GUARD } from "@nestjs/core";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 
 @Module({
   providers: [
@@ -313,10 +313,19 @@ export class AuthModule {}
 
 ```typescript
 // auth/auth.controller.ts (full file with @Public() on login)
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request, UseGuards } from "@nestjs/common"
-import { AuthService } from "./auth.service"
-import { JwtAuthGuard } from "./jwt-auth.guard"
-import { Public } from "./public.decorator"
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Request,
+  UseGuards,
+} from "@nestjs/common";
+import { AuthService } from "./auth.service";
+import { JwtAuthGuard } from "./jwt-auth.guard";
+import { Public } from "./public.decorator";
 
 @Controller("auth")
 export class AuthController {
@@ -326,13 +335,13 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post("login")
   signIn(@Body() signInDto: { username: string; password: string }) {
-    return this.authService.signIn(signInDto.username, signInDto.password)
+    return this.authService.signIn(signInDto.username, signInDto.password);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get("profile")
   getProfile(@Request() req: { user: { userId: number; username: string } }) {
-    return req.user
+    return req.user;
   }
 }
 ```
@@ -372,16 +381,16 @@ The `getAllAndOverride` order `[handler, class]` means a method-level `@Public()
 
 ## Common errors
 
-| Symptom                                                          | Likely cause                                                                                                            |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| Every authenticated request returns `401 Unauthorized`           | Secret mismatch between `JwtModule.register({ secret })` and `JwtStrategy({ secretOrKey })`                             |
-| `Unknown authentication strategy "jwt"`                          | `JwtStrategy` not listed in any module's `providers`, or `PassportModule` not imported                                  |
-| `req.user` is `undefined` inside the handler                     | The strategy's `validate()` returned `undefined`, OR the route isn't wrapped in `JwtAuthGuard`, OR the global guard sees `@Public()` |
-| `401` on `/auth/login` after enabling the global guard           | Missing `@Public()` on the login route                                                                                  |
-| `TypeError: super(...) is not a constructor` in `JwtStrategy`    | Imported `Strategy` from `passport` instead of `passport-jwt`                                                            |
-| `JsonWebTokenError: jwt malformed` in logs                       | Client sent the header without the `Bearer ` prefix, or sent a non-JWT token                                            |
-| `TokenExpiredError: jwt expired`                                 | Working as designed. Issue a new token via login or refresh-token flow                                                  |
-| Custom guard runs but `super.canActivate()` returns a `Promise`  | `AuthGuard.canActivate()` can return `boolean \| Promise<boolean> \| Observable<boolean>`. Always `return` it; never `await` and discard |
+| Symptom                                                         | Likely cause                                                                                                                             |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Every authenticated request returns `401 Unauthorized`          | Secret mismatch between `JwtModule.register({ secret })` and `JwtStrategy({ secretOrKey })`                                              |
+| `Unknown authentication strategy "jwt"`                         | `JwtStrategy` not listed in any module's `providers`, or `PassportModule` not imported                                                   |
+| `req.user` is `undefined` inside the handler                    | The strategy's `validate()` returned `undefined`, OR the route isn't wrapped in `JwtAuthGuard`, OR the global guard sees `@Public()`     |
+| `401` on `/auth/login` after enabling the global guard          | Missing `@Public()` on the login route                                                                                                   |
+| `TypeError: super(...) is not a constructor` in `JwtStrategy`   | Imported `Strategy` from `passport` instead of `passport-jwt`                                                                            |
+| `JsonWebTokenError: jwt malformed` in logs                      | Client sent the header without the `Bearer ` prefix, or sent a non-JWT token                                                             |
+| `TokenExpiredError: jwt expired`                                | Working as designed. Issue a new token via login or refresh-token flow                                                                   |
+| Custom guard runs but `super.canActivate()` returns a `Promise` | `AuthGuard.canActivate()` can return `boolean \| Promise<boolean> \| Observable<boolean>`. Always `return` it; never `await` and discard |
 
 ## See also
 

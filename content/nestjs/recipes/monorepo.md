@@ -198,23 +198,23 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > [!info]- The `-c` flag controls prefix colors
 > `-c` (alias of `--prefix-colors`) decides how each process's `[name]` prefix is colored. Three forms:
 >
-> | Form                          | Behavior                                                                                  |
-> | ----------------------------- | ----------------------------------------------------------------------------------------- |
-> | `-c "auto"`                   | Picks a distinct color per process automatically. Scales to N processes without editing.  |
-> | `-c "cyan.bold,red.bold"`     | Explicit list, one entry per process, applied in spawn order. [Chalk](https://www.npmjs.com/package/chalk) names + modifiers (`.bold`, `.dim`) or hex (`#RRGGBB`). |
-> | `-c` omitted                  | No colors, plain `[name]` prefix in default terminal color.                                |
+> | Form                      | Behavior                                                                                                                                                           |
+> | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+> | `-c "auto"`               | Picks a distinct color per process automatically. Scales to N processes without editing.                                                                           |
+> | `-c "cyan.bold,red.bold"` | Explicit list, one entry per process, applied in spawn order. [Chalk](https://www.npmjs.com/package/chalk) names + modifiers (`.bold`, `.dim`) or hex (`#RRGGBB`). |
+> | `-c` omitted              | No colors, plain `[name]` prefix in default terminal color.                                                                                                        |
 >
 > Without `-c`, prefixes are not colored by default. The recipe uses `auto` because the wildcard can match a varying number of scripts; pin explicit colors only when you want consistency across runs. Source: [`--prefix-colors` (`-c`) option in concurrently CLI flags](https://github.com/open-cli-tools/concurrently#-c-prefix-colors).
 
 > [!info]- Using yarn, pnpm, or bun instead
 > `concurrently` ships first-class shortcuts for all four runners. Swap the prefix in the script and use the matching install/run commands; nothing else in the recipe changes. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
 >
-> | Shortcut         | Expands to            | Install + run                       |
-> | ---------------- | --------------------- | ----------------------------------- |
-> | `npm:<script>`   | `npm run <script>`    | `npm i -D concurrently` / `npm run start:dev` |
-> | `yarn:<script>`  | `yarn run <script>`   | `yarn add -D concurrently` / `yarn start:dev` |
-> | `pnpm:<script>`  | `pnpm run <script>`   | `pnpm add -D concurrently` / `pnpm start:dev` |
-> | `bun:<script>`   | `bun run <script>`    | `bun add -d concurrently` / `bun run start:dev` |
+> | Shortcut        | Expands to          | Install + run                                   |
+> | --------------- | ------------------- | ----------------------------------------------- |
+> | `npm:<script>`  | `npm run <script>`  | `npm i -D concurrently` / `npm run start:dev`   |
+> | `yarn:<script>` | `yarn run <script>` | `yarn add -D concurrently` / `yarn start:dev`   |
+> | `pnpm:<script>` | `pnpm run <script>` | `pnpm add -D concurrently` / `pnpm start:dev`   |
+> | `bun:<script>`  | `bun run <script>`  | `bun add -d concurrently` / `bun run start:dev` |
 >
 > At scaffold time, `nest new` accepts `--package-manager npm|yarn|pnpm` (the [`@nestjs/cli` `new` command schema](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts) lists those three); bun is not currently a built-in option. For bun, scaffold with `npm` then re-install with `bun install`.
 
@@ -263,8 +263,8 @@ The generated module exports a service:
 
 ```ts
 // libs/popcorn/src/popcorn.module.ts
-import { Module } from "@nestjs/common"
-import { PopcornService } from "./popcorn.service"
+import { Module } from "@nestjs/common";
+import { PopcornService } from "./popcorn.service";
 
 @Module({
   providers: [PopcornService],
@@ -275,33 +275,33 @@ export class PopcornModule {}
 
 ```ts
 // libs/popcorn/src/popcorn.service.ts
-import { Injectable, Logger } from "@nestjs/common"
+import { Injectable, Logger } from "@nestjs/common";
 
 @Injectable()
 export class PopcornService {
-  private readonly logger = new Logger(PopcornService.name)
+  private readonly logger = new Logger(PopcornService.name);
 
   getPopcorn(): string {
-    this.logger.log("🍿")
-    return "🍿"
+    this.logger.log("🍿");
+    return "🍿";
   }
 }
 ```
 
 ```ts
 // libs/popcorn/src/index.ts
-export * from "./popcorn.module"
-export * from "./popcorn.service"
+export * from "./popcorn.module";
+export * from "./popcorn.service";
 ```
 
 Consume it from any app:
 
 ```ts
 // apps/my-app/src/app.module.ts
-import { Module } from "@nestjs/common"
-import { PopcornModule } from "@app/popcorn"
-import { AppController } from "./app.controller"
-import { AppService } from "./app.service"
+import { Module } from "@nestjs/common";
+import { PopcornModule } from "@app/popcorn";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
 
 @Module({
   imports: [PopcornModule],
@@ -313,15 +313,15 @@ export class AppModule {}
 
 ```ts
 // apps/my-app/src/app.service.ts
-import { Injectable } from "@nestjs/common"
-import { PopcornService } from "@app/popcorn"
+import { Injectable } from "@nestjs/common";
+import { PopcornService } from "@app/popcorn";
 
 @Injectable()
 export class AppService {
   constructor(private readonly popcorn: PopcornService) {}
 
   getHello(): string {
-    return this.popcorn.getPopcorn()
+    return this.popcorn.getPopcorn();
   }
 }
 ```
@@ -348,17 +348,17 @@ Response (and a `🍿` log line in the terminal):
 
 ## What gets shared, what stays per-app
 
-| Item                       | Scope            | Where it lives                              |
-| -------------------------- | ---------------- | ------------------------------------------- |
-| `package.json` + lockfile  | Workspace-wide   | Root                                        |
-| `node_modules/`            | Workspace-wide   | Root (single install)                       |
-| Lint config, prettier      | Workspace-wide   | Root                                        |
-| Root `tsconfig.json`       | Workspace-wide   | Root (extended by every project)            |
-| Per-app `tsconfig.app.json`| Per app          | `apps/<name>/tsconfig.app.json`             |
-| Per-lib `tsconfig.lib.json`| Per library      | `libs/<name>/tsconfig.lib.json`             |
-| `main.ts`                  | Per app          | `apps/<name>/src/main.ts`                   |
-| `index.ts` (entry export)  | Per library      | `libs/<name>/src/index.ts`                  |
-| Path alias `@app/<lib>`    | Workspace-wide   | Root `tsconfig.json#compilerOptions.paths`  |
+| Item                        | Scope          | Where it lives                             |
+| --------------------------- | -------------- | ------------------------------------------ |
+| `package.json` + lockfile   | Workspace-wide | Root                                       |
+| `node_modules/`             | Workspace-wide | Root (single install)                      |
+| Lint config, prettier       | Workspace-wide | Root                                       |
+| Root `tsconfig.json`        | Workspace-wide | Root (extended by every project)           |
+| Per-app `tsconfig.app.json` | Per app        | `apps/<name>/tsconfig.app.json`            |
+| Per-lib `tsconfig.lib.json` | Per library    | `libs/<name>/tsconfig.lib.json`            |
+| `main.ts`                   | Per app        | `apps/<name>/src/main.ts`                  |
+| `index.ts` (entry export)   | Per library    | `libs/<name>/src/index.ts`                 |
+| Path alias `@app/<lib>`     | Workspace-wide | Root `tsconfig.json#compilerOptions.paths` |
 
 The single `node_modules` is the headline tradeoff. Two apps cannot pin different versions of the same package: that's the price for shared installs and shared CI.
 
@@ -397,14 +397,14 @@ Cons:
 
 ## Common errors
 
-| Symptom                                                     | Likely cause                                                                                       |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `EADDRINUSE: address already in use :::3000` after `start:dev` | Both apps default to port 3000. Change one, or read from `process.env.PORT`                        |
-| `nest build` only compiles one app                          | Working as designed: `build` targets the default project. Add per-app scripts or a `build:all` fan-out |
-| `Cannot find module '@app/<lib>'`                           | The lib was created outside the workspace, or root `tsconfig.json#paths` got hand-edited and broke. Regenerate or restore the path mapping |
-| `nest g library` prompts for a prefix every time            | That's the schematic's behavior. Press enter to keep the default                                   |
-| Library changes don't show up in the app                    | Restart the dev server: webpack's incremental rebuild watches the lib, but cold-cached builds need a kick |
-| `concurrently 'npm:start:dev:*'` runs nothing              | No matching scripts. Run `npm run` to list scripts and confirm naming. The wildcard is exact-prefix, not glob |
+| Symptom                                                        | Likely cause                                                                                                                               |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `EADDRINUSE: address already in use :::3000` after `start:dev` | Both apps default to port 3000. Change one, or read from `process.env.PORT`                                                                |
+| `nest build` only compiles one app                             | Working as designed: `build` targets the default project. Add per-app scripts or a `build:all` fan-out                                     |
+| `Cannot find module '@app/<lib>'`                              | The lib was created outside the workspace, or root `tsconfig.json#paths` got hand-edited and broke. Regenerate or restore the path mapping |
+| `nest g library` prompts for a prefix every time               | That's the schematic's behavior. Press enter to keep the default                                                                           |
+| Library changes don't show up in the app                       | Restart the dev server: webpack's incremental rebuild watches the lib, but cold-cached builds need a kick                                  |
+| `concurrently 'npm:start:dev:*'` runs nothing                  | No matching scripts. Run `npm run` to list scripts and confirm naming. The wildcard is exact-prefix, not glob                              |
 
 ## See also
 

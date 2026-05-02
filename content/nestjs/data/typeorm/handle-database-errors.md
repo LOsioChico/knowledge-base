@@ -1,14 +1,7 @@
 ---
 title: Handle database errors
 aliases:
-  [
-    QueryFailedError,
-    unique violation,
-    constraint violation,
-    duplicate key,
-    23505,
-    ER_DUP_ENTRY,
-  ]
+  [QueryFailedError, unique violation, constraint violation, duplicate key, 23505, ER_DUP_ENTRY]
 tags: [type/recipe, tech/typeorm, tech/postgres, errors]
 area: nestjs
 status: evergreen
@@ -55,10 +48,10 @@ export class QueryFailedError<T extends Error = Error> extends TypeORMError {
     readonly parameters: any[] | ObjectLiteral | undefined,
     readonly driverError: T,
   ) {
-    super(/* ...message... */)
+    super(/* ...message... */);
     if (driverError) {
-      const { name: _, ...otherProperties } = driverError
-      ObjectUtils.assign(this, { ...otherProperties }) // ← spread onto `this`
+      const { name: _, ...otherProperties } = driverError;
+      ObjectUtils.assign(this, { ...otherProperties }); // ← spread onto `this`
     }
   }
 }
@@ -70,8 +63,8 @@ Both reads return the same value, but only one is properly typed. The [`pg` pack
 
 ```typescript
 // db-errors.ts
-import { DatabaseError } from "pg"
-import { QueryFailedError } from "typeorm"
+import { DatabaseError } from "pg";
+import { QueryFailedError } from "typeorm";
 
 // SQLSTATE codes: https://www.postgresql.org/docs/current/errcodes-appendix.html
 export const PG = {
@@ -79,16 +72,11 @@ export const PG = {
   FOREIGN_KEY_VIOLATION: "23503",
   NOT_NULL_VIOLATION: "23502",
   CHECK_VIOLATION: "23514",
-} as const
+} as const;
 
 /** Narrow `unknown` to a TypeORM-wrapped Postgres error. */
-export function isPgError(
-  err: unknown,
-): err is QueryFailedError<DatabaseError> {
-  return (
-    err instanceof QueryFailedError &&
-    err.driverError instanceof DatabaseError
-  )
+export function isPgError(err: unknown): err is QueryFailedError<DatabaseError> {
+  return err instanceof QueryFailedError && err.driverError instanceof DatabaseError;
 }
 
 /** True iff `err` is a Postgres unique-violation, optionally matching a named constraint. */
@@ -96,26 +84,24 @@ export function isUniqueViolation(
   err: unknown,
   constraint?: string,
 ): err is QueryFailedError<DatabaseError> {
-  if (!isPgError(err)) return false
-  if (err.driverError.code !== PG.UNIQUE_VIOLATION) return false
-  return (
-    constraint === undefined || err.driverError.constraint === constraint
-  )
+  if (!isPgError(err)) return false;
+  if (err.driverError.code !== PG.UNIQUE_VIOLATION) return false;
+  return constraint === undefined || err.driverError.constraint === constraint;
 }
 ```
 
 ## Driver error code reference
 
-| Constraint | Postgres SQLSTATE | MySQL `errno` | SQLite extended code | Mapped by Recipe 1 (PG only) |
-| --- | --- | --- | --- | --- |
-| Unique | `23505` | `1062` (`ER_DUP_ENTRY`) | `SQLITE_CONSTRAINT_UNIQUE` (2067) | [yes → 409 + named constraint](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Foreign key | `23503` | `1452` on insert, `1451` on delete | `SQLITE_CONSTRAINT_FOREIGNKEY` (787) | [yes → 409](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Not null | `23502` | `1048` (`ER_BAD_NULL_ERROR`) | `SQLITE_CONSTRAINT_NOTNULL` (1299) | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Check | `23514` | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` (275) | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
-| Exclusion (PG only) | `23P01` | n/a | n/a | no, falls through to 500 |
-| Concurrent-update conflict (retryable, txn-level) | `40001` | `1213` (`ER_LOCK_DEADLOCK`) | n/a | no; see [Retryable errors](#gotchas) |
+| Constraint                                        | Postgres SQLSTATE | MySQL `errno`                           | SQLite extended code                 | Mapped by Recipe 1 (PG only)                                                                       |
+| ------------------------------------------------- | ----------------- | --------------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Unique                                            | `23505`           | `1062` (`ER_DUP_ENTRY`)                 | `SQLITE_CONSTRAINT_UNIQUE` (2067)    | [yes → 409 + named constraint](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs) |
+| Foreign key                                       | `23503`           | `1452` on insert, `1451` on delete      | `SQLITE_CONSTRAINT_FOREIGNKEY` (787) | [yes → 409](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs)                    |
+| Not null                                          | `23502`           | `1048` (`ER_BAD_NULL_ERROR`)            | `SQLITE_CONSTRAINT_NOTNULL` (1299)   | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs)                    |
+| Check                                             | `23514`           | `3819` (`ER_CHECK_CONSTRAINT_VIOLATED`) | `SQLITE_CONSTRAINT_CHECK` (275)      | [yes → 422](#recipe-1-centralize-in-an-exception-filter-recommended-for-nestjs)                    |
+| Exclusion (PG only)                               | `23P01`           | n/a                                     | n/a                                  | no, falls through to 500                                                                           |
+| Concurrent-update conflict (retryable, txn-level) | `40001`           | `1213` (`ER_LOCK_DEADLOCK`)             | n/a                                  | no; see [Retryable errors](#gotchas)                                                               |
 
-Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the *extended* result codes; what `err.code` actually contains depends on the driver. Check your driver's docs (e.g. [better-sqlite3](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) exposes the symbolic name; node-sqlite3 historically returned the primary code unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) were enabled). The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
+Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the _extended_ result codes; what `err.code` actually contains depends on the driver. Check your driver's docs (e.g. [better-sqlite3](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) exposes the symbolic name; node-sqlite3 historically returned the primary code unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) were enabled). The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
 
 ## Recipe 1: Centralize in an exception filter (recommended for NestJS)
 
@@ -131,29 +117,29 @@ import {
   InternalServerErrorException,
   Logger,
   UnprocessableEntityException,
-} from "@nestjs/common"
-import { BaseExceptionFilter } from "@nestjs/core"
-import { DatabaseError } from "pg"
-import { QueryFailedError } from "typeorm"
-import { isPgError, PG } from "./db-errors"
+} from "@nestjs/common";
+import { BaseExceptionFilter } from "@nestjs/core";
+import { DatabaseError } from "pg";
+import { QueryFailedError } from "typeorm";
+import { isPgError, PG } from "./db-errors";
 
 @Catch(QueryFailedError)
 export class TypeOrmExceptionFilter extends BaseExceptionFilter {
-  private readonly logger = new Logger(TypeOrmExceptionFilter.name)
+  private readonly logger = new Logger(TypeOrmExceptionFilter.name);
 
   catch(exception: QueryFailedError, host: ArgumentsHost): void {
     if (!isPgError(exception)) {
-      super.catch(new InternalServerErrorException(), host)
-      return
+      super.catch(new InternalServerErrorException(), host);
+      return;
     }
-    const mapped = this.toHttp(exception.driverError)
+    const mapped = this.toHttp(exception.driverError);
     if (mapped instanceof InternalServerErrorException) {
       this.logger.error(
         `Unmapped DB error code=${exception.driverError.code} detail=${exception.driverError.detail}`,
         exception.stack,
-      )
+      );
     }
-    super.catch(mapped, host)
+    super.catch(mapped, host);
   }
 
   private toHttp(err: DatabaseError): HttpException {
@@ -164,28 +150,28 @@ export class TypeOrmExceptionFilter extends BaseExceptionFilter {
           error: "DUPLICATE",
           constraint: err.constraint,
           detail: err.detail,
-        })
+        });
       case PG.FOREIGN_KEY_VIOLATION:
         return new ConflictException({
           statusCode: 409,
           error: "FK_VIOLATION",
           constraint: err.constraint,
           detail: err.detail,
-        })
+        });
       case PG.NOT_NULL_VIOLATION:
         return new UnprocessableEntityException({
           statusCode: 422,
           error: "NOT_NULL",
           column: err.column,
-        })
+        });
       case PG.CHECK_VIOLATION:
         return new UnprocessableEntityException({
           statusCode: 422,
           error: "CHECK",
           constraint: err.constraint,
-        })
+        });
       default:
-        return new InternalServerErrorException()
+        return new InternalServerErrorException();
     }
   }
 }
@@ -195,9 +181,9 @@ Register globally:
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_FILTER } from "@nestjs/core"
-import { TypeOrmExceptionFilter } from "./typeorm-exception.filter"
+import { Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { TypeOrmExceptionFilter } from "./typeorm-exception.filter";
 
 @Module({
   providers: [{ provide: APP_FILTER, useClass: TypeOrmExceptionFilter }],
@@ -234,25 +220,25 @@ The filter responds:
 
 The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints so you can branch on `err.constraint`. TypeORM gives three ways to declare uniqueness, and only one of them is right for this job:
 
-| Decorator | What TypeORM registers | What Postgres emits | Naming control | Composite |
-| --- | --- | --- | --- | --- |
-| `@Column({ unique: true })` | a `uniques` metadata entry | `ADD CONSTRAINT "UQ_<hash>" UNIQUE (...)` | ❌ auto-named (`UQ_2e7b…`) | ❌ single column only |
-| `@Unique('name', ['col'])` (class-level) | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)` | ✅ | ✅ |
-| `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry | `CREATE UNIQUE INDEX "name" ON ...` | ✅ | ✅ |
+| Decorator                                   | What TypeORM registers                     | What Postgres emits                       | Naming control             | Composite             |
+| ------------------------------------------- | ------------------------------------------ | ----------------------------------------- | -------------------------- | --------------------- |
+| `@Column({ unique: true })`                 | a `uniques` metadata entry                 | `ADD CONSTRAINT "UQ_<hash>" UNIQUE (...)` | ❌ auto-named (`UQ_2e7b…`) | ❌ single column only |
+| `@Unique('name', ['col'])` (class-level)    | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)`      | ✅                         | ✅                    |
+| `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry                | `CREATE UNIQUE INDEX "name" ON ...`       | ✅                         | ✅                    |
 
-Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says *"indexes are treated as constraints"* for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
+Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says _"indexes are treated as constraints"_ for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
 
 ```typescript
 // user.entity.ts
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm"
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity()
 @Unique("users_email_key", ["email"])
 @Unique("users_username_key", ["username"])
 export class User {
-  @PrimaryGeneratedColumn("uuid") id!: string
-  @Column() email!: string
-  @Column() username!: string
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column() email!: string;
+  @Column() username!: string;
 }
 ```
 
@@ -260,33 +246,31 @@ With those names in place, the service can branch on `err.constraint`:
 
 ```typescript
 // users.service.ts
-import { ConflictException, Injectable } from "@nestjs/common"
-import { InjectRepository } from "@nestjs/typeorm"
-import { Repository } from "typeorm"
-import { isUniqueViolation } from "./db-errors"
-import { User } from "./user.entity"
+import { ConflictException, Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { isUniqueViolation } from "./db-errors";
+import { User } from "./user.entity";
 
 // Map each named unique constraint to a domain error code.
 const USER_CONFLICTS: Record<string, string> = {
   users_email_key: "EMAIL_TAKEN",
   users_username_key: "USERNAME_TAKEN",
-}
+};
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(User) private readonly users: Repository<User>,
-  ) {}
+  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
 
   async create(data: Pick<User, "email" | "username">): Promise<User> {
     try {
-      return await this.users.save(this.users.create(data))
+      return await this.users.save(this.users.create(data));
     } catch (err: unknown) {
       if (isUniqueViolation(err) && err.driverError.constraint) {
-        const code = USER_CONFLICTS[err.driverError.constraint]
-        if (code) throw new ConflictException({ statusCode: 409, error: code })
+        const code = USER_CONFLICTS[err.driverError.constraint];
+        if (code) throw new ConflictException({ statusCode: 409, error: code });
       }
-      throw err // Re-throw; the global filter handles the rest.
+      throw err; // Re-throw; the global filter handles the rest.
     }
   }
 }
@@ -303,11 +287,11 @@ Sample response for a duplicate email:
 
 ## When to use which
 
-| Approach | Use when | Trade-off |
-| --- | --- | --- |
-| Global filter (Recipe 1) | You want consistent JSON for every DB error across all controllers | Generic messages; can't map "which unique" to "which domain meaning" |
-| Service-level catch (Recipe 2) | You need domain-specific error codes (`EMAIL_TAKEN` vs `USERNAME_TAKEN`) | Boilerplate per service; only handles the cases you explicitly catch |
-| Both (recommended for non-trivial APIs) | Service catches the constraints it cares about; filter handles the rest | Two layers, but each does one thing |
+| Approach                                | Use when                                                                 | Trade-off                                                            |
+| --------------------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| Global filter (Recipe 1)                | You want consistent JSON for every DB error across all controllers       | Generic messages; can't map "which unique" to "which domain meaning" |
+| Service-level catch (Recipe 2)          | You need domain-specific error codes (`EMAIL_TAKEN` vs `USERNAME_TAKEN`) | Boilerplate per service; only handles the cases you explicitly catch |
+| Both (recommended for non-trivial APIs) | Service catches the constraints it cares about; filter handles the rest  | Two layers, but each does one thing                                  |
 
 ## Gotchas
 

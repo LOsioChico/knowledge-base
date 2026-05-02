@@ -31,14 +31,14 @@ source:
 ## Signature
 
 ```typescript
-import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common"
+import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
 
 @Injectable()
 export class ParseIntPipe implements PipeTransform<string, number> {
   transform(value: string, metadata: ArgumentMetadata): number {
-    const parsed = parseInt(value, 10)
-    if (isNaN(parsed)) throw new BadRequestException()
-    return parsed
+    const parsed = parseInt(value, 10);
+    if (isNaN(parsed)) throw new BadRequestException();
+    return parsed;
   }
 }
 ```
@@ -69,35 +69,35 @@ Source: [Pipes intro](https://docs.nestjs.com/pipes).
 
 All exported from `@nestjs/common`.
 
-| Pipe               | Purpose                                                      | Notes                                                                                                                                                             |
-| ------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ValidationPipe`   | [[nestjs/recipes/validation\|DTO validation]]/transformation | Uses `class-validator` + `class-transformer` (peer deps you install)                                                                                              |
-| `ParseIntPipe`     | string → integer                                             | Regex `^-?\d+$`. Throws `BadRequestException` by default. See [composing pipes](#common-recipes)                                                                  |
-| `ParseFloatPipe`   | string → float                                               | `parseFloat` + `isFinite` check                                                                                                                                   |
-| `ParseBoolPipe`    | `"true"`/`"false"` → boolean                                 | Only those two strings (or actual booleans) pass                                                                                                                  |
-| `ParseArrayPipe`   | string → array                                               | Splits on `,` by default; override with `new ParseArrayPipe({ separator: ';' })`. Wraps a `ValidationPipe({ transform: true })` to coerce items. See [validating an array body](#gotchas)                   |
-| `ParseUUIDPipe`    | UUID string validation                                       | `version?: '3' \| '4' \| '5' \| '7'` ([source](https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts)). Default validates **any** UUID shape (the docs page still says "3, 4 or 5" but the pipe falls back to a version-agnostic regex when `version` is omitted)                |
-| `ParseEnumPipe`    | enum membership check                                        | Constructor requires the enum. See [composing pipes](#common-recipes)                                                                                             |
-| `ParseDatePipe`    | string/number → `Date`                                       | `new Date(value)`; supports `default: () => Date`                                                                                                                 |
-| `DefaultValuePipe` | fallback when nil                                            | Returns default when value is `null`, `undefined`, or `NaN`. See [the section below](#defaultvaluepipe)                                                           |
-| `ParseFilePipe`    | upload validation                                            | Compose `MaxFileSizeValidator` + `FileTypeValidator` directly, or use the fluent `ParseFilePipeBuilder`. See [[nestjs/recipes/file-uploads\|File uploads recipe]] |
+| Pipe               | Purpose                                                      | Notes                                                                                                                                                                                                                                                                                           |
+| ------------------ | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ValidationPipe`   | [[nestjs/recipes/validation\|DTO validation]]/transformation | Uses `class-validator` + `class-transformer` (peer deps you install)                                                                                                                                                                                                                            |
+| `ParseIntPipe`     | string → integer                                             | Regex `^-?\d+$`. Throws `BadRequestException` by default. See [composing pipes](#common-recipes)                                                                                                                                                                                                |
+| `ParseFloatPipe`   | string → float                                               | `parseFloat` + `isFinite` check                                                                                                                                                                                                                                                                 |
+| `ParseBoolPipe`    | `"true"`/`"false"` → boolean                                 | Only those two strings (or actual booleans) pass                                                                                                                                                                                                                                                |
+| `ParseArrayPipe`   | string → array                                               | Splits on `,` by default; override with `new ParseArrayPipe({ separator: ';' })`. Wraps a `ValidationPipe({ transform: true })` to coerce items. See [validating an array body](#gotchas)                                                                                                       |
+| `ParseUUIDPipe`    | UUID string validation                                       | `version?: '3' \| '4' \| '5' \| '7'` ([source](https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts)). Default validates **any** UUID shape (the docs page still says "3, 4 or 5" but the pipe falls back to a version-agnostic regex when `version` is omitted) |
+| `ParseEnumPipe`    | enum membership check                                        | Constructor requires the enum. See [composing pipes](#common-recipes)                                                                                                                                                                                                                           |
+| `ParseDatePipe`    | string/number → `Date`                                       | `new Date(value)`; supports `default: () => Date`                                                                                                                                                                                                                                               |
+| `DefaultValuePipe` | fallback when nil                                            | Returns default when value is `null`, `undefined`, or `NaN`. See [the section below](#defaultvaluepipe)                                                                                                                                                                                         |
+| `ParseFilePipe`    | upload validation                                            | Compose `MaxFileSizeValidator` + `FileTypeValidator` directly, or use the fluent `ParseFilePipeBuilder`. See [[nestjs/recipes/file-uploads\|File uploads recipe]]                                                                                                                               |
 
 ### Common options across `Parse*` pipes
 
-| Option                | Default                  | What it does                                          |
-| --------------------- | ------------------------ | ----------------------------------------------------- |
-| `errorHttpStatusCode` | `400`                    | Status used when validation fails                     |
-| `exceptionFactory`    | `BadRequestException`    | Build a custom exception from the error string        |
-| `optional`            | `false`                  | When `true`, nil values pass through instead of throw |
+| Option                | Default               | What it does                                          |
+| --------------------- | --------------------- | ----------------------------------------------------- |
+| `errorHttpStatusCode` | `400`                 | Status used when validation fails                     |
+| `exceptionFactory`    | `BadRequestException` | Build a custom exception from the error string        |
+| `optional`            | `false`               | When `true`, nil values pass through instead of throw |
 
 ## Binding
 
-| Scope      | How                                               |
-| ---------- | ------------------------------------------------- |
-| Global     | `app.useGlobalPipes()` or the [[nestjs/fundamentals/global-providers|APP_PIPE provider]] |
-| Controller | `@UsePipes()` on the class                        |
-| Route      | `@UsePipes()` on the method                       |
-| Param      | `@Body(new ValidationPipe())`                     |
+| Scope      | How                                                                  |
+| ---------- | -------------------------------------------------------------------- | ------------------- |
+| Global     | `app.useGlobalPipes()` or the [[nestjs/fundamentals/global-providers | APP_PIPE provider]] |
+| Controller | `@UsePipes()` on the class                                           |
+| Route      | `@UsePipes()` on the method                                          |
+| Param      | `@Body(new ValidationPipe())`                                        |
 
 > [!warning] Pass the class to `@UsePipes`, not an instance
 > `@UsePipes(MyPipe)` is resolved by Nest's DI container so the pipe's constructor injections work. `@UsePipes(new MyPipe())` skips DI: any injected dependency is `undefined` and the pipe crashes the first time it touches it. The param-level form `@Body(new ValidationPipe({ whitelist: true }))` is a deliberate exception: built-in pipes like `ValidationPipe` take a stateless options object rather than DI-resolved dependencies, so the instance form is idiomatic there. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
@@ -109,15 +109,37 @@ The global-scope variant of the same DI question: `useGlobalPipes(new X())` vs `
 Standard order is global, controller, route. Per-parameter pipes run from the **last parameter to the first** (verifiable by adding a `console.log` in a custom pipe across multi-arg handlers; the [`pipes-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts) iterates the param metadata in reverse):
 
 ```typescript
-import { Body, Controller, Injectable, Param, ParseIntPipe, Patch, PipeTransform, Query, UsePipes } from "@nestjs/common"
+import {
+  Body,
+  Controller,
+  Injectable,
+  Param,
+  ParseIntPipe,
+  Patch,
+  PipeTransform,
+  Query,
+  UsePipes,
+} from "@nestjs/common";
 
 // Two placeholder pipes — imagine each as a real ValidationPipe configuration.
-@Injectable() class GeneralValidationPipe implements PipeTransform { transform(v: unknown) { return v } }
-@Injectable() class RouteSpecificPipe implements PipeTransform { transform(v: unknown) { return v } }
+@Injectable()
+class GeneralValidationPipe implements PipeTransform {
+  transform(v: unknown) {
+    return v;
+  }
+}
+@Injectable()
+class RouteSpecificPipe implements PipeTransform {
+  transform(v: unknown) {
+    return v;
+  }
+}
 
 // Placeholder DTO/param/query types for the example signature.
 class UpdateCatDTO {}
-class UpdateCatParams { id!: string }
+class UpdateCatParams {
+  id!: string;
+}
 class UpdateCatQuery {}
 
 @UsePipes(GeneralValidationPipe)
@@ -140,7 +162,7 @@ export class CatsController {
 Returns its constructor argument when the incoming value is `null`, `undefined`, or `NaN`. **Order matters** when chaining:
 
 ```typescript
-import { Controller, DefaultValuePipe, Get, ParseIntPipe, Query } from "@nestjs/common"
+import { Controller, DefaultValuePipe, Get, ParseIntPipe, Query } from "@nestjs/common";
 
 @Controller("cats")
 export class CatsController {
@@ -170,25 +192,25 @@ npm i class-validator class-transformer
 
 ### Built-in options (from `ValidationPipeOptions`)
 
-| Option                     | Default                  | What it does                                                                                                                          |
-| -------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `transform`                | `false`                  | Run `class-transformer` to instantiate DTO classes from plain objects. Required if you want primitives coerced or DTO methods to work |
-| `transformOptions`         | `undefined`              | Forwarded to `class-transformer`. Common: `enableImplicitConversion: true` to coerce strings → number/boolean based on TS types       |
-| `disableErrorMessages`     | `false`                  | Hide validation messages in the response (use in production)                                                                          |
-| `errorHttpStatusCode`      | `400`                    | Status used when validation fails (e.g., set to `422`)                                                                                |
-| `exceptionFactory`         | flattens to `BadRequestException` | Custom exception shape                                                                                                       |
-| `validateCustomDecorators` | `false`                  | Validate args from custom param decorators too                                                                                        |
-| `expectedType`             | `undefined`              | Force the type to validate against (overrides metatype)                                                                               |
+| Option                     | Default                           | What it does                                                                                                                          |
+| -------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `transform`                | `false`                           | Run `class-transformer` to instantiate DTO classes from plain objects. Required if you want primitives coerced or DTO methods to work |
+| `transformOptions`         | `undefined`                       | Forwarded to `class-transformer`. Common: `enableImplicitConversion: true` to coerce strings → number/boolean based on TS types       |
+| `disableErrorMessages`     | `false`                           | Hide validation messages in the response (use in production)                                                                          |
+| `errorHttpStatusCode`      | `400`                             | Status used when validation fails (e.g., set to `422`)                                                                                |
+| `exceptionFactory`         | flattens to `BadRequestException` | Custom exception shape                                                                                                                |
+| `validateCustomDecorators` | `false`                           | Validate args from custom param decorators too                                                                                        |
+| `expectedType`             | `undefined`                       | Force the type to validate against (overrides metatype)                                                                               |
 
 ### Inherited `class-validator` options (subset)
 
-| Option                  | Default     | What it does                                                                                                                                                              |
-| ----------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `whitelist`             | `false`     | Strip properties without validation decorators                                                                                                                            |
-| `forbidNonWhitelisted`  | `false`     | Throw instead of stripping                                                                                                                                                |
-| `forbidUnknownValues`   | `false`     | Reject unknown objects. Nest forces `false` even though `class-validator`'s own default is `true` ([issue #10683](https://github.com/nestjs/nest/issues/10683))           |
-| `skipMissingProperties` | `false`     | Skip validation for null/undefined props                                                                                                                                  |
-| `stopAtFirstError`      | `false`     | Stop at the first failing decorator per property                                                                                                                          |
+| Option                  | Default     | What it does                                                                                                                                                            |
+| ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `whitelist`             | `false`     | Strip properties without validation decorators                                                                                                                          |
+| `forbidNonWhitelisted`  | `false`     | Throw instead of stripping                                                                                                                                              |
+| `forbidUnknownValues`   | `false`     | Reject unknown objects. Nest forces `false` even though `class-validator`'s own default is `true` ([issue #10683](https://github.com/nestjs/nest/issues/10683))         |
+| `skipMissingProperties` | `false`     | Skip validation for null/undefined props                                                                                                                                |
+| `stopAtFirstError`      | `false`     | Stop at the first failing decorator per property                                                                                                                        |
 | `groups`                | `undefined` | Validation groups: same DTO, different rules per route. See [[nestjs/recipes/validation#Validation groups: same DTO, different rules per route\|the validation recipe]] |
 
 Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
@@ -197,12 +219,12 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >
 > ```typescript
 > // main.ts
-> import { NestFactory } from "@nestjs/core"
-> import { ValidationPipe } from "@nestjs/common"
-> import { AppModule } from "./app.module"
+> import { NestFactory } from "@nestjs/core";
+> import { ValidationPipe } from "@nestjs/common";
+> import { AppModule } from "./app.module";
 >
 > async function bootstrap(): Promise<void> {
->   const app = await NestFactory.create(AppModule)
+>   const app = await NestFactory.create(AppModule);
 >   app.useGlobalPipes(
 >     new ValidationPipe({
 >       whitelist: true,
@@ -210,10 +232,10 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >       transform: true,
 >       transformOptions: { enableImplicitConversion: true },
 >     }),
->   )
->   await app.listen(process.env.PORT ?? 3000)
+>   );
+>   await app.listen(process.env.PORT ?? 3000);
 > }
-> bootstrap()
+> bootstrap();
 > ```
 
 > [!warning]- `transform: true` mutates request shape
@@ -230,16 +252,16 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > [!example]- Minimal Zod pipe
 >
 > ```typescript
-> import { PipeTransform, BadRequestException } from "@nestjs/common"
-> import { ZodSchema } from "zod"
+> import { PipeTransform, BadRequestException } from "@nestjs/common";
+> import { ZodSchema } from "zod";
 >
 > export class ZodValidationPipe implements PipeTransform {
 >   constructor(private schema: ZodSchema) {}
 >
 >   transform(value: unknown) {
->     const parsed = this.schema.safeParse(value)
->     if (!parsed.success) throw new BadRequestException(parsed.error.format())
->     return parsed.data
+>     const parsed = this.schema.safeParse(value);
+>     if (!parsed.success) throw new BadRequestException(parsed.error.format());
+>     return parsed.data;
 >   }
 > }
 > ```
@@ -253,19 +275,19 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > Pure transform pipe. No exception path: just clean the value and pass it on.
 >
 > ```typescript
-> import { ArgumentMetadata, Injectable, PipeTransform } from "@nestjs/common"
+> import { ArgumentMetadata, Injectable, PipeTransform } from "@nestjs/common";
 >
 > @Injectable()
 > export class TrimPipe implements PipeTransform<unknown, unknown> {
 >   transform(value: unknown, _metadata: ArgumentMetadata) {
->     if (typeof value === "string") return value.trim()
+>     if (typeof value === "string") return value.trim();
 >     if (value && typeof value === "object") {
 >       for (const key of Object.keys(value)) {
->         const v = (value as Record<string, unknown>)[key]
->         if (typeof v === "string") (value as Record<string, unknown>)[key] = v.trim()
+>         const v = (value as Record<string, unknown>)[key];
+>         if (typeof v === "string") (value as Record<string, unknown>)[key] = v.trim();
 >       }
 >     }
->     return value
+>     return value;
 >   }
 > }
 > ```
@@ -277,32 +299,32 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > Resolve a route param into a domain entity once, instead of every handler doing the DB call itself. Throws `404` if missing.
 >
 > ```typescript
-> import { ArgumentMetadata, Injectable, NotFoundException, PipeTransform } from "@nestjs/common"
-> import { CatsService } from "./cats.service"
-> import { Cat } from "./cat.entity"
+> import { ArgumentMetadata, Injectable, NotFoundException, PipeTransform } from "@nestjs/common";
+> import { CatsService } from "./cats.service";
+> import { Cat } from "./cat.entity";
 >
 > @Injectable()
 > export class CatByIdPipe implements PipeTransform<string, Promise<Cat>> {
 >   constructor(private readonly cats: CatsService) {}
 >
 >   async transform(id: string, _metadata: ArgumentMetadata): Promise<Cat> {
->     const cat = await this.cats.findById(id)
->     if (!cat) throw new NotFoundException(`Cat ${id} not found`)
->     return cat
+>     const cat = await this.cats.findById(id);
+>     if (!cat) throw new NotFoundException(`Cat ${id} not found`);
+>     return cat;
 >   }
 > }
 > ```
 >
 > ```typescript
-> import { Controller, Get, Param } from "@nestjs/common"
-> import { CatByIdPipe } from "./cat-by-id.pipe"
-> import { Cat } from "./cat.entity"
+> import { Controller, Get, Param } from "@nestjs/common";
+> import { CatByIdPipe } from "./cat-by-id.pipe";
+> import { Cat } from "./cat.entity";
 >
 > @Controller("cats")
 > export class CatsController {
 >   @Get(":id")
 >   getOne(@Param("id", CatByIdPipe) cat: Cat) {
->     return cat
+>     return cat;
 >   }
 > }
 > ```
@@ -321,7 +343,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 >   ParseEnumPipe,
 >   ParseIntPipe,
 >   Query,
-> } from "@nestjs/common"
+> } from "@nestjs/common";
 >
 > enum SortOrder {
 >   Asc = "asc",
@@ -345,7 +367,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 
 | Symptom                                 | Likely cause                                                                                                     |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| DTO instance methods are `undefined`    | Missing `transform: true`: you got a plain object                                                               |
+| DTO instance methods are `undefined`    | Missing `transform: true`: you got a plain object                                                                |
 | Numbers arrive as strings               | Add `transformOptions: { enableImplicitConversion: true }` or use `@Type(() => Number)` from `class-transformer` |
 | Extra fields appear in DTO              | Enable `whitelist: true` to strip them                                                                           |
 | Validation always passes                | Pipe not bound globally, or DTO class lacks decorators                                                           |
@@ -368,18 +390,18 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > The `Item[]` in TypeScript is invisible at runtime: class-transformer reads `Array.isArray(value)` and applies whatever `@Type()` says to **each element**. Without `@Type()`, elements stay as plain objects. Without `@ValidateNested({ each: true })` from [`class-validator`](https://github.com/typestack/class-validator#validating-nested-objects), the decorators inside `Item` (`@IsString()`, `@IsInt()`, etc.) **are not executed** on the children: silent pass.
 >
 > ```ts
-> import { Type } from "class-transformer"
-> import { ValidateNested, IsString } from "class-validator"
+> import { Type } from "class-transformer";
+> import { ValidateNested, IsString } from "class-validator";
 >
 > class Item {
 >   @IsString()
->   name: string
+>   name: string;
 > }
 >
 > export class CreatePostDto {
 >   @ValidateNested({ each: true })
 >   @Type(() => Item)
->   items: Item[]
+>   items: Item[];
 > }
 > ```
 >
@@ -396,8 +418,8 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > `ValidationPipe` reads the runtime metatype emitted by TypeScript (`Reflect.getMetadata('design:paramtypes', ...)`). A type-only import is erased at compile time, so the metatype becomes `Object` and the pipe falls back to passing the value through untouched: no decorator runs, no error thrown. Always import DTOs as values:
 >
 > ```ts
-> import { CreateUserDto } from "./create-user.dto" // ✅
-> import type { CreateUserDto } from "./create-user.dto" // ❌ validation disabled
+> import { CreateUserDto } from "./create-user.dto"; // ✅
+> import type { CreateUserDto } from "./create-user.dto"; // ❌ validation disabled
 > ```
 >
 > Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
@@ -409,10 +431,10 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array`: the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
 >
 > ```ts
-> import { Body, Controller, ParseArrayPipe, Post } from "@nestjs/common"
-> import { Type } from "class-transformer"
-> import { ValidateNested } from "class-validator"
-> import { CreateUserDto } from "./create-user.dto"
+> import { Body, Controller, ParseArrayPipe, Post } from "@nestjs/common";
+> import { Type } from "class-transformer";
+> import { ValidateNested } from "class-validator";
+> import { CreateUserDto } from "./create-user.dto";
 >
 > // 1. ParseArrayPipe carries the element class explicitly
 > @Controller("users")
@@ -428,7 +450,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > export class CreateUsersDto {
 >   @ValidateNested({ each: true })
 >   @Type(() => CreateUserDto)
->   users: CreateUserDto[]
+>   users: CreateUserDto[];
 > }
 > ```
 >

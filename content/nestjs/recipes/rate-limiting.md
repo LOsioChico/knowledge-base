@@ -31,9 +31,9 @@ Rate-limit every route in the app to **10 requests per 60 seconds** per client I
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_GUARD } from "@nestjs/core"
-import { ThrottlerModule, ThrottlerGuard, seconds } from "@nestjs/throttler"
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard, seconds } from "@nestjs/throttler";
 
 @Module({
   imports: [
@@ -80,9 +80,9 @@ Two decorators tighten or loosen the global setting on a specific controller or 
 ### `@Throttle()`: set custom `limit`/`ttl`
 
 ```typescript
-import { Controller, Post, Body } from "@nestjs/common"
-import { Throttle, seconds } from "@nestjs/throttler"
-import { LoginDto } from "./login.dto"
+import { Controller, Post, Body } from "@nestjs/common";
+import { Throttle, seconds } from "@nestjs/throttler";
+import { LoginDto } from "./login.dto";
 
 @Controller("auth")
 export class AuthController {
@@ -100,15 +100,15 @@ The outer key (`default`) is the **throttler name**. With a single unnamed bucke
 ### `@SkipThrottle()`: opt out
 
 ```typescript
-import { Controller, Get } from "@nestjs/common"
-import { SkipThrottle } from "@nestjs/throttler"
+import { Controller, Get } from "@nestjs/common";
+import { SkipThrottle } from "@nestjs/throttler";
 
 @SkipThrottle()
 @Controller("health")
 export class HealthController {
   @Get()
   check() {
-    return { ok: true }
+    return { ok: true };
   }
 }
 ```
@@ -121,14 +121,9 @@ Stack different windows on top of each other (burst protection + sustained prote
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { APP_GUARD } from "@nestjs/core"
-import {
-  ThrottlerModule,
-  ThrottlerGuard,
-  seconds,
-  minutes,
-} from "@nestjs/throttler"
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard, seconds, minutes } from "@nestjs/throttler";
 
 @Module({
   imports: [
@@ -146,8 +141,8 @@ export class AppModule {}
 Per-route overrides now have to name which bucket they touch:
 
 ```typescript
-import { Controller, Get } from "@nestjs/common"
-import { Throttle, SkipThrottle, seconds } from "@nestjs/throttler"
+import { Controller, Get } from "@nestjs/common";
+import { Throttle, SkipThrottle, seconds } from "@nestjs/throttler";
 
 @Controller("reports")
 export class ReportsController {
@@ -155,14 +150,14 @@ export class ReportsController {
   @Throttle({ short: { limit: 1, ttl: seconds(1) } })
   @Get("expensive")
   expensive() {
-    return { ok: true }
+    return { ok: true };
   }
 
   // Skip burst protection but keep medium/long limits.
   @SkipThrottle({ short: true })
   @Get("polled-by-dashboard")
   polled() {
-    return { ok: true }
+    return { ok: true };
   }
 }
 ```
@@ -174,23 +169,23 @@ export class ReportsController {
 
 Each entry in the `forRoot` array (or under `throttlers:` if you also need top-level options) accepts:
 
-| Option             | Type                                           | Default     | Notes                                                                             |
-| ------------------ | ---------------------------------------------- | ----------- | --------------------------------------------------------------------------------- |
-| `name`             | `string`                                       | `'default'` | Used as the key in `@Throttle({ <name>: ... })` and `@SkipThrottle({ <name>: true })` |
-| `ttl`              | `number` (ms)                                  | required    | Window length. Wrap with `seconds()`/`minutes()`/`hours()` for readability        |
-| `limit`            | `number`                                       | required    | Max requests per `ttl` per tracker                                                |
-| `blockDuration`    | `number` (ms)                                  | `ttl`       | How long to keep blocking after the limit is hit. Defaults to `ttl` per [`ThrottlerModuleOptions` source](https://github.com/nestjs/throttler/blob/master/src/throttler-module-options.interface.ts) |
-| `ignoreUserAgents` | `RegExp[]`                                     | `[]`        | Skip throttling for matching `User-Agent` headers                                 |
-| `skipIf`           | `(ctx: ExecutionContext) => boolean`           | none        | Programmatic skip. Same intent as `@SkipThrottle()` but request-driven            |
-| `getTracker`       | `(req, ctx) => string \| Promise<string>`      | `req.ip`    | Override the per-client identity. See [proxies callout below](#proxies-and-trust-proxy) |
-| `generateKey`      | `(ctx, tracker, name) => string`               | internal    | Override the storage key shape                                                    |
+| Option             | Type                                      | Default     | Notes                                                                                                                                                                                                |
+| ------------------ | ----------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`             | `string`                                  | `'default'` | Used as the key in `@Throttle({ <name>: ... })` and `@SkipThrottle({ <name>: true })`                                                                                                                |
+| `ttl`              | `number` (ms)                             | required    | Window length. Wrap with `seconds()`/`minutes()`/`hours()` for readability                                                                                                                           |
+| `limit`            | `number`                                  | required    | Max requests per `ttl` per tracker                                                                                                                                                                   |
+| `blockDuration`    | `number` (ms)                             | `ttl`       | How long to keep blocking after the limit is hit. Defaults to `ttl` per [`ThrottlerModuleOptions` source](https://github.com/nestjs/throttler/blob/master/src/throttler-module-options.interface.ts) |
+| `ignoreUserAgents` | `RegExp[]`                                | `[]`        | Skip throttling for matching `User-Agent` headers                                                                                                                                                    |
+| `skipIf`           | `(ctx: ExecutionContext) => boolean`      | none        | Programmatic skip. Same intent as `@SkipThrottle()` but request-driven                                                                                                                               |
+| `getTracker`       | `(req, ctx) => string \| Promise<string>` | `req.ip`    | Override the per-client identity. See [proxies callout below](#proxies-and-trust-proxy)                                                                                                              |
+| `generateKey`      | `(ctx, tracker, name) => string`          | internal    | Override the storage key shape                                                                                                                                                                       |
 
 Top-level options (passed as `ThrottlerModule.forRoot({ throttlers: [...], ...topLevel })`):
 
-| Option         | Type                              | Notes                                                                                       |
-| -------------- | --------------------------------- | ------------------------------------------------------------------------------------------- |
-| `storage`      | `ThrottlerStorage`                | Swap the default in-memory store. Required for [multi-instance deployments](#distributed-storage-redis) |
-| `errorMessage` | `string \| ((ctx, detail) => string)` | Override the `429` body text                                                               |
+| Option         | Type                                  | Notes                                                                                                   |
+| -------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `storage`      | `ThrottlerStorage`                    | Swap the default in-memory store. Required for [multi-instance deployments](#distributed-storage-redis) |
+| `errorMessage` | `string \| ((ctx, detail) => string)` | Override the `429` body text                                                                            |
 
 Time helpers exported from `@nestjs/throttler`: `seconds`, `minutes`, `hours`, `days`, `weeks`. They just multiply by the right constant: `seconds(5) === 5000`. Prefer them over raw numbers; `60000` reads as "what unit?".
 
@@ -215,29 +210,29 @@ The default tracker is `req.ip`. Behind a load balancer or reverse proxy, that's
 
 ```typescript
 // main.ts
-import { NestFactory } from "@nestjs/core"
-import { NestExpressApplication } from "@nestjs/platform-express"
-import { AppModule } from "./app.module"
+import { NestFactory } from "@nestjs/core";
+import { NestExpressApplication } from "@nestjs/platform-express";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule)
-  app.set("trust proxy", "loopback") // or specific subnet, or `1` for one hop
-  await app.listen(3000)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  app.set("trust proxy", "loopback"); // or specific subnet, or `1` for one hop
+  await app.listen(3000);
 }
-bootstrap()
+bootstrap();
 ```
 
 **2. (Fastify only)** Override the tracker because Fastify exposes the chain at `req.ips`, not `req.ip`:
 
 ```typescript
 // throttler-behind-proxy.guard.ts
-import { Injectable } from "@nestjs/common"
-import { ThrottlerGuard } from "@nestjs/throttler"
+import { Injectable } from "@nestjs/common";
+import { ThrottlerGuard } from "@nestjs/throttler";
 
 @Injectable()
 export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
   protected async getTracker(req: Record<string, any>): Promise<string> {
-    return req.ips.length ? req.ips[0] : req.ip
+    return req.ips.length ? req.ips[0] : req.ip;
   }
 }
 ```
@@ -253,16 +248,16 @@ IP-based throttling fairness drops on shared networks (offices, VPNs, mobile car
 
 ```typescript
 // user-throttler.guard.ts
-import { Injectable, ExecutionContext } from "@nestjs/common"
-import { ThrottlerGuard } from "@nestjs/throttler"
-import { Request } from "express"
+import { Injectable, ExecutionContext } from "@nestjs/common";
+import { ThrottlerGuard } from "@nestjs/throttler";
+import { Request } from "express";
 
 @Injectable()
 export class UserThrottlerGuard extends ThrottlerGuard {
   protected async getTracker(req: Request): Promise<string> {
-    const user = (req as Request & { user?: { id: string } }).user
+    const user = (req as Request & { user?: { id: string } }).user;
     // Fall back to IP for unauthenticated requests so anonymous floods are still capped.
-    return user?.id ?? req.ip ?? "anonymous"
+    return user?.id ?? req.ip ?? "anonymous";
   }
 }
 ```
@@ -275,13 +270,13 @@ The built-in storage is a per-process in-memory map. Two pods, two counters: a c
 
 ```typescript
 // app.module.ts (sketch: install the storage package first)
-import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis"
-import Redis from "ioredis"
+import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
+import Redis from "ioredis";
 
 ThrottlerModule.forRoot({
   throttlers: [{ ttl: seconds(60), limit: 10 }],
   storage: new ThrottlerStorageRedisService(new Redis(process.env.REDIS_URL!)),
-})
+});
 ```
 
 > [!info]- The in-memory store is fine for single-process apps and dev
@@ -293,10 +288,10 @@ Pull `ttl`/`limit` from `ConfigService` instead of hard-coding them:
 
 ```typescript
 // app.module.ts
-import { Module } from "@nestjs/common"
-import { ConfigModule, ConfigService } from "@nestjs/config"
-import { APP_GUARD } from "@nestjs/core"
-import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler"
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
 
 @Module({
   imports: [

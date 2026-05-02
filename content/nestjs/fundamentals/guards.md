@@ -30,15 +30,15 @@ source:
 ## Signature
 
 ```typescript
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-import { Request } from "express"
-import { Observable } from "rxjs"
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Request } from "express";
+import { Observable } from "rxjs";
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    const request = context.switchToHttp().getRequest<Request>()
-    return Boolean(request.headers.authorization)
+    const request = context.switchToHttp().getRequest<Request>();
+    return Boolean(request.headers.authorization);
   }
 }
 ```
@@ -57,14 +57,14 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > **`boolean`**: synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise.
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-> import { Request } from "express"
+> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+> import { Request } from "express";
 >
 > @Injectable()
 > export class AdminGuard implements CanActivate {
 >   canActivate(ctx: ExecutionContext): boolean {
->     const req = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>()
->     return req.user?.roles?.includes("admin") ?? false
+>     const req = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>();
+>     return req.user?.roles?.includes("admin") ?? false;
 >   }
 > }
 > ```
@@ -72,22 +72,22 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > **`Promise<boolean>`**: anything `async`. The common case: verify a JWT, hit the DB, call an auth service.
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-> import { Request } from "express"
-> import { UsersService } from "./users.service"
+> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+> import { Request } from "express";
+> import { UsersService } from "./users.service";
 >
 > @Injectable()
 > export class TokenGuard implements CanActivate {
 >   constructor(private readonly users: UsersService) {}
 >
 >   async canActivate(ctx: ExecutionContext): Promise<boolean> {
->     const req = ctx.switchToHttp().getRequest<Request & { user?: unknown }>()
->     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "")
->     if (!token) return false
->     const user = await this.users.findByToken(token)
->     if (!user) return false
->     req.user = user
->     return true
+>     const req = ctx.switchToHttp().getRequest<Request & { user?: unknown }>();
+>     const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+>     if (!token) return false;
+>     const user = await this.users.findByToken(token);
+>     if (!user) return false;
+>     req.user = user;
+>     return true;
 >   }
 > }
 > ```
@@ -95,22 +95,22 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest treats the Observable like the `Promise` case ([source: `guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) wraps the return in `Promise.resolve` and `await`s it; an Observable is converted via `lastValueFrom`-style behavior in newer versions — verify against your installed version).
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-> import { HttpService } from "@nestjs/axios"
-> import { Request } from "express"
-> import { Observable, map } from "rxjs"
+> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+> import { HttpService } from "@nestjs/axios";
+> import { Request } from "express";
+> import { Observable, map } from "rxjs";
 >
 > @Injectable()
 > export class RemoteAuthzGuard implements CanActivate {
 >   constructor(private readonly http: HttpService) {}
 >
 >   canActivate(ctx: ExecutionContext): Observable<boolean> {
->     const req = ctx.switchToHttp().getRequest<Request>()
+>     const req = ctx.switchToHttp().getRequest<Request>();
 >     return this.http
 >       .get<{ allowed: boolean }>("https://authz.internal/check", {
 >         headers: { authorization: req.headers.authorization ?? "" },
 >       })
->       .pipe(map((res) => res.data.allowed))
+>       .pipe(map((res) => res.data.allowed));
 >   }
 > }
 > ```
@@ -139,10 +139,10 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 Nest core ships **none**: the [`@nestjs/common` exports](https://github.com/nestjs/nest/tree/master/packages/common) include the `CanActivate` interface and the `@UseGuards` decorator, but no shipped guard classes. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
-| Guard                 | Package             | Purpose                                                                                                                                                                 |
-| --------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Guard                 | Package             | Purpose                                                                                                                                                                                                                  |
+| --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
 | `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See the [`IS_PUBLIC` recipe below](#common-recipes) and [[nestjs/auth/jwt-strategy\|JWT strategy recipe]] |
-| `ThrottlerGuard`      | `@nestjs/throttler` | [[nestjs/recipes/rate-limiting|Rate limiting]] per route or controller                                                                                                  |
+| `ThrottlerGuard`      | `@nestjs/throttler` | [[nestjs/recipes/rate-limiting                                                                                                                                                                                           | Rate limiting]] per route or controller |
 
 Anything else you write yourself. The canonical example is a `RolesGuard`, covered below.
 
@@ -175,8 +175,8 @@ Controller- and route-scoped bindings always resolve through Nest's DI container
 > `@UseGuards(RolesGuard)` is resolved by Nest's DI container, so the guard's constructor injections (`Reflector`, repositories, config services, anything else) are wired up. `@UseGuards(new RolesGuard())` looks identical at the call site but skips DI entirely: the guard runs with `undefined` dependencies and fails the first time it touches `this.reflector`. Same trap applies to `@UseInterceptors`, `@UsePipes`, and `@UseFilters`. Pass the class unless you genuinely need a pre-configured instance with no DI needs.
 
 ```typescript
-import { Controller, Get, UseGuards } from "@nestjs/common"
-import { RolesGuard } from "./roles.guard"
+import { Controller, Get, UseGuards } from "@nestjs/common";
+import { RolesGuard } from "./roles.guard";
 
 @UseGuards(RolesGuard)
 @Controller("cats")
@@ -199,12 +199,24 @@ Multiple guards run in this order ([source: `guards-context-creator.ts`](https:/
 The chain stops at the **first** guard that returns `false`, throws, or rejects a returned `Promise`: later guards do not run.
 
 ```typescript
-import { CanActivate, Controller, ExecutionContext, Get, UseGuards } from "@nestjs/common"
+import { CanActivate, Controller, ExecutionContext, Get, UseGuards } from "@nestjs/common";
 
 // Three placeholder guards — imagine each as a real CanActivate implementation.
-class Guard1 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
-class Guard2 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
-class Guard3 implements CanActivate { canActivate(_: ExecutionContext) { return true } }
+class Guard1 implements CanActivate {
+  canActivate(_: ExecutionContext) {
+    return true;
+  }
+}
+class Guard2 implements CanActivate {
+  canActivate(_: ExecutionContext) {
+    return true;
+  }
+}
+class Guard3 implements CanActivate {
+  canActivate(_: ExecutionContext) {
+    return true;
+  }
+}
 
 @UseGuards(Guard1, Guard2)
 @Controller("cats")
@@ -226,16 +238,16 @@ The point of a guard is to make per-route decisions, which means reading per-rou
 
 ```typescript
 // roles.decorator.ts
-import { Reflector } from "@nestjs/core"
+import { Reflector } from "@nestjs/core";
 
-export const Roles = Reflector.createDecorator<string[]>()
+export const Roles = Reflector.createDecorator<string[]>();
 ```
 
 ```typescript
 // cats.controller.ts
-import { Body, Controller, Post } from "@nestjs/common"
-import { Roles } from "./roles.decorator"
-import { CreateCatDto } from "./create-cat.dto"
+import { Body, Controller, Post } from "@nestjs/common";
+import { Roles } from "./roles.decorator";
+import { CreateCatDto } from "./create-cat.dto";
 
 @Controller("cats")
 export class CatsController {
@@ -247,22 +259,22 @@ export class CatsController {
 
 ```typescript
 // roles.guard.ts
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
-import { Reflector } from "@nestjs/core"
-import { Request } from "express"
-import { Roles } from "./roles.decorator"
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { Request } from "express";
+import { Roles } from "./roles.decorator";
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(ctx: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride(Roles, [ctx.getHandler(), ctx.getClass()])
-    if (!required?.length) return true // no @Roles() → public
+    const required = this.reflector.getAllAndOverride(Roles, [ctx.getHandler(), ctx.getClass()]);
+    if (!required?.length) return true; // no @Roles() → public
 
-    const request = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>()
-    const user = request.user
-    return Boolean(user?.roles?.some((r) => required.includes(r)))
+    const request = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>();
+    const user = request.user;
+    return Boolean(user?.roles?.some((r) => required.includes(r)));
   }
 }
 ```
@@ -271,21 +283,21 @@ Routes without `@Roles()` are treated as public: `getAllAndOverride` returns `un
 
 ### `Reflector` lookup methods
 
-| Method                       | When to use                                                                                               |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `get(decorator, target)`     | Single target: handler **or** class. Returns `undefined` if absent. See the [`@SetMetadata` snippet](#low-level-setmetadata) |
+| Method                       | When to use                                                                                                                                                                                                                                     |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `get(decorator, target)`     | Single target: handler **or** class. Returns `undefined` if absent. See the [`@SetMetadata` snippet](#low-level-setmetadata)                                                                                                                    |
 | `getAllAndOverride(d, [..])` | Multiple targets, **first non-empty wins**. Use when route metadata should override controller defaults. See the [`RolesGuard` example](#strongly-typed-decorators-with-reflectorcreatedecorator) and the [`IS_PUBLIC` recipe](#common-recipes) |
-| `getAllAndMerge(d, [..])`    | Multiple targets, **merge** arrays/objects. Use when you want both controller and route metadata combined |
+| `getAllAndMerge(d, [..])`    | Multiple targets, **merge** arrays/objects. Use when you want both controller and route metadata combined                                                                                                                                       |
 
 The target list `[ctx.getHandler(), ctx.getClass()]` is the conventional order: handler first, controller second, so route-level metadata overrides controller-level. Source: [Reflection and metadata](https://docs.nestjs.com/fundamentals/execution-context#reflection-and-metadata).
 
 "First non-empty wins" means `getAllAndOverride` walks the targets **in order** and returns the value from the first one that has the metadata defined. Targets without it are skipped, later targets are never consulted, and nothing is merged. Concretely:
 
-| `@Roles()` placement                              | `getAllAndOverride(Roles, [handler, class])` returns |
-| ------------------------------------------------- | ---------------------------------------------------- |
-| `@Roles('admin')` on class only                   | `['admin']` (handler empty, falls through to class)  |
-| `@Roles('user')` on handler, `@Roles('admin')` on class | `['user']` (handler wins, class never read)    |
-| Neither                                           | `undefined`                                          |
+| `@Roles()` placement                                    | `getAllAndOverride(Roles, [handler, class])` returns |
+| ------------------------------------------------------- | ---------------------------------------------------- |
+| `@Roles('admin')` on class only                         | `['admin']` (handler empty, falls through to class)  |
+| `@Roles('user')` on handler, `@Roles('admin')` on class | `['user']` (handler wins, class never read)          |
+| Neither                                                 | `undefined`                                          |
 
 Use `getAllAndMerge` instead when you want the union (e.g. `['user', 'admin']` for the second row).
 
@@ -294,9 +306,9 @@ Use `getAllAndMerge` instead when you want the union (e.g. `['user', 'admin']` f
 `Reflector.createDecorator` is the recommended path. `@SetMetadata('roles', [...])` is the older string-keyed alternative: fine for one-off cases, but loses type safety:
 
 ```typescript
-import { SetMetadata } from "@nestjs/common"
+import { SetMetadata } from "@nestjs/common";
 
-export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
+export const Roles = (...roles: string[]) => SetMetadata("roles", roles);
 // Read with: this.reflector.get<string[]>("roles", ctx.getHandler())
 ```
 
@@ -308,31 +320,31 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 >
 > ```typescript
 > // public.decorator.ts
-> import { SetMetadata } from "@nestjs/common"
-> export const IS_PUBLIC_KEY = "isPublic"
-> export const Public = () => SetMetadata(IS_PUBLIC_KEY, true)
+> import { SetMetadata } from "@nestjs/common";
+> export const IS_PUBLIC_KEY = "isPublic";
+> export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 > ```
 >
 > ```typescript
 > // jwt-auth.guard.ts
-> import { ExecutionContext, Injectable } from "@nestjs/common"
-> import { Reflector } from "@nestjs/core"
-> import { AuthGuard } from "@nestjs/passport"
-> import { IS_PUBLIC_KEY } from "./public.decorator"
+> import { ExecutionContext, Injectable } from "@nestjs/common";
+> import { Reflector } from "@nestjs/core";
+> import { AuthGuard } from "@nestjs/passport";
+> import { IS_PUBLIC_KEY } from "./public.decorator";
 >
 > @Injectable()
 > export class JwtAuthGuard extends AuthGuard("jwt") {
 >   constructor(private readonly reflector: Reflector) {
->     super()
+>     super();
 >   }
 >
 >   canActivate(ctx: ExecutionContext) {
 >     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
 >       ctx.getHandler(),
 >       ctx.getClass(),
->     ])
->     if (isPublic) return true
->     return super.canActivate(ctx)
+>     ]);
+>     if (isPublic) return true;
+>     return super.canActivate(ctx);
 >   }
 > }
 > ```
@@ -342,16 +354,16 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > [!example]- Throw a custom exception instead of the default `ForbiddenException`
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common"
+> import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
 >
 > @Injectable()
 > export class TokenGuard implements CanActivate {
 >   canActivate(ctx: ExecutionContext): boolean {
->     const request = ctx.switchToHttp().getRequest()
+>     const request = ctx.switchToHttp().getRequest();
 >     if (!request.headers.authorization) {
->       throw new UnauthorizedException("Missing bearer token")
+>       throw new UnauthorizedException("Missing bearer token");
 >     }
->     return true
+>     return true;
 >   }
 > }
 > ```
@@ -361,32 +373,32 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > [!example]- Ownership check using route params
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common"
+> import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
 >
 > @Injectable()
 > export class CatOwnerGuard implements CanActivate {
 >   async canActivate(ctx: ExecutionContext): Promise<boolean> {
->     const req = ctx.switchToHttp().getRequest()
->     const userId: string | undefined = req.user?.id
->     const catId: string = req.params.id
->     if (!userId) throw new ForbiddenException()
+>     const req = ctx.switchToHttp().getRequest();
+>     const userId: string | undefined = req.user?.id;
+>     const catId: string = req.params.id;
+>     if (!userId) throw new ForbiddenException();
 >     // …query DB; return true/false based on ownership
->     return true
+>     return true;
 >   }
 > }
 > ```
 
 ## Common errors
 
-| Symptom                                              | Likely cause                                                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `403 Forbidden resource` on every request            | Guard returns `false` (or any falsy value such as `undefined`). Check `canActivate` actually returns `true`                  |
-| Global guard's injected provider is `undefined`      | Registered via `useGlobalGuards(new X())` instead of `APP_GUARD` provider                                    |
+| Symptom                                              | Likely cause                                                                                                |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `403 Forbidden resource` on every request            | Guard returns `false` (or any falsy value such as `undefined`). Check `canActivate` actually returns `true` |
+| Global guard's injected provider is `undefined`      | Registered via `useGlobalGuards(new X())` instead of `APP_GUARD` provider                                   |
 | `Reflector` returns `undefined` for known decorator  | Looking up the wrong target: used `getHandler()` when the metadata is on the class (`getClass()`)           |
-| Controller-level metadata ignored                    | Used `reflector.get(d, ctx.getHandler())` instead of `getAllAndOverride(d, [getHandler(), getClass()])`      |
-| Guard runs but `request.user` is `undefined`         | Authentication middleware/guard didn't run first, or no upstream layer attached `user`                       |
+| Controller-level metadata ignored                    | Used `reflector.get(d, ctx.getHandler())` instead of `getAllAndOverride(d, [getHandler(), getClass()])`     |
+| Guard runs but `request.user` is `undefined`         | Authentication middleware/guard didn't run first, or no upstream layer attached `user`                      |
 | Guard doesn't run for WebSocket/microservice handler | Wrong context: verify with `ctx.getType()` and use `switchToWs()` / `switchToRpc()` for the right transport |
-| `cannot read property of undefined` inside guard     | Calling `switchToHttp()` in a non-HTTP context. Branch on `ctx.getType()` for cross-transport guards         |
+| `cannot read property of undefined` inside guard     | Calling `switchToHttp()` in a non-HTTP context. Branch on `ctx.getType()` for cross-transport guards        |
 
 ## Gotchas
 
@@ -403,31 +415,31 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 > The same guard class can run on HTTP, RPC, and WebSocket handlers, but the request shape differs. Use `ctx.getType()` to switch:
 >
 > ```typescript
-> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
+> import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 >
 > @Injectable()
 > export class CrossTransportGuard implements CanActivate {
 >   canActivate(ctx: ExecutionContext): boolean {
 >     switch (ctx.getType()) {
 >       case "http":
->         return this.checkHttp(ctx.switchToHttp().getRequest())
+>         return this.checkHttp(ctx.switchToHttp().getRequest());
 >       case "rpc":
->         return this.checkRpc(ctx.switchToRpc().getData())
+>         return this.checkRpc(ctx.switchToRpc().getData());
 >       case "ws":
->         return this.checkWs(ctx.switchToWs().getClient())
+>         return this.checkWs(ctx.switchToWs().getClient());
 >       default:
->         return false
+>         return false;
 >     }
 >   }
 >
 >   private checkHttp(_req: unknown) {
->     return true
+>     return true;
 >   }
 >   private checkRpc(_data: unknown) {
->     return true
+>     return true;
 >   }
 >   private checkWs(_client: unknown) {
->     return true
+>     return true;
 >   }
 > }
 > ```

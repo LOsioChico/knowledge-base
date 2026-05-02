@@ -53,13 +53,13 @@ The init phase fires when you call `app.init()` or `app.listen()`. The terminate
 
 Implement an interface, define the matching method. The interface itself disappears at compile time; the method name is what Nest looks for at runtime, so spelling matters.
 
-| Interface                    | Method signature                            | Phase     | Receives signal? |
-| ---------------------------- | ------------------------------------------- | --------- | ---------------- |
-| `OnModuleInit`               | `onModuleInit(): any`                       | init      | no               |
-| `OnApplicationBootstrap`     | `onApplicationBootstrap(): any`             | init      | no               |
-| `OnModuleDestroy`            | `onModuleDestroy(): any`                    | terminate | no               |
-| `BeforeApplicationShutdown`  | `beforeApplicationShutdown(signal?: string): any` | terminate | yes              |
-| `OnApplicationShutdown`      | `onApplicationShutdown(signal?: string): any`     | terminate | yes              |
+| Interface                   | Method signature                                  | Phase     | Receives signal? |
+| --------------------------- | ------------------------------------------------- | --------- | ---------------- |
+| `OnModuleInit`              | `onModuleInit(): any`                             | init      | no               |
+| `OnApplicationBootstrap`    | `onApplicationBootstrap(): any`                   | init      | no               |
+| `OnModuleDestroy`           | `onModuleDestroy(): any`                          | terminate | no               |
+| `BeforeApplicationShutdown` | `beforeApplicationShutdown(signal?: string): any` | terminate | yes              |
+| `OnApplicationShutdown`     | `onApplicationShutdown(signal?: string): any`     | terminate | yes              |
 
 > [!info] Only the last two get the signal
 > The official docs say "with the corresponding signal as the first parameter" when describing the terminate phase, but `OnModuleDestroy.onModuleDestroy()` takes no arguments per its interface. `beforeApplicationShutdown` runs **after** every `onModuleDestroy`, so it can't pass the signal back; if you need the signal name inside `onModuleDestroy`, stash it from your own signal handler **before** calling `app.close()`.
@@ -67,7 +67,7 @@ Implement an interface, define the matching method. The interface itself disappe
 Hooks live on **modules, providers, and controllers**. Same class can implement multiple.
 
 ```ts
-import { Injectable, OnModuleInit, OnApplicationShutdown } from "@nestjs/common"
+import { Injectable, OnModuleInit, OnApplicationShutdown } from "@nestjs/common";
 
 @Injectable()
 export class UsersService implements OnModuleInit, OnApplicationShutdown {
@@ -97,15 +97,15 @@ If you need "this provider should be ready before that controller starts handlin
 Shutdown listeners are off by default because they pin extra event listeners on `process` and that adds up if you spawn many Nest apps in one Node process (Jest is the usual culprit). Opt in once at bootstrap:
 
 ```ts
-import { NestFactory } from "@nestjs/core"
-import { AppModule } from "./app.module"
+import { NestFactory } from "@nestjs/core";
+import { AppModule } from "./app.module";
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule)
-  app.enableShutdownHooks()
-  await app.listen(process.env.PORT ?? 3000)
+  const app = await NestFactory.create(AppModule);
+  app.enableShutdownHooks();
+  await app.listen(process.env.PORT ?? 3000);
 }
-bootstrap()
+bootstrap();
 ```
 
 After `enableShutdownHooks()`, receiving a signal triggers the terminate sequence. Within shutdown:

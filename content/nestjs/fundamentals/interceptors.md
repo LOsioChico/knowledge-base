@@ -32,17 +32,17 @@ source:
 ## Signature
 
 ```typescript
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-import { Observable, tap } from "rxjs"
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+import { Observable, tap } from "rxjs";
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    console.log("Before...") // pre
-    const start = Date.now()
+    console.log("Before..."); // pre
+    const start = Date.now();
     return next.handle().pipe(
       tap(() => console.log(`After ${Date.now() - start}ms`)), // post
-    )
+    );
   }
 }
 ```
@@ -100,13 +100,13 @@ If the work has a "before AND after" shape, or it operates on the handler's retu
 
 Same `ExecutionContext` that [[nestjs/fundamentals/guards|guards]] use. The methods you'll actually call:
 
-| Method           | Returns                                                                                                             |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Method           | Returns                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------ |
 | `getHandler()`   | The handler `Function` about to run: key for `Reflector` metadata lookup                                           |
-| `getClass()`     | The controller `Type` (the class, not an instance)                                                                  |
-| `switchToHttp()` | `HttpArgumentsHost` → `getRequest()`, `getResponse()`, `getNext()`                                                  |
-| `switchToRpc()`  | RPC context (microservices)                                                                                         |
-| `switchToWs()`   | WebSocket context                                                                                                   |
+| `getClass()`     | The controller `Type` (the class, not an instance)                                                                 |
+| `switchToHttp()` | `HttpArgumentsHost` → `getRequest()`, `getResponse()`, `getNext()`                                                 |
+| `switchToRpc()`  | RPC context (microservices)                                                                                        |
+| `switchToWs()`   | WebSocket context                                                                                                  |
 | `getType()`      | `'http' \| 'rpc' \| 'ws'` (or `'graphql'` with `@nestjs/graphql`): branch on this for cross-transport interceptors |
 
 Reading route metadata works exactly like in a guard: inject `Reflector`, call `reflector.getAllAndOverride(decorator, [ctx.getHandler(), ctx.getClass()])`. See [[nestjs/fundamentals/guards#Reflector and custom decorators|Guards > Reflector and custom decorators]] for the full pattern.
@@ -115,8 +115,8 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 
 [`@nestjs/common`](https://github.com/nestjs/nest/tree/master/packages/common) ships only one interceptor class out of the box (`ClassSerializerInterceptor`); the rest you compose yourself with RxJS.
 
-| Interceptor                  | Package          | Purpose                                                                                                                                                    |
-| ---------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Interceptor                  | Package          | Purpose                                                                                                                                                                                                                    |
+| ---------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `instanceToPlain` on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
 
 > [!example]- Excluding fields from the response
@@ -128,16 +128,16 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 >   Get,
 >   Param,
 >   UseInterceptors,
-> } from "@nestjs/common"
-> import { Exclude } from "class-transformer"
+> } from "@nestjs/common";
+> import { Exclude } from "class-transformer";
 >
 > export class UserEntity {
->   id: number
->   email: string
->   @Exclude() password: string
+>   id: number;
+>   email: string;
+>   @Exclude() password: string;
 >
 >   constructor(partial: Partial<UserEntity>) {
->     Object.assign(this, partial)
+>     Object.assign(this, partial);
 >   }
 > }
 >
@@ -146,7 +146,7 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 > export class UsersController {
 >   @Get(":id")
 >   findOne(@Param("id") id: string): UserEntity {
->     return new UserEntity({ id: +id, email: "a@b.c", password: "secret" })
+>     return new UserEntity({ id: +id, email: "a@b.c", password: "secret" });
 >   }
 > }
 > ```
@@ -158,11 +158,11 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 
 ## Binding
 
-| Scope      | How                                                                                                               |
-| ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| Scope      | How                                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------------------- |
 | Global     | `app.useGlobalInterceptors(new LoggingInterceptor())` or the `APP_INTERCEPTOR` provider (preferred: supports DI) |
-| Controller | `@UseInterceptors(LoggingInterceptor)` on the class                                                               |
-| Route      | `@UseInterceptors(LoggingInterceptor)` on the method                                                              |
+| Controller | `@UseInterceptors(LoggingInterceptor)` on the class                                                              |
+| Route      | `@UseInterceptors(LoggingInterceptor)` on the method                                                             |
 
 Controller- and route-scoped bindings always resolve the interceptor through Nest's DI container (you pass the **class**, not an instance), so they can inject anything the module exposes. The catch is global scope.
 
@@ -200,29 +200,29 @@ Each layer wraps the next, so a global logging interceptor sees the **final** re
 
 The post-phase operators you'll actually reach for. Imports come from `rxjs` or `rxjs/operators`.
 
-| Operator         | Use case                                                            |
-| ---------------- | ------------------------------------------------------------------- |
-| `tap(fn)`        | Side effects (logs, metrics) without changing the value. See the [async pre-phase recipe](#common-recipes) |
-| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)    |
-| `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)    |
+| Operator         | Use case                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------ |
+| `tap(fn)`        | Side effects (logs, metrics) without changing the value. See the [async pre-phase recipe](#common-recipes)   |
+| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)      |
+| `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)      |
 | `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`. See the [per-route timeout recipe](#common-recipes) |
-| `of(value)`      | Build a stream from a constant: used to short-circuit (cache). See the [cache recipe](#common-recipes)    |
-| `from(promise)`  | Convert a promise into an observable inside the pre phase           |
-| `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options. See the [retry recipe](#common-recipes) |
-| `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError` |
+| `of(value)`      | Build a stream from a constant: used to short-circuit (cache). See the [cache recipe](#common-recipes)       |
+| `from(promise)`  | Convert a promise into an observable inside the pre phase                                                    |
+| `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options. See the [retry recipe](#common-recipes)   |
+| `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError`                                          |
 
 ## Common recipes
 
 > [!example]- Wrap every response in `{ data }`
 >
 > ```typescript
-> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-> import { map, Observable } from "rxjs"
+> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+> import { map, Observable } from "rxjs";
 >
 > @Injectable()
 > export class TransformInterceptor<T> implements NestInterceptor<T, { data: T }> {
 >   intercept(_ctx: ExecutionContext, next: CallHandler): Observable<{ data: T }> {
->     return next.handle().pipe(map((data) => ({ data })))
+>     return next.handle().pipe(map((data) => ({ data })));
 >   }
 > }
 > ```
@@ -238,13 +238,13 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >   ExecutionContext,
 >   Injectable,
 >   NestInterceptor,
-> } from "@nestjs/common"
-> import { catchError, throwError } from "rxjs"
+> } from "@nestjs/common";
+> import { catchError, throwError } from "rxjs";
 >
 > @Injectable()
 > export class ErrorsInterceptor implements NestInterceptor {
 >   intercept(_ctx: ExecutionContext, next: CallHandler) {
->     return next.handle().pipe(catchError((err) => throwError(() => new BadGatewayException())))
+>     return next.handle().pipe(catchError((err) => throwError(() => new BadGatewayException())));
 >   }
 > }
 > ```
@@ -260,8 +260,8 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >   Injectable,
 >   NestInterceptor,
 >   RequestTimeoutException,
-> } from "@nestjs/common"
-> import { catchError, throwError, timeout, TimeoutError } from "rxjs"
+> } from "@nestjs/common";
+> import { catchError, throwError, timeout, TimeoutError } from "rxjs";
 >
 > @Injectable()
 > export class TimeoutInterceptor implements NestInterceptor {
@@ -273,7 +273,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >           ? throwError(() => new RequestTimeoutException())
 >           : throwError(() => err),
 >       ),
->     )
+>     );
 >   }
 > }
 > ```
@@ -281,17 +281,17 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > [!example]- Cache: skip the handler entirely
 >
 > ```typescript
-> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-> import { of } from "rxjs"
+> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+> import { of } from "rxjs";
 >
 > @Injectable()
 > export class CacheInterceptor implements NestInterceptor {
->   private store = new Map<string, unknown>()
+>   private store = new Map<string, unknown>();
 >
 >   intercept(ctx: ExecutionContext, next: CallHandler) {
->     const key = ctx.switchToHttp().getRequest<{ url: string }>().url
->     const cached = this.store.get(key)
->     return cached ? of(cached) : next.handle()
+>     const key = ctx.switchToHttp().getRequest<{ url: string }>().url;
+>     const cached = this.store.get(key);
+>     return cached ? of(cached) : next.handle();
 >   }
 > }
 > ```
@@ -301,8 +301,8 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > [!example]- Retry transient handler failures
 >
 > ```typescript
-> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-> import { Observable, retry } from "rxjs"
+> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+> import { Observable, retry } from "rxjs";
 >
 > @Injectable()
 > export class RetryInterceptor implements NestInterceptor {
@@ -313,7 +313,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >         delay: 250,
 >         resetOnSuccess: true,
 >       }),
->     )
+>     );
 >   }
 > }
 > ```
@@ -323,14 +323,14 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > [!example]- Async pre phase (returning `Promise<Observable>`)
 >
 > ```typescript
-> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common"
-> import { Observable, tap } from "rxjs"
+> import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+> import { Observable, tap } from "rxjs";
 >
 > @Injectable()
 > export class AuditInterceptor implements NestInterceptor {
 >   async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
->     await this.recordStart(ctx) // async pre work
->     return next.handle().pipe(tap(() => this.recordEnd(ctx)))
+>     await this.recordStart(ctx); // async pre work
+>     return next.handle().pipe(tap(() => this.recordEnd(ctx)));
 >   }
 >
 >   private async recordStart(_ctx: ExecutionContext) {}
@@ -365,7 +365,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 >
 > ```typescript
 > if (ctx.getType() === "http") {
->   const res = ctx.switchToHttp().getResponse()
+>   const res = ctx.switchToHttp().getResponse();
 >   // …HTTP-only logic
 > }
 > ```
@@ -377,14 +377,14 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 ## Common errors
 
-| Symptom                                            | Likely cause                                                                                                                     |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| Response transform doesn't apply                   | Handler uses `@Res()` without `{ passthrough: true }`, so Nest never sees the return value                                       |
+| Symptom                                            | Likely cause                                                                                                                    |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Response transform doesn't apply                   | Handler uses `@Res()` without `{ passthrough: true }`, so Nest never sees the return value                                      |
 | `@Exclude()` fields appear in the response         | Handler returned a plain object, not a class instance: `ClassSerializerInterceptor` only acts on instances                      |
-| Global interceptor can't inject                    | Registered via `useGlobalInterceptors(new X())` instead of `APP_INTERCEPTOR` provider                                            |
-| `catchError` doesn't fire                          | Error thrown in **pre** phase (before `next.handle()`); only `next.handle().pipe(catchError(…))` catches handler errors          |
+| Global interceptor can't inject                    | Registered via `useGlobalInterceptors(new X())` instead of `APP_INTERCEPTOR` provider                                           |
+| `catchError` doesn't fire                          | Error thrown in **pre** phase (before `next.handle()`); only `next.handle().pipe(catchError(…))` catches handler errors         |
 | Handler runs twice                                 | `next.handle()` called more than once (often `catchError(() => next.handle())` retry attempt): use the `retry` operator instead |
-| Logger fires twice for one request                 | Same interceptor bound at multiple scopes (e.g., globally **and** at controller level)                                           |
+| Logger fires twice for one request                 | Same interceptor bound at multiple scopes (e.g., globally **and** at controller level)                                          |
 | Outbound order surprises                           | Outbound is **FILO**: route post runs first, global post runs last. Don't bind the same interceptor at two scopes               |
 | `tap` runs on subscribe but value is missing       | Stream is hot/multi-subscribed elsewhere: use `share()` or rethink the pipeline                                                 |
 | `cannot read property of undefined` in interceptor | `switchToHttp()` called in non-HTTP context: branch on `ctx.getType()` for cross-transport interceptors                         |

@@ -1,13 +1,6 @@
 ---
 title: Exception Filters
-aliases:
-  [
-    error handler,
-    http exception filter,
-    HttpException,
-    BaseExceptionFilter,
-    APP_FILTER,
-  ]
+aliases: [error handler, http exception filter, HttpException, BaseExceptionFilter, APP_FILTER]
 tags: [type/concept, lifecycle, errors]
 area: nestjs
 status: evergreen
@@ -35,7 +28,7 @@ source:
   - https://github.com/nestjs/schematics/tree/master/src/lib/filter
 ---
 
-> Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other request-pipeline component is a forward checkpoint that runs in order; a filter runs *only* when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
+> Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other request-pipeline component is a forward checkpoint that runs in order; a filter runs _only_ when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
 >
 > Two things make filters unique: (1) bindings resolve **bottom-up** (route → controller → global, the opposite of every other layer), and (2) only the most specific filter wins: once it catches the exception, no other filter sees it. The most specific gets first dibs; the global filter is the safety net underneath.
 
@@ -52,23 +45,23 @@ You only need to write a filter when you want to **change the response shape**, 
 ## Signature
 
 ```typescript
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from "@nestjs/common"
-import { Request, Response } from "express"
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from "@nestjs/common";
+import { Request, Response } from "express";
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
   catch(exception: HttpException, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp()
-    const response = ctx.getResponse<Response>()
-    const request = ctx.getRequest<Request>()
-    const status = exception.getStatus()
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+    const status = exception.getStatus();
 
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       message: exception.message,
-    })
+    });
   }
 }
 ```
@@ -93,29 +86,29 @@ The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter t
 
 All extend `HttpException` and live in `@nestjs/common` ([exceptions/index.ts](https://github.com/nestjs/nest/blob/master/packages/common/exceptions/index.ts)). Throw them anywhere and the default global filter responds with the right status:
 
-| Status | Class                            | Worked example |
-| -----: | -------------------------------- | -------------- |
-|    400 | `BadRequestException`            | [[nestjs/recipes/validation#Customizing the error response\|Customizing the validation error response]] |
-|    401 | `UnauthorizedException`          | [[nestjs/auth/jwt-strategy\|JWT auth strategy]] |
-|    403 | `ForbiddenException`             | [[nestjs/fundamentals/guards#Common recipes\|Custom guard exception]] |
-|    404 | `NotFoundException`              | [[nestjs/fundamentals/pipes#Common recipes\|Param-to-entity lookup pipe]] |
-|    405 | `MethodNotAllowedException`      | |
-|    406 | `NotAcceptableException`         | |
-|    408 | `RequestTimeoutException`        | [[nestjs/fundamentals/interceptors#Common recipes\|Timeout interceptor]] |
-|    409 | `ConflictException`              | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB unique-violation filter]] |
-|    410 | `GoneException`                  | |
-|    412 | `PreconditionFailedException`    | |
-|    413 | `PayloadTooLargeException`       | |
-|    415 | `UnsupportedMediaTypeException`  | |
-|    418 | `ImATeapotException`             | |
-|    421 | `MisdirectedException`           | |
-|    422 | `UnprocessableEntityException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB constraint-violation filter]] |
-|    500 | `InternalServerErrorException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB error fallback]] |
-|    501 | `NotImplementedException`        | |
-|    502 | `BadGatewayException`            | [[nestjs/fundamentals/interceptors#Common recipes\|Upstream-error interceptor]] |
-|    503 | `ServiceUnavailableException`    | |
-|    504 | `GatewayTimeoutException`        | |
-|    505 | `HttpVersionNotSupportedException` | |
+| Status | Class                              | Worked example                                                                                                                                   |
+| -----: | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+|    400 | `BadRequestException`              | [[nestjs/recipes/validation#Customizing the error response\|Customizing the validation error response]]                                          |
+|    401 | `UnauthorizedException`            | [[nestjs/auth/jwt-strategy\|JWT auth strategy]]                                                                                                  |
+|    403 | `ForbiddenException`               | [[nestjs/fundamentals/guards#Common recipes\|Custom guard exception]]                                                                            |
+|    404 | `NotFoundException`                | [[nestjs/fundamentals/pipes#Common recipes\|Param-to-entity lookup pipe]]                                                                        |
+|    405 | `MethodNotAllowedException`        |                                                                                                                                                  |
+|    406 | `NotAcceptableException`           |                                                                                                                                                  |
+|    408 | `RequestTimeoutException`          | [[nestjs/fundamentals/interceptors#Common recipes\|Timeout interceptor]]                                                                         |
+|    409 | `ConflictException`                | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB unique-violation filter]]     |
+|    410 | `GoneException`                    |                                                                                                                                                  |
+|    412 | `PreconditionFailedException`      |                                                                                                                                                  |
+|    413 | `PayloadTooLargeException`         |                                                                                                                                                  |
+|    415 | `UnsupportedMediaTypeException`    |                                                                                                                                                  |
+|    418 | `ImATeapotException`               |                                                                                                                                                  |
+|    421 | `MisdirectedException`             |                                                                                                                                                  |
+|    422 | `UnprocessableEntityException`     | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB constraint-violation filter]] |
+|    500 | `InternalServerErrorException`     | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB error fallback]]              |
+|    501 | `NotImplementedException`          |                                                                                                                                                  |
+|    502 | `BadGatewayException`              | [[nestjs/fundamentals/interceptors#Common recipes\|Upstream-error interceptor]]                                                                  |
+|    503 | `ServiceUnavailableException`      |                                                                                                                                                  |
+|    504 | `GatewayTimeoutException`          |                                                                                                                                                  |
+|    505 | `HttpVersionNotSupportedException` |                                                                                                                                                  |
 
 > [!info]- No `PaymentRequiredException` (402)
 > Despite the canonical HTTP status, `@nestjs/common` does not export a class for `402 Payment Required`. Throw a plain `HttpException("Payment required", 402)` if you need it.
@@ -126,7 +119,7 @@ All accept `(message?, options?)` where `options = { cause?, description? }`. Wi
 throw new BadRequestException("Something bad happened", {
   cause: new Error("upstream timeout"),
   description: "Some error description",
-})
+});
 // → { "message": "Something bad happened", "error": "Some error description", "statusCode": 400 }
 ```
 
@@ -158,11 +151,11 @@ For platform-agnostic filters that work across both Express and Fastify, prefer 
 
 ## Binding
 
-| Scope      | How                                                                                 |
-| ---------- | ----------------------------------------------------------------------------------- |
+| Scope      | How                                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------------------- |
 | Global     | `app.useGlobalFilters(new X())` or the [[nestjs/fundamentals/global-providers\|APP_FILTER provider]] |
-| Controller | `@UseFilters(X)` or `@UseFilters(new X())` on the class                             |
-| Route      | `@UseFilters(X)` on the method                                                      |
+| Controller | `@UseFilters(X)` or `@UseFilters(new X())` on the class                                              |
+| Route      | `@UseFilters(X)` on the method                                                                       |
 
 > [!warning] Pass the class, not an instance
 > `@UseFilters(HttpExceptionFilter)` is resolved by Nest's DI container so the filter's constructor and field injections are wired up. `@UseFilters(new HttpExceptionFilter())` skips DI: any injected dependency is `undefined`. For a filter extending `BaseExceptionFilter`, the symptom is the "no http adapter" crash documented in [common errors](#common-errors) below: both `applicationRef` (constructor arg) and `httpAdapterHost` (`@Optional() @Inject()` field) end up undefined. Same trap covered in detail at [[nestjs/fundamentals/guards#Binding|Guards > Binding]].
@@ -170,8 +163,8 @@ For platform-agnostic filters that work across both Express and Fastify, prefer 
 The global-scope variant of the same DI question: `useGlobalFilters(new X())` vs `APP_FILTER`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
 ```typescript
-import { Controller, Get, UseFilters } from "@nestjs/common"
-import { HttpExceptionFilter } from "./http-exception.filter"
+import { Controller, Get, UseFilters } from "@nestjs/common";
+import { HttpExceptionFilter } from "./http-exception.filter";
 
 @UseFilters(HttpExceptionFilter)
 @Controller("cats")
@@ -203,11 +196,13 @@ Once a filter catches the exception, **no other filter at the same handler sees 
 ## When `@Catch()` is empty (catch-all)
 
 ```typescript
-import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common"
+import { ArgumentsHost, Catch, ExceptionFilter } from "@nestjs/common";
 
 @Catch()
 export class CatchEverythingFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost): void { /* … */ }
+  catch(exception: unknown, host: ArgumentsHost): void {
+    /* … */
+  }
 }
 ```
 
@@ -234,25 +229,25 @@ export class CatchEverythingFilter implements ExceptionFilter {
 > // user-not-found.error.ts
 > export class UserNotFoundError extends Error {
 >   constructor(public readonly id: string) {
->     super(`User ${id} not found`)
+>     super(`User ${id} not found`);
 >   }
 > }
 > ```
 >
 > ```typescript
 > // user-not-found.filter.ts
-> import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/common"
-> import { Response } from "express"
-> import { UserNotFoundError } from "./user-not-found.error"
+> import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/common";
+> import { Response } from "express";
+> import { UserNotFoundError } from "./user-not-found.error";
 >
 > @Catch(UserNotFoundError)
 > export class UserNotFoundFilter implements ExceptionFilter<UserNotFoundError> {
 >   catch(exception: UserNotFoundError, host: ArgumentsHost): void {
->     const response = host.switchToHttp().getResponse<Response>()
+>     const response = host.switchToHttp().getResponse<Response>();
 >     response.status(HttpStatus.NOT_FOUND).json({
 >       error: "USER_NOT_FOUND",
 >       userId: exception.id,
->     })
+>     });
 >   }
 > }
 > ```
@@ -265,20 +260,20 @@ export class CatchEverythingFilter implements ExceptionFilter {
 >
 > ```typescript
 > // all-exceptions.filter.ts
-> import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common"
-> import { HttpAdapterHost } from "@nestjs/core"
+> import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
+> import { HttpAdapterHost } from "@nestjs/core";
 >
 > @Catch()
 > export class AllExceptionsFilter implements ExceptionFilter {
 >   constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 >
 >   catch(exception: unknown, host: ArgumentsHost): void {
->     const { httpAdapter } = this.httpAdapterHost
->     const ctx = host.switchToHttp()
+>     const { httpAdapter } = this.httpAdapterHost;
+>     const ctx = host.switchToHttp();
 >     const status =
 >       exception instanceof HttpException
 >         ? exception.getStatus()
->         : HttpStatus.INTERNAL_SERVER_ERROR
+>         : HttpStatus.INTERNAL_SERVER_ERROR;
 >
 >     httpAdapter.reply(
 >       ctx.getResponse(),
@@ -288,16 +283,16 @@ export class CatchEverythingFilter implements ExceptionFilter {
 >         path: httpAdapter.getRequestUrl(ctx.getRequest()),
 >       },
 >       status,
->     )
+>     );
 >   }
 > }
 > ```
 >
 > ```typescript
 > // app.module.ts
-> import { Module } from "@nestjs/common"
-> import { APP_FILTER } from "@nestjs/core"
-> import { AllExceptionsFilter } from "./all-exceptions.filter"
+> import { Module } from "@nestjs/common";
+> import { APP_FILTER } from "@nestjs/core";
+> import { AllExceptionsFilter } from "./all-exceptions.filter";
 >
 > @Module({
 >   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
@@ -309,20 +304,20 @@ export class CatchEverythingFilter implements ExceptionFilter {
 
 > [!example]- Extend `BaseExceptionFilter` to add logging without losing default behavior
 >
-> When you only want to *augment* Nest's built-in filter (e.g., always log unknown exceptions, then let Nest produce its standard 500 response), extend `BaseExceptionFilter` and call `super.catch()`:
+> When you only want to _augment_ Nest's built-in filter (e.g., always log unknown exceptions, then let Nest produce its standard 500 response), extend `BaseExceptionFilter` and call `super.catch()`:
 >
 > ```typescript
 > // logging-exception.filter.ts
-> import { ArgumentsHost, Catch, Logger } from "@nestjs/common"
-> import { BaseExceptionFilter } from "@nestjs/core"
+> import { ArgumentsHost, Catch, Logger } from "@nestjs/common";
+> import { BaseExceptionFilter } from "@nestjs/core";
 >
 > @Catch()
 > export class LoggingExceptionFilter extends BaseExceptionFilter {
->   private readonly logger = new Logger("UnhandledException")
+>   private readonly logger = new Logger("UnhandledException");
 >
 >   catch(exception: unknown, host: ArgumentsHost): void {
->     this.logger.error(exception instanceof Error ? exception.stack : exception)
->     super.catch(exception, host)
+>     this.logger.error(exception instanceof Error ? exception.stack : exception);
+>     super.catch(exception, host);
 >   }
 > }
 > ```
@@ -335,19 +330,19 @@ export class CatchEverythingFilter implements ExceptionFilter {
 >
 > ```typescript
 > // sentry.filter.ts
-> import { ArgumentsHost, Catch, HttpException } from "@nestjs/common"
-> import { BaseExceptionFilter } from "@nestjs/core"
-> import * as Sentry from "@sentry/node"
+> import { ArgumentsHost, Catch, HttpException } from "@nestjs/common";
+> import { BaseExceptionFilter } from "@nestjs/core";
+> import * as Sentry from "@sentry/node";
 >
 > @Catch()
 > export class SentryFilter extends BaseExceptionFilter {
 >   catch(exception: unknown, host: ArgumentsHost): void {
 >     // Don't ship 4xx noise to Sentry; track 5xx and unknown errors.
->     const isClientError = exception instanceof HttpException && exception.getStatus() < 500
+>     const isClientError = exception instanceof HttpException && exception.getStatus() < 500;
 >     if (!isClientError) {
->       Sentry.captureException(exception)
+>       Sentry.captureException(exception);
 >     }
->     super.catch(exception, host)
+>     super.catch(exception, host);
 >   }
 > }
 > ```
@@ -402,16 +397,16 @@ Override the response shape by passing `exceptionFactory` to `ValidationPipe` (p
 
 ## Common errors
 
-| Symptom                                                                    | Likely cause                                                                                |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Every error becomes `500 Internal server error`                            | The thrown error is not an `HttpException` and no custom filter handles it                  |
-| Custom filter runs but the response is empty / hangs                       | Forgot `response.status(...).json(...)` (or `.send(...)` on Fastify)                        |
-| `Cannot read properties of undefined` inside `catch()`                     | Called `host.switchToHttp()` in a non-HTTP context. Branch on `host.getType()` first        |
-| `BaseExceptionFilter`-extended filter throws "no http adapter"             | Bound with `new MyFilter()` at method scope. Use the class form or `APP_FILTER`             |
-| Catch-all filter eats `HttpException` even though a typed filter is bound  | `@UseFilters(...)` listed the typed filter **before** the catch-all. Reverse the order      |
-| Filter doesn't fire for a microservice or WebSocket handler                | Bound via `useGlobalFilters()` in a hybrid app. Switch to `APP_FILTER`                      |
+| Symptom                                                                   | Likely cause                                                                                                                     |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Every error becomes `500 Internal server error`                           | The thrown error is not an `HttpException` and no custom filter handles it                                                       |
+| Custom filter runs but the response is empty / hangs                      | Forgot `response.status(...).json(...)` (or `.send(...)` on Fastify)                                                             |
+| `Cannot read properties of undefined` inside `catch()`                    | Called `host.switchToHttp()` in a non-HTTP context. Branch on `host.getType()` first                                             |
+| `BaseExceptionFilter`-extended filter throws "no http adapter"            | Bound with `new MyFilter()` at method scope. Use the class form or `APP_FILTER`                                                  |
+| Catch-all filter eats `HttpException` even though a typed filter is bound | `@UseFilters(...)` listed the typed filter **before** the catch-all. Reverse the order                                           |
+| Filter doesn't fire for a microservice or WebSocket handler               | Bound via `useGlobalFilters()` in a hybrid app. Switch to `APP_FILTER`                                                           |
 | Validation errors come out as `{ statusCode, message, error }` (array)    | That's the default. Customize via `ValidationPipe({ exceptionFactory })` in [[nestjs/recipes/validation\|the validation recipe]] |
-| Sentry sees thousands of `400`s a day                                      | Catch-all forwards every exception. Filter on `HttpException && getStatus() < 500` first    |
+| Sentry sees thousands of `400`s a day                                     | Catch-all forwards every exception. Filter on `HttpException && getStatus() < 500` first                                         |
 
 ## See also
 

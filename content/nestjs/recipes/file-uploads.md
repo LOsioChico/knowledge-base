@@ -31,15 +31,15 @@ npm i -D @types/multer
 ## Single file
 
 ```typescript
-import { Controller, Post, UseInterceptors, UploadedFile } from "@nestjs/common"
-import { FileInterceptor } from "@nestjs/platform-express"
+import { Controller, Post, UseInterceptors, UploadedFile } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 @Controller("uploads")
 export class UploadsController {
   @Post()
   @UseInterceptors(FileInterceptor("file"))
   upload(@UploadedFile() file: Express.Multer.File) {
-    return { name: file.originalname, size: file.size, mime: file.mimetype }
+    return { name: file.originalname, size: file.size, mime: file.mimetype };
   }
 }
 ```
@@ -70,8 +70,8 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
-} from "@nestjs/common"
-import { FileInterceptor } from "@nestjs/platform-express"
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 
 @Controller("uploads")
 export class UploadsController {
@@ -89,7 +89,7 @@ export class UploadsController {
     )
     file: Express.Multer.File,
   ) {
-    return file.originalname
+    return file.originalname;
   }
 }
 ```
@@ -133,8 +133,8 @@ Returns `422 Unprocessable Entity` (the regex appears in the message because `Pa
 Set caps once at module level so every route inherits them.
 
 ```typescript
-import { Module } from "@nestjs/common"
-import { MulterModule } from "@nestjs/platform-express"
+import { Module } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
 
 @Module({
   imports: [
@@ -152,8 +152,8 @@ export class AppModule {}
 For env-driven config use `registerAsync`:
 
 ```typescript
-import { ConfigModule, ConfigService } from "@nestjs/config"
-import { MulterModule } from "@nestjs/platform-express"
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { MulterModule } from "@nestjs/platform-express";
 
 MulterModule.registerAsync({
   imports: [ConfigModule],
@@ -161,7 +161,7 @@ MulterModule.registerAsync({
   useFactory: (config: ConfigService) => ({
     limits: { fileSize: config.get<number>("UPLOAD_MAX_BYTES") },
   }),
-})
+});
 ```
 
 ## Where do the bytes go?
@@ -169,15 +169,15 @@ MulterModule.registerAsync({
 By default Multer keeps the file in memory as a `Buffer` on `file.buffer` ([Multer README → MemoryStorage](https://github.com/expressjs/multer#memorystorage)). That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:
 
 ```typescript
-import { MulterModule } from "@nestjs/platform-express"
-import { diskStorage } from "multer"
+import { MulterModule } from "@nestjs/platform-express";
+import { diskStorage } from "multer";
 
 MulterModule.register({
   storage: diskStorage({
     destination: "./uploads",
     filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
   }),
-})
+});
 ```
 
 With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([Multer README → DiskStorage](https://github.com/expressjs/multer#diskstorage)).
