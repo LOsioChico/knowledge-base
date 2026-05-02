@@ -92,7 +92,7 @@ import { TraceMiddleware } from "./trace/trace.middleware"
 @Module({})
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(TraceMiddleware).forRoutes("*")
+    consumer.apply(TraceMiddleware).forRoutes("{*splat}")
   }
 }
 ```
@@ -153,7 +153,7 @@ async function bootstrap() {
 bootstrap()
 ```
 
-`Scope.TRANSIENT` is required for custom loggers so each context that injects the logger gets its own instance. Source: [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger).
+`Scope.TRANSIENT` is required for custom loggers so each context that injects the logger gets its own instance with the right `context` name. The official [Custom logger → Injecting a custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger) docs show this pattern (`@Injectable({ scope: Scope.TRANSIENT })` on the logger class).
 
 > [!warning]- `TraceLogger` MUST be `Scope.TRANSIENT`
 > If `TraceLogger` is the default `Scope.DEFAULT` (singleton), Nest reuses one instance app-wide and the `formatPid` override won't pick up the per-injection context name. The official [Custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger) docs spell this out: easy to miss until logs lose their context names.
@@ -350,16 +350,16 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 ## Gotchas
 
 > [!warning]- Use `als.run()`, not `als.enterWith()`
-> `enterWith(store)` continues the store for the entire synchronous execution and **into the current async resource**. With Express, the **next** request handled on the same event-loop turn can see the previous request's store until it hits its own `enterWith()` call. `run(store, callback)` scopes the store to the callback's async tree and unwinds cleanly. Source: [Node docs: enterWith](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore).
+> `enterWith(store)` continues the store for the entire synchronous execution and **into the current async resource**. With Express, that async resource may outlive the current request: a follow-up tick on the same connection can still see the previous store until something else opens its own. `run(store, callback)` scopes the store to the callback's async tree and unwinds cleanly. Source: [Node docs: `asyncLocalStorage.enterWith`](https://nodejs.org/api/async_context.html#asynclocalstorageenterwithstore) and [`asyncLocalStorage.run`](https://nodejs.org/api/async_context.html#asynclocalstoragerunstore-callback-args).
 
 > [!info]- Don't use `Scope.REQUEST` providers as a substitute
-> Request-scoped providers don't run in passport strategies, gateways, or scheduled tasks, and they recreate the entire DI subtree per request (significant CPU and GC cost). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
+> Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a meaningful CPU/GC cost. The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
 > Cryptographically random from day one means the ID is safe to use later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
 
 > [!info]- Old C++ bindings can drop the async context
-> Mainstream libraries (`pg`, `redis`, `mysql2`, axios, undici, BullMQ, RxJS, native promises) preserve context. Old callback-style libraries that schedule work from native bindings without registering an `AsyncResource` may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on actively-maintained libraries.
+> Most actively-maintained libraries propagate context cleanly because Node's [async_hooks](https://nodejs.org/api/async_hooks.html) integrates at the platform level. Older callback-style libraries that schedule work from native bindings without registering an [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on libraries you're likely to use today.
 
 > [!info]- The interceptor + filter both read from the store: that's the point
 > A [[nestjs/fundamentals/interceptors|`LoggingInterceptor`]], a [[nestjs/fundamentals/exception-filters|`TraceExceptionFilter`]], a service buried five layers deep, and an outbound axios call all read the **same** `traceId` without any of them taking it as a parameter. That's the value `AsyncLocalStorage` adds over passing it on the request object.
@@ -369,7 +369,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 | Symptom                                                           | Likely cause                                                                                            |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `getTraceId()` returns `undefined` in the controller              | `TraceMiddleware` not registered, or registered for the wrong path. Use `forRoutes('*')`                |
-| `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a hybrid app. Gateways/microservices skip it. Use `APP_FILTER` |
+| `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a [hybrid app](https://docs.nestjs.com/faq/hybrid-application): `useGlobal*` skips microservice/WebSocket layers. Use `APP_FILTER` instead so the filter runs on every transport |
 | `getTraceId()` returns `undefined` in a queue consumer            | HTTP middleware doesn't run for queue handlers. Open the context manually with `traceStorage.run()` in the processor |
 | `getTraceId()` returns `undefined` after `await someThirdParty()` | Library doesn't preserve async context. Wrap with `new AsyncResource('lib').runInAsyncScope(...)`       |
 | Two concurrent requests show the same trace ID in logs            | Used `enterWith()` instead of `run()`. Switch to `run()`                                                |
