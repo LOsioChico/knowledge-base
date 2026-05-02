@@ -57,13 +57,9 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
   - Impact: anything that consumes the schema directly (IDE plugins, third-party schematic runners, docs generated from `schema.json`) gets `flat: true`; the CLI gives `flat: false`. Same schematic, two different defaults depending on entrypoint.
 - Action: pick one source of truth. Either (a) change the schema defaults to `false` so they match the CLI's policy, or (b) drop the unconditional override in `generate.action.ts` so the schema default wins when no flag is passed.
 
-### 4. ~~`Reflector#getAllAndOverride` return-type narrowing not called out in v11 docs~~
-
-Dropped after re-verification. In `nestjs/nest@52030c9`, [`packages/core/services/reflector.service.ts#L234-L248`](https://github.com/nestjs/nest/blob/52030c9f4fbceadaf1f20011831ae8a10faee75c/packages/core/services/reflector.service.ts#L234-L248) shows the **public overloads** still return `TTransformed` / `TResult` — only the implementation signature at L256-L259 returns `T | undefined`, which is invisible to callers. So the "v11 narrowed the return type" claim doesn't hold without a v10→v11 diff I haven't pinned. Skip.
-
 ## Medium confidence (re-verify before opening)
 
-### 5. Keyv wire format under-documented for `@nestjs/cache-manager` users
+### 4. Keyv wire format under-documented for `@nestjs/cache-manager` users
 
 - Repo: [`nestjs/docs.nestjs.com`](https://github.com/nestjs/docs.nestjs.com) (primary), with optional companion PR to [`jaredwray/keyv`](https://github.com/jaredwray/keyv)
 - Evidence (verified against `jaredwray/keyv@84051be`):
@@ -80,7 +76,7 @@ Dropped after re-verification. In `nestjs/nest@52030c9`, [`packages/core/service
   - The [official Nest migration guide cache section](https://docs.nestjs.com/migration-guide#cache-module) mentions Keyv but doesn't show the on-the-wire shape.
 - Action: doc PR to `docs.nestjs.com` adding a one-liner under the cache-module migration section with a `redis-cli GET` example and the `{ value, expires }` shape, plus a sentence on the migration path (flush vs one-off transform).
 
-### 6. `@nestjs/throttler` `blockDuration` default not in README
+### 5. `@nestjs/throttler` `blockDuration` default not in README
 
 - Repo: [`nestjs/throttler`](https://github.com/nestjs/throttler)
 - Evidence (verified against `nestjs/throttler@a690419`):
@@ -99,19 +95,15 @@ Dropped after re-verification. In `nestjs/nest@52030c9`, [`packages/core/service
   - Reader has to source-dive to discover that omitting `blockDuration` ties the block window to `ttl`. Common case where they're not the same: `ttl=60000` (1 min sliding window) but you want `blockDuration=300000` (5-minute lockout after limit hit).
 - Action: small README PR appending `(default: <code>ttl</code>)` to the `blockDuration` description cell.
 
-### 7. ~~`passport-jwt` `ignoreExpiration` semantics~~
-
-Dropped after re-verification. The [README L47](https://github.com/mikenicholson/passport-jwt/blob/fed94fa005c5b2dcb7e6d5d5372e3b20cae898f1/README.md#L47) already says `if true do not validate the expiration of the token`, which matches the source ([`lib/strategy.js#L67`](https://github.com/mikenicholson/passport-jwt/blob/fed94fa005c5b2dcb7e6d5d5372e3b20cae898f1/lib/strategy.js#L67) `ignoreExpiration: !!options.ignoreExpiration`). The doc-gap claim doesn't hold; nothing to contribute here.
-
 ## Out of scope (mentioned for completeness)
 
-### 8. UUID v7 in Node's `crypto`
+### 6. UUID v7 in Node's `crypto`
 
 - Not a NestJS concern. Node's `crypto.randomUUID()` is RFC 4122 v4 only. v7 (time-ordered) is an active topic in [`nodejs/node`](https://github.com/nodejs/node) issues but I have not verified the current state. Skip unless you specifically want to push it forward.
 
 ## Workflow
 
-1. Pick one. Re-grep the upstream `master` branch first: any of items 1–6 may already be fixed in a release I haven't checked.
+1. Pick one. Re-grep the upstream `master` branch first: any of items 1–5 may already be fixed in a release I haven't checked.
 2. Open as an issue first (not a PR) for items 1, 2, 3 — they're API/behavior decisions the maintainers should weigh in on.
-3. Items 5, 6 are pure docs/README edits; PRs are fine without an issue.
+3. Items 4, 5 are pure docs/README edits; PRs are fine without an issue.
 4. Cite the source-file path + line in the issue body so maintainers can verify in one click.
