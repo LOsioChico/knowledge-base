@@ -95,15 +95,25 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
   - Reader has to source-dive to discover that omitting `blockDuration` ties the block window to `ttl`. Common case where they're not the same: `ttl=60000` (1 min sliding window) but you want `blockDuration=300000` (5-minute lockout after limit hit).
 - Action: small README PR appending `(default: <code>ttl</code>)` to the `blockDuration` description cell.
 
+### 6. Nest cache-manager docs say `get()` returns `null`; v7 returns `undefined`
+
+- Repo: [`nestjs/docs.nestjs.com`](https://github.com/nestjs/docs.nestjs.com)
+- Evidence:
+  - [Cache docs](https://docs.nestjs.com/techniques/caching) state: *"If the item does not exist in the cache, `null` will be returned."*
+  - cache-manager broke that contract in v7: [`jaredwray/cacheable@ea37202`](https://github.com/jaredwray/cacheable/commit/ea37202931e255b0dfd2f62d7121c84671b1f4fd) ([PR #1134](https://github.com/jaredwray/cacheable/pull/1134), Jun 2025) "BREAKING: moving to undefined instead of null". The `Cache` type signature is now `get<T>(key: string): Promise<T | undefined>` and every `null` return path was rewritten to `undefined` (verified in source + tests changed from `toBeNull()` to `toBeUndefined()`).
+  - `@nestjs/cache-manager@3.1.2` declares `peerDependencies.cache-manager: ">=6"` ([`package.json`](https://github.com/nestjs/cache-manager/blob/b37d3b43dd9f15d3237d70a89dd26f5dd2cc8cf2/package.json)), so a fresh install today resolves cache-manager v7.x and the docs are wrong for any user who installed after Jun 2025.
+  - The `CACHE_MANAGER` provider is the upstream cache-manager instance with no Nest-side wrapper ([`lib/cache.providers.ts`](https://github.com/nestjs/cache-manager/blob/b37d3b43dd9f15d3237d70a89dd26f5dd2cc8cf2/lib/cache.providers.ts) calls `createCache(...)` directly), so there's no normalization layer that would re-introduce `null`.
+- Action: doc PR replacing the `null` claim with a version-aware sentence (`undefined` in v7+, `null` in v6, treat both as falsy).
+
 ## Out of scope (mentioned for completeness)
 
-### 6. UUID v7 in Node's `crypto`
+### 7. UUID v7 in Node's `crypto`
 
 - Not a NestJS concern. Node's `crypto.randomUUID()` is RFC 4122 v4 only. v7 (time-ordered) is an active topic in [`nodejs/node`](https://github.com/nodejs/node) issues but I have not verified the current state. Skip unless you specifically want to push it forward.
 
 ## Workflow
 
-1. Pick one. Re-grep the upstream `master` branch first: any of items 1–5 may already be fixed in a release I haven't checked.
+1. Pick one. Re-grep the upstream `master` branch first: any of items 1–6 may already be fixed in a release I haven't checked.
 2. Open as an issue first (not a PR) for items 1, 2, 3 — they're API/behavior decisions the maintainers should weigh in on.
-3. Items 4, 5 are pure docs/README edits; PRs are fine without an issue.
+3. Items 4, 5, 6 are pure docs/README edits; PRs are fine without an issue.
 4. Cite the source-file path + line in the issue body so maintainers can verify in one click.
