@@ -36,7 +36,7 @@ You hit this the first time a `User` entity leaks `password` or `passwordHash` i
 npm i class-transformer reflect-metadata
 ```
 
-`class-transformer` is listed as a required runtime peer for serialization in [`@nestjs/common`'s package.json `peerDependencies`](https://github.com/nestjs/nest/blob/master/packages/common/package.json) (the serializer imports `instanceToPlain` from it). `reflect-metadata` is already required by Nest itself.
+`class-transformer` is declared as an **optional** peer dependency of [`@nestjs/common`](https://github.com/nestjs/nest/blob/master/packages/common/package.json) (`peerDependenciesMeta.class-transformer.optional: true`), so npm won't install it for you. Install it explicitly when you use the serializer: `ClassSerializerInterceptor` imports `instanceToPlain` from it. `reflect-metadata` is already required by Nest itself.
 
 ## Wire up the interceptor
 
@@ -194,7 +194,7 @@ The `value` argument is the raw property; the function returns whatever should a
 
 ## The class-instance gotcha
 
-Those decorators only fire when the controller returns a **class instance** *and* the route does not declare `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor's `transformToPlain` step has nothing to apply decorators to: every field leaks through ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) only calls `instanceToPlain` when the response is a class instance or `@SerializeOptions({ type })` was set).
+Those decorators only fire when the controller returns a **class instance** *or* the route declares `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor still runs `classToPlain(...)`, but `class-transformer` has no class metadata to consult, so every field passes through untouched ([`class-serializer.interceptor.ts:transformToPlain`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) calls `classToPlain` unconditionally when `options.type` is unset; the no-op happens inside `class-transformer`, not in the guard).
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';

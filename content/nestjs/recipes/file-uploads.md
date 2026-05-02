@@ -106,7 +106,7 @@ Uploading a 12 MB PDF to that route:
 curl -F file=@huge-report.pdf http://localhost:3000/uploads
 ```
 
-Returns `422 Unprocessable Entity` (the regex appears in the message because `ParseFilePipeBuilder` formats the failure as `Validation failed (expected type is <validator>)` — see [`parse-file-pipe-builder.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts) and [`file-type.validator.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts)):
+Returns `422 Unprocessable Entity` (the regex appears in the message because `ParseFilePipeBuilder` formats the failure as `Validation failed (expected type is <validator>)`; see [`parse-file-pipe-builder.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts) and [`file-type.validator.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts)):
 
 ```json
 {

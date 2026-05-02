@@ -98,7 +98,7 @@ export class BooksService {
 }
 ```
 
-`get()` returns `null` (not `undefined`) on a miss. The `set()` third argument is the per-key TTL in milliseconds; omit it to fall back to the module default. Pass `0` to disable expiration entirely.
+`get()` returns `undefined` on a miss in `cache-manager` v6+ (which `@nestjs/cache-manager` v3 requires). The Nest docs still say `null` on some older pages: trust `undefined` ([`packages/cache-manager/src/index.ts:96-110`](https://github.com/jaredwray/cache-manager/blob/46c31cccee3202078c538463cda343b80801f06e/packages/cache-manager/src/index.ts#L96-L110)). The `set()` third argument is the per-key TTL in milliseconds; omit it to fall back to the module default. Pass `0` to disable expiration entirely.
 
 > [!warning] The default `ttl` is `0`, which means **never expire**
 > If you call `CacheModule.register({})` without a `ttl`, every entry stays until `del()` or `clear()` is called. That's almost never what you want for HTTP responses. Set `ttl` explicitly at the module level, then override per key when needed.

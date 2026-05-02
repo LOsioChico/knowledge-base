@@ -368,7 +368,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 
 | Symptom                                                           | Likely cause                                                                                            |
 | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `getTraceId()` returns `undefined` in the controller              | `TraceMiddleware` not registered, or registered for the wrong path. Use `forRoutes('*')`                |
+| `getTraceId()` returns `undefined` in the controller              | `TraceMiddleware` not registered, or registered for the wrong path. Use `forRoutes('{*splat}')` (Express v5 / Nest 11 wildcard)                |
 | `getTraceId()` returns `undefined` in an exception filter         | Filter bound with `useGlobalFilters(new X())` in a [hybrid app](https://docs.nestjs.com/faq/hybrid-application): `useGlobal*` skips microservice/WebSocket layers. Use `APP_FILTER` instead so the filter runs on every transport |
 | `getTraceId()` returns `undefined` in a queue consumer            | HTTP middleware doesn't run for queue handlers. Open the context manually with `traceStorage.run()` in the processor |
 | `getTraceId()` returns `undefined` after `await someThirdParty()` | Library doesn't preserve async context. Wrap with `new AsyncResource('lib').runInAsyncScope(...)`       |

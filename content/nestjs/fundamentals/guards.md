@@ -129,7 +129,7 @@ nest g gu roles --no-spec      # skip the *.spec.ts test file
 nest g gu roles --dry-run      # preview the file plan, write nothing
 ```
 
-Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Source for the schematic options and CLI overrides: [`@nestjs/schematics` guard schema](https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json), [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to see the exact file plan.
+Creates `<name>.guard.ts` (and `<name>.guard.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. The schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json#L29)) but the CLI overrides that default to `false` in [`actions/generate.action.ts:59`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L59) (`!!flat?.value` makes an absent flag resolve to `false`), so the schema default is unreachable through `nest g`. Trust `--dry-run` over the schema. Reference: [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to see the exact file plan.
 
 ## Why a guard, not [[nestjs/fundamentals/middleware|middleware]]
 

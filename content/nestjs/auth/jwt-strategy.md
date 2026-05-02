@@ -178,16 +178,16 @@ What each option does:
 | Option              | Purpose                                                                                                                          |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `jwtFromRequest`    | Where to read the token. `fromAuthHeaderAsBearerToken()` reads `Authorization: Bearer …`                                          |
-| `ignoreExpiration`  | Defaults to `false` per [passport-jwt's options](https://github.com/mikenicholson/passport-jwt#configure-strategy); the strategy reports `TokenExpiredError` so `@nestjs/passport`'s default `handleRequest` translates it into `401` |
+| `ignoreExpiration`  | Defaults to `false` per [passport-jwt's options](https://github.com/mikenicholson/passport-jwt#configure-strategy). On expiry, passport-jwt rejects with `TokenExpiredError`; `@nestjs/passport`'s default `handleRequest` rethrows that error (it's not normalized to `UnauthorizedException`), so the default Nest exception filter renders it as `500` unless you override `handleRequest` to map it. |
 | `secretOrKey`       | Same secret used in `JwtModule.register({ secret })` for signing                                                                  |
 
 `validate(payload)` is called **only after** the signature check passes: Passport guarantees the token is authentic. The return value becomes `request.user`. Throw `UnauthorizedException` here to reject otherwise-valid tokens (e.g., revoked-token list, banned users).
 
 > [!info]- `JwtStrategy.validate()` runs **after** signature verification, not before
-> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here: focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throwing `UnauthorizedException` is the explicit way to reject; `@nestjs/passport`'s default `handleRequest` converts any thrown error or falsy return into a `401` ([source](https://github.com/nestjs/passport/blob/master/lib/auth.guard.ts)).
+> By the time your `validate()` is called, Passport has already verified the signature and decoded the payload. Don't re-verify the token here: focus `validate()` on application-level checks: revocation list lookup, "is this user still active?", role enrichment. Throwing `UnauthorizedException` is the explicit way to reject. `@nestjs/passport`'s default `handleRequest` is `if (err || !user) throw err || new UnauthorizedException()` ([source](https://github.com/nestjs/passport/blob/master/lib/auth.guard.ts)): a falsy return becomes `401`, but a thrown `HttpException` keeps its own status, and a plain `Error` (e.g. `TokenExpiredError`) bubbles up as `500`.
 
 > [!info]- Returning `null`/`undefined` from `validate()` produces `Unauthorized`
-> `@nestjs/passport`'s default `handleRequest` throws `UnauthorizedException` whenever the strategy returns a falsy value or `info` indicates failure. To return a custom error (e.g., `403 Forbidden` for inactive users), override `handleRequest(err, user, info)` on the guard. Source: [Extending guards](https://docs.nestjs.com/recipes/passport#extending-guards).
+> `@nestjs/passport`'s default `handleRequest` throws `UnauthorizedException` whenever the strategy returns a falsy value (`!user`). Non-`HttpException` errors thrown by the strategy (e.g. passport-jwt's `TokenExpiredError`, `JsonWebTokenError`) are rethrown as-is and surface as `500` under the default global filter. To return a custom status (`403` for inactive users, `401` for expired tokens), override `handleRequest(err, user, info)` on the guard. Source: [Extending guards](https://docs.nestjs.com/recipes/passport#extending-guards).
 
 Register the strategy in `AuthModule`:
 
