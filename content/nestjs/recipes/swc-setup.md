@@ -34,6 +34,8 @@ nest start -b swc --type-check
 nest start -b swc --type-check -w
 ```
 
+`-b` is the short form of `--builder` and selects the compiler backend (`swc`, `tsc`, or `webpack`). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
+
 Make it permanent in `nest-cli.json`:
 
 ```json
