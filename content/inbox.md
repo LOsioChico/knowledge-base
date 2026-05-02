@@ -20,6 +20,7 @@ related:
 ## Videos
 
 - [Marius Espejo: Decouple your NestJS code with this technique!](https://www.youtube.com/watch?v=-MlXwb42nKo): likely about provider abstraction / port-and-adapter style in Nest. Watch and decide whether it lands as a `nestjs/patterns` note or sharpens an existing fundamentals note.
+- [Marius Espejo: ts-rest end-to-end type safety](https://www.youtube.com/watch?v=tjfEkaPiKQQ): use the video only to grok the **shape** of the problem (one schema, both client and server type-safe, no codegen). Do **not** write the recipe against ts-rest: the project is unmaintained (last meaningful release 2024, open issues piling up). Build the recipe against [oRPC](https://orpc.unnoq.com) instead, sourced from its docs and any solid blog/migration write-ups. Cross-check ts-rest's maintenance status before committing the recipe so the framing ("ts-rest taught the shape, oRPC is the maintained successor") holds. Lands as `nestjs/recipes/end-to-end-type-safety` (or similar).
 
 ## How to use this list
 
