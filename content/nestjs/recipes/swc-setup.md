@@ -219,7 +219,8 @@ See also: [[nestjs/recipes/monorepo|NestJS CLI monorepos]] for the surrounding m
 > SWC saves the type of every decorated property in metadata, so a `@OneToOne(() => Profile)` on `User` plus a `@OneToOne(() => User)` on `Profile` triggers a circular import at runtime under SWC even when `tsc` was happy. Wrap the type to suppress metadata emission:
 >
 > ```typescript
-> import { Relation } from "typeorm" // or your own WrapperType<T> = T
+> import { Entity, OneToOne, Relation } from "typeorm" // or your own WrapperType<T> = T
+> import { Profile } from "./profile.entity"
 >
 > @Entity()
 > export class User {
