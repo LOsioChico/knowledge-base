@@ -204,7 +204,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `-c "cyan.bold,red.bold"`     | Explicit list, one entry per process, applied in spawn order. [Chalk](https://www.npmjs.com/package/chalk) names + modifiers (`.bold`, `.dim`) or hex (`#RRGGBB`). |
 > | `-c` omitted                  | No colors, plain `[name]` prefix in default terminal color.                                |
 >
-> Without `-c`, prefixes are not colored by default. The recipe uses `auto` because the wildcard can match a varying number of scripts; pin explicit colors only when you want consistency across runs. Source: [`prefixColors` option](https://github.com/open-cli-tools/concurrently#concurrentlycommands-options).
+> Without `-c`, prefixes are not colored by default. The recipe uses `auto` because the wildcard can match a varying number of scripts; pin explicit colors only when you want consistency across runs. Source: [`--prefix-colors` (`-c`) option in concurrently CLI flags](https://github.com/open-cli-tools/concurrently#-c-prefix-colors).
 
 > [!info]- Using yarn, pnpm, or bun instead
 > `concurrently` ships first-class shortcuts for all four runners. Swap the prefix in the script and use the matching install/run commands; nothing else in the recipe changes. Source: [Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md).
@@ -216,7 +216,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `pnpm:<script>`  | `pnpm run <script>`   | `pnpm add -D concurrently` / `pnpm start:dev` |
 > | `bun:<script>`   | `bun run <script>`    | `bun add -d concurrently` / `bun run start:dev` |
 >
-> At scaffold time, `nest new` accepts `--package-manager npm|yarn|pnpm` (no `bun`); for bun, scaffold with `npm` then re-install with `bun install`. Source: [`nest new` reference](https://docs.nestjs.com/cli/usages#nest-new).
+> At scaffold time, `nest new` accepts `--package-manager npm|yarn|pnpm` (the [`@nestjs/cli` `new` command schema](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts) lists those three); bun is not currently a built-in option. For bun, scaffold with `npm` then re-install with `bun install`.
 
 ## Step 5: share code with libraries
 
