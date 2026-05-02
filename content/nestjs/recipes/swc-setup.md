@@ -19,10 +19,10 @@ source:
 ## Setup
 
 ```shell
-npm i --save-dev @swc/cli @swc/core
+npm i --save-dev @swc/core
 ```
 
-That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case.
+That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI calls `@swc/core` directly, so you don't need `@swc/cli` unless you want to invoke the standalone `swc` binary outside the Nest CLI (e.g. `npx swc src -d dist`).
 
 ## Minimal working example
 
