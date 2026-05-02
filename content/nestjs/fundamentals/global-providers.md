@@ -29,6 +29,7 @@ source:
   - https://docs.nestjs.com/interceptors#binding-interceptors
   - https://docs.nestjs.com/exception-filters#binding-filters
   - https://docs.nestjs.com/faq/hybrid-application
+  - https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers
 ---
 
 > Two ways to register a global pipe / guard / interceptor / exception filter. They look interchangeable. They are not.
@@ -77,7 +78,7 @@ import { HttpExceptionFilter } from "./http-exception.filter"
 export class AppModule {}
 ```
 
-The container instantiates the component, so it can inject other providers, run with request scope, and play nicely with hybrid apps. The provider can be declared in **any** module: Nest hoists `APP_*` registrations to the application root.
+The container instantiates the component, so it can inject other providers, run with request scope, and play nicely with hybrid apps. The provider can be declared in **any** module: regardless of where the construction sits, the enhancer is global ([Binding guards → hint](https://docs.nestjs.com/guards#binding-guards) explicitly notes "regardless of the module where this construction is employed, the guard is, in fact, global"; the same wording appears for [pipes](https://docs.nestjs.com/pipes#binding-pipes), [interceptors](https://docs.nestjs.com/interceptors#binding-interceptors), and [filters](https://docs.nestjs.com/exception-filters#binding-filters)).
 
 ## Side-by-side
 
@@ -87,7 +88,7 @@ The container instantiates the component, so it can inject other providers, run 
 | -------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------- |
 | Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                    | ✅                                 |
 | Supports request scope                                                                             | ❌                                    | ✅                                 |
-| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`    | ✅                                 |
+| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`    | ✅ (community-confirmed; not in the official hybrid-app page — verify on your transport) |
 | Where it lives                                                                                     | `main.ts`, near `NestFactory.create` | Any module's `providers` array    |
 | Can pass options as a literal object                                                               | ✅ trivially                          | ⚠️ via `useValue` or `useFactory` |
 
@@ -261,9 +262,9 @@ export class AppModule {}
 ## Edge cases worth knowing
 
 - **Multiple registrations stack.** You can register the same `APP_*` token more than once across modules; all of them run. Good for layering (e.g., a `LoggingInterceptor` plus a `TimeoutInterceptor`).
-- **`useGlobalPipes` and an `APP_PIPE` provider together** both apply, but the relative order between them isn't documented by Nest. Pick one binding style per enhancer kind so you never have to care which runs first.
-- **No need to export `APP_*` providers.** They aren't consumed by other modules; the container picks them up by token automatically.
-- **Testing.** Provider-bound globals are visible to `Test.createTestingModule(...)`, so you can override them with `.overrideProvider(APP_GUARD).useClass(MockGuard)`. The `useGlobalX` form bypasses the testing module entirely.
+- **`useGlobalPipes` and an `APP_PIPE` provider together** are not addressed by the official docs. Empirically both fire, but the relative order isn't documented. Pick one binding style per enhancer kind so you never have to care.
+- **No need to add `APP_*` to `exports`.** Other modules don't import these by token; the framework collects them from any module's `providers` array.
+- **Testing.** The `APP_*` token is a regular DI provider, so `Test.createTestingModule(...)` resolves it like any other and `.overrideProvider(APP_GUARD).useClass(MockGuard)` works (see [Testing → Overriding globally registered enhancers](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). The `useGlobalX` form bypasses the testing module entirely.
 
 ## See also
 
