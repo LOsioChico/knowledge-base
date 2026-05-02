@@ -49,7 +49,7 @@ flowchart TD
 > You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers: pre runs in registration order, post runs in **FILO** (first in, last out).
 
 > [!info]- Why [[middleware|middleware]] sits outside the exception zone
-> Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` inside middleware bubbles to the platform's default [[exception-filters|error handler]], **not** to your `@Catch()` filters. To route a middleware error through the filter chain, call `next(err)` explicitly so the platform forwards it to Nest's exception layer.
+> Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` inside middleware bubbles to the platform's default handler ([Express error handling](https://expressjs.com/en/guide/error-handling.html), [Fastify hooks](https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks)), **not** to your Nest [[exception-filters|`@Catch()` filters]]. To route a middleware error through the filter chain, call `next(err)` explicitly (Express) or rethrow inside an `async` middleware so the platform forwards it to Nest's exception layer.
 
 ## The order
 
