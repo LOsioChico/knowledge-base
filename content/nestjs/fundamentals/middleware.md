@@ -104,7 +104,10 @@ CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors(
 | ------------ | ---------------------------------------------------- | --------- |
 | Global       | `app.use(fn)` in `main.ts`                           | No        |
 | Module bound | `consumer.apply(LoggerMiddleware).forRoutes(...)`    | Yes       |
-| All routes   | Module-bound class middleware with `.forRoutes('*')` | Yes       |
+| All routes   | Module-bound class middleware with `.forRoutes('{*splat}')` | Yes       |
+
+> [!warning] Wildcard syntax changed since [[nestjs/releases/v11|v11]]
+> Express v5 (default in NestJS 11) requires **named** wildcards. Use `'{*splat}'` to match every path including the bare base, or `'*splat'` to match anything below the base. Pre-v11 patterns like `'*'`, `'(.*)'`, and `'users/*'` still work via Nest's compatibility layer but emit warnings; the migration is mechanical. Same fix applies to `@Get('*')` and `RouterModule` paths.
 
 There is no middleware slot in `@Module()` metadata. Module-bound middleware lives in `configure()` on a class that implements `NestModule`:
 
@@ -236,7 +239,7 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 > @Module({})
 > export class AppModule implements NestModule {
 >   configure(consumer: MiddlewareConsumer): void {
->     consumer.apply(HttpLoggerMiddleware).forRoutes("*")
+>     consumer.apply(HttpLoggerMiddleware).forRoutes("{*splat}")
 >   }
 > }
 > ```
