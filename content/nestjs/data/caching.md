@@ -18,7 +18,8 @@ related:
 source:
   - https://docs.nestjs.com/techniques/caching
   - https://github.com/nestjs/cache-manager
-  - https://github.com/jaredwray/cache-manager
+  - https://github.com/nestjs/cache-manager/blob/master/package.json
+  - https://github.com/jaredwray/cacheable/tree/main/packages/cache-manager
   - https://keyv.org/docs/
 ---
 
@@ -135,16 +136,21 @@ export class BooksController {
 Bind globally instead of per-controller via [[nestjs/fundamentals/global-providers|`APP_INTERCEPTOR`]]:
 
 ```typescript
-// app.module.ts (snippet)
+// app.module.ts
+import { Module } from "@nestjs/common"
 import { APP_INTERCEPTOR } from "@nestjs/core"
-import { CacheInterceptor } from "@nestjs/cache-manager"
+import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager"
 
-providers: [
-  {
-    provide: APP_INTERCEPTOR,
-    useClass: CacheInterceptor,
-  },
-]
+@Module({
+  imports: [CacheModule.register({ isGlobal: true, ttl: 30_000 })],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
+  ],
+})
+export class AppModule {}
 ```
 
 > [!warning] `CacheInterceptor` only caches `GET` and breaks on `@Res()`
@@ -165,7 +171,6 @@ providers: [
 | `ttl`        | `number`                      | `0` (never)       | Default expiration in **milliseconds**. Override per call with `set(k, v, ttl)` |
 | `isGlobal`   | `boolean`                     | `false`           | Skip re-importing `CacheModule` in feature modules                              |
 | `stores`     | `Keyv[]`                      | in-memory         | One or more [Keyv](https://keyv.org/docs/) stores. See [the Redis section below](#distributed-cache-with-redis)         |
-| `max`        | `number`                      | unbounded         | Max entries for the in-memory store; relevant only when no `stores` is passed   |
 
 The per-route decorators from `@nestjs/cache-manager`:
 
@@ -210,7 +215,7 @@ import { KeyvCacheableMemory } from "cacheable"
 export class AppModule {}
 ```
 
-The `stores` array is a tiered cache: reads check stores in order, writes propagate to all. The first store is the "fast path"; later stores are fallbacks. With Redis alone, pass a single-element array.
+The `stores` array is a tiered cache: reads check stores in order until one returns a value, and `set`/`del` hit each store in order (set `nonBlocking: true` to fire them in parallel and not wait). The first store is the "fast path"; later stores are fallbacks. With Redis alone, pass a single-element array.
 
 > [!info] Why Keyv and not the legacy `cache-manager-redis-store`
 > `cache-manager` v6 dropped its own store registry and now consumes Keyv stores directly. The pre-v3 NestJS pattern (`store: redisStore`, `store: 'redis'`) no longer applies. If you're migrating from an older project, the install line and the `register()` shape both change.
