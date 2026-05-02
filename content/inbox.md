@@ -19,7 +19,7 @@ related:
 
 ## Videos
 
-- [YouTube: -MlXwb42nKo](https://www.youtube.com/watch?v=-MlXwb42nKo) — needs a real title; identify topic on first watch and either expand this bullet or promote to a note.
+- [Marius Espejo: Decouple your NestJS code with this technique!](https://www.youtube.com/watch?v=-MlXwb42nKo) — likely about provider abstraction / port-and-adapter style in Nest. Watch and decide whether it lands as a `nestjs/patterns` note or sharpens an existing fundamentals note.
 
 ## How to use this list
 
