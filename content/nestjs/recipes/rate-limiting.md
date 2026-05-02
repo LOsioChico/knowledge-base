@@ -10,6 +10,7 @@ related:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
+  - "[[nestjs/releases/v10]]"
 source:
   - https://docs.nestjs.com/security/rate-limiting
   - https://github.com/nestjs/throttler
@@ -23,7 +24,7 @@ source:
 npm i --save @nestjs/throttler
 ```
 
-No extra `@types/*` package: the library ships its own types. Requires NestJS 10+ with `@nestjs/throttler` v5 or newer; older versions used a different decorator and option shape.
+No extra `@types/*` package: the library ships its own types. Requires [[nestjs/releases/v10|NestJS 10]]+ with `@nestjs/throttler` v5 or newer; older versions used a different decorator and option shape.
 
 ## Minimal working example
 

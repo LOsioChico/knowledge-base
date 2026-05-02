@@ -14,6 +14,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
+  - "[[nestjs/releases/v10]]"
   - "[[nestjs/releases/v11]]"
 source:
   - https://docs.nestjs.com/middleware

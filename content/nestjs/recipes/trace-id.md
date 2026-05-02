@@ -20,6 +20,7 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
   - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/releases/v10]]"
 source:
   - https://docs.nestjs.com/recipes/async-local-storage
   - https://nodejs.org/api/async_context.html

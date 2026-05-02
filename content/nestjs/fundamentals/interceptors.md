@@ -17,6 +17,7 @@ related:
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
+  - "[[nestjs/releases/v10]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
