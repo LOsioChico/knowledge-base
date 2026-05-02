@@ -133,7 +133,7 @@ export class BooksController {
 }
 ```
 
-Bind globally instead of per-controller via [[nestjs/fundamentals/global-providers|`APP_INTERCEPTOR`]]:
+Bind globally instead of per-controller via the [[nestjs/fundamentals/global-providers|APP_INTERCEPTOR token]]:
 
 ```typescript
 // app.module.ts

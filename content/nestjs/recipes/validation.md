@@ -208,7 +208,7 @@ The pipe inspects the **metatype** of the parameter (the TS type Nest reflects f
 | `@Query('page') page: number`             | `Number`          |        ❌         | The raw string (`"2"`, not `2`)               |
 | `@UploadedFile() file: Express.Multer.File` | `Object`        |        ❌         | The raw [[nestjs/recipes/file-uploads|multer]] file (validate with `ParseFilePipe`) |
 
-For path/query coercion of a single primitive, reach for [[nestjs/fundamentals/pipes|`ParseIntPipe` / `ParseBoolPipe`]] instead: `ValidationPipe` won't touch them.
+For path/query coercion of a single primitive, reach for `ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) instead: `ValidationPipe` won't touch them.
 
 ### `enableImplicitConversion: true`
 

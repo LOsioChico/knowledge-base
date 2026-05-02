@@ -203,7 +203,7 @@ export class TraceExceptionFilter extends BaseExceptionFilter {
 }
 ```
 
-Register globally via the [[nestjs/fundamentals/global-providers|`APP_FILTER` provider]] (so DI gives `BaseExceptionFilter` the `HttpAdapter` it needs):
+Register globally via the [[nestjs/fundamentals/global-providers|APP_FILTER provider]] (so DI gives `BaseExceptionFilter` the `HttpAdapter` it needs):
 
 ```typescript
 // app.module.ts (additions)
@@ -362,7 +362,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > Most actively-maintained libraries propagate context cleanly because Node's [async_hooks](https://nodejs.org/api/async_hooks.html) integrates at the platform level. Older callback-style libraries that schedule work from native bindings without registering an [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on libraries you're likely to use today.
 
 > [!info]- The interceptor + filter both read from the store: that's the point
-> A [[nestjs/fundamentals/interceptors|`LoggingInterceptor`]], a [[nestjs/fundamentals/exception-filters|`TraceExceptionFilter`]], a service buried five layers deep, and an outbound axios call all read the **same** `traceId` without any of them taking it as a parameter. That's the value `AsyncLocalStorage` adds over passing it on the request object.
+> A `LoggingInterceptor` (see [[nestjs/fundamentals/interceptors|Interceptors]]), a `TraceExceptionFilter` (see [[nestjs/fundamentals/exception-filters|Exception filters]]), a service buried five layers deep, and an outbound axios call all read the **same** `traceId` without any of them taking it as a parameter. That's the value `AsyncLocalStorage` adds over passing it on the request object.
 
 ## Common errors
 

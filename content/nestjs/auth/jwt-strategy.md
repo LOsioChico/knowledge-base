@@ -264,7 +264,7 @@ The body matches whatever `JwtStrategy.validate()` returned: that's the contract
 
 ## Global guard with `@Public()` opt-out
 
-Once more than a few routes need auth, flip the default: protect everything via [[nestjs/fundamentals/global-providers|`APP_GUARD`]], then mark the few public routes (login, health checks, signup) with `@Public()`.
+Once more than a few routes need auth, flip the default: protect everything via the [[nestjs/fundamentals/global-providers|APP_GUARD token]], then mark the few public routes (login, health checks, signup) with `@Public()`.
 
 ```typescript
 // auth/public.decorator.ts

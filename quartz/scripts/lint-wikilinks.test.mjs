@@ -462,6 +462,22 @@ test("fails when a body wikilink targets a missing note", async () => {
   assert.match(result.stderr, /does not resolve/)
 })
 
+test("fails when a body wikilink contains a backtick", async () => {
+  const repoRoot = await createFixture(
+    cleanVault({
+      "content/nestjs/recipes/alpha.md": note({
+        title: "Alpha Recipe",
+        body: "See [[nestjs/recipes/alpha|`AlphaThing`]] for details.",
+      }),
+    }),
+  )
+  const result = await runLinter(repoRoot)
+
+  assert.equal(result.code, 1)
+  assert.match(result.stderr, /wikilink syntax/)
+  assert.match(result.stderr, /backtick/)
+})
+
 test("fails when a partial wikilink is ambiguous", async () => {
   const repoRoot = await createFixture({
     "content/index.md": `---

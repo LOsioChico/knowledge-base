@@ -144,7 +144,7 @@ new HttpException(response: string | Record<string, any>, status: number, option
 
 ## `ArgumentsHost` essentials
 
-`ArgumentsHost` is the parent type of [[nestjs/fundamentals/guards|`ExecutionContext`]]. It does **not** expose `getHandler()` / `getClass()` (you don't usually need handler metadata at the error layer):
+`ArgumentsHost` is the parent type of `ExecutionContext` (see [[nestjs/fundamentals/guards|Guards]]). It does **not** expose `getHandler()` / `getClass()` (you don't usually need handler metadata at the error layer):
 
 | Method           | Returns                                                            |
 | ---------------- | ------------------------------------------------------------------ |
@@ -160,7 +160,7 @@ For platform-agnostic filters that work across both Express and Fastify, prefer 
 
 | Scope      | How                                                                                 |
 | ---------- | ----------------------------------------------------------------------------------- |
-| Global     | `app.useGlobalFilters(new X())` or the [[nestjs/fundamentals/global-providers\|`APP_FILTER` provider]] |
+| Global     | `app.useGlobalFilters(new X())` or the [[nestjs/fundamentals/global-providers\|APP_FILTER provider]] |
 | Controller | `@UseFilters(X)` or `@UseFilters(new X())` on the class                             |
 | Route      | `@UseFilters(X)` on the method                                                      |
 

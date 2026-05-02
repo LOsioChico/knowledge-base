@@ -370,7 +370,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> See [[nestjs/fundamentals/guards#Cross-transport guards: branch on `ctx.getType()`|Guards > Cross-transport]] for the full pattern.
+> See [[nestjs/fundamentals/guards#Cross-transport guards: branch on ctx.getType()|Guards > Cross-transport]] for the full pattern.
 
 > [!info]- Pre-phase errors don't reach `catchError(next.handle())`
 > The pipeline `next.handle().pipe(catchError(...))` only catches errors **emitted by the handler stream**. An error thrown synchronously before `next.handle()` is invoked is a regular thrown exception: it bypasses RxJS entirely and lands in [[nestjs/fundamentals/exception-filters|exception filters]]. Use `try/catch` in the pre phase, or wrap the pre work in `defer(() => …)`.

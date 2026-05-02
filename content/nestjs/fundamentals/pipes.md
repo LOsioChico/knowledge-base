@@ -94,7 +94,7 @@ All exported from `@nestjs/common`.
 
 | Scope      | How                                               |
 | ---------- | ------------------------------------------------- |
-| Global     | `app.useGlobalPipes()` or the [[nestjs/fundamentals/global-providers|`APP_PIPE` provider]] |
+| Global     | `app.useGlobalPipes()` or the [[nestjs/fundamentals/global-providers|APP_PIPE provider]] |
 | Controller | `@UsePipes()` on the class                        |
 | Route      | `@UsePipes()` on the method                       |
 | Param      | `@Body(new ValidationPipe())`                     |

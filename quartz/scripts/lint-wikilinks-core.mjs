@@ -498,6 +498,38 @@ function validateSchema(result, notes) {
   }
 }
 
+function validateWikilinkSyntax(result, notes) {
+  for (const note of notes) {
+    for (const match of note.body.matchAll(/\[\[[^\]\n]+\]\]/g)) {
+      const raw = match[0]
+      const start = match.index
+      const end = start + raw.length
+      if (!note.proseMask.slice(start, end).includes("[[")) continue
+      if (!raw.includes("`")) continue
+      const { line, col } = lineColFor(note.body, start)
+      addViolation(result, {
+        check: "wikilink-syntax",
+        col,
+        file: note.file,
+        line: line + note.bodyStartLine,
+        message: `wikilink ${raw} contains a backtick; backticks are not rendered inside [[ ]] (use plain text or move the code span outside the link)`,
+      })
+    }
+    for (const field of ["related", "unrelated"]) {
+      for (const value of asArray(note.data[field])) {
+        const raw = cleanScalar(value)
+        if (!raw.includes("`")) continue
+        addViolation(result, {
+          check: "wikilink-syntax",
+          file: note.file,
+          line: 1,
+          message: `${field} entry ${raw} contains a backtick; backticks are not rendered inside [[ ]]`,
+        })
+      }
+    }
+  }
+}
+
 function validateLinkResolution(result, notes) {
   for (const note of notes) {
     const refs = [...note.bodyLinks, ...note.relatedRefs, ...note.unrelatedRefs]
@@ -907,6 +939,16 @@ export function formatHuman(result) {
       targetErrors,
     )
 
+  const syntaxErrors = groupByCheck(errors, "wikilink-syntax")
+  if (syntaxErrors.length === 0)
+    stdout.push("✓ wikilink syntax: no backticks inside [[ ]]")
+  else
+    printGeneric(
+      stderr,
+      `✗ wikilink syntax: ${syntaxErrors.length} ${plural(syntaxErrors.length, "violation")}`,
+      syntaxErrors,
+    )
+
   const firstMentions = groupByCheck(errors, "first-mention")
   if (firstMentions.length === 0) {
     stdout.push("✓ wikilink linter: all first mentions are linked")
@@ -1070,6 +1112,7 @@ export async function lintVault({
 
   validateSchema(result, notes)
   validateLinkResolution(result, notes)
+  validateWikilinkSyntax(result, notes)
   validateFirstMentions(result, notes)
   validateFolderIndexes(result, contentRoot, dirs, fileSet, repoRoot)
   await validateListingCompleteness(result, notes, repoRoot, indexedFolders)
