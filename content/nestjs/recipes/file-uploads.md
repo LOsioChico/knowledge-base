@@ -12,6 +12,10 @@ related:
   - "[[nestjs/fundamentals/interceptors]]"
 source:
   - https://docs.nestjs.com/techniques/file-upload
+  - https://docs.nestjs.com/openapi/types-and-parameters#file-upload
+  - https://github.com/expressjs/multer
+  - https://github.com/nestjs/nest/tree/master/packages/common/pipes/file
+  - https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
 ---
 
 > Accept `multipart/form-data` in a NestJS controller, validate size and mime-type, and reject anything sketchy. Express adapter only. Fastify needs `@nestjs/platform-fastify`'s own multipart plugin.
@@ -102,7 +106,7 @@ Uploading a 12 MB PDF to that route:
 curl -F file=@huge-report.pdf http://localhost:3000/uploads
 ```
 
-Returns `422 Unprocessable Entity`:
+Returns `422 Unprocessable Entity` (the regex appears in the message because `ParseFilePipeBuilder` formats the failure as `Validation failed (expected type is <validator>)` — see [`parse-file-pipe-builder.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts) and [`file-type.validator.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts)):
 
 ```json
 {
@@ -162,7 +166,7 @@ MulterModule.registerAsync({
 
 ## Where do the bytes go?
 
-By default Multer keeps the file in memory as a `Buffer` on `file.buffer`. That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:
+By default Multer keeps the file in memory as a `Buffer` on `file.buffer` ([Multer README → MemoryStorage](https://github.com/expressjs/multer#memorystorage)). That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:
 
 ```typescript
 import { MulterModule } from "@nestjs/platform-express"
@@ -176,15 +180,15 @@ MulterModule.register({
 })
 ```
 
-With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file.
+With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([Multer README → DiskStorage](https://github.com/expressjs/multer#diskstorage)).
 
 ## Gotchas
 
 > [!warning]- Global `ValidationPipe` does not see the file field
-> The pipe runs against `@Body()`, `@Query()`, `@Param()` arguments. The `Express.Multer.File` object lives behind `@UploadedFile()` and is invisible to it. Validate the file with `ParseFilePipe`/`ParseFilePipeBuilder`; validate text fields in the same form via a DTO on `@Body()`. Forgetting this is the most common reason "my file validators don't run".
+> The pipe runs against `@Body()`, `@Query()`, `@Param()` arguments. The `Express.Multer.File` object lives behind `@UploadedFile()` and isn't represented in the metatype the pipe inspects (the file is attached to `req.file` by Multer's request handler, then injected via the `@UploadedFile()` parameter decorator from [`@nestjs/platform-express`](https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/decorators/upload.decorator.ts)). Validate the file with `ParseFilePipe`/`ParseFilePipeBuilder`; validate text fields in the same form via a DTO on `@Body()`. Forgetting this is the most common reason "my file validators don't run".
 
 > [!warning]- Reverse-proxy body limit silently caps your upload
-> nginx defaults to `client_max_body_size 1m`; the request is rejected at the proxy with `413 Payload Too Large` and never reaches Nest. Your 10 MB Multer limit is irrelevant until the proxy is bumped to match. Same trap with cloud load balancers (ALB, Cloud Run) that have their own caps.
+> nginx defaults to `client_max_body_size 1m` ([nginx docs](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)); the request is rejected at the proxy with `413 Payload Too Large` and never reaches Nest. Your 10 MB Multer limit is irrelevant until the proxy is bumped to match. Cloud load balancers (AWS ALB, Cloud Run, Cloudflare) have their own per-tier caps; check the provider's docs.
 
 > [!warning]- Memory storage pins one buffer per concurrent upload
 > Default Multer storage holds the whole file in `file.buffer`. A single 1 GB upload pins 1 GB of RAM until the request ends; ten concurrent uploads pin ten. Switch to `diskStorage` or stream straight to object storage for anything large.
@@ -193,7 +197,7 @@ With disk storage `file.buffer` is `undefined` and `file.path` points at the sav
 > `FileInterceptor` is part of `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. Use [`@fastify/multipart`](https://github.com/fastify/fastify-multipart) and Fastify's own request-level API; this whole recipe does not apply.
 
 > [!info]- Swagger needs `@ApiConsumes` to render the file picker
-> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc shows no file input and the Swagger UI "Try it out" form is unusable.
+> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/types-and-parameters#file-upload)). The "Try it out" form falls back to plain text and is unusable for binary uploads.
 
 ## See also
 
