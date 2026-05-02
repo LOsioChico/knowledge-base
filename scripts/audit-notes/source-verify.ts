@@ -17,7 +17,7 @@ import { resolve } from "node:path";
 import type { FlatFinding } from "./types.js";
 
 const TTL_MS: number = 30 * 24 * 60 * 60 * 1000;
-const MAX_SOURCE_CHARS: number = 12_000;
+const MAX_SOURCE_CHARS: number = 40_000;
 const FETCH_TIMEOUT_MS: number = 15_000;
 
 interface FetchedSource {
@@ -59,6 +59,31 @@ function rewriteForFetch(url: string): string[] {
     const path: string = nest[1]!;
     return [
       `https://raw.githubusercontent.com/nestjs/docs.nestjs.com/master/content/${path}.md`,
+      url,
+    ];
+  }
+  // GitHub blob viewer → raw file.
+  // URL shape: https://github.com/<owner>/<repo>/blob/<ref>/<path>[#anchor]
+  const ghBlob: RegExpExecArray | null =
+    /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/([^#?]+)(?:[#?].*)?$/.exec(
+      url,
+    );
+  if (ghBlob !== null) {
+    const [, owner, repo, ref, path] = ghBlob;
+    return [
+      `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`,
+      url,
+    ];
+  }
+  // GitHub repo home → README on main, fall back to master.
+  // URL shape: https://github.com/<owner>/<repo>[/]
+  const ghRepo: RegExpExecArray | null =
+    /^https?:\/\/github\.com\/([^/]+)\/([^/#?]+)\/?$/.exec(url);
+  if (ghRepo !== null) {
+    const [, owner, repo] = ghRepo;
+    return [
+      `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`,
+      `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`,
       url,
     ];
   }
