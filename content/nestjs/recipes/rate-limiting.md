@@ -179,7 +179,7 @@ Each entry in the `forRoot` array (or under `throttlers:` if you also need top-l
 | `name`             | `string`                                       | `'default'` | Used as the key in `@Throttle({ <name>: ... })` and `@SkipThrottle({ <name>: true })` |
 | `ttl`              | `number` (ms)                                  | required    | Window length. Wrap with `seconds()`/`minutes()`/`hours()` for readability        |
 | `limit`            | `number`                                       | required    | Max requests per `ttl` per tracker                                                |
-| `blockDuration`    | `number` (ms)                                  | `ttl`       | How long to keep blocking after the limit is hit                                  |
+| `blockDuration`    | `number` (ms)                                  | `ttl`       | How long to keep blocking after the limit is hit. Defaults to `ttl` per [`ThrottlerModuleOptions` source](https://github.com/nestjs/throttler/blob/master/src/throttler-module-options.interface.ts) |
 | `ignoreUserAgents` | `RegExp[]`                                     | `[]`        | Skip throttling for matching `User-Agent` headers                                 |
 | `skipIf`           | `(ctx: ExecutionContext) => boolean`           | none        | Programmatic skip. Same intent as `@SkipThrottle()` but request-driven            |
 | `getTracker`       | `(req, ctx) => string \| Promise<string>`      | `req.ip`    | Override the per-client identity. See [proxies callout below](#proxies-and-trust-proxy) |
@@ -196,7 +196,7 @@ Time helpers exported from `@nestjs/throttler`: `seconds`, `minutes`, `hours`, `
 
 ## How the storage key is built
 
-Every counter in the store lives under a key shaped like:
+Every counter in the store lives under a key shaped like ([`generateKey` default in `ThrottlerGuard`](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts)):
 
 ```
 sha256("<ControllerClass>-<handler>-<throttlerName>-<tracker>")
