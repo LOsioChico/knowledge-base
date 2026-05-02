@@ -12,14 +12,14 @@ related:
 
 ## Articles
 
-- [20 mistakes that quietly destroy JS/TS codebases](https://thetshaped.dev/p/20-mistakes-that-quietly-destroy-javascript-typescript-codebases-common-code-smell-patterns) — survey of common code smells; mine the ones that don't already have notes (likely candidates: leaky abstractions, type-narrowing footguns, error-handling anti-patterns).
-- [Everything about barrel exports in JavaScript](https://4markdown.com/everything-about-barrel-exports-in-javascript/) — when `index.ts` re-exports help vs hurt (bundle size, circular deps, IDE perf). Likely a `typescript/patterns/barrel-exports` note.
-- [Consider using type imports in TypeScript](https://4markdown.com/consider-using-type-imports-in-typescript/) — `import type` vs runtime imports; effect on bundling and `verbatimModuleSyntax`. Short `typescript/gotchas` candidate.
-- [Exhaustiveness checking and discriminant property](https://4markdown.com/exhaustiveness-checking-and-discriminant-property-the-complete-guide/) — discriminated unions + `never` for exhaustive `switch`. Likely a `typescript/patterns/exhaustiveness-check` note.
+- [20 mistakes that quietly destroy JS/TS codebases](https://thetshaped.dev/p/20-mistakes-that-quietly-destroy-javascript-typescript-codebases-common-code-smell-patterns): survey of common code smells; mine the ones that don't already have notes (likely candidates: leaky abstractions, type-narrowing footguns, error-handling anti-patterns).
+- [Everything about barrel exports in JavaScript](https://4markdown.com/everything-about-barrel-exports-in-javascript/): when `index.ts` re-exports help vs hurt (bundle size, circular deps, IDE perf). Likely a `typescript/patterns/barrel-exports` note.
+- [Consider using type imports in TypeScript](https://4markdown.com/consider-using-type-imports-in-typescript/): `import type` vs runtime imports; effect on bundling and `verbatimModuleSyntax`. Short `typescript/gotchas` candidate.
+- [Exhaustiveness checking and discriminant property](https://4markdown.com/exhaustiveness-checking-and-discriminant-property-the-complete-guide/): discriminated unions + `never` for exhaustive `switch`. Likely a `typescript/patterns/exhaustiveness-check` note.
 
 ## Videos
 
-- [Marius Espejo: Decouple your NestJS code with this technique!](https://www.youtube.com/watch?v=-MlXwb42nKo) — likely about provider abstraction / port-and-adapter style in Nest. Watch and decide whether it lands as a `nestjs/patterns` note or sharpens an existing fundamentals note.
+- [Marius Espejo: Decouple your NestJS code with this technique!](https://www.youtube.com/watch?v=-MlXwb42nKo): likely about provider abstraction / port-and-adapter style in Nest. Watch and decide whether it lands as a `nestjs/patterns` note or sharpens an existing fundamentals note.
 
 ## How to use this list
 
