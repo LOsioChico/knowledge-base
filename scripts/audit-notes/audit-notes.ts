@@ -24,6 +24,7 @@ import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runDeterministic, runDeterministicAdvisory } from "./deterministic.js";
+import { runFixProposerPass } from "./fix-proposer.js";
 import { postFilter } from "./post-filter.js";
 import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
@@ -540,6 +541,30 @@ async function main(): Promise<void> {
     );
   }
 
+  // Pass 3: fix-proposer. Runs on the union of high-tier findings (verified
+  // objective + grounded show-dont-tell + source-verification). Cheap because
+  // post-verification the count is typically 0-5.
+  const highTierForFixes: FlatFinding[] = [
+    ...verifiedFlat,
+    ...groundedSdt.kept,
+    ...sourceFindings,
+  ];
+  const enrichedHighTier: FlatFinding[] = await runFixProposerPass(
+    highTierForFixes,
+    { runAgent, extractJson, log, repoRoot: REPO_ROOT },
+  );
+  const enrichedVerified: FlatFinding[] = enrichedHighTier.slice(
+    0,
+    verifiedFlat.length,
+  );
+  const enrichedSdt: FlatFinding[] = enrichedHighTier.slice(
+    verifiedFlat.length,
+    verifiedFlat.length + groundedSdt.kept.length,
+  );
+  const enrichedSources: FlatFinding[] = enrichedHighTier.slice(
+    verifiedFlat.length + groundedSdt.kept.length,
+  );
+
   // Merge with tiers: deterministic + verified objective + grounded show-dont-tell => high.
   // Subjective candidates (other than show-dont-tell) => advisory.
   const allTiered: Array<FlatFinding & { tier: ConfidenceTier }> = [
@@ -550,22 +575,31 @@ async function main(): Promise<void> {
       }),
     ),
     ...verifiedFlat.map(
-      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
-        ...f,
-        tier: "high",
-      }),
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => {
+        const enriched: FlatFinding | undefined = enrichedVerified.find(
+          (e: FlatFinding): boolean =>
+            e.path === f.path && e.line === f.line && e.rule === f.rule,
+        );
+        return { ...f, ...(enriched ?? {}), tier: "high" };
+      },
     ),
     ...groundedSdt.kept.map(
-      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
-        ...f,
-        tier: "high",
-      }),
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => {
+        const enriched: FlatFinding | undefined = enrichedSdt.find(
+          (e: FlatFinding): boolean =>
+            e.path === f.path && e.line === f.line && e.rule === f.rule,
+        );
+        return { ...f, ...(enriched ?? {}), tier: "high" };
+      },
     ),
     ...sourceFindings.map(
-      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
-        ...f,
-        tier: "high",
-      }),
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => {
+        const enriched: FlatFinding | undefined = enrichedSources.find(
+          (e: FlatFinding): boolean =>
+            e.path === f.path && e.line === f.line && e.rule === f.rule,
+        );
+        return { ...f, ...(enriched ?? {}), tier: "high" };
+      },
     ),
     ...subjectiveCandidates.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
