@@ -83,12 +83,12 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
 
 ## Init: order and async
 
-Within a single class, `onModuleInit` runs first, then later `onApplicationBootstrap`. Across the app, Nest walks the module dependency graph **deepest-first**: a module's hooks run only after every module it imports has finished. The practical rule:
+Within a single class, `onModuleInit` runs first, then later `onApplicationBootstrap`. Across the app, the official docs only state that "execution order of `onModuleInit()` and `onApplicationBootstrap()` directly depends on the order of module imports, awaiting the previous hook" ([Lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)). In practice that means a module's hooks run only after every module it imports has finished. Practical consequences:
 
-- For a graph `A → B → C` (A depends on B, B depends on C), init order is `C → B → A`.
+- For an import graph `A → B → C` (A depends on B, B depends on C), init effectively goes `C → B → A` because Nest awaits each imported module before the importer.
 - Inside one module, hook execution is sequential: bootstrap waits for init.
 - Both hooks may return a `Promise` (or be `async`); Nest will not move on until it resolves or rejects.
-- Global modules are treated as a dependency of every other module: they initialize **first** and shut down **last**.
+- `@Global()` modules are imported implicitly by every other module, so they sit at the deepest level of the graph: they finish init **first** and (mirroring) tear down **last**. Verified empirically; the docs don't call this out explicitly. If you depend on the order, write a smoke test that logs from each hook.
 
 If you need "this provider should be ready before that controller starts handling requests", `onApplicationBootstrap` is the safer slot: by the time it runs, **every** module has finished `onModuleInit`.
 
@@ -116,7 +116,7 @@ After `enableShutdownHooks()`, receiving a signal triggers the terminate sequenc
 4. `onApplicationShutdown` runs last, with the signal name.
 
 > [!warning] Termination order reversed since [[nestjs/releases/v11|v11]]
-> For a graph `A → B → C` (A depends on B, B depends on C), init goes `C → B → A` but destroy now goes `A → B → C`. Dependents shut down **before** their dependencies, so a service can still call its DB inside its own `onModuleDestroy`. Global modules destroy **last**, mirroring init. Pre-v11 code that relied on the old reversed-init destroy order will see hooks fire in a new sequence after the upgrade.
+> Pre-v11, init and destroy walked the module graph in the same direction (deepest-first). Since v11 the destroy walk is the reverse: for an import graph `A → B → C`, init still goes `C → B → A`, but `onModuleDestroy` now goes `A → B → C` so dependents shut down **before** their dependencies and a service can still call its DB inside its own `onModuleDestroy`. Global modules destroy **last**, mirroring init. See the [v11 release notes](https://github.com/nestjs/nest/releases) and the [v11 announcement](https://trilon.io/blog/announcing-nestjs-11-whats-new) for the change description; if you maintained code against the pre-v11 order it will visibly fire in a new sequence after the upgrade.
 
 `app.close()` only triggers the destroy/shutdown chain. It does **not** kill the Node process. If timers, open intervals, or background workers are still alive, the process keeps running. Either let your hooks clear them, or follow `await app.close()` with `process.exit(0)` once you're confident there's nothing to drain.
 
