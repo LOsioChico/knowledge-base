@@ -24,6 +24,9 @@ source:
   - https://typeorm.io/migrations
   - https://node-postgres.com/
   - https://github.com/nestjs/typeorm
+  - https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts
+  - https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts
+  - https://typeorm.io/data-source-options
   - https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database
 ---
 
@@ -36,7 +39,7 @@ npm install @nestjs/typeorm typeorm pg
 npm install --save-dev @types/pg
 ```
 
-`pg` is the Postgres driver TypeORM auto-detects when `type: 'postgres'`. `@nestjs/typeorm` provides the Nest module wrappers (`TypeOrmModule.forRoot`, `forRootAsync`, `forFeature`) and the `@InjectRepository`, `@InjectDataSource`, `@InjectEntityManager`, `getRepositoryToken` helpers.
+`pg` is the [Postgres driver](https://node-postgres.com/) TypeORM picks up automatically when `type: 'postgres'` is set. `@nestjs/typeorm` provides the Nest module wrappers (`TypeOrmModule.forRoot`, `forRootAsync`, `forFeature`) and the `@InjectRepository`, `@InjectDataSource`, `@InjectEntityManager`, `getRepositoryToken` helpers.
 
 ## Step 1: Quick-start with `forRoot` (hardcoded)
 
@@ -380,12 +383,12 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 | `logging` | Query logging | `false` | `["error", "warn"]` is a good prod baseline; `true` in dev |
 | `namingStrategy` | Column/table name conventions | TypeORM default (camelCase columns) | Set to `SnakeNamingStrategy` from `typeorm-naming-strategies` if you want `snake_case` columns |
 
-`forRoot` accepts every option from the underlying TypeORM `DataSourceOptions`, plus the four NestJS-specific extras (`autoLoadEntities`, `retryAttempts`, `retryDelay`, `keepConnectionAlive`). See the [data source options reference](https://typeorm.io/data-source-options) for the full list per dialect.
+`forRoot` accepts every option from the underlying TypeORM `DataSourceOptions`, plus a handful of NestJS-specific extras (`name`, `retryAttempts`, `retryDelay`, `toRetry`, `verboseRetryLog`, `autoLoadEntities`, `manualInitialization`) defined in the [`TypeOrmModuleOptions` interface](https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts). See the [data source options reference](https://typeorm.io/data-source-options) for the per-dialect TypeORM list.
 
 ## Gotchas
 
 > [!warning]- One `forRoot`, many `forFeature`
-> Call `TypeOrmModule.forRoot(...)` exactly once, in `AppModule` (or a dedicated `DatabaseModule`). Each feature module calls `TypeOrmModule.forFeature([Entity])` to register its repositories. A second `forRoot` opens a second connection pool with the **same** name and silently overrides the first; you'll see "Connection already exists" errors or, worse, two pools competing for the same `max` setting. For multiple databases, give each connection a `name` and pass that name to `forFeature(entities, name)`.
+> Call `TypeOrmModule.forRoot(...)` exactly once, in `AppModule` (or a dedicated `DatabaseModule`). Each feature module calls `TypeOrmModule.forFeature([Entity])` to register its repositories. `@nestjs/typeorm` registers each `forRoot` against a `DataSourceNameRegistry` ([typeorm-core.module.ts](https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts)), so a second call with the **same** name throws at startup. For multiple databases, give each connection a `name` and pass that name to `forFeature(entities, name)`.
 
 > [!warning]- `Repository` outside its module
 > A repository registered via `forFeature([User])` is only visible inside that module. To use `@InjectRepository(User)` in a different module, the owning module has to `exports: [TypeOrmModule]` (the whole `TypeOrmModule`, not just `User`). Source: [docs.nestjs.com/techniques/database#repository-pattern](https://docs.nestjs.com/techniques/database#repository-pattern).
@@ -394,7 +397,7 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 > If `synchronize: true` and you also have migrations, TypeORM applies the schema sync first (changing tables to match entities) and then runs migrations against an already-mutated schema. Result: migrations succeed locally but fail in any environment that started from the migration history alone. Pick one strategy per environment.
 
 > [!info]- `pg` driver vs `postgres` (`postgres.js`)
-> TypeORM's Postgres driver uses the `pg` package, not the newer `postgres.js`. If you `npm install postgres`, TypeORM ignores it. The `@types/pg` dev dependency is what gives you the typed `DatabaseError` used in [[nestjs/data/typeorm/handle-database-errors|handle database errors]].
+> TypeORM's Postgres driver loads `require("pg")` ([source](https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts)), not the newer [`postgres.js`](https://github.com/porsager/postgres). Installing `postgres` does nothing for TypeORM. The `@types/pg` dev dependency is what gives you the typed `DatabaseError` used in [[nestjs/data/typeorm/handle-database-errors|handle database errors]].
 
 > [!info]- Connection pool sizing lives under `extra`
 > `pg`-specific options (pool size, idle timeout, statement timeout) are passed through `extra`:
