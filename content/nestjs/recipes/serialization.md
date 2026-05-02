@@ -189,7 +189,7 @@ The `value` argument is the raw property; the function returns whatever should a
 
 ## The class-instance gotcha
 
-Those decorators only fire when the controller returns a **class instance**. Return a plain object and the interceptor silently skips it: every field leaks.
+Those decorators only fire when the controller returns a **class instance** *and* the route does not declare `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor silently skips it: every field leaks.
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
@@ -303,8 +303,8 @@ Same entity, two payloads, zero conditional code in the controller.
 
 ## Gotchas
 
-> [!warning]- Plain objects skip the interceptor entirely
-> The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` no-ops and every field reaches the wire. Always `return new Entity(...)` or `plainToInstance(Entity, raw)`. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
+> [!warning]- Plain objects skip the interceptor entirely (unless you opt in)
+> The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` no-ops and every field reaches the wire. Either `return new Entity(...)` / `plainToInstance(Entity, raw)`, or annotate the route with `@SerializeOptions({ type: Entity })` so the interceptor converts the plain object before serializing. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
 
 > [!warning]- Nested objects need `@Type()` or their decorators don't run
 > If a field is another class instance: `items: OrderItem[]`, `address: Address`: `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.

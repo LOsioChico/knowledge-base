@@ -21,6 +21,7 @@ source:
   - https://docs.nestjs.com/pipes
   - https://docs.nestjs.com/techniques/validation
   - https://github.com/nestjs/nest/tree/master/packages/common/pipes
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts
   - https://github.com/typestack/class-validator
   - https://github.com/typestack/class-transformer
 ---
@@ -75,7 +76,7 @@ All exported from `@nestjs/common`.
 | `ParseFloatPipe`   | string → float                                               | `parseFloat` + `isFinite` check                                                                                                                                   |
 | `ParseBoolPipe`    | `"true"`/`"false"` → boolean                                 | Only those two strings (or actual booleans) pass                                                                                                                  |
 | `ParseArrayPipe`   | string → array                                               | Splits on `,` by default; override with `new ParseArrayPipe({ separator: ';' })`. Wraps a `ValidationPipe({ transform: true })` to coerce items. See [validating an array body](#gotchas)                   |
-| `ParseUUIDPipe`    | UUID string validation                                       | `version?: '3' \| '4' \| '5' \| '7'` (default: any version)                                                                                                       |
+| `ParseUUIDPipe`    | UUID string validation                                       | `version?: '3' \| '4' \| '5' \| '7'` ([source](https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts)). Default validates **any** UUID shape (the docs page still says "3, 4 or 5" but the pipe falls back to a version-agnostic regex when `version` is omitted)                |
 | `ParseEnumPipe`    | enum membership check                                        | Constructor requires the enum. See [composing pipes](#common-recipes)                                                                                             |
 | `ParseDatePipe`    | string/number → `Date`                                       | `new Date(value)`; supports `default: () => Date`                                                                                                                 |
 | `DefaultValuePipe` | fallback when nil                                            | Returns default when value is `null`, `undefined`, or `NaN`. See [the section below](#defaultvaluepipe)                                                           |

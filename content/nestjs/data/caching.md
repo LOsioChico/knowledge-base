@@ -61,8 +61,7 @@ Use the cache imperatively from a service:
 ```typescript
 // books.service.ts
 import { Inject, Injectable } from "@nestjs/common"
-import { CACHE_MANAGER } from "@nestjs/cache-manager"
-import { Cache } from "cache-manager"
+import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager"
 
 export interface Book {
   id: string

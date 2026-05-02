@@ -324,7 +324,7 @@ Sample response for a duplicate email:
 > If `23502` reaches the database, your DTO validation didn't require the field. Returning `422` keeps the client contract sane, but log the violation at `warn` or `error`: it's a server-side gap, not a client bug. The [[nestjs/fundamentals/pipes|validation pipe]] should have caught it first.
 
 > [!info]- Retryable errors
-> Postgres `40001` (`could_not_serialize`) and MySQL `1213` (deadlock) are recoverable: retry the transaction with backoff. Map them to a 503 with `Retry-After` rather than 500.
+> Postgres `40001` (`serialization_failure`) and MySQL `1213` (deadlock) are recoverable: retry the transaction with backoff. Map them to a 503 with `Retry-After` rather than 500.
 
 > [!info]- `EntityNotFoundError` is separate
 > `repository.findOneOrFail()` throws `EntityNotFoundError`, not `QueryFailedError`. Catch it independently and map to 404. The filter above does not cover it.
