@@ -61,7 +61,7 @@ bootstrap()
 
 Those four options are the **secure default**. Each one earns its keep below.
 
-> [!note]- Need DI in the pipe? Use `APP_PIPE` instead
+> [!warning]- Need DI in the pipe? Use `APP_PIPE` instead
 > `app.useGlobalPipes(new ValidationPipe(...))` constructs the [[nestjs/fundamentals/pipes|pipe]] outside the container, so it can't inject providers (`ConfigService`, loggers, repositories) or run with request scope. The same applies to global [[nestjs/fundamentals/guards|guards]] and [[nestjs/fundamentals/interceptors|interceptors]]. When you need any of that, register through the matching `APP_*` token. See [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]] for the full comparison and worked examples.
 
 ## A first DTO
@@ -181,7 +181,18 @@ export class CreateUserDto {
 }
 ```
 
-Without `transform: true`, calling `dto.fullName()` throws `dto.fullName is not a function`.
+Without `transform: true`, calling `dto.fullName()` throws `dto.fullName is not a function`:
+
+```text
+TypeError: dto.fullName is not a function
+    at UsersController.create (.../users.controller.ts:12:22)
+```
+
+With `transform: true`, the same handler returns:
+
+```json
+{ "fullName": "Ada Lovelace" }
+```
 
 ### Where the pipe actually instantiates a class
 
