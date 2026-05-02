@@ -124,11 +124,11 @@ export async function runFixProposerPass(
     deps.log(`[pass-3] proposer failed: ${msg}; emitting findings without fixes`);
     return findings.slice();
   }
+  const proposals: readonly ProposalEntry[] = Array.isArray(parsed.proposals)
+    ? parsed.proposals
+    : [];
   const byIndex: Map<number, ProposalEntry> = new Map(
-    parsed.proposals.map((p: ProposalEntry): [number, ProposalEntry] => [
-      p.index,
-      p,
-    ]),
+    proposals.map((p: ProposalEntry): [number, ProposalEntry] => [p.index, p]),
   );
   let proposed: number = 0;
   let declined: number = 0;
