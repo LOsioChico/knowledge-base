@@ -393,25 +393,23 @@ async function main(): Promise<void> {
   const detFlat: FlatFinding[] = flatten({ files: det });
   log(`[pass-0] ${detFlat.length} findings`);
 
-  // Pass 1: LLM auditor
-  const audit: Report = await runAuditorPass(args.targets);
+  // Pass 1, 1a, 1b run concurrently — they're independent and all network-bound.
+  log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1b (source verify) in parallel ---");
+  const [audit, sdtFindings, sourceFindings] = await Promise.all([
+    runAuditorPass(args.targets),
+    runShowDontTellPass(args.targets),
+    runSourceVerifyPass({
+      repoRoot: REPO_ROOT,
+      targets: args.targets,
+      runAgent,
+      extractJson,
+      log,
+    }),
+  ]);
   const auditFlat: FlatFinding[] = flatten(audit);
-  log(`\n[pass-1] ${auditFlat.length} candidate findings`);
-
-  // Pass 1a: deterministic candidate finder + binary judge for show-dont-tell.
-  const sdtFindings: FlatFinding[] = await runShowDontTellPass(args.targets);
-
-  // Pass 1b: source verification (always on). Fetches each note's `source:`
-  // URLs (cached) and asks the LLM to flag claims not supported by them.
-  log("\n--- pass 1b (source verification) ---");
-  const sourceFindings: FlatFinding[] = await runSourceVerifyPass({
-    repoRoot: REPO_ROOT,
-    targets: args.targets,
-    runAgent,
-    extractJson,
-    log,
-  });
-  log(`[pass-1b] ${sourceFindings.length} finding(s)`);
+  log(`[pass-1]  ${auditFlat.length} candidate findings`);
+  log(`[pass-1a] ${sdtFindings.length} show-dont-tell finding(s)`);
+  log(`[pass-1b] ${sourceFindings.length} source-verification finding(s)`);
 
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.

@@ -306,67 +306,97 @@ interface SourceVerifyArgs {
   log: (msg: string) => void;
 }
 
+// Cap concurrent agent sessions to avoid Cursor-side rate limits while still
+// pipelining network + token-generation across files.
+const SOURCE_VERIFY_CONCURRENCY: number = 4;
+
+async function pMap<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next: number = 0;
+  async function worker(): Promise<void> {
+    while (true) {
+      const i: number = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i] as T, i);
+    }
+  }
+  const workers: Promise<void>[] = [];
+  for (let i: number = 0; i < Math.min(limit, items.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+  return results;
+}
+
 export async function runSourceVerifyPass(
   args: SourceVerifyArgs,
 ): Promise<FlatFinding[]> {
   const { repoRoot, targets, runAgent, extractJson, log } = args;
-  const findings: FlatFinding[] = [];
 
-  for (const target of targets) {
-    const abs: string = resolve(repoRoot, target);
-    if (!existsSync(abs)) {
-      log(`[source-verify] skip (missing): ${target}`);
-      continue;
-    }
-    const noteText: string = readFileSync(abs, "utf8");
-    const urls: string[] = extractSourceUrls(noteText);
-    if (urls.length === 0) {
-      log(`[source-verify] skip (no source: URLs): ${target}`);
-      continue;
-    }
-    log(`[source-verify] ${target}: ${urls.length} source URL(s)`);
+  const perFile: FlatFinding[][] = await pMap(
+    targets,
+    SOURCE_VERIFY_CONCURRENCY,
+    async (target: string): Promise<FlatFinding[]> => {
+      const abs: string = resolve(repoRoot, target);
+      if (!existsSync(abs)) {
+        log(`[source-verify] skip (missing): ${target}`);
+        return [];
+      }
+      const noteText: string = readFileSync(abs, "utf8");
+      const urls: string[] = extractSourceUrls(noteText);
+      if (urls.length === 0) {
+        log(`[source-verify] skip (no source: URLs): ${target}`);
+        return [];
+      }
+      log(`[source-verify] ${target}: ${urls.length} source URL(s)`);
 
-    const sources: FetchedSource[] = await fetchSources(urls, repoRoot);
-    const fetched: number = sources.filter(
-      (s): boolean => s.error === undefined,
-    ).length;
-    const cached: number = sources.filter((s): boolean => s.fromCache).length;
-    log(
-      `  fetched=${fetched - cached} cached=${cached} failed=${sources.length - fetched}`,
-    );
-    for (const s of sources) {
-      if (s.error !== undefined) log(`  - ${s.url}: ${s.error}`);
-    }
-
-    const prompt: string = buildVerifierPrompt(target, noteText, sources);
-    const text: string = await runAgent(prompt, `source-verify:${target}`);
-    let parsed: VerifierReport;
-    try {
-      parsed = JSON.parse(extractJson(text)) as VerifierReport;
-    } catch (err) {
+      const sources: FetchedSource[] = await fetchSources(urls, repoRoot);
+      const fetched: number = sources.filter(
+        (s): boolean => s.error === undefined,
+      ).length;
+      const cached: number = sources.filter((s): boolean => s.fromCache).length;
       log(
-        `[source-verify] failed to parse response for ${target}: ${err instanceof Error ? err.message : String(err)}`,
+        `[source-verify] ${target} fetched=${fetched - cached} cached=${cached} failed=${sources.length - fetched}`,
       );
-      continue;
-    }
-    for (const f of parsed.findings ?? []) {
-      // Get raw stat info to filter out lines outside the note.
-      const totalLines: number = noteText.split("\n").length;
-      if (f.line < 1 || f.line > totalLines) continue;
-      findings.push({
-        rule: "source-verification",
-        path: target,
-        line: f.line,
-        message: `${f.status === "contradicted" ? "Contradicts" : "Not supported by"} cited sources: ${f.claim}. ${f.explanation}`,
-        ...(f.evidence !== undefined
-          ? { evidence: f.evidence.slice(0, 120) }
-          : {}),
-      });
-    }
-    log(
-      `[source-verify] ${target}: ${parsed.findings?.length ?? 0} finding(s)`,
-    );
-  }
+      for (const s of sources) {
+        if (s.error !== undefined) log(`  - ${s.url}: ${s.error}`);
+      }
 
-  return findings;
+      const prompt: string = buildVerifierPrompt(target, noteText, sources);
+      const text: string = await runAgent(prompt, `source-verify:${target}`);
+      let parsed: VerifierReport;
+      try {
+        parsed = JSON.parse(extractJson(text)) as VerifierReport;
+      } catch (err) {
+        log(
+          `[source-verify] failed to parse response for ${target}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return [];
+      }
+      const totalLines: number = noteText.split("\n").length;
+      const out: FlatFinding[] = [];
+      for (const f of parsed.findings ?? []) {
+        if (f.line < 1 || f.line > totalLines) continue;
+        out.push({
+          rule: "source-verification",
+          path: target,
+          line: f.line,
+          message: `${f.status === "contradicted" ? "Contradicts" : "Not supported by"} cited sources: ${f.claim}. ${f.explanation}`,
+          ...(f.evidence !== undefined
+            ? { evidence: f.evidence.slice(0, 120) }
+            : {}),
+        });
+      }
+      log(
+        `[source-verify] ${target}: ${parsed.findings?.length ?? 0} finding(s)`,
+      );
+      return out;
+    },
+  );
+
+  return perFile.flat();
 }
