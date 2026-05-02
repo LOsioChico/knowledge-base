@@ -52,6 +52,24 @@ function cacheKey(url: string): string {
   return createHash("sha256").update(url).digest("hex").slice(0, 24);
 }
 
+// Some doc sites are SPAs and return a near-empty shell on plain `fetch`.
+// When we know the prose lives in a Git repo, rewrite to the raw markdown URL.
+// Returns one or more URLs to try in order; the first non-empty success wins.
+function rewriteForFetch(url: string): string[] {
+  // docs.nestjs.com → raw markdown in nestjs/docs.nestjs.com on GitHub.
+  // URL shape: https://docs.nestjs.com/<section>/<slug>[#anchor]
+  const nest: RegExpExecArray | null =
+    /^https?:\/\/docs\.nestjs\.com\/([^#?]+?)\/?(?:[#?].*)?$/.exec(url);
+  if (nest !== null) {
+    const path: string = nest[1]!;
+    return [
+      `https://raw.githubusercontent.com/nestjs/docs.nestjs.com/master/content/${path}.md`,
+      url,
+    ];
+  }
+  return [url];
+}
+
 export function extractSourceUrls(noteText: string): string[] {
   if (!noteText.startsWith("---\n")) return [];
   const closeIdx: number = noteText.indexOf("\n---", 4);
@@ -116,6 +134,51 @@ function htmlToText(html: string): string {
     .trim();
 }
 
+async function fetchOnce(
+  fetchUrl: string,
+  displayUrl: string,
+): Promise<{ text: string; ok: boolean; reason?: string }> {
+  const ctrl: AbortController = new AbortController();
+  const timer: NodeJS.Timeout = setTimeout(
+    () => ctrl.abort(),
+    FETCH_TIMEOUT_MS,
+  );
+  try {
+    const resp: Response = await fetch(fetchUrl, {
+      signal: ctrl.signal,
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (compatible; kb-source-verifier/1.0; +https://github.com/losiochico/knowledge-base)",
+        accept: "text/html,application/xhtml+xml,text/markdown,text/plain,*/*",
+      },
+      redirect: "follow",
+    });
+    if (!resp.ok) {
+      return { text: "", ok: false, reason: `HTTP ${resp.status}` };
+    }
+    const ct: string = resp.headers.get("content-type") ?? "";
+    const raw: string = await resp.text();
+    const text: string = ct.includes("html") ? htmlToText(raw) : raw;
+    if (text.length < 500 && ct.includes("html")) {
+      return {
+        text,
+        ok: false,
+        reason: `fetched only ${text.length} chars (likely SPA shell)`,
+      };
+    }
+    void displayUrl;
+    return { text, ok: true };
+  } catch (err) {
+    return {
+      text: "",
+      ok: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchOne(
   url: string,
   repoRoot: string,
@@ -138,61 +201,37 @@ async function fetchOne(
     }
   }
 
-  try {
-    const ctrl: AbortController = new AbortController();
-    const timer: NodeJS.Timeout = setTimeout(
-      () => ctrl.abort(),
-      FETCH_TIMEOUT_MS,
-    );
-    const resp: Response = await fetch(url, {
-      signal: ctrl.signal,
-      headers: {
-        // Pretend to be a real browser; some doc sites 403 obvious bots.
-        "user-agent":
-          "Mozilla/5.0 (compatible; kb-source-verifier/1.0; +https://github.com/losiochico/knowledge-base)",
-        accept: "text/html,application/xhtml+xml,*/*",
-      },
-      redirect: "follow",
-    });
-    clearTimeout(timer);
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}`);
+  const candidates: string[] = rewriteForFetch(url);
+  const failures: string[] = [];
+  for (const candidate of candidates) {
+    const result = await fetchOnce(candidate, url);
+    if (result.ok) {
+      writeFileSync(path, result.text, "utf8");
+      writeFileSync(
+        meta,
+        JSON.stringify({ url, fetchedFrom: candidate, fetchedAt: Date.now() }),
+        "utf8",
+      );
+      return { url, text: result.text, fromCache: false };
     }
-    const ct: string = resp.headers.get("content-type") ?? "";
-    const raw: string = await resp.text();
-    const text: string = ct.includes("html") ? htmlToText(raw) : raw;
-    // SPA shells (Next.js, etc.) return a near-empty document on plain fetch.
-    // Flag those so the LLM doesn't try to verify against essentially nothing.
-    if (text.length < 500 && ct.includes("html")) {
-      writeFileSync(path, text, "utf8");
-      writeFileSync(meta, JSON.stringify({ url, fetchedAt: Date.now() }), "utf8");
-      return {
-        url,
-        text,
-        fromCache: false,
-        error: `fetched only ${text.length} chars of text (likely SPA shell; needs JS rendering)`,
-      };
-    }
-    writeFileSync(path, text, "utf8");
-    writeFileSync(meta, JSON.stringify({ url, fetchedAt: Date.now() }), "utf8");
-    return { url, text, fromCache: false };
-  } catch (err) {
-    // Network failure: fall back to stale cache if it exists.
-    if (existsSync(path)) {
-      return {
-        url,
-        text: readFileSync(path, "utf8"),
-        fromCache: true,
-        error: `refetch failed (${err instanceof Error ? err.message : String(err)}); using stale cache`,
-      };
-    }
+    failures.push(`${candidate}: ${result.reason ?? "unknown"}`);
+  }
+
+  // All candidates failed. Fall back to stale cache if present.
+  if (existsSync(path)) {
     return {
       url,
-      text: "",
-      fromCache: false,
-      error: err instanceof Error ? err.message : String(err),
+      text: readFileSync(path, "utf8"),
+      fromCache: true,
+      error: `refetch failed (${failures.join("; ")}); using stale cache`,
     };
   }
+  return {
+    url,
+    text: "",
+    fromCache: false,
+    error: failures.join("; "),
+  };
 }
 
 export async function fetchSources(
