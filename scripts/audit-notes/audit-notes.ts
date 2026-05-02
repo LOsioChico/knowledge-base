@@ -18,6 +18,7 @@
 
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
+import { execSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -54,24 +55,69 @@ interface Args {
   jsonOnly: boolean;
 }
 
+// Resolve targets from `git diff --name-only <ref>` (committed + staged +
+// unstaged) filtered to existing markdown files under content/. Returns the
+// repo-relative paths.
+function targetsFromBase(ref: string): string[] {
+  let raw: string;
+  try {
+    raw = execSync(`git diff --name-only ${ref} -- 'content/**/*.md'`, {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
+  } catch (err: unknown) {
+    const msg: string = err instanceof Error ? err.message : String(err);
+    log(`error: \`git diff --name-only ${ref}\` failed: ${msg}`);
+    process.exit(2);
+  }
+  const all: string[] = raw
+    .split("\n")
+    .map((s: string): string => s.trim())
+    .filter((s: string): boolean => s.length > 0);
+  return all.filter((p: string): boolean =>
+    existsSync(resolve(REPO_ROOT, p)),
+  );
+}
+
 function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
   const noVerify: boolean = argv.includes("--no-verify");
   const jsonOnly: boolean = argv.includes("--json");
-  const positional: string[] = argv.filter(
-    (a: string): boolean => !a.startsWith("--"),
-  );
-  const raw: readonly string[] =
-    positional.length > 0 ? positional : DEFAULT_TARGETS;
-  const targets: string[] = raw.map((p: string): string =>
-    relative(REPO_ROOT, resolve(p)),
-  );
-  const missing: string[] = targets.filter(
-    (p: string): boolean => !existsSync(resolve(REPO_ROOT, p)),
-  );
-  if (missing.length > 0) {
-    log(`error: file(s) not found: ${missing.join(", ")}`);
+  const baseIdx: number = argv.indexOf("--base");
+  const baseRef: string | null =
+    baseIdx !== -1 ? (argv[baseIdx + 1] ?? null) : null;
+  if (baseIdx !== -1 && baseRef === null) {
+    log("error: --base requires a git ref argument (e.g. --base HEAD~1)");
     process.exit(2);
+  }
+  const positional: string[] = argv.filter((a: string, i: number): boolean => {
+    if (a.startsWith("--")) return false;
+    if (baseIdx !== -1 && i === baseIdx + 1) return false;
+    return true;
+  });
+
+  let targets: string[];
+  if (baseRef !== null) {
+    targets = targetsFromBase(baseRef);
+    log(`[args] --base ${baseRef} resolved to ${targets.length} file(s)`);
+    if (positional.length > 0) {
+      log(
+        `[args] ignoring ${positional.length} positional arg(s) because --base was given`,
+      );
+    }
+  } else {
+    const raw: readonly string[] =
+      positional.length > 0 ? positional : DEFAULT_TARGETS;
+    targets = raw.map((p: string): string =>
+      relative(REPO_ROOT, resolve(p)),
+    );
+    const missing: string[] = targets.filter(
+      (p: string): boolean => !existsSync(resolve(REPO_ROOT, p)),
+    );
+    if (missing.length > 0) {
+      log(`error: file(s) not found: ${missing.join(", ")}`);
+      process.exit(2);
+    }
   }
   return { targets, noVerify, jsonOnly };
 }
@@ -384,6 +430,14 @@ async function main(): Promise<void> {
   log(`[audit] cwd=${REPO_ROOT}`);
   log(`[audit] targets=${args.targets.join(", ")}`);
   log(`[audit] verify=${!args.noVerify}`);
+
+  if (args.targets.length === 0) {
+    log("[audit] no targets to audit; exiting clean");
+    if (JSON_ONLY) {
+      process.stdout.write(JSON.stringify({ files: [] }, null, 2) + "\n");
+    }
+    process.exit(0);
+  }
 
   // Pass 0: deterministic
   log("\n--- pass 0 (deterministic) ---");

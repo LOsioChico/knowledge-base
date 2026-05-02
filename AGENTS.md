@@ -268,6 +268,12 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   yarn start --json ../../content/<path>.md [more.md ...] > /tmp/audit.json 2> /tmp/audit.err
   ```
 
+  Diff-aware variant: pass `--base <ref>` to audit only the markdown files changed since `<ref>` (committed + staged + unstaged). Useful for "audit my last commit" (`--base HEAD~1`) or "audit everything since main diverged" (`--base origin/main`). Cuts cost on full-vault re-runs:
+
+  ```bash
+  yarn start --json --base HEAD~1 > /tmp/audit.json 2> /tmp/audit.err
+  ```
+
   Source verification (audit N) is **always on**: the audit fetches each touched note's `source:` URLs and flags claims that the cited sources don't support. The flag to disable it has been removed; the script exits non-zero if `CURSOR_API_KEY` is missing or invalid. Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings (including `source-verification`) get reviewed and fixed if valid; advisory findings are dismissable.
 - **Audit findings are suggestions, not mandates**: every LLM-generated finding (Pass 1 and Pass 2) is a hypothesis about a possible defect, NOT a proven bug. Before applying any fix, verify the finding against the cited line, the cited source, and the surrounding prose. Apply only when ALL of these hold: (a) the finding is real (the agent didn't hallucinate the line content or the source contradiction); (b) the fix preserves or adds information per the cite-don't-hedge rule above (never softens to satisfy the auditor); (c) the change is worth the diff (a citation that's already present in the same paragraph doesn't need duplicating; a sentence the auditor finds awkward but the reader scans cleanly stays). Dismiss findings that fail any of these without guilt and without a code-side suppression: the audit will re-flag if the underlying concern recurs in a future edit, which is the right time to revisit. Forbidden: applying a finding mechanically because it's in the JSON. Required: when applying, log the verification in the commit message or chat ("audit flagged X; verified against Y; applied as Z") so the next pass over the same file knows it's been triaged.
 - If the user asks to push, GitHub Pages rebuilds in 1-2 minutes.
