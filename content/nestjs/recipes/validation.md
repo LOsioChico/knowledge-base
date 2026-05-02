@@ -195,23 +195,24 @@ With `transform: true`, the same handler returns:
 
 ### Where the pipe actually instantiates a class
 
-The pipe inspects the **metatype** of the parameter (the TS type Nest reflects from your handler signature) and skips built-in primitives. Mental check: if the metatype is a custom class with decorators, you get an instance; otherwise the value passes through untouched.
+The pipe inspects the **metatype** of the parameter (the TS type Nest reflects from your handler signature). Validation only runs when the metatype is a custom class; for built-in primitives, validation is skipped but `transform: true` still coerces single-key path/query params via `transformPrimitive` ([source: `validation.pipe.ts` `transformPrimitive`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts#L172-L201)).
 
-| Parameter signature                         | Metatype          | Validation runs? | `transform` produces                  |
-| ------------------------------------------- | ----------------- | :--------------: | ------------------------------------- | --------------------------------------------- |
-| `@Body() dto: CreateUserDto`                | `CreateUserDto`   |        ✅        | `CreateUserDto` instance              |
-| `@Query() q: PaginationQuery`               | `PaginationQuery` |        ✅        | `PaginationQuery` instance            |
-| `@Param() p: GetUserParams`                 | `GetUserParams`   |        ✅        | `GetUserParams` instance              |
-| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO from `body-parser`       |
-| `@Param('id') id: string`                   | `String`          |        ❌        | The raw string                        |
-| `@Query('page') page: number`               | `Number`          |        ❌        | The raw string (`"2"`, not `2`)       |
-| `@UploadedFile() file: Express.Multer.File` | `Object`          |        ❌        | The raw [[nestjs/recipes/file-uploads | multer]] file (validate with `ParseFilePipe`) |
+| Parameter signature                         | Metatype          | Validation runs? | `transform: true` produces                                                           |
+| ------------------------------------------- | ----------------- | :--------------: | ------------------------------------------------------------------------------------ |
+| `@Body() dto: CreateUserDto`                | `CreateUserDto`   |        ✅        | `CreateUserDto` instance                                                             |
+| `@Query() q: PaginationQuery`               | `PaginationQuery` |        ✅        | `PaginationQuery` instance (whole-object query needs `enableImplicitConversion`)     |
+| `@Param() p: GetUserParams`                 | `GetUserParams`   |        ✅        | `GetUserParams` instance                                                             |
+| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO from `body-parser` (no coercion: `transformPrimitive` skips bodies)     |
+| `@Param('id') id: string`                   | `String`          |        ❌        | `String(value)` (URL params are already strings, so no visible change)               |
+| `@Query('page') page: number`               | `Number`          |        ❌        | `+value`: `?page=2` becomes `2` as a number                                          |
+| `@Query('active') active: boolean`          | `Boolean`         |        ❌        | `value === true \|\| value === 'true'`: only `'true'` becomes `true`                 |
+| `@UploadedFile() file: Express.Multer.File` | `Object`          |        ❌        | The raw [[nestjs/recipes/file-uploads\|multer]] file (validate with `ParseFilePipe`) |
 
-For path/query coercion of a single primitive, reach for `ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) instead: `ValidationPipe` won't touch them.
+`ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) still have a place: they throw a 400 on bad input, while `ValidationPipe`'s `transformPrimitive` silently coerces (`+value` returns `NaN` for `?page=abc` and the handler sees `NaN`).
 
 ### `enableImplicitConversion: true`
 
-Path/query params arrive as strings. With implicit conversion on, the pipe coerces based on the TS type:
+Whole-object query/body params (`@Query() q: PaginationQuery` with no key) bypass `transformPrimitive` and go through `plainToInstance` instead. Without `enableImplicitConversion`, every nested field arrives as a string from `qs`:
 
 ```ts
 import { IsInt, Max, Min } from "class-validator";
@@ -224,10 +225,10 @@ export class PaginationQuery {
 }
 ```
 
-`GET /items?limit=10` → `limit` is the number `10`, not the string `"10"`. Without it, `@IsInt()` fails because `"10"` is a string.
+`GET /items?limit=10` → with `enableImplicitConversion: true`, `limit` is the number `10`. Without it, `@IsInt()` fails because `"10"` is a string.
 
-> [!info]- Implicit conversion can mask bad input
-> `enableImplicitConversion` will turn `?active=anything` into `true` for a `boolean` field. Pair with explicit decorators (`@IsBoolean()`, `@Transform(({ value }) => value === 'true')`) for fields where loose coercion would hurt.
+> [!info]- Implicit conversion uses class-transformer rules
+> `enableImplicitConversion` is forwarded to [`class-transformer`'s `plainToInstance`](https://github.com/typestack/class-transformer#enableimplicitconversion-option) and uses TS reflected types to coerce. Boolean coercion in particular is loose enough to surprise: pair with explicit `@Transform(({ value }) => value === 'true')` for fields where strict parsing matters.
 
 ## Validation groups: same DTO, different rules per route
 

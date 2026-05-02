@@ -163,7 +163,7 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 > Response body: `{ "id": 1, "email": "a@b.c" }`; `password` is stripped. Full coverage in [[nestjs/recipes/serialization|the serialization recipe]] (groups, `@Expose`, `@Transform`, `excludeAll`).
 
 > [!warning] `ClassSerializerInterceptor` only acts on **class instances**
-> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `instanceToPlain`. Returning a plain object (`return { id, email, password }`) bypasses it silently: `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dep.
+> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`). Returning a plain object (`return { id, email, password }`) bypasses it silently: `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dep.
 
 ## Binding
 
@@ -209,16 +209,16 @@ Each layer wraps the next, so a global logging interceptor sees the **final** re
 
 The post-phase operators you'll actually reach for. Imports come from `rxjs` or `rxjs/operators`.
 
-| Operator         | Use case                                                                                                     |
-| ---------------- | ------------------------------------------------------------------------------------------------------------ |
-| `tap(fn)`        | Side effects (logs, metrics) without changing the value. See the [async pre-phase recipe](#common-recipes)   |
-| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)      |
-| `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)      |
-| `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`. See the [per-route timeout recipe](#common-recipes) |
-| `of(value)`      | Build a stream from a constant: used to short-circuit (cache). See the [cache recipe](#common-recipes)       |
-| `from(promise)`  | Convert a promise into an observable inside the pre phase                                                    |
-| `retry({...})`   | Resubscribe on error with `count`, `delay`, and predicate options. See the [retry recipe](#common-recipes)   |
-| `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError`                                          |
+| Operator         | Use case                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `tap(fn)`        | Side effects (logs, metrics) without changing the value. See the [async pre-phase recipe](#common-recipes)        |
+| `map(fn)`        | Transform the emitted value (e.g., wrap as `{ data }`). See the [wrap-response recipe](#common-recipes)           |
+| `catchError(fn)` | Map exceptions thrown by the handler to a different error. See the [map-errors recipe](#common-recipes)           |
+| `timeout(ms)`    | Cancel the request after `ms` and emit a `TimeoutError`. See the [per-route timeout recipe](#common-recipes)      |
+| `of(value)`      | Build a stream from a constant: used to short-circuit (cache). See the [cache recipe](#common-recipes)            |
+| `from(promise)`  | Convert a promise into an observable inside the pre phase                                                         |
+| `retry({...})`   | Resubscribe on error with `count`, `delay`, and `resetOnSuccess` options. See the [retry recipe](#common-recipes) |
+| `defer(fn)`      | Wrap pre-phase work so its errors land in the stream's `catchError`                                               |
 
 ## Common recipes
 

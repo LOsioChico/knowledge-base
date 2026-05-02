@@ -241,6 +241,12 @@ export class AppModule {}
 | `useFactory` | Construction depends on async work, env vars, or providers you must inject manually.  |
 
 ```ts
+// Imports for the snippets below:
+//   import { Logger, ValidationPipe } from "@nestjs/common";
+//   import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
+//   import { LoggingInterceptor } from "./logging.interceptor";
+//   import { SentryFilter } from "./sentry.filter";
+
 // useClass: most common
 { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }
 
