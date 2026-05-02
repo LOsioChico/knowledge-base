@@ -220,7 +220,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `pnpm:<script>` | `pnpm run <script>` | `pnpm add -D concurrently` / `pnpm start:dev`   |
 > | `bun:<script>`  | `bun run <script>`  | `bun add -d concurrently` / `bun run start:dev` |
 >
-> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts a package-manager name through the [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts) flag. Bun isn't a built-in option there; for bun-managed installs, scaffold with `npm` first and then re-install with `bun install`.
+> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts any package-manager name through [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts). The interactive prompt offers `npm`, `yarn`, and `pnpm`; bun isn't in the prompt. For bun-managed installs, scaffold with `npm` first and then re-install with `bun install`.
 
 ## Step 5: share code with libraries
 

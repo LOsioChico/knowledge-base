@@ -224,11 +224,11 @@ The filter responds:
 
 The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints so you can branch on `err.constraint`. TypeORM gives three ways to declare uniqueness, and only one of them is right for this job (decorator sources: [`@Unique`](https://github.com/typeorm/typeorm/blob/master/src/decorator/Unique.ts), [`@Index`](https://github.com/typeorm/typeorm/blob/master/src/decorator/Index.ts)):
 
-| Decorator                                   | What TypeORM registers                     | What Postgres emits                    | Naming control | Composite             |
-| ------------------------------------------- | ------------------------------------------ | -------------------------------------- | -------------- | --------------------- |
-| `@Column({ unique: true })`                 | a `uniques` metadata entry                 | `ADD CONSTRAINT "<auto>" UNIQUE (...)` | ❌ auto-named  | ❌ single column only |
-| `@Unique('name', ['col'])` (class-level)    | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)`   | ✅             | ✅                    |
-| `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry                | `CREATE UNIQUE INDEX "name" ON ...`    | ✅             | ✅                    |
+| Decorator                                   | What TypeORM registers                     | What Postgres emits                       | Naming control             | Composite             |
+| ------------------------------------------- | ------------------------------------------ | ----------------------------------------- | -------------------------- | --------------------- |
+| `@Column({ unique: true })`                 | a `uniques` metadata entry                 | `ADD CONSTRAINT "UQ_<hash>" UNIQUE (...)` | ❌ auto-named (`UQ_2e7b…`) | ❌ single column only |
+| `@Unique('name', ['col'])` (class-level)    | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)`      | ✅                         | ✅                    |
+| `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry                | `CREATE UNIQUE INDEX "name" ON ...`       | ✅                         | ✅                    |
 
 Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says _"indexes are treated as constraints"_ for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` registers a constraint visible in [`pg_constraint`](https://www.postgresql.org/docs/current/catalog-pg-constraint.html), `@Index` only shows in [`pg_indexes`](https://www.postgresql.org/docs/current/view-pg-indexes.html). Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
 

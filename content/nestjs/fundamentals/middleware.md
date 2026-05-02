@@ -96,7 +96,7 @@ Most apps wire the same handful of Express-ecosystem packages. Nest documents th
 | ------------------------------------------------------------- | ----------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
 | [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)    | `app.use(helmet())` in `main.ts` ([example](#common-recipes))      |
 | [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                 | `app.enableCors(options)` ([example](#common-recipes))             |
-| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip response compression                           | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/deflate/brotli response compression            | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
 | `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`            | `app.use(cookieParser())`                                          |
 | `express-session`                                             | `express-session` | Server-side session store                           | `app.use(session(options))`                                        |
 | [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on) | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
@@ -208,7 +208,7 @@ The parameter / wildcard distinction is the one that bites: `:id` stops at the n
 
 > [!example]- Access log middleware (status, URL, duration)
 >
-> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|pipeline]] and so sees responses an [[nestjs/fundamentals/interceptors|interceptor]] never gets a chance at: route-not-found 404s and any 4xx/5xx that fires before the handler runs.
+> Apache/nginx-style access logs belong in middleware: the line `GET /cats 200 4ms` describes what the **HTTP layer** did. Middleware sees every request, including 404s, requests rejected by guards, and requests that blew up in pipes: an [[nestjs/fundamentals/interceptors|interceptor]] can't log those because the handler never ran ([request lifecycle](https://docs.nestjs.com/faq/request-lifecycle) places middleware ahead of guards/pipes/handler).
 >
 > Rule of thumb:
 >

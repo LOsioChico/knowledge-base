@@ -188,7 +188,7 @@ export default defineConfig({
 
 ## Using SWC in a CLI [[nestjs/recipes/monorepo|monorepo]]
 
-The Nest CLI defaults to `webpack` in monorepo mode (the official [SWC recipe → Monorepo](https://docs.nestjs.com/recipes/swc#monorepo) tells you to keep webpack and use `swc-loader`), so the `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
+The Nest CLI defaults to `webpack` in monorepo mode (`"webpack": true` in `nest-cli.json`; the official [SWC recipe → Monorepo](https://docs.nestjs.com/recipes/swc#monorepo) keeps webpack and uses `swc-loader`), so the `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
 
 ```shell
 npm i --save-dev swc-loader
