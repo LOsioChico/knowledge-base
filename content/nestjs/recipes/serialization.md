@@ -12,6 +12,11 @@ related:
 source:
   - https://docs.nestjs.com/techniques/serialization
   - https://github.com/typestack/class-transformer
+  - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/package.json
+  - https://typeorm.io/repository-api
+  - https://www.prisma.io/docs/orm/prisma-client/queries
+  - https://mongoosejs.com/docs/tutorials/lean.html
 ---
 
 > Strip secrets, rename fields, and expose role-specific views of the same entity. NestJS hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `instanceToPlain` on whatever the controller returned.
@@ -31,7 +36,7 @@ You hit this the first time a `User` entity leaks `password` or `passwordHash` i
 npm i class-transformer reflect-metadata
 ```
 
-`class-transformer` is a peer dep of `@nestjs/common`'s serializer. `reflect-metadata` is already required by Nest itself.
+`class-transformer` is listed as a required runtime peer for serialization in [`@nestjs/common`'s package.json `peerDependencies`](https://github.com/nestjs/nest/blob/master/packages/common/package.json) (the serializer imports `instanceToPlain` from it). `reflect-metadata` is already required by Nest itself.
 
 ## Wire up the interceptor
 
@@ -54,7 +59,7 @@ import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 export class AppModule {}
 ```
 
-Why the factory: `ClassSerializerInterceptor` needs `Reflector` to read `@SerializeOptions()` metadata. The shorthand `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` works too because Nest resolves the constructor deps automatically; the factory form is explicit and survives if you ever wrap or extend the interceptor.
+Why the factory: `ClassSerializerInterceptor`'s constructor takes a `Reflector` (see [`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)) so it can read `@SerializeOptions()` metadata. The shorthand `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` works too because Nest resolves the constructor deps automatically; the factory form is explicit and survives if you ever wrap or extend the interceptor.
 
 ## The decorators
 
@@ -189,7 +194,7 @@ The `value` argument is the raw property; the function returns whatever should a
 
 ## The class-instance gotcha
 
-Those decorators only fire when the controller returns a **class instance** *and* the route does not declare `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor silently skips it: every field leaks.
+Those decorators only fire when the controller returns a **class instance** *and* the route does not declare `@SerializeOptions({ type: ... })`. Return a plain object from a route with no `type` hint and the interceptor's `transformToPlain` step has nothing to apply decorators to: every field leaks through ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) only calls `instanceToPlain` when the response is a class instance or `@SerializeOptions({ type })` was set).
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
@@ -235,7 +240,7 @@ Same data, different type, very different blast radius.
 
 ### How your ORM affects this
 
-The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances.
+The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `instanceToPlain(user)`. The trap: not every ORM gives you class instances. Behaviors below were verified against each library's own docs ([TypeORM `Repository.find`](https://typeorm.io/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html)).
 
 | Source                                            | What you get back                       | `@Exclude()` works? | Fix                                          |
 | ------------------------------------------------- | --------------------------------------- | :-----------------: | -------------------------------------------- |
@@ -303,8 +308,8 @@ Same entity, two payloads, zero conditional code in the controller.
 
 ## Gotchas
 
-> [!warning]- Plain objects skip the interceptor entirely (unless you opt in)
-> The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` no-ops and every field reaches the wire. Either `return new Entity(...)` / `plainToInstance(Entity, raw)`, or annotate the route with `@SerializeOptions({ type: Entity })` so the interceptor converts the plain object before serializing. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
+> [!warning]- Plain objects skip the interceptor's strip step (unless you opt in)
+> The most common bug, recapped here because it's how every leak in this recipe happens. If the controller returns a plain object literal (or anything not `instanceof YourEntity`), `ClassSerializerInterceptor` skips the `instanceToPlain` strip and every field reaches the wire. Either `return new Entity(...)` / `plainToInstance(Entity, raw)`, or annotate the route with `@SerializeOptions({ type: Entity })` so the interceptor converts the plain object before serializing. See [the class-instance gotcha](#the-class-instance-gotcha) for the ORM-specific cases.
 
 > [!warning]- Nested objects need `@Type()` or their decorators don't run
 > If a field is another class instance: `items: OrderItem[]`, `address: Address`: `class-transformer` needs `@Type(() => OrderItem)` on the field to know which class to apply decorators to. Without it, the nested object is treated as a plain bag and any `@Exclude()` / `@Expose()` on the nested class is silently ignored. Same leak shape as returning a plain object, one level deep.
