@@ -25,8 +25,13 @@ source:
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
   - https://github.com/nestjs/nest/tree/master/packages/core/interceptors
   - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/helpers/execution-context.helper.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/execution-context.interface.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
+  - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
+  - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
   - https://rxjs.dev/api/operators/retry
   - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
 ---

@@ -25,8 +25,10 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/common/exceptions/index.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
-  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/select-exception-filter.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/utils/select-exception-filter-metadata.util.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-proxy.ts
   - https://github.com/nestjs/schematics/tree/master/src/lib/filter
+  - https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts
   - https://nodejs.org/api/process.html#event-unhandledrejection
   - https://nodejs.org/api/cli.html#--unhandled-rejectionsmode
 ---

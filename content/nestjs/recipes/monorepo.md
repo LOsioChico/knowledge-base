@@ -25,6 +25,7 @@ source:
   - https://github.com/open-cli-tools/concurrently/blob/main/README.md
   - https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts
+  - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
   - https://www.youtube.com/watch?v=3_jJK5NMGzs
 ---
 

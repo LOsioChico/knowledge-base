@@ -29,8 +29,10 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
+  - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
   - https://github.com/typestack/class-validator
   - https://github.com/typestack/class-transformer
+  - https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts
 ---
 
 > Transform or validate input data **before** it reaches the route handler.

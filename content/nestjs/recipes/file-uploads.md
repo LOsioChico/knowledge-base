@@ -15,9 +15,10 @@ source:
   - https://docs.nestjs.com/openapi/types-and-parameters#file-upload
   - https://github.com/expressjs/multer
   - https://github.com/nestjs/nest/tree/master/packages/common/pipes/file
-  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts
-  - https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/decorators/upload.decorator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe.builder.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/file-type.validator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/decorators/http/route-params.decorator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/interceptors/file.interceptor.ts
   - https://github.com/fastify/fastify-multipart
   - https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
 ---
@@ -110,7 +111,7 @@ Uploading a 12 MB PDF to that route:
 curl -F file=@huge-report.pdf http://localhost:3000/uploads
 ```
 
-Returns `422 Unprocessable Entity` (the regex appears in the message because `ParseFilePipeBuilder` formats the failure as `Validation failed (expected type is <validator>)`; see [`parse-file-pipe-builder.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe-builder.ts) and [`file-type.validator.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/validators/file-type.validator.ts)):
+Returns `422 Unprocessable Entity` (the regex appears in the message because `ParseFilePipeBuilder` formats the failure as `Validation failed (expected type is <validator>)`; see [`parse-file-pipe.builder.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/parse-file-pipe.builder.ts) and [`file-type.validator.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/file/file-type.validator.ts)):
 
 ```json
 {
@@ -189,7 +190,7 @@ With disk storage `file.buffer` is `undefined` and `file.path` points at the sav
 ## Gotchas
 
 > [!warning]- Global `ValidationPipe` does not see the file field
-> The pipe runs against `@Body()`, `@Query()`, `@Param()` arguments. The `Express.Multer.File` object lives behind `@UploadedFile()` and isn't represented in the metatype the pipe inspects (the file is attached to `req.file` by Multer's request handler, then injected via the `@UploadedFile()` parameter decorator from [`@nestjs/platform-express`](https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/decorators/upload.decorator.ts)). Validate the file with `ParseFilePipe`/`ParseFilePipeBuilder`; validate text fields in the same form via a DTO on `@Body()`. Forgetting this is the most common reason "my file validators don't run".
+> The pipe runs against `@Body()`, `@Query()`, `@Param()` arguments. The `Express.Multer.File` object lives behind `@UploadedFile()` and isn't represented in the metatype the pipe inspects (the file is attached to `req.file` by Multer's request handler, then injected via the [`@UploadedFile()` parameter decorator](https://github.com/nestjs/nest/blob/master/packages/common/decorators/http/route-params.decorator.ts)). Validate the file with `ParseFilePipe`/`ParseFilePipeBuilder`; validate text fields in the same form via a DTO on `@Body()`. Forgetting this is the most common reason "my file validators don't run".
 
 > [!warning]- Reverse-proxy body limit silently caps your upload
 > nginx defaults to `client_max_body_size 1m` ([nginx docs](https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size)); the request is rejected at the proxy with `413 Payload Too Large` and never reaches Nest. Your 10 MB Multer limit is irrelevant until the proxy is bumped to match. Cloud load balancers (AWS ALB, Cloud Run, Cloudflare) have their own per-tier caps; check the provider's docs.
