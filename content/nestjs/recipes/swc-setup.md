@@ -11,7 +11,10 @@ related:
 source:
   - https://docs.nestjs.com/recipes/swc
   - https://swc.rs
+  - https://swc.rs/docs/configuration/modules
   - https://github.com/swc-project/swc
+  - https://trilon.io/blog/nestjs-10-is-now-available
+  - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts
 ---
 
 > [SWC](https://swc.rs) is a Rust-based TS/JS compiler that's roughly **20× faster** than `tsc` on Nest builds. The Nest CLI has built-in support since [[nestjs/releases/v10|v10]]: opt in with one flag, then layer `tsc --noEmit` on top for type-checking. This is the default builder for new and existing Nest projects in this knowledge base; reach for `tsc` or `webpack` only when noted.
@@ -22,7 +25,7 @@ source:
 npm i --save-dev @swc/core
 ```
 
-That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI calls `@swc/core` directly, so you don't need `@swc/cli` unless you want to invoke the standalone `swc` binary outside the Nest CLI (e.g. `npx swc src -d dist`).
+That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI shells out to `@swc/core` directly via [`swcDefaultsFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts), so you don't need `@swc/cli` unless you want to invoke the standalone `swc` binary outside the Nest CLI (e.g. `npx swc src -d dist`). The official recipe still tells you to install `@swc/cli` alongside `@swc/core`; that package is harmless but unused by `nest start`.
 
 ## Minimal working example
 
@@ -65,17 +68,17 @@ nest start -b swc --type-check
 ```
 
 > [!warning] Type-check is **mandatory** when CLI Plugins are enabled
-> `@nestjs/swagger` and `@nestjs/graphql` plugins read TypeScript type information at build time to generate OpenAPI/GraphQL schemas. Without `--type-check` (or `typeCheck: true`), schema generation produces empty or wrong output **silently**: your endpoints compile and run, but `/api` returns no operations. Source: [SWC recipe, CLI Plugins](https://docs.nestjs.com/recipes/swc#cli-plugins-swc).
+> `@nestjs/swagger` and `@nestjs/graphql` plugins read TypeScript type information at build time to generate OpenAPI/GraphQL schemas. The Nest CLI only runs them when `--type-check` (or `typeCheck: true`) is on; without it, the plugin transformer never executes and your generated schema misses operations, while the app itself still boots. Source: [SWC recipe, CLI Plugins](https://docs.nestjs.com/recipes/swc#cli-plugins-swc).
 
 ## Choosing a builder
 
-Default to `swc` and only fall back when you hit a known incompatibility or you're inside a CLI [[nestjs/recipes/monorepo|monorepo]] (where the builder field is ignored and webpack runs the show).
+Default to `swc` and only fall back when you hit a known incompatibility or you're inside a CLI [[nestjs/recipes/monorepo|monorepo]] (where `compilerOptions.builder` is ignored and `webpack` runs the build via [`swc-loader`](#monorepo-use-swc-loader-inside-webpack)).
 
 | Builder | Speed | Type-checks | When to use |
 | --- | --- | --- | --- |
 | `swc` | ~20× `tsc` | No (pair with `--type-check`) | **Default for single-app projects.** New projects, dev loop, simple builds. |
 | `tsc` | Baseline | Yes | Fallback when `swc` triggers a known incompatibility (legacy decorator emit edge cases, custom transformers). |
-| `webpack` | Slow | Via `ts-loader` / `swc-loader` | **Default in CLI monorepos** (`"webpack": true` in `nest-cli.json`). Use [`swc-loader`](#monorepo-use-swc-loader-inside-webpack) to keep SWC's speed. |
+| `webpack` | Slow | Via `ts-loader` / `swc-loader` | **CLI monorepo default** (`"webpack": true` in `nest-cli.json`). Use [`swc-loader`](#monorepo-use-swc-loader-inside-webpack) to keep SWC's speed. Source: [[nestjs/recipes/monorepo|monorepo recipe]]. |
 
 ## Tests: SWC + Jest
 
@@ -232,7 +235,7 @@ See also: [[nestjs/recipes/monorepo|NestJS CLI monorepos]] for the surrounding m
 > Same fix applies to `forwardRef()` constructor injections: wrap the parameter type in `WrapperType<T>` or your ORM's equivalent. Source: [SWC common pitfalls](https://docs.nestjs.com/recipes/swc#common-pitfalls).
 
 > [!tip] CommonJS vs ES modules
-> SWC emits CommonJS by default (matches `tsc`'s `"module": "commonjs"`). If you set `"module": "es6"` in `.swcrc` (e.g. for ESM packages), `@swc/jest` and Vitest may inherit that and break. Pin the test `module` explicitly: `swc.vite({ module: { type: "es6" } })` or a separate `.swcrc` for tests.
+> The Nest CLI's SWC integration sets `module.type: "commonjs"` in its built-in defaults (matches `tsc`'s `"module": "commonjs"`). Raw `@swc/core` leaves `module` untouched unless you set it. If you put `"module": { "type": "es6" }` in `.swcrc` for an ESM package, `@swc/jest` and Vitest may inherit that and break. Pin the test `module` explicitly: `swc.vite({ module: { type: "es6" } })` or use a separate `.swcrc` for tests. Source: [`swc-defaults.ts` in `nest-cli`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts), [SWC modules docs](https://swc.rs/docs/configuration/modules).
 
 ## See also
 

@@ -11,12 +11,7 @@
 // Opt-in via `--verify-sources`. Network + ~10-30k extra tokens per note.
 
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { FlatFinding } from "./types.js";
@@ -179,10 +174,7 @@ async function fetchOnce(
   }
 }
 
-async function fetchOne(
-  url: string,
-  repoRoot: string,
-): Promise<FetchedSource> {
+async function fetchOne(url: string, repoRoot: string): Promise<FetchedSource> {
   const dir: string = cacheDir(repoRoot);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   const path: string = resolve(dir, `${cacheKey(url)}.txt`);
