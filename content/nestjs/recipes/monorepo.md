@@ -163,7 +163,7 @@ dist/
 
 ## Step 4: run multiple apps in one terminal
 
-Two separate `nest start --watch` shells get old fast. The CLI has no built-in "start all" or "build all". Use [`concurrently`](https://github.com/open-cli-tools/concurrently):
+Two separate `nest start --watch` shells get old fast. The CLI has no built-in `start all` (and `nest build` does have a `--all` flag, but `nest start` doesn't, see [`build.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts) vs [`start.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts)). Use [`concurrently`](https://github.com/open-cli-tools/concurrently):
 
 ```bash
 npm i -D concurrently
@@ -219,7 +219,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `pnpm:<script>` | `pnpm run <script>` | `pnpm add -D concurrently` / `pnpm start:dev`   |
 > | `bun:<script>`  | `bun run <script>`  | `bun add -d concurrently` / `bun run start:dev` |
 >
-> At scaffold time, `nest new` accepts `--package-manager npm|yarn|pnpm` (the [`@nestjs/cli` `new` command schema](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts) lists those three); bun is not currently a built-in option. For bun, scaffold with `npm` then re-install with `bun install`.
+> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts any package manager name: see [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts). The interactive prompt offers `npm`, `yarn`, `pnpm`; bun is not in the prompt. For bun, scaffold with `npm` then re-install with `bun install`.
 
 ## Step 5: share code with libraries
 
@@ -379,7 +379,7 @@ Cons:
 - No task graph: the CLI doesn't know which apps depend on which libraries, so a library change always rebuilds everything.
 - No remote build artifact reuse, no affected-only commands. If you need either, reach for `nx` or `turborepo` (you can layer them **on top** of Nest's monorepo mode).
 - Single `package.json`: every app gets every dep. You can't isolate a footgun dep to one app.
-- No built-in "start all" / "build all": you wire `concurrently` yourself.
+- No built-in `start all`: you wire `concurrently` yourself. (`nest build --all` does exist for the build half.)
 
 ## Gotchas
 
@@ -403,7 +403,7 @@ Cons:
 | Symptom                                                        | Likely cause                                                                                                                               |
 | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `EADDRINUSE: address already in use :::3000` after `start:dev` | Both apps default to port 3000. Change one, or read from `process.env.PORT`                                                                |
-| `nest build` only compiles one app                             | Working as designed: `build` targets the default project. Add per-app scripts or a `build:all` fan-out                                     |
+| `nest build` only compiles one app                             | Targets the default project unless you pass `--all` or per-app names. Add per-app scripts or a `build:all` fan-out                         |
 | `Cannot find module '@app/<lib>'`                              | The lib was created outside the workspace, or root `tsconfig.json#paths` got hand-edited and broke. Regenerate or restore the path mapping |
 | `nest g library` prompts for a prefix every time               | That's the schematic's behavior. Press enter to keep the default                                                                           |
 | Library changes don't show up in the app                       | Restart the dev server: webpack's incremental rebuild watches the lib, but cold-cached builds need a kick                                  |

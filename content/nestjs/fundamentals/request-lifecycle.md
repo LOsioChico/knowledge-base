@@ -55,7 +55,7 @@ flowchart TD
 > You can stack multiple interceptors (global + controller + route). Each one wraps the next, so the boxes nest like onion layers: pre runs in registration order, post runs in **FILO** (first in, last out).
 
 > [!info]- Why [[middleware|middleware]] sits outside the exception zone
-> Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` inside middleware bubbles to the platform's default handler ([Express error handling](https://expressjs.com/en/guide/error-handling.html), [Fastify hooks](https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks)), **not** to your Nest [[exception-filters|@Catch() filters]]. To route a middleware error through the filter chain, call `next(err)` explicitly (Express) or rethrow inside an `async` middleware so the platform forwards it to Nest's exception layer.
+> Middleware runs on the raw platform layer (Express/Fastify), before Nest installs its filter chain. A synchronous `throw` (or, in Express 5, an unhandled rejection from an `async` middleware) bubbles to the platform's default error middleware ([Express error handling](https://expressjs.com/en/guide/error-handling.html), [Fastify hooks](https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks)), **not** to your Nest [[exception-filters|exception filters]]. Either call `next(err)` and register a platform-level error middleware, or move the failing logic into a [[guards|guard]] / [[interceptors|interceptor]] so it sits inside the filter chain.
 
 ## The order
 
@@ -70,7 +70,7 @@ flowchart TD
 9. Response is sent.
 
 > [!info]- Filters resolve in the **opposite** direction
-> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further at the same handler sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter. Rethrowing from inside a filter does **not** re-enter the per-handler chain: it falls through to the global filter layer (and ultimately `BaseExceptionFilter`). See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]].
+> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further at the same handler sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter. Throwing from inside a filter does **not** re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func(...)` once and returns): the rethrown error escapes the router proxy and is handed to the platform's default error handler, bypassing every other filter. See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]].
 
 ## Why the order matters
 

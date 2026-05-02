@@ -23,6 +23,8 @@ source:
   - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/tree/master/packages/common/pipes
   - https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-uuid.pipe.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-int.pipe.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-bool.pipe.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
@@ -109,9 +111,9 @@ All exported from `@nestjs/common`.
 
 The global-scope variant of the same DI question: `useGlobalPipes(new X())` vs `APP_PIPE`: has its own dedicated note: [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]]. It covers the side-by-side comparison, request-scope and hybrid-app implications, and when to reach for `useClass` vs `useFactory`.
 
-## Order: the param level reversal
+## Order: scopes and per-param resolution
 
-Standard order is global, controller, route. Per-parameter pipes run from the **last parameter to the first** (verifiable by adding a `console.log` in a custom pipe across multi-arg handlers; the [`pipes-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts) iterates the param metadata in reverse):
+Standard order is global, controller, route. Per-parameter pipes resolve **concurrently**: [`router-execution-context.ts` `createPipesFn`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts) wraps each parameter's resolution in `Promise.all(paramsOptions.map(resolveParamValue))`. Within a single parameter, [`pipes-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-consumer.ts) reduces the pipe list **left-to-right** (first pipe sees the raw value, last pipe's output reaches the handler). Don't write per-param pipes that depend on a particular ordering across parameters; if one needs another's output, fold them into a single pipe.
 
 ```typescript
 import {
@@ -158,8 +160,10 @@ export class CatsController {
     @Query() query: UpdateCatQuery,
   ) {}
 }
-// GeneralValidationPipe runs on: query, then params, then body.
-// Then RouteSpecificPipe runs in the same reversed order.
+// GeneralValidationPipe and RouteSpecificPipe both run on each of body,
+// params, and query. Across the three parameters they resolve concurrently
+// (Promise.all); within each parameter, GeneralValidationPipe runs first,
+// then RouteSpecificPipe.
 ```
 
 ## DefaultValuePipe

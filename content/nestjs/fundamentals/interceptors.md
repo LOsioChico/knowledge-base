@@ -65,7 +65,7 @@ nest g itc logging --no-spec        # skip the *.spec.ts test file
 nest g itc logging --dry-run        # preview the file plan, write nothing
 ```
 
-Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Sources: [`@nestjs/schematics` interceptor schema](https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json), [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the exact file plan.
+Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Note: the schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json)) but the CLI overrides that default to `false` in [`actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts) (`const flatValue = !!flat?.value` makes an absent flag resolve to `false`), so the schema default is unreachable through `nest g`. Trust `--dry-run` over the schema. Sources: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the exact file plan.
 
 ## The pre/post pattern
 
@@ -177,7 +177,7 @@ The global-scope variant of the same DI question: `useGlobalInterceptors(new X()
 
 ## Order: the FILO trick
 
-The same wrap-around shape applies across multiple interceptors. Nest builds the chain global → controller → route ([`interceptors-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts)) and the consumer composes them as nested `next.handle()` calls, so the post phase unwinds in reverse ([`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts)).
+The same wrap-around shape applies across multiple interceptors. Nest builds the chain global → controller → route ([`context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts) concatenates `getGlobalMetadata()` with controller-level then method-level metadata, used by [`interceptors-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts)) and the consumer composes them as nested `next.handle()` calls, so the post phase unwinds in reverse: [`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) iterates `i = 0..interceptors.length`, returning a `CallHandler` whose `handle()` calls `nextFn(i+1)`.
 
 - **Inbound** (pre code, before `next.handle()`): global → controller → route.
 - **Outbound** (RxJS operators, after the handler emits): route → controller → global. First in, last out.
@@ -322,7 +322,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> [`retry`](https://rxjs.dev/api/operators/retry) resubscribes to the source observable on error. Because the source here is `next.handle()`, resubscribing **re-invokes the handler** ([`route-paramtypes.enum.ts` aside: subscription is what triggers handler execution in `RouterExecutionContext`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts)). Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry.
+> [`retry`](https://rxjs.dev/api/operators/retry) resubscribes to the source observable on error. Because the source here is `next.handle()`, resubscribing **re-invokes the handler**: [`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) wraps the handler in `defer(...transformDeferred(next))`, and `defer` re-runs its factory (which calls the handler) on every subscription. Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry.
 
 > [!example]- Async pre phase (returning `Promise<Observable>`)
 >
@@ -342,7 +342,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> Nest awaits the returned promise before subscribing. The handler is delayed until `recordStart` resolves, so don't `await` slow I/O here unless you mean to add latency to every request. Errors thrown from the awaited code skip `next.handle()` entirely (pre-phase throw: see above).
+> Nest awaits the returned promise before subscribing ([`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) returns the `intercept()` value through `defer().pipe(mergeAll())`, which flattens a `Promise<Observable>` by awaiting the promise then subscribing the inner observable). The handler is delayed until `recordStart` resolves, so don't `await` slow I/O here unless you mean to add latency to every request. Errors thrown from the awaited code skip `next.handle()` entirely (pre-phase throw: see above).
 
 ## Gotchas
 
