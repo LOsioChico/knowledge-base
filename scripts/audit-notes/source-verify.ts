@@ -8,7 +8,8 @@
 //      `kb-source-verifier` skill.
 //   5. Parse JSON response into `source-verification` findings.
 //
-// Opt-in via `--verify-sources`. Network + ~10-30k extra tokens per note.
+// Default-on. Disable per-run with `--no-verify-sources`.
+// Network + ~10-30k extra tokens per note.
 
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";

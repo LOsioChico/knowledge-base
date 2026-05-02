@@ -265,6 +265,6 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   yarn start --json ../../content/<path>.md [more.md ...] > /tmp/audit.json 2> /tmp/audit.err
   ```
 
-  Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings get reviewed and fixed if valid; advisory findings are dismissable.
+  Source verification (audit N) is **on by default**: the audit fetches each touched note's `source:` URLs and flags claims that the cited sources don't support. Add `--no-verify-sources` only when iterating offline or when the LLM cost matters more than catching unsupported claims; the default is the safe one because the alternative is shipping confidently-worded content that no source actually backs (the failure mode that motivated the rule). Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings (including `source-verification`) get reviewed and fixed if valid; advisory findings are dismissable.
 - If the user asks to push, GitHub Pages rebuilds in 1-2 minutes.
 - If you established a new convention, update this file in the same commit.

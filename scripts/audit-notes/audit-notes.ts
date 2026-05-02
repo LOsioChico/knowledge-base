@@ -10,8 +10,9 @@
 //   CURSOR_API_KEY=... yarn start <file.md> [more.md ...]
 //
 // Flags:
-//   --no-verify   skip Pass 2 (faster; useful for local debugging)
-//   --json        emit only the final JSON to stdout (for CI piping)
+//   --no-verify           skip Pass 2 verifier (faster; useful for local debugging)
+//   --no-verify-sources   skip Pass 1b source verification (default: ON)
+//   --json                emit only the final JSON to stdout (for CI piping)
 
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
@@ -56,7 +57,7 @@ function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
   const noVerify: boolean = argv.includes("--no-verify");
   const jsonOnly: boolean = argv.includes("--json");
-  const verifySources: boolean = argv.includes("--verify-sources");
+  const verifySources: boolean = !argv.includes("--no-verify-sources");
   const positional: string[] = argv.filter(
     (a: string): boolean => !a.startsWith("--"),
   );
@@ -106,35 +107,70 @@ async function streamAssistantText(run: Run): Promise<string> {
   return buf;
 }
 
-// Extract the first balanced top-level JSON object from arbitrary assistant text.
+// Extract a JSON object from arbitrary assistant text.
+// Strategy: prefer the last fenced ```json block (assistant reliably emits
+// the schema-conformant payload last). Fall back to the last balanced
+// top-level `{...}` substring that JSON.parse accepts. We scan from the end
+// because the assistant often narrates findings first, and prose can quote
+// code containing stray `{` (e.g. `import { Foo } from '...'`) that the
+// previous "first `{`" strategy misparsed.
 function extractJson(text: string): string {
-  const start: number = text.indexOf("{");
-  if (start === -1) throw new Error("no JSON object found in assistant output");
-  let depth: number = 0;
-  let inString: boolean = false;
-  let escape: boolean = false;
-  for (let i = start; i < text.length; i++) {
-    const ch: string = text[i] ?? "";
-    if (escape) {
-      escape = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escape = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
-    if (inString) continue;
-    if (ch === "{") depth++;
-    else if (ch === "}") {
-      depth--;
-      if (depth === 0) return text.slice(start, i + 1);
+  const fenceRe: RegExp = /```json\s*\n([\s\S]*?)\n```/g;
+  let lastFence: string | null = null;
+  for (let m: RegExpExecArray | null; (m = fenceRe.exec(text)) !== null; ) {
+    lastFence = m[1] ?? null;
+  }
+  if (lastFence !== null) {
+    try {
+      JSON.parse(lastFence);
+      return lastFence;
+    } catch {
+      // fall through to balanced-scan
     }
   }
-  throw new Error("unbalanced JSON object in assistant output");
+  // Walk every `{`...balanced-`}` substring; return the longest one that
+  // parses (the outermost / wrapping object, not a nested fragment).
+  let best: string | null = null;
+  for (let start: number = 0; start < text.length; start++) {
+    if (text[start] !== "{") continue;
+    let depth: number = 0;
+    let inString: boolean = false;
+    let escape: boolean = false;
+    for (let i: number = start; i < text.length; i++) {
+      const ch: string = text[i] ?? "";
+      if (escape) {
+        escape = false;
+        continue;
+      }
+      if (ch === "\\") {
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) {
+          const candidate: string = text.slice(start, i + 1);
+          try {
+            JSON.parse(candidate);
+            if (best === null || candidate.length > best.length) {
+              best = candidate;
+            }
+          } catch {
+            // not parseable; ignore
+          }
+          break;
+        }
+      }
+    }
+  }
+  if (best !== null) return best;
+  throw new Error("no parseable JSON object found in assistant output");
 }
 
 async function runAgent(prompt: string, label: string): Promise<string> {
