@@ -35,7 +35,7 @@ source:
 
 - Single application, single deploy: stick with standard mode.
 - Multi-language repo (Nest API + Go service + Rust worker): use `nx`, `turborepo`, or `pnpm` workspaces. Nest CLI only knows about Nest projects.
-- You need fine-grained task graphs, remote build cache, or affected-only test runs: that's `nx`/`turborepo` territory.
+- You need fine-grained task graphs, remote build artifact reuse, or affected-only test runs: that's `nx`/`turborepo` territory.
 
 ## Setup
 
@@ -372,7 +372,7 @@ Pros:
 Cons:
 
 - No task graph: the CLI doesn't know which apps depend on which libraries, so a library change always rebuilds everything.
-- No remote cache, no affected-only commands. If you need either, reach for `nx` or `turborepo` (you can layer them **on top** of Nest's monorepo mode).
+- No remote build artifact reuse, no affected-only commands. If you need either, reach for `nx` or `turborepo` (you can layer them **on top** of Nest's monorepo mode).
 - Single `package.json`: every app gets every dep. You can't isolate a footgun dep to one app.
 - No built-in "start all" / "build all": you wire `concurrently` yourself.
 

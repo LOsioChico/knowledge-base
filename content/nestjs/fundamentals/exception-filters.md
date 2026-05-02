@@ -22,6 +22,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/caching]]"
   - "[[nestjs/data/typeorm/handle-database-errors]]"
 source:
   - https://docs.nestjs.com/exception-filters
@@ -288,7 +289,7 @@ export class CatchEverythingFilter implements ExceptionFilter {
 > export class AppModule {}
 > ```
 >
-> `HttpAdapterHost` is only available after `NestFactory.create()` finishes wiring the adapter, which is why the official docs resolve it inside `catch()` rather than caching `httpAdapter` in the constructor. See [HTTP adapter](https://docs.nestjs.com/faq/http-adapter).
+> `HttpAdapterHost` is only available after `NestFactory.create()` finishes wiring the adapter, which is why the official docs resolve it inside `catch()` rather than holding `httpAdapter` on the filter instance. See [HTTP adapter](https://docs.nestjs.com/faq/http-adapter).
 
 > [!example]- Extend `BaseExceptionFilter` to add logging without losing default behavior
 >
@@ -360,7 +361,7 @@ Override the response shape by passing `exceptionFactory` to `ValidationPipe` (p
 
 - Validation/coercion: that's a [[nestjs/fundamentals/pipes|pipe]]'s job. Pipes throw, the filter renders.
 - Authorization decisions: a [[nestjs/fundamentals/guards|guard]] should reject **before** any handler work.
-- Wrapping the handler with timing/caching/retry: that's an [[nestjs/fundamentals/interceptors|interceptor]].
+- Wrapping the handler with timing/[[nestjs/data/caching|caching]]/retry: that's an [[nestjs/fundamentals/interceptors|interceptor]].
 - Mutating the raw request: [[nestjs/fundamentals/middleware|middleware]].
 
 ## Gotchas

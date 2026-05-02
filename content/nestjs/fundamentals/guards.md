@@ -15,6 +15,7 @@ related:
   - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/guards
   - https://docs.nestjs.com/fundamentals/execution-context
@@ -88,7 +89,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based cache lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest subscribes, takes the first emitted value, and uses it.
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common"
@@ -434,7 +435,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles)
 
 - Mutating the raw request, attaching correlation IDs: use [[nestjs/fundamentals/middleware|middleware]].
 - Validating or coercing input shape: use [[nestjs/fundamentals/pipes|a pipe]].
-- Logging, caching, or wrapping the handler with timing: use [[nestjs/fundamentals/interceptors|an interceptor]].
+- Logging, [[nestjs/data/caching|caching]], or wrapping the handler with timing: use [[nestjs/fundamentals/interceptors|an interceptor]].
 - Turning a thrown error into an HTTP response: that's an [[nestjs/fundamentals/exception-filters|exception filter]]: the guard's job ends at "throw".
 
 ## See also

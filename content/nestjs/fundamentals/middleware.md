@@ -13,6 +13,7 @@ related:
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/middleware
   - https://docs.nestjs.com/faq/request-lifecycle
@@ -78,7 +79,7 @@ Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request pip
 | Mutate raw `req`/`res` for every (matching) route                   | Middleware                                           |
 | Decide "should this handler run?" based on roles/permissions        | [[nestjs/fundamentals/guards\|Guard]]                |
 | Validate or coerce a parameter (`@Body()`, `@Param()`, `@Query()`)  | [[nestjs/fundamentals/pipes\|Pipe]]                  |
-| Wrap the handler (timing, caching, response mapping, retries)       | [[nestjs/fundamentals/interceptors\|Interceptor]]    |
+| Wrap the handler (timing, [[nestjs/data/caching\|caching]], response mapping, retries)       | [[nestjs/fundamentals/interceptors\|Interceptor]]    |
 | Turn a thrown error into an HTTP response                           | [[nestjs/fundamentals/exception-filters\|Exception filter]] |
 
 ## Common middleware you'll plug in

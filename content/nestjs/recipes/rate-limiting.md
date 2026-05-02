@@ -9,6 +9,7 @@ related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/security/rate-limiting
   - https://github.com/nestjs/throttler

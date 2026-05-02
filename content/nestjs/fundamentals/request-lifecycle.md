@@ -14,6 +14,7 @@ related:
   - "[[nestjs/fundamentals/lifecycle-hooks]]"
   - "[[nestjs/recipes/file-uploads]]"
   - "[[nestjs/recipes/trace-id]]"
+  - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/faq/request-lifecycle
 ---
@@ -73,7 +74,7 @@ Pick the right tool by asking _when_ it should run:
 | ----------------------------------------------- | ---------------------------------------- |
 | Mutate the raw request, attach correlation IDs  | [[middleware\|Middleware]]               |
 | Authorization decision before any work          | [[guards\|Guards]]                       |
-| Wrap the handler with logging, caching, retries | [[interceptors\|Interceptors]]           |
+| Wrap the handler with logging, [[nestjs/data/caching\|caching]], retries | [[interceptors\|Interceptors]]           |
 | Validate or transform input                     | [[pipes\|Pipes]]                         |
 | Convert a thrown error into an HTTP response    | [[exception-filters\|Exception filters]] |
 

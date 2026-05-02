@@ -16,6 +16,7 @@ related:
   - "[[nestjs/recipes/validation]]"
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
+  - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
@@ -72,7 +73,7 @@ intercept(ctx, next) {
 }
 ```
 
-If you **never call** `next.handle()`, the handler is skipped: useful for caching (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
+If you **never call** `next.handle()`, the handler is skipped: useful for [[nestjs/data/caching|caching]] (see recipes below). Source: [NestJS Interceptors > Call handler](https://docs.nestjs.com/interceptors#call-handler).
 
 ### Pre-phase short-circuit
 
