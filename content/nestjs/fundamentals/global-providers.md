@@ -40,12 +40,15 @@ import { AuthGuard } from "./auth.guard";
 import { LoggingInterceptor } from "./logging.interceptor";
 import { HttpExceptionFilter } from "./http-exception.filter";
 
-const app = await NestFactory.create(AppModule);
-app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-app.useGlobalGuards(new AuthGuard());
-app.useGlobalInterceptors(new LoggingInterceptor());
-app.useGlobalFilters(new HttpExceptionFilter());
-await app.listen(3000);
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalGuards(new AuthGuard());
+  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
+  await app.listen(3000);
+}
+bootstrap();
 ```
 
 The component is `new`'d **outside the DI container**. Nest never sees its constructor. Whatever you pass is what you get.

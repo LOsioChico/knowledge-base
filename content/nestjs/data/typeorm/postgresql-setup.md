@@ -26,7 +26,9 @@ source:
   - https://github.com/nestjs/typeorm
   - https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts
   - https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts
-  - https://typeorm.io/data-source-options
+  - https://github.com/nestjs/config/blob/master/lib/config.service.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/migration/MigrationExecutor.ts
   - https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database
 ---
 
@@ -123,7 +125,7 @@ import * as Joi from "joi";
 export class AppModule {}
 ```
 
-`ConfigService.getOrThrow` fails fast at boot if a key is missing, so you don't ship an app that crashes on the first query. Joi's `validationSchema` runs before any provider resolves, which means a typo in `.env` blocks startup with a readable error instead of a connection timeout three seconds later.
+[`ConfigService.getOrThrow`](https://github.com/nestjs/config/blob/master/lib/config.service.ts) fails fast at boot if a key is missing, so you don't ship an app that crashes on the first query. Joi's `validationSchema` runs before any provider resolves, which means a typo in `.env` blocks startup with a readable error instead of a connection timeout three seconds later.
 
 `migrationsRun: true` runs pending migrations on boot. Convenient for production; in dev, run them manually with the CLI so you control timing.
 

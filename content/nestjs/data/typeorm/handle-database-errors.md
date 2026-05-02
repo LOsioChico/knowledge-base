@@ -14,9 +14,13 @@ related:
 source:
   - https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts
   - https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/decorator/Unique.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/decorator/Index.ts
   - https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.postgresql.org/docs/current/protocol-error-fields.html
+  - https://www.postgresql.org/docs/current/catalog-pg-constraint.html
+  - https://www.postgresql.org/docs/current/view-pg-indexes.html
   - https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
   - https://www.sqlite.org/rescode.html
   - https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
@@ -101,7 +105,7 @@ export function isUniqueViolation(
 | Exclusion (PG only)                               | `23P01`           | n/a                                     | n/a                                  | no, falls through to 500                                                                           |
 | Concurrent-update conflict (retryable, txn-level) | `40001`           | `1213` (`ER_LOCK_DEADLOCK`)             | n/a                                  | no; see [Retryable errors](#gotchas)                                                               |
 
-Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the _extended_ result codes; what `err.code` actually contains depends on the driver. Check your driver's docs (e.g. [better-sqlite3](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) exposes the symbolic name; node-sqlite3 historically returned the primary code unless [extended codes](https://www.sqlite.org/c3ref/extended_result_codes.html) were enabled). The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
+Postgres SQLSTATE values are stable across versions. `err.code` is a **string**; MySQL `err.errno` is a **number**. The SQLite column lists the _extended_ result codes; what `err.code` actually contains depends on the driver and on whether [extended result codes](https://www.sqlite.org/c3ref/extended_result_codes.html) are enabled. Check your driver's docs (e.g. [better-sqlite3](https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md) exposes the symbolic name). The recipe below targets Postgres only; adapt the predicate per driver if you need cross-DB support.
 
 ## Recipe 1: Centralize in an exception filter (recommended for NestJS)
 
@@ -218,7 +222,7 @@ The filter responds:
 
 ## Recipe 2: Catch in the service (when you need domain context)
 
-The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints so you can branch on `err.constraint`. TypeORM gives three ways to declare uniqueness, and only one of them is right for this job:
+The filter approach is generic. When you need to attach domain meaning (e.g., "this specific unique violation means the email is taken; that one means the username is"), catch in the service. This requires **named** unique constraints so you can branch on `err.constraint`. TypeORM gives three ways to declare uniqueness, and only one of them is right for this job (decorator sources: [`@Unique`](https://github.com/typeorm/typeorm/blob/master/src/decorator/Unique.ts), [`@Index`](https://github.com/typeorm/typeorm/blob/master/src/decorator/Index.ts)):
 
 | Decorator                                   | What TypeORM registers                     | What Postgres emits                       | Naming control             | Composite             |
 | ------------------------------------------- | ------------------------------------------ | ----------------------------------------- | -------------------------- | --------------------- |
@@ -226,7 +230,7 @@ The filter approach is generic. When you need to attach domain meaning (e.g., "t
 | `@Unique('name', ['col'])` (class-level)    | a `uniques` metadata entry **with a name** | `ADD CONSTRAINT "name" UNIQUE (...)`      | ✅                         | ✅                    |
 | `@Index('name', ['col'], { unique: true })` | an `indices` metadata entry                | `CREATE UNIQUE INDEX "name" ON ...`       | ✅                         | ✅                    |
 
-Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says _"indexes are treated as constraints"_ for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` shows up in `pg_constraint`, `@Index` only in `pg_indexes`. Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
+Postgres enforces all three identically (a UNIQUE constraint is implemented via a unique index under the hood) and populates `err.constraint` for **all of them**: [the protocol spec](https://www.postgresql.org/docs/current/protocol-error-fields.html) explicitly says _"indexes are treated as constraints"_ for the constraint-name field. So the choice between `@Unique` and `@Index({ unique: true })` is not about whether `err.constraint` works (it does either way); it's about intent and metadata location: `@Unique` registers a constraint visible in [`pg_constraint`](https://www.postgresql.org/docs/current/catalog-pg-constraint.html), `@Index` only shows in [`pg_indexes`](https://www.postgresql.org/docs/current/view-pg-indexes.html). Use `@Unique` for "no two users with the same email": it matches the modeling intent. Use `@Index({ unique: true })` when you specifically need an index (e.g. partial uniqueness with a `WHERE` clause).
 
 ```typescript
 // user.entity.ts
