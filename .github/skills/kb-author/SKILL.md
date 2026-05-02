@@ -46,6 +46,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **L** | Comparative claims ("same as X", "mirrors X", "X also returns Y") verified against the comparator's primary source, or dropped | [audits/L-comparative-claims.md](audits/L-comparative-claims.md) |
 | **M** | Wikilinks point at the right concept, not just the matching word; rephrase prose for vocabulary collisions instead of accepting the link or silencing with `unrelated:` | [audits/M-ambiguous-wikilinks.md](audits/M-ambiguous-wikilinks.md) |
 | **N** | Re-fetch every URL in `source:` and diff prose against the live doc; mandatory for recipes, security, auth, error-handling, and version-specific notes | [audits/N-source-verification.md](audits/N-source-verification.md) |
+| **O** | Prose claims about a snippet's runtime behavior (auto-converted, deprecated, throws at startup, emits warning) are mirrored INSIDE the snippet via comments, output, or annotated identifiers | [audits/O-behavior-in-snippet.md](audits/O-behavior-in-snippet.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).

@@ -158,6 +158,36 @@ Any section that describes an observable behavior change — "returns 400", "str
 
 Applies to recipes (`type/recipe`); fundamentals can stay narrative when the behavior is obvious from the snippet.
 
+### Behavior-in-snippet, not buried in prose (MANDATORY for all notes with code)
+
+When prose around a snippet claims a runtime behavior — "Nest auto-rewrites this", "emits a deprecation warning", "falls back to the default", "throws at startup if X", "silently coerces to Y" — that behavior MUST also appear **inside the snippet**: as a comment on the affected line, in the return value, in a console output line, or via an annotated identifier (e.g. `findAllV4`, `findAll_DEPRECATED`). Prose-only claims fail the scan-the-code reader, who never reads the surrounding paragraph.
+
+Forbidden:
+
+```typescript
+// Before (Express v4)
+@Get("users/*")
+findAll() {}
+```
+
+(prose elsewhere says "Nest auto-rewrites this and emits a warning")
+
+Required:
+
+```typescript
+// Before (Express v4): still works in v11, but Nest auto-rewrites it to a
+// valid Express v5 route and logs a warning at startup. Don't ship new code
+// with this shape.
+@Get("users/*")
+findAllV4() {
+  return "auto-converted, deprecated"
+}
+```
+
+One sentence inline next to the affected line beats one paragraph above the block. The rule is the snippet should stand alone in scan mode, even if the reader skips prose.
+
+Advisory only — no automated detector. Audit during the post-edit code-block pass: for each prose claim about runtime behavior near a snippet, verify the snippet itself reflects the claim. See [`kb-author` Audit O](.github/skills/kb-author/audits/O-behavior-in-snippet.md).
+
 ## Sourcing rule (NON-NEGOTIABLE)
 
 Never write a technical claim from training-data memory. Every fact MUST be verified against primary sources at the moment of writing.
