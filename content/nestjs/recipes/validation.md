@@ -204,8 +204,8 @@ The pipe inspects the **metatype** of the parameter (the TS type Nest reflects f
 | `@Param() p: GetUserParams`                 | `GetUserParams`   |        ✅        | `GetUserParams` instance                                                             |
 | `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO from `body-parser` (no coercion: `transformPrimitive` skips bodies)     |
 | `@Param('id') id: string`                   | `String`          |        ❌        | `String(value)` (URL params are already strings, so no visible change)               |
-| `@Query('page') page: number`               | `Number`          |        ❌        | `+value`: `?page=2` becomes `2` as a number                                          |
-| `@Query('active') active: boolean`          | `Boolean`         |        ❌        | `value === true \|\| value === 'true'`: only `'true'` becomes `true`                 |
+| `@Query('page') page: number`               | `Number`          |        ❌        | Coerced via `+value`: `?page=2` arrives as the number `2`                            |
+| `@Query('active') active: boolean`          | `Boolean`         |        ❌        | Coerced via `value === true \|\| value === 'true'`: only `'true'` arrives as `true`  |
 | `@UploadedFile() file: Express.Multer.File` | `Object`          |        ❌        | The raw [[nestjs/recipes/file-uploads\|multer]] file (validate with `ParseFilePipe`) |
 
 `ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) still have a place: they throw a 400 on bad input, while `ValidationPipe`'s `transformPrimitive` silently coerces (`+value` returns `NaN` for `?page=abc` and the handler sees `NaN`).
