@@ -29,6 +29,10 @@ source:
   - https://docs.nestjs.com/fundamentals/execution-context
   - https://docs.nestjs.com/faq/http-adapter
   - https://docs.nestjs.com/cli/usages
+  - https://github.com/nestjs/nest/blob/master/packages/common/exceptions/index.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
+  - https://github.com/nestjs/schematics/tree/master/src/lib/filter
 ---
 
 > Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other request-pipeline component is a forward checkpoint that runs in order; a filter runs *only* when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).
@@ -83,17 +87,16 @@ nest g f http-exception --no-spec        # skip the *.spec.ts test file
 nest g f http-exception --dry-run        # preview the file plan, write nothing
 ```
 
-The schematic emits an empty `@Catch()` filter (catch-all) by default. Source: [Nest CLI usages](https://docs.nestjs.com/cli/usages).
+The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/tree/master/src/lib/filter/files)).
 
 ## Built-in HTTP exceptions
 
-All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and the default global filter responds with the right status:
+All extend `HttpException` and live in `@nestjs/common` ([exceptions/index.ts](https://github.com/nestjs/nest/blob/master/packages/common/exceptions/index.ts)). Throw them anywhere and the default global filter responds with the right status:
 
 | Status | Class                            | Worked example |
 | -----: | -------------------------------- | -------------- |
 |    400 | `BadRequestException`            | [[nestjs/recipes/validation#Customizing the error response\|Customizing the validation error response]] |
 |    401 | `UnauthorizedException`          | [[nestjs/auth/jwt-strategy\|JWT auth strategy]] |
-|    402 | `PaymentRequiredException`       | |
 |    403 | `ForbiddenException`             | [[nestjs/fundamentals/guards#Common recipes\|Custom guard exception]] |
 |    404 | `NotFoundException`              | [[nestjs/fundamentals/pipes#Common recipes\|Param-to-entity lookup pipe]] |
 |    405 | `MethodNotAllowedException`      | |
@@ -105,6 +108,7 @@ All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and
 |    413 | `PayloadTooLargeException`       | |
 |    415 | `UnsupportedMediaTypeException`  | |
 |    418 | `ImATeapotException`             | |
+|    421 | `MisdirectedException`           | |
 |    422 | `UnprocessableEntityException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB constraint-violation filter]] |
 |    500 | `InternalServerErrorException`   | [[nestjs/data/typeorm/handle-database-errors#Recipe 1 Centralize in an exception filter recommended for NestJS\|DB error fallback]] |
 |    501 | `NotImplementedException`        | |
@@ -112,6 +116,9 @@ All extend `HttpException` and live in `@nestjs/common`. Throw them anywhere and
 |    503 | `ServiceUnavailableException`    | |
 |    504 | `GatewayTimeoutException`        | |
 |    505 | `HttpVersionNotSupportedException` | |
+
+> [!info]- No `PaymentRequiredException` (402)
+> Despite the canonical HTTP status, `@nestjs/common` does not export a class for `402 Payment Required`. Throw a plain `HttpException("Payment required", 402)` if you need it.
 
 All accept `(message?, options?)` where `options = { cause?, description? }`. With a description:
 
@@ -176,7 +183,7 @@ export class CatsController {
 
 ## Order: route first, then controller, then global
 
-Filters resolve **bottom-up**, the opposite of every other pipeline layer:
+Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`router-exception-filters.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts) merges method, then class, then global filters and reverses the merged list):
 
 1. Route-bound filter
 2. Controller-bound filter
