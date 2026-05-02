@@ -212,6 +212,7 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No `--` either.
 - No filler ("In this guide, we will..."). Get to the example.
 - NestJS HTTP notes are Express-first. Use Express imports/types in examples. Mention Fastify only when the adapter changes the implementation, usually as a gotcha or explicit adapter note.
+- NestJS examples assume the **SWC** builder (see [[nestjs/recipes/swc-setup|SWC recipe]]). Show `nest start -b swc --type-check` (or the equivalent `nest-cli.json` config) when build commands appear. Mention `tsc` only as a fallback for known incompatibilities; mention `webpack` only in monorepo contexts where it's the CLI default.
 - Conventional commits: `type: summary`. NO scope. Atomic commits, one logical change each.
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).

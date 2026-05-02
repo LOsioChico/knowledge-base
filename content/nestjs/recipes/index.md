@@ -10,6 +10,7 @@ related:
   - "[[nestjs/recipes/monorepo]]"
   - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/recipes/swc-setup]]"
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/validation]]"
 ---
@@ -22,6 +23,7 @@ related:
 - [[nestjs/recipes/monorepo|NestJS CLI monorepos]]
 - [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
+- [[nestjs/recipes/swc-setup|SWC builder for NestJS]]
 - [[nestjs/recipes/trace-id|Request trace ID propagation]]
 - [[nestjs/recipes/validation|Request validation with class-validator]]
 

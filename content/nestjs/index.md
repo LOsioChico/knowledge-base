@@ -34,6 +34,7 @@ Task-oriented how-tos. See [[nestjs/recipes/index|all recipes]].
 - [[nestjs/recipes/monorepo|NestJS CLI monorepos]]
 - [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]]
 - [[nestjs/recipes/serialization|Response serialization with class-transformer]]
+- [[nestjs/recipes/swc-setup|SWC builder for NestJS]]
 - [[nestjs/recipes/trace-id|Request trace ID propagation]]
 - [[nestjs/recipes/validation|Request validation with class-validator]]
 
@@ -79,6 +80,7 @@ Architecture patterns that NestJS enables but does not enforce.
 ## Releases
 
 - [[nestjs/releases/v11|NestJS 11: what's new and what broke]]
+- [[nestjs/releases/v10|NestJS 10: what's new and what broke]]
 
 ## Gotchas
 

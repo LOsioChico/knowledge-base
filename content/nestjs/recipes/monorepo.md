@@ -15,6 +15,8 @@ area: nestjs
 status: evergreen
 related:
   - "[[nestjs/recipes/index]]"
+  - "[[nestjs/recipes/swc-setup]]"
+  - "[[nestjs/releases/v10]]"
   - "[[nestjs/fundamentals/index]]"
 source:
   - https://docs.nestjs.com/cli/monorepo
