@@ -17,6 +17,8 @@ source:
   - https://trilon.io/blog/nestjs-10-is-now-available
   - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts
   - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts
+  - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
+  - https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts
 ---
 
 > [SWC](https://swc.rs) is a Rust-based TS/JS compiler that's roughly **20× faster** than `tsc` on Nest builds. The Nest CLI has built-in support since [[nestjs/releases/v10|v10]]: opt in with one flag, then layer `tsc --noEmit` on top for type-checking. This is the default builder for new and existing Nest projects in this knowledge base; reach for `tsc` or `webpack` only when noted.
@@ -39,9 +41,9 @@ nest start -b swc --type-check
 nest start -b swc --type-check -w
 ```
 
-`-b` is the short form of `--builder` and selects the compiler backend (`swc`, `tsc`, or `webpack`). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
+`-b` is the short form of `--builder` and selects the compiler backend. The enum is `tsc | webpack | swc` ([`start.command.ts#L11`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L11) declares the option; the action validates against `availableBuilders = ['tsc', 'webpack', 'swc']`). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
 
-Make it permanent in `nest-cli.json`:
+Make it permanent in `nest-cli.json` (`compilerOptions.builder` accepts the same `'tsc' | 'swc' | 'webpack'` union, optionally as `{ type, options }`; see [`CompilerOptions` in `nest-cli/configuration.ts`](https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts)):
 
 ```json
 {

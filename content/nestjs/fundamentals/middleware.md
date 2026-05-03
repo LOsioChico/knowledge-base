@@ -92,14 +92,14 @@ Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request pip
 
 Most apps wire the same handful of Express-ecosystem packages. Nest documents the canonical setup for each:
 
-| Middleware                                                    | Package           | Purpose                                             | Bind via                                                           |
-| ------------------------------------------------------------- | ----------------- | --------------------------------------------------- | ------------------------------------------------------------------ |
-| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)    | `app.use(helmet())` in `main.ts` ([example](#common-recipes))      |
-| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                 | `app.enableCors(options)` ([example](#common-recipes))             |
-| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/deflate/brotli response compression            | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
-| `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`            | `app.use(cookieParser())`                                          |
-| `express-session`                                             | `express-session` | Server-side session store                           | `app.use(session(options))`                                        |
-| [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on) | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
+| Middleware                                                    | Package           | Purpose                                                                                              | Bind via                                                           |
+| ------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)                                                     | `app.use(helmet())` in `main.ts` ([example](#common-recipes))      |
+| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                                                                  | `app.enableCors(options)` ([example](#common-recipes))             |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/deflate/brotli response compression ([README](https://github.com/expressjs/compression#readme)) | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
+| `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`                                                             | `app.use(cookieParser())`                                          |
+| `express-session`                                             | `express-session` | Server-side session store                                                                            | `app.use(session(options))`                                        |
+| [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)                                                  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
 
 CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`. Use the helper rather than the raw package so the platform adapter can install the headers consistently across Express and Fastify; `app.use(cors())` works on Express only.
 
@@ -312,7 +312,7 @@ Why `raw` matters for signed webhooks: signature verification recomputes an HMAC
 > bootstrap();
 > ```
 >
-> CORS uses `app.enableCors(...)` instead of `app.use(cors())` so the adapter can install it before any other middleware runs.
+> CORS uses `app.enableCors(...)` instead of `app.use(cors())` so the platform adapter installs the headers consistently across Express and Fastify ([Nest CORS docs](https://docs.nestjs.com/security/cors)). `app.use(cors())` works on Express only.
 
 ## When to reach for it
 
