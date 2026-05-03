@@ -55,6 +55,86 @@
       "reason": "The exact GET /users/1 → {id, email} payload is shown 6 lines above (L155). Audit window only looks forward 30 lines and missed the example just before.",
       "date": "2026-05-03",
       "originalLine": "Adding a new column to the entity now defaults to **hidden** until someone explicitly `@Expose()`s it. That's the strategy you want for any DTO that wraps a sensitive entity."
+    },
+    {
+      "path": "content/nestjs/releases/v10.md",
+      "sig": "55da4546c2af07e545b13ce1e85b90ca275ec965",
+      "rule": "source-verification",
+      "reason": "Node 16 EOL Sep 11 2023 IS the date in the cited primary source (github.com/nodejs/Release README, Gallium row final column). Verified via raw.githubusercontent.com. Auditor pointed at a different page (nodejs.org/en/about/previous-releases) that uses a different formatting. Original anchor is correct.",
+      "date": "2026-05-03",
+      "originalLine": "By the time you read this, Node 16 is also EOL ([September 11, 2023 per the Node release schedule](https://github.com/nodejs/Release/blob/main/README.md#end-of-life-releases)). If you're upgrading fresh in 2024+, jump straight to Node 20 or 22, and read the [[nestjs/releases/v11|v11 notes]] next: v11's [README](https://github.com/nestjs/nest/blob/master/Readme.md) and the [v11 release blog post](https://trilon.io/blog/announcing-nestjs-11-whats-new) bump the minimum to Node 20."
+    },
+    {
+      "path": "content/nestjs/fundamentals/request-lifecycle.md",
+      "sig": "015185b70bea3064785948d1071dbea0c190ee11",
+      "rule": "source-verification",
+      "reason": "'If anything threw, exception filters catch it' is the canonical lifecycle description matching the cited Request Lifecycle FAQ. Auditor's caveat about local try/catch is true but tangential: exception filters catch what propagates, which is exactly what the line says.",
+      "date": "2026-05-03",
+      "originalLine": "8. If anything threw, [[exception-filters|Exception filters]] catch it, resolving from route up to global."
+    },
+    {
+      "path": "content/nestjs/auth/jwt-strategy.md",
+      "sig": "f9fed3d71e6f60fb371a76b5adf3f12f15e3e74d",
+      "rule": "source-verification",
+      "reason": "Verified at https://docs.nestjs.com/recipes/passport#request-scoped-strategies: 'passport API is based on registering strategies to the global instance of the library' — exact framing. Source URL already in note.",
+      "date": "2026-05-04",
+      "originalLine": "> Passport registers strategies on a global instance, so request-scoped strategies are never instantiated. If you need per-request data inside `validate()`, inject `ModuleRef` and resolve dependencies via `ContextIdFactory.getByRequest(request)` (also requires `passReqToCallback: true` in the strategy options). Source: [Request-scoped strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies)."
+    },
+    {
+      "path": "content/nestjs/auth/jwt-strategy.md",
+      "sig": "0be07c10df3a9c1827b4071d09b2975ffc0c9275",
+      "rule": "source-verification",
+      "reason": "Verified at can-activate.interface.ts: CanActivate.canActivate union is `boolean | Promise<boolean> | Observable<boolean>`. Source added in commit aac958c.",
+      "date": "2026-05-04",
+      "originalLine": "| Custom guard runs but `super.canActivate()` returns a `Promise` | `AuthGuard.canActivate()` can return `boolean \\| Promise<boolean> \\| Observable<boolean>`. Always `return` it; never `await` and discard |"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "4ea9fbf3f2836a7b296e8264cc7d0d605eeac78c",
+      "rule": "source-verification",
+      "reason": "Verified at docs.nestjs.com/middleware#functional-middleware: 'Consider using the simpler functional middleware alternative any time your middleware doesn\\'t need any dependencies'. URL is the inline citation.",
+      "date": "2026-05-04",
+      "originalLine": "Class middleware can inject providers from the same module. If the middleware needs no dependencies, a plain function is shorter and the [official docs note this is the right shape for that case](https://docs.nestjs.com/middleware#functional-middleware):"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "c5ef7e34b228f93e8eadf3329f2de5521ea1c85e",
+      "rule": "source-verification",
+      "reason": "Verified at docs.nestjs.com/techniques/session: shows `app.use(session({...}))` exactly. URL is the inline citation.",
+      "date": "2026-05-04",
+      "originalLine": "| `express-session`                                             | `express-session` | Server-side session store                                                                            | `app.use(session(options))` ([Nest session docs](https://docs.nestjs.com/techniques/session)) |"
+    },
+    {
+      "path": "content/nestjs/fundamentals/global-providers.md",
+      "sig": "4ecfcbba14ba1a29fff4c43571abd50d4784bdde",
+      "rule": "source-verification",
+      "reason": "Verified scanner.ts (added to source: in commit aac958c) maps APP_GUARD/APP_PIPE/APP_INTERCEPTOR/APP_FILTER tokens into ApplicationConfig.addGlobal*; both microservices and gateway context creators consume the same applicationConfig.getGlobal* lists.",
+      "date": "2026-05-04",
+      "originalLine": "> 2. Register via `APP_GUARD` (or `APP_PIPE` / `APP_INTERCEPTOR` / `APP_FILTER`). Provider-bound globals are picked up by Nest's enhancer registries on every transport, so they cover HTTP, microservices, and gateways without an `inheritAppConfig` flag."
+    },
+    {
+      "path": "content/nestjs/recipes/rate-limiting.md",
+      "sig": "434f7732d90152158190039599aafe21821dd819",
+      "rule": "source-verification",
+      "reason": "Verified at throttler.guard.ts#L37-L40: constructor takes ThrottlerModuleOptions, ThrottlerStorage, Reflector. Note already cites the file inline.",
+      "date": "2026-05-04",
+      "originalLine": "- The `APP_GUARD` provider registers `ThrottlerGuard` globally, so it runs on every route without `@UseGuards()` clutter. Any [[nestjs/fundamentals/guards|guard binding]] works (the docs explicitly say so), but `APP_GUARD` is the recommended path because it's DI-aware: `useGlobalGuards(new ThrottlerGuard())` instantiates the guard outside the container, so anything `ThrottlerGuard` injects (`ThrottlerStorage`, `ThrottlerModuleOptions`, `Reflector`, see [`throttler.guard.ts` constructor](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts)) is missing. See [[nestjs/fundamentals/global-providers|DI-aware globals]] for the full rationale."
+    },
+    {
+      "path": "content/nestjs/recipes/rate-limiting.md",
+      "sig": "4d1a3aa9d1b87d4a460941a81c960bc503a3b6cb",
+      "rule": "source-verification",
+      "reason": "Verified at guards-consumer.ts#L21: `for (const guard of guards)` left-to-right iteration. Note already cites the file with #L8-L34 anchor.",
+      "date": "2026-05-04",
+      "originalLine": "Bind this guard on the routes that have authentication run before it (so `req.user` is populated). When chaining multiple `APP_GUARD` providers, the one registered earlier in the module's `providers` array runs first: [`GuardsConsumer.tryActivate`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L8-L34) iterates the resolved guard list left-to-right with `for (const guard of guards)`, so put the auth guard ahead of the throttler in `providers` so `req.user` exists by the time `getTracker()` runs."
+    },
+    {
+      "path": "content/nestjs/recipes/trace-id.md",
+      "sig": "e5b60c0da072f607e244797d1c77b69d0281f7be",
+      "rule": "source-verification",
+      "reason": "Verified at docs.nestjs.com/fundamentals/injection-scopes#performance: '~5% latency-wise' is verbatim. Passport request-scope workaround verified at docs.nestjs.com/recipes/passport#request-scoped-strategies. Both URLs cited inline.",
+      "date": "2026-05-04",
+      "originalLine": "> Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a measurable latency hit (\"slow down your average response time\"; capped at ~5% in well-designed apps). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much."
     }
   ]
 }
