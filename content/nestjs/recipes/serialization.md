@@ -20,6 +20,7 @@ source:
   - https://docs.nestjs.com/techniques/serialization
   - https://github.com/typestack/class-transformer
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/index.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/package.json
   - https://github.com/typeorm/typeorm/blob/master/docs/docs/working-with-entity-manager/6-repository-api.md
   - https://www.prisma.io/docs/orm/prisma-client/queries/crud

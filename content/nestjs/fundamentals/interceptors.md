@@ -29,6 +29,8 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/execution-context.interface.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/arguments-host.interface.ts
+  - https://github.com/typestack/class-transformer/blob/develop/src/index.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts

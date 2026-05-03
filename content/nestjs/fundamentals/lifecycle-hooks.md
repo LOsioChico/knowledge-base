@@ -29,6 +29,7 @@ source:
   - https://github.com/nestjs/nest/pull/14111
   - https://trilon.io/blog/announcing-nestjs-11-whats-new
   - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
+  - https://nodejs.org/api/events.html#emittersetmaxlistenersn
 ---
 
 > Hooks for **application** lifetime: when modules wake up, when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]], which fires once per HTTP call.

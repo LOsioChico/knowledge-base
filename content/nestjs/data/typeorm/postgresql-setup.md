@@ -29,6 +29,7 @@ source:
   - https://github.com/nestjs/config/blob/master/lib/config.service.ts
   - https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts
   - https://github.com/typeorm/typeorm/blob/master/src/migration/MigrationExecutor.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/data-source/DataSource.ts
   - https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database
@@ -389,7 +390,7 @@ Both `data-source.ts` (CLI) and the `forRootAsync` factory (Nest) call `dbOption
 > A repository registered via `forFeature([User])` is only visible inside that module. To use `@InjectRepository(User)` in a different module, the owning module has to `exports: [TypeOrmModule]` (the whole `TypeOrmModule`, not just `User`). Source: [docs.nestjs.com/techniques/database#repository-pattern](https://docs.nestjs.com/techniques/database#repository-pattern).
 
 > [!warning]- `synchronize` and migrations don't mix
-> If `synchronize: true` runs alongside migrations, TypeORM applies the schema sync first (mutating tables to match entities) and then runs migrations against an already-mutated schema. Result: migrations succeed locally but fail in any environment that started from the migration history alone. The TypeORM docs warn against `synchronize` outside development for the same reason ([Synchronization](https://typeorm.io/data-source-options#common-data-source-options): "do not use ... in production"). Pick one strategy per environment.
+> If `migrationsRun: true` and `synchronize: true` are both set, `DataSource.initialize()` runs migrations FIRST, then runs `synchronize()` against the post-migration schema ([`DataSource.ts#L266-L272`](https://github.com/typeorm/typeorm/blob/master/src/data-source/DataSource.ts#L266-L272)). Any drift between your entities and the migration history is then silently papered over by `synchronize`, so the next environment that boots from the migration history alone (CI, staging, prod) ends up with a different schema than your dev box. The TypeORM docs warn against `synchronize` outside development for the same reason ([Synchronization](https://typeorm.io/data-source-options#common-data-source-options): "do not use ... in production"). Pick one strategy per environment.
 
 > [!info]- `pg` driver vs `postgres` (`postgres.js`)
 > TypeORM's Postgres driver loads `require("pg")` ([source](https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts)), not the newer [`postgres.js`](https://github.com/porsager/postgres). Installing `postgres` does nothing for TypeORM. The `@types/pg` dev dependency is what gives you the typed `DatabaseError` used in [[nestjs/data/typeorm/handle-database-errors|handle database errors]].

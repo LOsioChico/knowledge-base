@@ -40,6 +40,7 @@ source:
   - https://nodejs.org/api/process.html#event-unhandledrejection
   - https://expressjs.com/en/guide/error-handling.html
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter-context.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/filter/filter.factory.ts
   - https://nodejs.org/api/cli.html#--unhandled-rejectionsmode
 ---
@@ -192,7 +193,7 @@ export class CatsController {
 
 ## Order: route first, then controller, then global
 
-Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`router-exception-filters.ts`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts) merges method, then class, then global filters and reverses the merged list):
+Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`router-exception-filters.ts#L43`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts#L23-L46) merges method, then class, then global filters and reverses the merged list):
 
 1. Route-bound filter
 2. Controller-bound filter

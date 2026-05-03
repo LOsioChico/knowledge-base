@@ -24,6 +24,9 @@ source:
   - https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts
   - https://github.com/typeorm/typeorm/blob/master/src/decorator/Unique.ts
   - https://github.com/typeorm/typeorm/blob/master/src/decorator/Index.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/decorator/columns/Column.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/naming-strategy/DefaultNamingStrategy.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts
   - https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.postgresql.org/docs/current/protocol-error-fields.html
