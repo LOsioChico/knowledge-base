@@ -30,6 +30,7 @@ import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
 import { groundFindings } from "./ground.js";
 import { runSourceVerifyPass } from "./source-verify.js";
+import { runAnchorVerifyPass } from "./anchor-verify.js";
 import type {
   ConfidenceTier,
   FileReport,
@@ -475,6 +476,22 @@ async function main(): Promise<void> {
   log(`[pass-1a] ${sdtFindings.length} show-dont-tell finding(s)`);
   log(`[pass-1b] ${sourceFindings.length} source-verification finding(s)`);
 
+  // Pass 1c: deterministic anchor verifier. Drops `source-verification`
+  // findings whose only complaint is a wrong GitHub line anchor when the
+  // anchor actually points at a definition of the cited symbol. This
+  // catches the most common LLM false-positive pattern (~50% rate
+  // empirically) before it reaches Pass 3 / human triage.
+  const anchorVerified = await runAnchorVerifyPass(sourceFindings, {
+    repoRoot: REPO_ROOT,
+    log,
+  });
+  if (anchorVerified.dropped.length > 0) {
+    log(
+      `[pass-1c] anchor-verifier dropped ${anchorVerified.dropped.length} false-positive(s) (original anchor was correct)`,
+    );
+  }
+  const verifiedSourceFindings: FlatFinding[] = anchorVerified.kept;
+
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.
   const groundedAudit = groundFindings(REPO_ROOT, auditFlat, 10);
@@ -547,7 +564,7 @@ async function main(): Promise<void> {
   const highTierForFixes: FlatFinding[] = [
     ...verifiedFlat,
     ...groundedSdt.kept,
-    ...sourceFindings,
+    ...verifiedSourceFindings,
   ];
   const enrichedHighTier: FlatFinding[] = await runFixProposerPass(
     highTierForFixes,
@@ -592,7 +609,7 @@ async function main(): Promise<void> {
         return { ...f, ...(enriched ?? {}), tier: "high" };
       },
     ),
-    ...sourceFindings.map(
+    ...verifiedSourceFindings.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => {
         const enriched: FlatFinding | undefined = enrichedSources.find(
           (e: FlatFinding): boolean =>
