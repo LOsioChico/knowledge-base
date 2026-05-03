@@ -89,6 +89,12 @@ Only after these five steps may you draft. Then:
 10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
     `cp AGENTS.md .github/copilot-instructions.md`.
 11. Run the linter: `npm run lint:wikilinks`.
+12. **Run the LLM audit on touched files** and triage findings. The full step-by-step loop
+    (run pipeline → classify each finding into TRUE-and-cited / TRUE-but-uncited / WRONG-claim
+    / UNVERIFIABLE → apply or persist to `dismissed.json`) lives in the `kb-audit-triage`
+    skill at [`.github/skills/kb-audit-triage/SKILL.md`](../kb-audit-triage/SKILL.md). Load
+    that skill whenever the user says "run the audit", "triage findings", or invokes
+    `/kb-audit-triage`.
 
 ## Workflow 2 — Encode-then-audit (when you discover a repeated bug pattern)
 
