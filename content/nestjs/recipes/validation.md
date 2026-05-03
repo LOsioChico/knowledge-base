@@ -217,6 +217,22 @@ The pipe inspects the **metatype** of the parameter (the TS type Nest reflects f
 
 `ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) still have a place: they throw a 400 on bad input, while `ValidationPipe`'s `transformPrimitive` silently coerces (`+value` returns `NaN` for `?page=abc` and the handler sees `NaN`).
 
+`GET /items?page=abc` with only a global `ValidationPipe({ transform: true })` and `findAll(@Query('page') page: number)` returning `{ page }`:
+
+```json
+{ "page": null }
+```
+
+(`JSON.stringify(NaN)` → `null`.) Swap the parameter to `@Query('page', ParseIntPipe) page: number` and the same request returns:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Validation failed (numeric string is expected)",
+  "error": "Bad Request"
+}
+```
+
 ### `enableImplicitConversion: true`
 
 Whole-object query/body params (`@Query() q: PaginationQuery` with no key) bypass `transformPrimitive` and go through `plainToInstance` instead. Without `enableImplicitConversion`, every nested field arrives as a string from `qs`:

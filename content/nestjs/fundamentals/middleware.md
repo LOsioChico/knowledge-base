@@ -115,14 +115,14 @@ CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors(
 
 ## Binding
 
-| Scope        | How                                                         | DI access |
-| ------------ | ----------------------------------------------------------- | --------- |
-| Global       | `app.use(fn)` in `main.ts`                                  | No        |
-| Module bound | `consumer.apply(LoggerMiddleware).forRoutes(...)`           | Yes       |
-| All routes   | Module-bound class middleware with `.forRoutes('{*splat}')` | Yes       |
+| Scope        | How                                                                                             | DI access |
+| ------------ | ----------------------------------------------------------------------------------------------- | --------- |
+| Global       | `app.use(fn)` in `main.ts`                                                                      | No        |
+| Module bound | `consumer.apply(LoggerMiddleware).forRoutes(...)`                                               | Yes       |
+| All routes   | Module-bound class middleware: Express `.forRoutes('{*splat}')`, Fastify `.forRoutes('*splat')` | Yes       |
 
 > [!warning] Wildcard syntax changed since [[nestjs/releases/v11|v11]]
-> Express v5 is the default in NestJS 11 ([migration guide → Express v5](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#express-v5)) and requires **named** wildcards. Use `'{*splat}'` to match every path including the bare base, or `'*splat'` to match anything below the base. Pre-v11 patterns like `'*'`, `'(.*)'`, and `'users/*'` still work via Nest's compatibility layer but emit warnings; the migration is mechanical. Same fix applies to `@Get('*')` and `RouterModule` paths.
+> Express v5 is the default in NestJS 11 ([migration guide → Express v5](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#express-v5)) and requires **named** wildcards. On Express, use `'{*splat}'` to match every path including the bare base ([`migration.md#L48-L57`](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#L48-L57)) or `'*splat'` to match anything below the base. On Fastify, the "all routes" shape is `'*splat'` (no braces): the [Fastify middleware registration](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#L114-L131) section of the migration guide replaces the old `'(.*)'` pattern with `'*splat'`. Pre-v11 patterns like `'*'`, `'(.*)'`, and `'users/*'` still work via Nest's compatibility layer but emit warnings; the migration is mechanical. Same fix applies to `@Get('*')` and `RouterModule` paths.
 
 There is no middleware slot in `@Module()` metadata. Module-bound middleware lives in `configure()` on a class that implements `NestModule`:
 
