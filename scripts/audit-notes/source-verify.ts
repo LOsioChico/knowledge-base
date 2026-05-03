@@ -31,9 +31,10 @@ interface FetchedSource {
 interface VerifierFinding {
   line: number;
   claim: string;
-  status: "unsupported" | "contradicted";
+  status: "unsupported" | "unsourced-but-plausible" | "contradicted";
   explanation: string;
   evidence?: string;
+  suggestedSourceUrl?: string;
 }
 
 interface VerifierReport {
@@ -270,10 +271,11 @@ function buildVerifierPrompt(
 ): string {
   const sourceBlocks: string = sources
     .map((s, idx): string => {
+      const truncated: boolean = s.text.length >= MAX_SOURCE_CHARS;
       const header: string =
         s.error !== undefined
           ? `[${idx + 1}] ${s.url}\n!! FETCH ERROR: ${s.error}`
-          : `[${idx + 1}] ${s.url}${s.fromCache ? " (cached)" : ""}`;
+          : `[${idx + 1}] ${s.url}${s.fromCache ? " (cached)" : ""}${truncated ? " (truncated)" : ""}`;
       const body: string = s.text.slice(0, MAX_SOURCE_CHARS);
       return `${header}\n---\n${body}\n---`;
     })
@@ -381,11 +383,22 @@ export async function runSourceVerifyPass(
       const out: FlatFinding[] = [];
       for (const f of parsed.findings ?? []) {
         if (f.line < 1 || f.line > totalLines) continue;
+        const prefix: string =
+          f.status === "contradicted"
+            ? "Contradicts cited sources"
+            : f.status === "unsourced-but-plausible"
+              ? "Plausible but unsourced"
+              : "Not supported by cited sources";
+        const tail: string =
+          f.status === "unsourced-but-plausible" &&
+          f.suggestedSourceUrl !== undefined
+            ? ` Suggested source: ${f.suggestedSourceUrl}`
+            : "";
         out.push({
           rule: "source-verification",
           path: target,
           line: f.line,
-          message: `${f.status === "contradicted" ? "Contradicts" : "Not supported by"} cited sources: ${f.claim}. ${f.explanation}`,
+          message: `${prefix}: ${f.claim}. ${f.explanation}${tail}`,
           ...(f.evidence !== undefined
             ? { evidence: f.evidence.slice(0, 120) }
             : {}),

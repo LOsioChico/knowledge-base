@@ -64,6 +64,13 @@ Include EVERY input finding in the output, with its verdict. The orchestrator fi
 - Re-reading the AGENTS.md rule into the rationale (the rule is implicit; explain the evidence).
 - Agreeing with the auditor when the cited line clearly doesn't show the violation. The auditor
   is wrong sometimes; that's why you exist.
+- **Anchor-dispute exemption**: do NOT verify a `source-verification` finding whose only
+  complaint is a wrong GitHub line range (`L<m>-L<n>`). A deterministic downstream pass
+  (anchor-verifier) already drops the false positives in this class. Pass the finding through
+  with `REJECTED` and rationale `"anchor-dispute; deterministic pass owns this class"`.
+- **Bootstrap-fragment exemption** (already handled in checklist; restated for symmetry):
+  REJECT `code-imports` findings whose only undefined symbols are `app`, `module`, or
+  `bootstrap` inside an `[!example]`/`[!info]`/`[!tip]` callout.
 
 ## Boundaries
 

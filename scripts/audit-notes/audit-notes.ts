@@ -31,6 +31,7 @@ import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
 import { groundFindings } from "./ground.js";
 import { runSourceVerifyPass } from "./source-verify.js";
 import { runAnchorVerifyPass } from "./anchor-verify.js";
+import { runFactGroundPass } from "./fact-ground.js";
 import type {
   ConfidenceTier,
   FileReport,
@@ -490,7 +491,23 @@ async function main(): Promise<void> {
       `[pass-1c] anchor-verifier dropped ${anchorVerified.dropped.length} false-positive(s) (original anchor was correct)`,
     );
   }
-  const verifiedSourceFindings: FlatFinding[] = anchorVerified.kept;
+
+  // Pass 1d: deterministic fact-grounding. For each "Not supported by"
+  // source-verification finding, extract high-information terms from the
+  // claim and grep them across the cached source extracts. If ALL terms
+  // appear in at least one source, the LLM missed it — drop as a false
+  // positive. Conservative: never touches "Contradicts" or "Plausible but
+  // unsourced" findings.
+  const factGrounded = runFactGroundPass(anchorVerified.kept, {
+    repoRoot: REPO_ROOT,
+    log,
+  });
+  if (factGrounded.dropped.length > 0) {
+    log(
+      `[pass-1d] fact-grounding dropped ${factGrounded.dropped.length} false-positive(s) (claim terms found in source extracts)`,
+    );
+  }
+  const verifiedSourceFindings: FlatFinding[] = factGrounded.kept;
 
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.
@@ -561,10 +578,20 @@ async function main(): Promise<void> {
   // Pass 3: fix-proposer. Runs on the union of high-tier findings (verified
   // objective + grounded show-dont-tell + source-verification). Cheap because
   // post-verification the count is typically 0-5.
+  //
+  // Split source-verification findings: "Plausible but unsourced" findings are
+  // advisory (action is "add a `source:` URL", not "rewrite the prose"). Real
+  // contradictions and unsupported claims stay high-tier.
+  const advisorySourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
+    (f: FlatFinding): boolean => f.message.startsWith("Plausible but unsourced"),
+  );
+  const highSourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
+    (f: FlatFinding): boolean => !f.message.startsWith("Plausible but unsourced"),
+  );
   const highTierForFixes: FlatFinding[] = [
     ...verifiedFlat,
     ...groundedSdt.kept,
-    ...verifiedSourceFindings,
+    ...highSourceFindings,
   ];
   const enrichedHighTier: FlatFinding[] = await runFixProposerPass(
     highTierForFixes,
@@ -584,6 +611,8 @@ async function main(): Promise<void> {
 
   // Merge with tiers: deterministic + verified objective + grounded show-dont-tell => high.
   // Subjective candidates (other than show-dont-tell) => advisory.
+  // "Plausible but unsourced" source-verification findings also => advisory
+  // (action is "add a `source:` URL", not "rewrite the prose").
   const allTiered: Array<FlatFinding & { tier: ConfidenceTier }> = [
     ...detFlat.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
@@ -609,7 +638,7 @@ async function main(): Promise<void> {
         return { ...f, ...(enriched ?? {}), tier: "high" };
       },
     ),
-    ...verifiedSourceFindings.map(
+    ...highSourceFindings.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => {
         const enriched: FlatFinding | undefined = enrichedSources.find(
           (e: FlatFinding): boolean =>
@@ -617,6 +646,12 @@ async function main(): Promise<void> {
         );
         return { ...f, ...(enriched ?? {}), tier: "high" };
       },
+    ),
+    ...advisorySourceFindings.map(
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+        ...f,
+        tier: "advisory",
+      }),
     ),
     ...subjectiveCandidates.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
