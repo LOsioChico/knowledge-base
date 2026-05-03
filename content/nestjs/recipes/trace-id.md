@@ -171,8 +171,10 @@ bootstrap();
 Log line for a request that hit `traceId = 8f2a4c6e-...`:
 
 ```
-[Nest] 12345  - 04/28/2026, 10:42:13 AM   [Nest][8f2a4c6e] LOG [CatsController] list() called
+[Nest] 12345  - [8f2a4c6e] 04/28/2026, 10:42:13 AM     LOG [CatsController] list() called
 ```
+
+The trace id sits inside the pid prefix because [`formatMessage`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts#L429-L442) emits `${pidMessage}${this.getTimestamp()} ${formattedLogLevel} ${contextMessage}${output}`, and the override above appends `[<traceId>]` to whatever `super.formatPid(pid)` already returned (`[Nest] 12345  - `).
 
 When a log line is emitted **outside** any request (bootstrap, a cron tick), `getTraceId()` returns `undefined` and the prefix is omitted: no crash, no fake ID.
 

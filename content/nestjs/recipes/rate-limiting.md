@@ -268,7 +268,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
 }
 ```
 
-Bind this guard on the routes that have authentication run before it (so `req.user` is populated). When chaining multiple `APP_GUARD` providers, the one registered earlier in the module's `providers` array runs first ([`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts) preserves the registration order); put the auth guard ahead of the throttler so `req.user` exists by the time `getTracker()` runs.
+Bind this guard on the routes that have authentication run before it (so `req.user` is populated). When chaining multiple `APP_GUARD` providers, the one registered earlier in the module's `providers` array runs first: [`GuardsConsumer.tryActivate`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L8-L34) iterates the resolved guard list left-to-right with `for (const guard of guards)`, so put the auth guard ahead of the throttler in `providers` so `req.user` exists by the time `getTracker()` runs.
 
 ## Distributed storage (Redis)
 
