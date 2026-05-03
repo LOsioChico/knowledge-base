@@ -314,7 +314,7 @@ Sample response for a duplicate email:
 > Driver messages can change between versions and (on some drivers) vary with server locale settings. Always branch on `err.code` (Postgres SQLSTATE) or `err.errno` (MySQL).
 
 > [!warning]- Driver props live in two places, by design
-> `QueryFailedError`'s constructor spreads every own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign`, so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`**: `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
+> `QueryFailedError`'s constructor spreads every enumerable own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign` ([source: `QueryFailedError.ts`](https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts#L21-L31)), so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`**: `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
 > If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.

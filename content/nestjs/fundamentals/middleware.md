@@ -37,6 +37,7 @@ source:
   - https://docs.stripe.com/webhooks/signature#verify-manually
   - https://nodejs.org/docs/latest/api/http.html#event-finish
   - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
+  - https://github.com/nestjs/nest/blob/master/packages/core/middleware/middleware-module.ts
 ---
 
 > Express-style functions called **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the route handler. They receive raw `req`/`res` objects and either call `next()` or end the response.
@@ -162,7 +163,7 @@ Middleware runs **before** every other pipeline layer. Inside the middleware tie
 3. Module-bound middleware from imported modules, in `imports` array order.
 
 > [!warning] Global modules jump the queue (NestJS 11+)
-> Middleware registered inside a module marked `@Global()` runs **first** among module-bound middleware regardless of where the module sits in the dependency graph ([migration guide → Middleware registration order](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#middleware-registration-order)). Order within a single global module still follows `apply()` order; order across global modules follows discovery order.
+> Middleware registered inside a module marked `@Global()` runs **first** among module-bound middleware regardless of where the module sits in the dependency graph ([migration guide → Middleware registration order](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#middleware-registration-order)). Order within a single global module still follows `apply()` order; across global modules the comparator returns `0` ([`middleware-module.ts#L149-L167`](https://github.com/nestjs/nest/blob/master/packages/core/middleware/middleware-module.ts#L149-L167)), so insertion (discovery) order is preserved.
 
 After the middleware chain finishes, Nest moves on to [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] (pre) → [[nestjs/fundamentals/pipes|pipes]] → handler. Source: [Request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
 

@@ -161,7 +161,7 @@ export class AppModule {}
 > Two silent failure modes baked into the interceptor:
 >
 > 1. Non-`GET` handlers (`POST`, `PUT`, `PATCH`, `DELETE`) are passed through untouched. No error, just no caching.
-> 2. Handlers that inject `@Res() res: Response` and write to the response directly bypass the [[nestjs/fundamentals/interceptors|interceptor pipeline]] entirely. The cache is never populated and never read for that route.
+> 2. Handlers that inject `@Res() res: Response` and write to the response directly opt out of Nest's response-mapping path: the [[nestjs/fundamentals/interceptors|interceptor]]'s `tap()` still runs but the handler returned `undefined`, so the cache stores `undefined` on miss and `of(undefined)` is discarded on hit because the bytes already left through `res.send(...)`. Net effect: cache stays empty, the route serves fresh every time.
 >
 > Symptom in both cases: the endpoint works but the cache stays empty. If you need write-side caching or you're using `@Res()`, drop the interceptor and use `CACHE_MANAGER` directly.
 
