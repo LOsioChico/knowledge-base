@@ -39,7 +39,7 @@ You hit this the first time a `User` entity leaks `password` or `passwordHash` i
 npm i class-transformer reflect-metadata
 ```
 
-`class-transformer` is declared as an **optional** peer dependency of [`@nestjs/common`](https://github.com/nestjs/nest/blob/master/packages/common/package.json) (`peerDependenciesMeta.class-transformer.optional: true`), so npm won't install it for you. Install it explicitly when you use the serializer: `ClassSerializerInterceptor` imports `instanceToPlain` from it. `reflect-metadata` is already required by Nest itself.
+`class-transformer` is declared as an **optional** peer dependency of [`@nestjs/common`](https://github.com/nestjs/nest/blob/master/packages/common/package.json) (`peerDependenciesMeta.class-transformer.optional: true`), so npm won't install it for you. Install it explicitly when you use the serializer: `ClassSerializerInterceptor` lazy-loads `class-transformer` via `loadPackage` and calls [`classTransformer.classToPlain(...)`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts#L91-L101) to produce the response. `reflect-metadata` is already required by Nest itself.
 
 ## Wire up the interceptor
 

@@ -194,6 +194,7 @@ Register the strategy in `AuthModule`:
 
 ```typescript
 // auth/auth.module.ts (additions)
+import { Module } from "@nestjs/common";
 import { PassportModule } from "@nestjs/passport";
 import { JwtStrategy } from "./jwt.strategy";
 
@@ -300,6 +301,7 @@ export class JwtAuthGuard extends AuthGuard("jwt") {
 
 ```typescript
 // auth/auth.module.ts (additions)
+import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 

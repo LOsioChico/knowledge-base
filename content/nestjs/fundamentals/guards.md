@@ -95,7 +95,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest treats the Observable like the `Promise` case: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) wraps the return value with `defer(...).pipe(filter(...))` and subscribes once, awaiting any Promise and exhausting any Observable.
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly).
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
