@@ -24,8 +24,12 @@ source:
   - https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md
   - https://github.com/open-cli-tools/concurrently/blob/main/README.md
   - https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts
+  - https://github.com/nestjs/nest-cli/blob/master/actions/new.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
+  - https://docs.nestjs.com/cli/monorepo#monorepo-mode
+  - https://docs.nestjs.com/cli/monorepo#workspaces
+  - https://docs.nestjs.com/cli/usages#nest-build
   - https://www.youtube.com/watch?v=3_jJK5NMGzs
 ---
 
@@ -220,7 +224,7 @@ How the `npm:` shortcut works: `concurrently 'npm:start:dev:*'` expands to every
 > | `pnpm:<script>` | `pnpm run <script>` | `pnpm add -D concurrently` / `pnpm start:dev`   |
 > | `bun:<script>`  | `bun run <script>`  | `bun add -d concurrently` / `bun run start:dev` |
 >
-> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts any package-manager name through [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts). The interactive prompt offers `npm`, `yarn`, and `pnpm`; bun isn't in the prompt. For bun-managed installs, scaffold with `npm` first and then re-install with `bun install`.
+> At scaffold time, `nest new -p <name>` (long form `--package-manager`) accepts any package-manager name through [`new.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts). The [interactive prompt](https://github.com/nestjs/nest-cli/blob/master/actions/new.action.ts#L170-L173) offers `npm`, `yarn`, and `pnpm`; bun isn't in the prompt. For bun-managed installs, scaffold with `npm` first and then re-install with `bun install`.
 
 ## Step 5: share code with libraries
 
