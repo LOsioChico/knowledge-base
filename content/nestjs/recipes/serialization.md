@@ -29,7 +29,7 @@ source:
   - https://mongoosejs.com/docs/tutorials/lean.html
 ---
 
-> Strip secrets, rename fields, and expose role-specific views of the same entity. NestJS hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `instanceToPlain` on whatever the controller returned.
+> Strip secrets, rename fields, and expose role-specific views of the same entity. NestJS hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classTransformer.classToPlain` on whatever the controller returned (see [`class-serializer.interceptor.ts#L84-L101`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts#L84-L101)).
 
 ## When to reach for it
 
@@ -345,7 +345,7 @@ Same entity, two payloads, zero conditional code in the controller.
 > Adding `@SerializeOptions({ groups: [...] })` to a route does nothing on its own. The metadata is only read by `ClassSerializerInterceptor`. Forget to register the interceptor (globally or via `@UseInterceptors`) and group-based views silently degrade to "no filtering": admin-only fields ship to every caller.
 
 > [!info]- `reflect-metadata` must be imported before any decorator runs
-> Required at the top of `main.ts` so `class-transformer`'s decorators have metadata to read; see [class-transformer README → Installation](https://github.com/typestack/class-transformer#installation). Nest's bootstrap scaffolding imports it for you; if you hand-roll `main.ts`, omitting the import surfaces as a startup error rather than a silent miss.
+> Required at the top of `main.ts` so `class-transformer`'s decorators have metadata to read; see [class-transformer README → Installation](https://github.com/typestack/class-transformer#installation). Nest pulls it in for you transitively: [`@nestjs/core/index.ts#L7`](https://github.com/nestjs/nest/blob/master/packages/core/index.ts#L7) does `import 'reflect-metadata'` at the top, so any `main.ts` that imports `NestFactory` from `@nestjs/core` already has it loaded. If you hand-roll an entry point that defers `@nestjs/core` until after decorated classes are evaluated, omitting the explicit import surfaces as a startup error rather than a silent miss.
 
 > [!info]- Decorating entities couples DB shape to API shape
 > Mixing `@Exclude()` / `@Expose()` into a TypeORM or Prisma entity means renaming a column or splitting an entity ripples into your API contract. For non-trivial APIs, map entities to dedicated response DTOs and decorate the DTO. The recipe shows decorators on entities for brevity; production code usually shouldn't.

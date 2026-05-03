@@ -33,7 +33,7 @@ source:
 npm i -D @types/multer
 ```
 
-`multer` itself is already a transitive dep of `@nestjs/platform-express`. Only the types are missing.
+`multer` is a direct dependency of [`@nestjs/platform-express`](https://github.com/nestjs/nest/blob/master/packages/platform-express/package.json), so it ships transitively when you install that platform package. Only the types are missing.
 
 ## Single file
 
