@@ -28,6 +28,11 @@ source:
   - https://github.com/pillarjs/path-to-regexp#parameters
   - https://github.com/pillarjs/path-to-regexp#wildcard
   - https://expressjs.com/en/5x/api.html#path-route-matching
+  - https://github.com/expressjs/cors
+  - https://github.com/fastify/fastify-cors
+  - https://github.com/expressjs/compression
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/middleware/middleware-config-proxy.interface.ts
+  - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
 ---
 
 > Express-style functions called **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the route handler. They receive raw `req`/`res` objects and either call `next()` or end the response.
@@ -101,7 +106,7 @@ Most apps wire the same handful of Express-ecosystem packages. Nest documents th
 | `express-session`                                             | `express-session` | Server-side session store                                                                            | `app.use(session(options))`                                        |
 | [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)                                                  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
 
-CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`. Use the helper rather than the raw package so the platform adapter can install the headers consistently across Express and Fastify; `app.use(cors())` works on Express only.
+CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`. The Express adapter wraps the [`cors`](https://github.com/expressjs/cors) package; the Fastify adapter wraps [`@fastify/cors`](https://github.com/fastify/fastify-cors). Use the helper so the same options object works on both adapters ([Nest CORS docs](https://docs.nestjs.com/security/cors)).
 
 ## Binding
 
@@ -112,7 +117,7 @@ CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors(
 | All routes   | Module-bound class middleware with `.forRoutes('{*splat}')` | Yes       |
 
 > [!warning] Wildcard syntax changed since [[nestjs/releases/v11|v11]]
-> Express v5 (default in NestJS 11) requires **named** wildcards. Use `'{*splat}'` to match every path including the bare base, or `'*splat'` to match anything below the base. Pre-v11 patterns like `'*'`, `'(.*)'`, and `'users/*'` still work via Nest's compatibility layer but emit warnings; the migration is mechanical. Same fix applies to `@Get('*')` and `RouterModule` paths.
+> Express v5 is the default in NestJS 11 ([migration guide → Express v5](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#express-v5)) and requires **named** wildcards. Use `'{*splat}'` to match every path including the bare base, or `'*splat'` to match anything below the base. Pre-v11 patterns like `'*'`, `'(.*)'`, and `'users/*'` still work via Nest's compatibility layer but emit warnings; the migration is mechanical. Same fix applies to `@Get('*')` and `RouterModule` paths.
 
 There is no middleware slot in `@Module()` metadata. Module-bound middleware lives in `configure()` on a class that implements `NestModule`:
 
@@ -169,7 +174,7 @@ If a middleware does not end the response, it must call `next()`. Otherwise the 
 
 The parameter / wildcard distinction is the one that bites: `:id` stops at the next `/`, `*splat` swallows everything to the end of the path. `splat` and `id` are just parameter names: pick any identifier. Patterns use the path-to-regexp syntax that ships with Express v5; pre-v11 forms like `'cats/*'` still work via Nest's compatibility layer but emit a startup warning. Source: [path-to-regexp - Parameters & Wildcard](https://github.com/pillarjs/path-to-regexp#parameters), [Middleware - Route wildcards](https://docs.nestjs.com/middleware#route-wildcards).
 
-`exclude()` must come **before** `forRoutes()` because `forRoutes()` closes the chain. Source: [Middleware - Excluding routes](https://docs.nestjs.com/middleware#excluding-routes).
+`exclude()` must come **before** `forRoutes()` because `forRoutes()` returns `MiddlewareConsumer` (no further `exclude()`/`forRoutes()` on the chain), while `exclude()` returns `MiddlewareConfigProxy` ([interface](https://github.com/nestjs/nest/blob/master/packages/common/interfaces/middleware/middleware-config-proxy.interface.ts)).
 
 ## Common recipes
 
@@ -334,10 +339,10 @@ Why `raw` matters for signed webhooks: signature verification recomputes an HMAC
 > Global middleware bound through `app.use()` cannot resolve providers from the Nest container. Bind class middleware via `MiddlewareConsumer.apply(...).forRoutes(...)` when the middleware needs injected services. Unlike pipes/guards/interceptors, there is no `APP_MIDDLEWARE` token, so [[nestjs/fundamentals/global-providers|the DI-aware-globals shortcut]] doesn't apply here.
 
 > [!warning]- Default body parsers run before custom middleware
-> With the Express adapter, Nest registers `express.json()` and `express.urlencoded()` automatically. To customize parsing (raw bodies for webhooks, multipart, custom limits), pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser. See [Raw body](https://docs.nestjs.com/faq/raw-body).
+> With the Express adapter, Nest registers `express.json()` and `express.urlencoded()` automatically (the [Raw body FAQ](https://docs.nestjs.com/faq/raw-body) shows the opt-out). To customize parsing (raw bodies for webhooks, multipart, custom limits), pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser.
 
 > [!warning]- Middleware does not run on microservices or WebSocket gateways
-> `app.use()` and `MiddlewareConsumer` are HTTP-only. Microservice transports and WebSocket gateways have no middleware concept; use guards, interceptors, or pipes there. In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application) HTTP-bound middleware does not run on connected microservice or gateway transports.
+> `app.use()` and `MiddlewareConsumer` live on `INestApplication` (the HTTP layer). Microservice transports and WebSocket gateways have no middleware concept; use guards, interceptors, or pipes there. In a [hybrid app](https://docs.nestjs.com/faq/hybrid-application), `inheritAppConfig: true` shares pipes/interceptors/guards/filters with `connectMicroservice()` but does not exist for middleware.
 
 > [!info]- No `ExecutionContext` in middleware
 > Middleware sees raw HTTP objects, not `ExecutionContext`. If the logic needs handler metadata, the controller class, or the handler reference, it belongs in a guard or interceptor.
