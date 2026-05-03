@@ -293,4 +293,4 @@ Returning `undefined` from `trackBy()` makes the interceptor skip caching for th
 - [[nestjs/recipes/rate-limiting|Rate limiting with @nestjs/throttler]] for the parallel "Redis-when-multi-instance" story applied to throttling state
 - [Official NestJS caching docs](https://docs.nestjs.com/techniques/caching): primary source for all signatures and behaviors above
 - [`cache-manager` repo](https://github.com/jaredwray/cache-manager) and [Keyv docs](https://keyv.org/docs/) for the underlying storage layer and the full list of available stores
-- [Telerik: Learning NestJS Part 3, Data Caching](https://www.telerik.com/blogs/learning-nestjs-part-3-data-caching): extended walkthrough that includes an Azure Cache for Redis setup. Note: the post predates `@nestjs/cache-manager@3.x`, so its `@CacheTTL(60)` example assumes seconds; current v3 takes milliseconds, so use `@CacheTTL(60_000)` instead.
+- [Telerik: Learning NestJS Part 3, Data Caching](https://www.telerik.com/blogs/learning-nestjs-part-3-data-caching): extended walkthrough that includes an Azure Cache for Redis setup.

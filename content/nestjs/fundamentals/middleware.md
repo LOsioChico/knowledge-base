@@ -22,6 +22,8 @@ source:
   - https://docs.nestjs.com/security/helmet
   - https://docs.nestjs.com/security/cors
   - https://docs.nestjs.com/techniques/compression
+  - https://docs.nestjs.com/techniques/cookies
+  - https://docs.nestjs.com/techniques/session
   - https://docs.nestjs.com/faq/raw-body
   - https://docs.nestjs.com/faq/hybrid-application
   - https://docs.nestjs.com/cli/usages
@@ -97,14 +99,14 @@ Middleware runs first in the [[nestjs/fundamentals/request-lifecycle|request pip
 
 Most apps wire the same handful of Express-ecosystem packages. Nest documents the canonical setup for each:
 
-| Middleware                                                    | Package           | Purpose                                                                                              | Bind via                                                           |
-| ------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)                                                     | `app.use(helmet())` in `main.ts` ([example](#common-recipes))      |
-| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                                                                  | `app.enableCors(options)` ([example](#common-recipes))             |
-| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/deflate/brotli response compression ([README](https://github.com/expressjs/compression#readme)) | `app.use(compression())` in `main.ts` ([example](#common-recipes)) |
-| `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`                                                             | `app.use(cookieParser())`                                          |
-| `express-session`                                             | `express-session` | Server-side session store                                                                            | `app.use(session(options))`                                        |
-| [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)                                                  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })` |
+| Middleware                                                    | Package           | Purpose                                                                                              | Bind via                                                                                      |
+| ------------------------------------------------------------- | ----------------- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP, HSTS, X-Frame-Options, …)                                                     | `app.use(helmet())` in `main.ts` ([example](#common-recipes))                                 |
+| [CORS](https://docs.nestjs.com/security/cors)                 | built-in          | Cross-origin policy                                                                                  | `app.enableCors(options)` ([example](#common-recipes))                                        |
+| [Compression](https://docs.nestjs.com/techniques/compression) | `compression`     | gzip/deflate/brotli response compression ([README](https://github.com/expressjs/compression#readme)) | `app.use(compression())` in `main.ts` ([example](#common-recipes))                            |
+| `cookie-parser`                                               | `cookie-parser`   | Parse `Cookie` header into `req.cookies`                                                             | `app.use(cookieParser())` ([Nest cookies docs](https://docs.nestjs.com/techniques/cookies))   |
+| `express-session`                                             | `express-session` | Server-side session store                                                                            | `app.use(session(options))` ([Nest session docs](https://docs.nestjs.com/techniques/session)) |
+| [Body parsers](#body-parsers-raw-vs-json)                     | built-in          | `express.json()` / `express.urlencoded()` (auto on)                                                  | Toggle with `NestFactory.create(AppModule, { bodyParser: false })`                            |
 
 CORS is the odd one: it has a dedicated `enableCors()` instead of `app.use(cors())`. The Express adapter wraps the [`cors`](https://github.com/expressjs/cors) package; the Fastify adapter wraps [`@fastify/cors`](https://github.com/fastify/fastify-cors). Use the helper so the same options object works on both adapters ([Nest CORS docs](https://docs.nestjs.com/security/cors)).
 
