@@ -39,6 +39,7 @@ source:
   - https://docs.nestjs.com/faq/request-lifecycle
   - https://github.com/typestack/class-transformer/blob/develop/README.md
   - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/helpers/execution-context-host.ts
 ---
 
 > Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.

@@ -36,6 +36,7 @@ source:
   - https://docs.nestjs.com/middleware
   - https://github.com/axios/axios/blob/v1.x/lib/core/AxiosHeaders.js
   - https://www.rfc-editor.org/rfc/rfc9562
+  - https://docs.nestjs.com/exception-filters
 ---
 
 > Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". The propagation layer relies only on built-in `node:async_hooks` (`AsyncLocalStorage`) plus `randomUUID` from `node:crypto`.

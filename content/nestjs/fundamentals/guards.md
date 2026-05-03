@@ -29,6 +29,8 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/guard/guard.factory.ts
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
+  - https://docs.nestjs.com/recipes/passport
+  - https://docs.nestjs.com/security/authentication
 ---
 
 > Decide whether a request reaches the route handler. Used for **authorization**: roles, permissions, ownership, anything that should short-circuit before the handler runs.

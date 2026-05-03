@@ -38,6 +38,7 @@ source:
   - https://github.com/typestack/class-transformer
   - https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json
   - https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts
+  - https://docs.nestjs.com/openapi/mapped-types
 ---
 
 > Transform or validate input data **before** it reaches the route handler.
