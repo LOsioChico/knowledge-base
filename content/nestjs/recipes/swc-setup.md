@@ -246,7 +246,7 @@ See also: [[nestjs/recipes/monorepo|NestJS CLI monorepos]] for the surrounding m
 >
 > Same fix applies to `forwardRef()` constructor injections: wrap the parameter type in `WrapperType<T>` or your ORM's equivalent. Source: [SWC common pitfalls](https://docs.nestjs.com/recipes/swc#common-pitfalls).
 
-> [!tip] CommonJS vs ES modules
+> [!info] CommonJS vs ES modules
 > The Nest CLI's SWC integration sets `module.type: "commonjs"` in its built-in defaults (matches `tsc`'s `"module": "commonjs"`). Raw `@swc/core` leaves `module` untouched unless you set it. If you put `"module": { "type": "es6" }` in `.swcrc` for an ESM package, `@swc/jest` and Vitest may inherit that and break. Pin the test `module` explicitly: `swc.vite({ module: { type: "es6" } })` or use a separate `.swcrc` for tests. Source: [`swc-defaults.ts` in `nest-cli`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts), [SWC modules docs](https://swc.rs/docs/configuration/modules).
 
 ## See also

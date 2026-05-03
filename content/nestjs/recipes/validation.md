@@ -303,7 +303,7 @@ export class UsersController {
 { "email": "a@b.c" }
 ```
 
-> [!tip]- Always pass `always: true` if some decorators have no group
+> [!info]- Always pass `always: true` if some decorators have no group
 > A decorator without `groups` runs **only when no group is set** by default. Set `always: true` on the pipe (or `always: true` on the decorator) to keep ungrouped rules running alongside grouped ones.
 
 ## Nested objects and arrays

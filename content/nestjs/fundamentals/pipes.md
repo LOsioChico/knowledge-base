@@ -257,7 +257,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > [!warning]- `transform: true` mutates request shape
 > With `transform: true`, the value your handler receives is a **DTO class instance**, not the raw `req.body`. If you log/serialize it elsewhere assuming the original shape, you may see unexpected fields stripped (when `whitelist` is on) or types coerced. This is intentional but easy to miss.
 
-> [!tip]- Class vs. instance binding
+> [!info]- Class vs. instance binding
 > `@UsePipes(ValidationPipe)` lets Nest instantiate the pipe (DI works, no options).
 > `@UsePipes(new ValidationPipe({ whitelist: true }))` gives you options but loses DI for that instance.
 

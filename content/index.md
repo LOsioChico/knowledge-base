@@ -19,5 +19,5 @@ Welcome to my personal knowledge base. Patterns, gotchas, and notes I keep comin
 
 - [[inbox|Inbox]]: reading queue for future notes
 
-> [!tip] How this works
+> [!info] How this works
 > Every page here is a Markdown file. Notes link to each other with `[[wikilinks]]`, and the graph view (top right) shows how everything connects.
