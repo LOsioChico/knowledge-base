@@ -1,0 +1,60 @@
+{
+  "entries": [
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "6e3726e3bd97c64e77b7b90ffa93dd91d6d079ff",
+      "rule": "source-verification",
+      "reason": "NestMiddleware.use() returns `: any`; sync/Promise/end-response is general Express usage. No usable single primary source for the union.",
+      "date": "2026-05-03",
+      "originalLine": "The `use()` method can be sync, return a `Promise`, or end the response. **Never** silently return without calling `next()` or ending `res`: the request hangs until the client times out."
+    },
+    {
+      "path": "content/nestjs/recipes/validation.md",
+      "sig": "7781c2400003e56b3d1dc684388116140c8917bb",
+      "rule": "style-hedge",
+      "reason": "\"depending on (create vs. update, public vs. admin)\" is a literal use-case enumeration, not a hedge softening a specific claim.",
+      "date": "2026-05-03",
+      "originalLine": "- Run different rules for the same DTO depending on context (create vs. update, public vs. admin)."
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "sig": "d6cafc1bfc02b5726fef892e8baaadcd1e50c69f",
+      "rule": "source-verification",
+      "reason": "Already cited inline AND in source: list (docs.nestjs.com/cli/monorepo#workspaces). Audit re-fires due to fetch error on the page extract.",
+      "date": "2026-05-03",
+      "originalLine": "The schematic detects you're in a single-project workspace and **rewrites the layout in place** ([Nest CLI → Workspaces](https://docs.nestjs.com/cli/monorepo#workspaces) describes the conversion: the original `src/` and `test/` folders are moved under `apps/<name>/`):"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "sig": "8eea3501350f53f025a5bc0f0abcd653798e7851",
+      "rule": "source-verification",
+      "reason": "Already cited inline AND in source: list (docs.nestjs.com/cli/monorepo#specified-compiler). Audit re-fires due to fetch error.",
+      "date": "2026-05-03",
+      "originalLine": "- `\"webpack\": true` is the **monorepo default**: standard projects build with `tsc` ([Nest CLI → build](https://docs.nestjs.com/cli/usages#nest-build)) while [monorepos default to webpack](https://docs.nestjs.com/cli/monorepo#specified-compiler) for bundling. Flip it to `tsc` or `swc` via the `builder` field if you'd rather not bundle."
+    },
+    {
+      "path": "content/nestjs/releases/v11.md",
+      "sig": "872caa93d7be76bae743d51d856e7ee7b1556817",
+      "rule": "source-verification",
+      "reason": "Already cites parse-date.pipe.ts#L10-L31 inline; the cited file IS the comparison source (ParseDatePipeOptions has the same optional/default ergonomics as ParseIntPipeOptions). Auditor missed the source list.",
+      "date": "2026-05-03",
+      "originalLine": "Built-in pipe that parses date strings/numbers from `@Param`/`@Query`/`@Body` into a `Date`, with the same `optional` / `default` ergonomics as `ParseIntPipe` and friends ([`ParseDatePipeOptions`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/parse-date.pipe.ts#L10-L31)). Lands in `@nestjs/common`, no extra install."
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "sig": "c06488acb4cdaa8c3ae6976780f66bc23318ce7d",
+      "rule": "show-dont-tell",
+      "reason": "Tagline blockquote. AGENTS.md show-dont-tell rule explicitly excludes callouts and the tagline (taglines are framing, not content).",
+      "date": "2026-05-03",
+      "originalLine": "> Strip secrets, rename fields, and expose role-specific views of the same entity. NestJS hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classTransformer.classToPlain` on whatever the controller returned (see [`class-serializer.interceptor.ts#L84-L101`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts#L84-L101))."
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "sig": "5f0060c64e8c3047a9dce35105ee7824a6b707c1",
+      "rule": "show-dont-tell",
+      "reason": "The exact GET /users/1 → {id, email} payload is shown 6 lines above (L155). Audit window only looks forward 30 lines and missed the example just before.",
+      "date": "2026-05-03",
+      "originalLine": "Adding a new column to the entity now defaults to **hidden** until someone explicitly `@Expose()`s it. That's the strategy you want for any DTO that wraps a sensitive entity."
+    }
+  ]
+}

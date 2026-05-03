@@ -32,6 +32,7 @@ import { groundFindings } from "./ground.js";
 import { runSourceVerifyPass } from "./source-verify.js";
 import { runAnchorVerifyPass } from "./anchor-verify.js";
 import { runFactGroundPass } from "./fact-ground.js";
+import { filterDismissed } from "./dismissed.js";
 import type {
   ConfidenceTier,
   FileReport,
@@ -667,7 +668,23 @@ async function main(): Promise<void> {
     ),
   ];
 
-  const finalReport: TieredReport = nestTiered(args.targets, allTiered);
+  // Filter against the dismissed-finding registry. Entries are keyed by
+  // sha1(path + rule + trimmed line text) so the dismissal survives line-
+  // number drift but re-fires when the underlying prose is rewritten.
+  const dismissResult = filterDismissed(REPO_ROOT, allTiered);
+  if (dismissResult.dropped.length > 0) {
+    log(
+      `\n[dismissed] suppressed ${dismissResult.dropped.length} previously-triaged finding(s):`,
+    );
+    for (const { finding, entry } of dismissResult.dropped) {
+      log(`  - ${finding.path}:${finding.line} (${finding.rule}) — ${entry.reason}`);
+    }
+  }
+
+  const finalReport: TieredReport = nestTiered(
+    args.targets,
+    dismissResult.kept,
+  );
 
   if (JSON_ONLY) {
     process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
