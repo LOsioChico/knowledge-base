@@ -32,6 +32,7 @@ source:
   - https://github.com/mikenicholson/passport-jwt/blob/master/lib/strategy.js
   - https://github.com/nestjs/passport/blob/master/lib/passport/passport.strategy.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/services/reflector.service.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/can-activate.interface.ts
 ---
 
 > Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.

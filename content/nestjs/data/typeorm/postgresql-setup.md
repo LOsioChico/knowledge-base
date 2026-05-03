@@ -26,6 +26,7 @@ source:
   - https://github.com/nestjs/typeorm
   - https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts
   - https://github.com/nestjs/typeorm/blob/master/lib/typeorm-core.module.ts
+  - https://github.com/nestjs/typeorm/blob/master/lib/data-source-name.registry.ts
   - https://github.com/nestjs/config/blob/master/lib/config.service.ts
   - https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts
   - https://github.com/typeorm/typeorm/blob/master/src/migration/MigrationExecutor.ts
