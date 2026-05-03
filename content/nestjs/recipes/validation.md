@@ -204,16 +204,16 @@ With `transform: true`, the same handler returns:
 
 The pipe inspects the **metatype** of the parameter (the TS type Nest reflects from your handler signature). Validation only runs when the metatype is a custom class; for built-in primitives, validation is skipped but `transform: true` still coerces single-key path/query params via `transformPrimitive` ([source: `validation.pipe.ts` `transformPrimitive`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts#L172-L201)).
 
-| Parameter signature                         | Metatype          | Validation runs? | `transform: true` produces                                                           |
-| ------------------------------------------- | ----------------- | :--------------: | ------------------------------------------------------------------------------------ |
-| `@Body() dto: CreateUserDto`                | `CreateUserDto`   |        ✅        | `CreateUserDto` instance                                                             |
-| `@Query() q: PaginationQuery`               | `PaginationQuery` |        ✅        | `PaginationQuery` instance (whole-object query needs `enableImplicitConversion`)     |
-| `@Param() p: GetUserParams`                 | `GetUserParams`   |        ✅        | `GetUserParams` instance                                                             |
-| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO from `body-parser` (no coercion: `transformPrimitive` skips bodies)     |
-| `@Param('id') id: string`                   | `String`          |        ❌        | `String(value)` (URL params are already strings, so no visible change)               |
-| `@Query('page') page: number`               | `Number`          |        ❌        | Coerced via `+value`: `?page=2` arrives as the number `2`                            |
-| `@Query('active') active: boolean`          | `Boolean`         |        ❌        | Coerced via `value === true \|\| value === 'true'`: only `'true'` arrives as `true`  |
-| `@UploadedFile() file: Express.Multer.File` | `Object`          |        ❌        | The raw [[nestjs/recipes/file-uploads\|multer]] file (validate with `ParseFilePipe`) |
+| Parameter signature                         | Metatype          | Validation runs? | `transform: true` produces                                                                                                                                                                                                                                                                                   |
+| ------------------------------------------- | ----------------- | :--------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `@Body() dto: CreateUserDto`                | `CreateUserDto`   |        ✅        | `CreateUserDto` instance                                                                                                                                                                                                                                                                                     |
+| `@Query() q: PaginationQuery`               | `PaginationQuery` |        ✅        | `PaginationQuery` instance (whole-object query needs `enableImplicitConversion`)                                                                                                                                                                                                                             |
+| `@Param() p: GetUserParams`                 | `GetUserParams`   |        ✅        | `GetUserParams` instance                                                                                                                                                                                                                                                                                     |
+| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO from `body-parser` (no coercion: `transformPrimitive` skips bodies)                                                                                                                                                                                                                             |
+| `@Param('id') id: string`                   | `String`          |        ❌        | `String(value)` (URL params are already strings, so no visible change)                                                                                                                                                                                                                                       |
+| `@Query('page') page: number`               | `Number`          |        ❌        | Coerced via `+value`: `?page=2` arrives as the number `2`                                                                                                                                                                                                                                                    |
+| `@Query('active') active: boolean`          | `Boolean`         |        ❌        | Coerced via `value === true \|\| value === 'true'` ([`validation.pipe.ts#L208-L217`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts#L208-L217)): from query strings only `'true'` becomes `true`; everything else (including `'false'`, `'1'`, `'yes'`) becomes `false` |
+| `@UploadedFile() file: Express.Multer.File` | `Object`          |        ❌        | The raw [[nestjs/recipes/file-uploads\|multer]] file (validate with `ParseFilePipe`)                                                                                                                                                                                                                         |
 
 `ParseIntPipe` / `ParseBoolPipe` (see [[nestjs/fundamentals/pipes|Pipes]]) still have a place: they throw a 400 on bad input, while `ValidationPipe`'s `transformPrimitive` silently coerces (`+value` returns `NaN` for `?page=abc` and the handler sees `NaN`).
 
@@ -387,6 +387,22 @@ new ValidationPipe({
       })),
     }),
 });
+```
+
+`POST /signup` with `{ "email": "not-an-email", "password": "x" }` produces a `400` body in the new shape:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Validation failed",
+  "details": [
+    { "field": "email", "messages": ["email must be an email"] },
+    {
+      "field": "password",
+      "messages": ["password must be longer than or equal to 8 characters"]
+    }
+  ]
+}
 ```
 
 In production, also set `disableErrorMessages: true` if you don't want the raw constraint strings reaching the client (and instead return your own copy).
