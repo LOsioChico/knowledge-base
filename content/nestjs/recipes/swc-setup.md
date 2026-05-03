@@ -29,7 +29,7 @@ source:
 npm i --save-dev @swc/core @swc/cli
 ```
 
-That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI loads SWC via [`swcDefaultsFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts) and invokes the compiler through `@swc/cli` (`SwcCompiler#loadSwcCliBinary` does [`require('@swc/cli/lib/swc/dir')`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts#L198-L207) and exits with an install hint if either package is missing), so both packages are required for `nest start -b swc`.
+That's it. SWC ships with sensible defaults for Nest applications; no `.swcrc` required for the common case. The Nest CLI loads SWC via [`swcDefaultsFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts) and invokes the compiler through `@swc/cli` ([`SwcCompiler#loadSwcCliBinary`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts) does `require('@swc/cli/lib/swc/dir')` and exits with an install hint if either package is missing), so both packages are required for `nest start -b swc`.
 
 ## Minimal working example
 
@@ -41,7 +41,7 @@ nest start -b swc --type-check
 nest start -b swc --type-check -w
 ```
 
-`-b` is the short form of `--builder` and selects the compiler backend. The enum is `tsc | webpack | swc` ([`start.command.ts#L11`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L11) declares the option; the action validates against `availableBuilders = ['tsc', 'webpack', 'swc']`). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
+`-b` is the short form of `--builder` and selects the compiler backend. The enum is `tsc | webpack | swc` (declared on the `start` command in [`start.command.ts`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts) and validated against `availableBuilders = ['tsc', 'webpack', 'swc']` in the same action). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
 
 Make it permanent in `nest-cli.json` (`compilerOptions.builder` accepts the same `'tsc' | 'swc' | 'webpack'` union, optionally as `{ type, options }`; see [`CompilerOptions` in `nest-cli/configuration.ts`](https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts)):
 
@@ -191,7 +191,7 @@ export default defineConfig({
 
 ## Using SWC in a CLI [[nestjs/recipes/monorepo|monorepo]]
 
-The Nest CLI defaults to `webpack` in monorepo mode (`"webpack": true` in `nest-cli.json`; the official [SWC recipe → Monorepo](https://docs.nestjs.com/recipes/swc#monorepo) keeps webpack and uses `swc-loader`), so the `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
+Nest CLI monorepos build through webpack by default; the official [SWC recipe → Monorepo](https://docs.nestjs.com/recipes/swc#monorepo) keeps webpack and uses `swc-loader`, so the standalone `swc` builder above is **not** wired in. To get SWC speed in a monorepo, plug `swc-loader` into webpack:
 
 ```shell
 npm i --save-dev swc-loader

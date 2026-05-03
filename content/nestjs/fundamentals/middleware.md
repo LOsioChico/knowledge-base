@@ -157,6 +157,9 @@ Middleware runs **before** every other pipeline layer. Inside the middleware tie
 2. Module-bound middleware from the root module's `configure()` (in `apply()` order).
 3. Module-bound middleware from imported modules, in `imports` array order.
 
+> [!warning] Global modules jump the queue (NestJS 11+)
+> Middleware registered inside a module marked `@Global()` runs **first** among module-bound middleware regardless of where the module sits in the dependency graph ([migration guide → Middleware registration order](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#middleware-registration-order)). Order within a single global module still follows `apply()` order; order across global modules follows discovery order.
+
 After the middleware chain finishes, Nest moves on to [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] (pre) → [[nestjs/fundamentals/pipes|pipes]] → handler. Source: [Request lifecycle](https://docs.nestjs.com/faq/request-lifecycle).
 
 If a middleware does not end the response, it must call `next()`. Otherwise the request stays open.
@@ -273,7 +276,7 @@ A body parser is a piece of middleware that **reads the request stream once** an
 
 The request body is a one-shot stream: once a parser has consumed it, no other parser can. That's why mixing them on overlapping paths breaks: whichever runs first wins, and downstream code sees `req.body` already in that shape (or an empty `{}` if the type didn't match).
 
-Why `raw` matters for signed webhooks: signature verification recomputes an HMAC over the **exact bytes** the sender hashed. `JSON.stringify(req.body)` is not byte-for-byte stable (key order, whitespace, and escape choices depend on the producer), so a re-serialized body will fail the check. `express.raw()` keeps the original `Buffer` so you can verify, then `JSON.parse(req.body.toString())` yourself.
+Why `raw` matters for signed webhooks: signature verification recomputes an HMAC over the **exact bytes** the sender hashed. Stripe spells this out (the [verify webhook signatures manually docs](https://docs.stripe.com/webhooks/signature#verify-manually) require "the raw request body, exactly as Stripe sent it"); GitHub does too ([securing webhooks](https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries#about-validating-webhook-deliveries)). `JSON.stringify(req.body)` round-trips through the JS object representation and won't reproduce the original bytes, so re-serializing fails the check. `express.raw()` keeps the original `Buffer` so you can verify, then `JSON.parse(req.body.toString())` yourself.
 
 > [!example]- Capture the raw body for a Stripe webhook
 >
