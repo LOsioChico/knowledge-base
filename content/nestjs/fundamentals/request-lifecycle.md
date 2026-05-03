@@ -21,6 +21,7 @@ source:
   - https://docs.nestjs.com/exception-filters
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts
   - https://expressjs.com/en/guide/error-handling.html
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
   - https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks
@@ -71,7 +72,7 @@ flowchart TD
 9. Response is sent.
 
 > [!info]- Filters resolve in the **opposite** direction
-> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further at the same handler sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter. Throwing from inside a filter does **not** re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func(...)` once and returns): the rethrown error escapes the router proxy and is handed to the platform's default error handler, bypassing every other filter. See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]].
+> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further at the same handler sees the exception. This is why a route-bound filter can override a global one, but a global filter can never "wrap" a route filter. Throwing from inside a filter does **not** re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func(...)` once and returns), but it **does** re-fire the global filter list: Nest installs a second `ExceptionsHandler` on the HTTP adapter at boot ([`routes-resolver.ts#L162-L183`](https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts#L162-L183)) whose filter list is built from an empty controller, so it carries globals only. `BaseExceptionFilter` is the floor when no global matches, not Express `finalhandler`. See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]].
 
 ## Why the order matters
 
