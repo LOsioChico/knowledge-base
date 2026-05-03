@@ -81,8 +81,12 @@ Examples of claims you should SKIP:
 - **Quote-or-skip**: when emitting a finding, your `explanation` MUST cite either
   (a) a verbatim quote from one of the cited sources or (b) the explicit fact that
   no source mentions the claim. No vibes-based findings.
-- **Small N**: cap output at the most consequential 5 findings per note. Defaults,
-  signatures, and version numbers beat stylistic claims.
+- **Small N**: cap output at the most consequential 5 findings per note, with at
+  most 2 advisory (`unsourced-but-plausible`) findings per note. High-tier
+  (`contradicted`, `unsupported`) take precedence in the cap. The advisory cap
+  exists because re-running the audit on unchanged prose otherwise re-surfaces
+  the same plausible-but-uncited list every time, drowning the high-tier signal.
+  Pick the advisory findings most worth a citation pass; drop the rest.
 - **Contradicted > unsupported**: if a claim is both unsupported AND a different
   source contradicts a related claim, prefer `"contradicted"` and explain.
 - **Fetch errors**: if EVERY source has `!! FETCH ERROR`, emit ZERO findings and
@@ -122,6 +126,35 @@ These are the FP shapes that bit us in real audits. Read before emitting finding
 5. **Concrete > vague when uncited**: between two phrasings of the same finding,
    prefer the one that names the specific API or version. The downstream fix-proposer
    is told to ADD information, not subtract it.
+
+6. **General industry knowledge**: do NOT flag claims about widely-known
+   cross-product behavior that any backend engineer would accept without a citation.
+   Examples to SKIP: "GitHub webhooks require the raw body for signature
+   validation" (general webhook-signing pattern), "Postgres `unique_violation` is
+   SQLSTATE `23505`" (well-known SQLSTATE), "Node 16 reached EOL in September 2023"
+   (published EOL date, not a vendor-specific behavior claim), "managed load
+   balancers impose request-size limits" (general infra fact). A claim is industry
+   knowledge if it would be redundant to cite — like citing that HTTP 200 means
+   success. Citation-worthiness, not factuality, is the test. Emit only when the
+   claim names a specific API/version/default that a careful reader would want to
+   verify against the vendor's docs.
+
+7. **Author commentary about ecosystem/tooling adjacencies**: do NOT flag prose
+   about which packages exist alongside a cited one, which type packages provide
+   which types, or which tools are commonly paired. Examples to SKIP: "Installing
+   `@types/pg` provides the typed `DatabaseError`", "the `pg` package is also
+   commonly used with Drizzle", "you can pair this with Zod for runtime
+   validation". These claims are author guidance, not factual claims about a
+   cited API's surface.
+
+8. **Cross-file claims when the cited list covers the same package/repo**: when
+   the note's cited sources include any file from package P, do NOT flag a claim
+   about a different file in P as `unsupported` just because that specific file
+   isn't in the extract. Emit `unsourced-but-plausible` with the suggested file
+   URL so the author can add it. The orchestrator's per-file extract budget is
+   the bottleneck, not the author's diligence. Concrete case: if `parse-int.pipe.ts`
+   is cited and the claim is about `parse-date.pipe.ts` in the same `@nestjs/common`
+   package, suggest the second file URL — do not treat it as an unsupported claim.
 
 ## Output schema
 
