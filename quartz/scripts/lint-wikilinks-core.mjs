@@ -747,6 +747,36 @@ function validateTagline(result, notes) {
   }
 }
 
+const PRIMARY_SOURCE_RE =
+  /\]\((https:\/\/(?:github\.com\/[^\s)]+\/blob\/[^\s)]+|docs\.nestjs\.com\/[^\s)]+))\)/g
+
+function normalizeSourceUrl(url) {
+  return url.split("#")[0].replace(/\/$/, "")
+}
+
+function validateInlineSourceCitations(result, notes) {
+  for (const note of notes) {
+    if (isIndexNote(note)) continue
+    const sources = asArray(note.data.source).map(cleanScalar).filter(Boolean)
+    const sourceSet = new Set(sources.map(normalizeSourceUrl))
+    const lines = note.body.split("\n")
+    for (let i = 0; i < lines.length; i++) {
+      const re = new RegExp(PRIMARY_SOURCE_RE.source, "g")
+      let match
+      while ((match = re.exec(lines[i])) !== null) {
+        const normalized = normalizeSourceUrl(match[1])
+        if (sourceSet.has(normalized)) continue
+        addViolation(result, {
+          check: "inline-source-citations",
+          file: note.file,
+          line: note.bodyStartLine + i,
+          message: `inline citation \`${normalized}\` is not in the note's frontmatter \`source:\` list`,
+        })
+      }
+    }
+  }
+}
+
 function tokenize(text) {
   const words = text
     .toLowerCase()
@@ -1049,6 +1079,16 @@ export function formatHuman(result) {
       taglines,
     )
 
+  const inlineSources = groupByCheck(errors, "inline-source-citations")
+  if (inlineSources.length === 0)
+    stdout.push("✓ inline-source-citations: all inline primary-source links are in `source:`")
+  else
+    printGeneric(
+      stderr,
+      `✗ inline-source-citations: ${inlineSources.length} inline ${plural(inlineSources.length, "citation")} missing from frontmatter \`source:\``,
+      inlineSources,
+    )
+
   const discovery = groupByCheck(decisions, "discoverability")
   if (discovery.length === 0) {
     stdout.push(
@@ -1154,6 +1194,7 @@ export async function lintVault({
   validateRelationshipConsistency(result, notesBySlug, notes)
   validateOrphans(result, notes)
   validateTagline(result, notes)
+  validateInlineSourceCitations(result, notes)
   validateDiscoverability(result, notes)
   await validateAgentsMirror(result, repoRoot)
 
