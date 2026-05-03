@@ -122,7 +122,7 @@ When the client sends an inbound `X-Request-ID`, it's echoed back instead of rep
 
 ## Step 2: logger that injects the trace ID into every line
 
-The point of a trace ID is to find it in logs without sprinkling it through every `Logger.log()` call. Subclass Nest's `ConsoleLogger` and override [`formatPid()`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts) (called by `printMessages()` for every log line):
+The point of a trace ID is to find it in logs without sprinkling it through every `Logger.log()` call. Subclass Nest's `ConsoleLogger` and override [`formatPid()`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts#L417-L419) (called by `printMessages()` for every log line):
 
 ```typescript
 // trace/trace-logger.service.ts
