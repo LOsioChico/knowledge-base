@@ -25,6 +25,9 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
   - https://github.com/nestjs/nest/tree/master/packages/common
   - https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/can-activate.interface.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
+  - https://github.com/nestjs/schematics/blob/master/src/lib/guard/guard.factory.ts
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
 ---
 
@@ -143,9 +146,9 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 Nest core ships **no concrete guard classes**: the [`@nestjs/common` package](https://github.com/nestjs/nest/tree/master/packages/common) exposes the `CanActivate` interface and the `@UseGuards` decorator but no ready-to-use guard implementations. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
 | Guard                 | Package             | Purpose                                                                                                                                                                                                                  |
-| --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `AuthGuard(strategy)` | `@nestjs/passport`  | Bridge to a [Passport](https://docs.nestjs.com/recipes/passport) strategy (`'jwt'`, `'local'`, `'oauth2'`, …). See the [`IS_PUBLIC` recipe below](#common-recipes) and [[nestjs/auth/jwt-strategy\|JWT strategy recipe]] |
-| `ThrottlerGuard`      | `@nestjs/throttler` | [[nestjs/recipes/rate-limiting                                                                                                                                                                                           | Rate limiting]] per route or controller |
+| `ThrottlerGuard`      | `@nestjs/throttler` | [[nestjs/recipes/rate-limiting\|Rate limiting]] per route or controller                                                                                                                                                  |
 
 Anything else you write yourself. The canonical example is a `RolesGuard`, covered below.
 
