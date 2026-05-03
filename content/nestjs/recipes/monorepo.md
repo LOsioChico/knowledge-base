@@ -29,6 +29,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/lib/package-managers/package-manager.factory.ts
+  - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts
   - https://docs.nestjs.com/cli/monorepo#monorepo-mode
   - https://docs.nestjs.com/cli/monorepo#workspaces
   - https://docs.nestjs.com/cli/usages#nest-build
@@ -394,7 +395,7 @@ Cons:
 > The original project keeps its name (e.g., `my-app`) in `nest-cli.json`'s `"root"`, the `"projects"` map, every `tsconfig.app.json` path, and any npm scripts you've added. If you rename it, search the repo for the old name and update every match. The CLI does not provide a rename command.
 
 > [!info]- Webpack is the default compiler in monorepos
-> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"builder": { "type": "tsc" }` in `nest-cli.json#compilerOptions`. Source: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
+> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"compilerOptions": { "builder": { "type": "tsc" } }` in `nest-cli.json` (the CLI also accepts the shorthand `"builder": "tsc"` and normalizes it to the object form: [`get-builder.ts#L17-L29`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts#L17-L29)). Docs: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
 
 > [!info]- The library prefix is global per workspace
 > The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths: and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.
