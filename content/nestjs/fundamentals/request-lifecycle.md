@@ -26,7 +26,7 @@ source:
   - https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks
 ---
 
-How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.
+> How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.
 
 ## The pipeline
 

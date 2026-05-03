@@ -723,6 +723,30 @@ function validateOrphans(result, notes) {
   }
 }
 
+function validateTagline(result, notes) {
+  for (const note of notes) {
+    if (isIndexNote(note)) continue
+    const lines = note.body.split("\n")
+    let firstIdx = -1
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().length > 0) {
+        firstIdx = i
+        break
+      }
+    }
+    if (firstIdx === -1) continue
+    const first = lines[firstIdx].trim()
+    if (!first.startsWith(">")) {
+      addViolation(result, {
+        check: "tagline",
+        file: note.file,
+        line: note.bodyStartLine + firstIdx,
+        message: "first body line must be a `>` blockquote tagline (one sentence naming the note)",
+      })
+    }
+  }
+}
+
 function tokenize(text) {
   const words = text
     .toLowerCase()
@@ -1015,6 +1039,16 @@ export function formatHuman(result) {
       orphans,
     )
 
+  const taglines = groupByCheck(errors, "tagline")
+  if (taglines.length === 0)
+    stdout.push("✓ tagline: every non-index note opens with a `>` blockquote")
+  else
+    printGeneric(
+      stderr,
+      `✗ tagline: ${taglines.length} note ${plural(taglines.length, "is", "are")} missing the opening blockquote`,
+      taglines,
+    )
+
   const discovery = groupByCheck(decisions, "discoverability")
   if (discovery.length === 0) {
     stdout.push(
@@ -1119,6 +1153,7 @@ export async function lintVault({
   validateRelatedSymmetry(result, notesBySlug, notes)
   validateRelationshipConsistency(result, notesBySlug, notes)
   validateOrphans(result, notes)
+  validateTagline(result, notes)
   validateDiscoverability(result, notes)
   await validateAgentsMirror(result, repoRoot)
 

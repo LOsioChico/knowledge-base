@@ -221,6 +221,16 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
+## Tagline (MANDATORY for every non-index note)
+
+Every non-index note opens with a single `>` blockquote on the first body line, naming what the note is about in one sentence. No leading "In this note we...", no setup instructions before it, no `## Heading` before it. The tagline is what Quartz renders inside link popovers and what search uses for the result excerpt: it's the reader's first 2-second triage signal.
+
+Forbidden: bare paragraph as the first body line ("How a request flows through a NestJS app..."). Required: prepend `> ` so the same sentence becomes a blockquote.
+
+Forbidden: multi-paragraph tagline, or a tagline that doubles as a setup step. The tagline is *framing*, not content; if it's longer than one sentence, the second sentence belongs in the body.
+
+Enforced by `npm run lint:wikilinks` (BLOCKING): the `tagline` check fails CI on any non-index note whose first non-empty body line does not start with `>`.
+
 ## Note titles
 
 The explorer is the primary navigation surface; titles must scan as a parallel list within their folder, not as a wall of unique sentences. Rules:
