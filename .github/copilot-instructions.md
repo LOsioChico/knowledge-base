@@ -221,6 +221,23 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - No commit body unless absolutely necessary. No co-author trailers.
 - Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
+## Note titles
+
+The explorer is the primary navigation surface; titles must scan as a parallel list within their folder, not as a wall of unique sentences. Rules:
+
+- **Sentence case.** "Exception filters", not "Exception Filters".
+- **Folder context is implicit; never repeat it.** A note under `nestjs/recipes/` does not start with "NestJS" or "Request"/"Response". Forbidden: "NestJS CLI monorepos" (folder is `nestjs/recipes/`), "Request validation with class-validator", "SWC builder for NestJS". Required: "Monorepos with the Nest CLI", "Validation with class-validator", "SWC builder".
+- **Per-folder shape, parallel within the folder:**
+  - **Recipes** (`nestjs/recipes/`): `<topic> with <tool>`, or just `<tool>` when the tool *is* the topic. The `<topic>` is the differentiating word and goes first so alphabetical sort groups by topic ("Validation with class-validator" sorts under V, not R for "Request").
+  - **Fundamentals** (`nestjs/fundamentals/`): bare nouns or short noun phrases ("Guards", "Pipes", "Lifecycle hooks", "Global enhancers"). The long descriptor lives in the opening sentence, not the title.
+  - **Releases** (`nestjs/releases/`): version only ("NestJS 11"). Any "what's new and what broke" framing belongs in the H1 subtitle / opening sentence.
+  - **Reference / data** (`nestjs/data/`, `nestjs/auth/`): `<topic> with <tool>` like recipes when the tool dominates ("Caching with @nestjs/cache-manager", "JWT strategy with Passport"); gerund/noun form when the topic dominates ("Handling database errors", "PostgreSQL setup with TypeORM").
+- **Differentiating word first.** "PostgreSQL setup with TypeORM" not "TypeORM PostgreSQL setup": readers scanning the explorer match on the first word.
+- **Drop "the".** "Monorepos with the Nest CLI" only because removing "the" reads as a vague title; otherwise prefer no leading article.
+- **Renames preserve searchability.** When changing a title, append the old title to `aliases` so search still resolves it and the wikilink linter's concept catalog still flags first-mention links from notes that reference the concept by its old name. For aliases that contain commas (e.g. an old descriptive title), use the **block form** (`aliases:\n  - "..."\n`) not the flow form `[...]` — flow-form parsing splits on commas and creates phantom aliases that match unrelated bare words in other notes' prose.
+
+This applies to existing notes AND to any planned title scoped in `inbox.md` or anywhere else. When proposing a new note's path, also propose its final title against these rules.
+
 ## Open review items in notes
 
 When a note has a follow-up that is not blocking publication — verify against newer docs, expand once a planned recipe lands, double-check a behavior on the next release — mark it inline with a collapsed `todo` callout instead of leaving a TODO comment or opening an external tracker. Quartz/Obsidian render this natively.
