@@ -18,6 +18,7 @@ source:
   - https://github.com/nestjs/throttler/blob/master/src/throttler.exception.ts
   - https://github.com/nestjs/throttler/blob/master/src/throttler-module-options.interface.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
+  - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts
   - https://www.telerik.com/blogs/rate-limiting-nestjs-using-throttler
 ---
 
