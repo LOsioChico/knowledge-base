@@ -1,7 +1,15 @@
 ---
-title: SWC builder for NestJS
+title: SWC builder
 aliases:
-  ["swc", "swc setup", "swc compiler", "nest start swc", "fast nest builds", "@swc/core nest"]
+  [
+    "swc",
+    "swc setup",
+    "swc compiler",
+    "nest start swc",
+    "fast nest builds",
+    "@swc/core nest",
+    SWC builder for NestJS,
+  ]
 tags: [type/recipe, tech/typescript, tech/nest-cli]
 area: nestjs
 status: evergreen

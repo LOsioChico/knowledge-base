@@ -1,6 +1,14 @@
 ---
-title: Request trace ID propagation
-aliases: [correlation id, request id, trace id, x-request-id, AsyncLocalStorage trace]
+title: Trace IDs with AsyncLocalStorage
+aliases:
+  [
+    correlation id,
+    request id,
+    trace id,
+    x-request-id,
+    AsyncLocalStorage trace,
+    Request trace ID propagation,
+  ]
 tags: [type/recipe, tech/asynclocalstorage, lifecycle, errors]
 area: nestjs
 status: evergreen

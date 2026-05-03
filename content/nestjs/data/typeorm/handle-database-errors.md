@@ -1,7 +1,15 @@
 ---
-title: Handle database errors
+title: Handling database errors
 aliases:
-  [QueryFailedError, unique violation, constraint violation, duplicate key, 23505, ER_DUP_ENTRY]
+  [
+    QueryFailedError,
+    unique violation,
+    constraint violation,
+    duplicate key,
+    23505,
+    ER_DUP_ENTRY,
+    Handle database errors,
+  ]
 tags: [type/recipe, tech/typeorm, tech/postgres, errors]
 area: nestjs
 status: evergreen

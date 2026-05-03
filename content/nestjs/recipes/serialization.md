@@ -1,6 +1,13 @@
 ---
-title: Response serialization with class-transformer
-aliases: [class-serializer, ClassSerializerInterceptor, exclude fields, expose fields]
+title: Serialization with class-transformer
+aliases:
+  [
+    class-serializer,
+    ClassSerializerInterceptor,
+    exclude fields,
+    expose fields,
+    Response serialization with class-transformer,
+  ]
 tags: [type/recipe, tech/class-transformer, tech/http]
 area: nestjs
 status: evergreen

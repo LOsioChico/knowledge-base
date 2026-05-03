@@ -1,6 +1,6 @@
 ---
-title: Request Lifecycle
-aliases: [request pipeline, execution order]
+title: Request lifecycle
+aliases: [request pipeline, execution order, Request Lifecycle]
 tags: [type/concept, lifecycle]
 area: nestjs
 status: evergreen

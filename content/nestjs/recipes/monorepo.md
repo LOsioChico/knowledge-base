@@ -1,5 +1,5 @@
 ---
-title: NestJS CLI monorepos
+title: Monorepos with the Nest CLI
 aliases:
   [
     nest monorepo,
@@ -9,6 +9,7 @@ aliases:
     apps and libs,
     nest generate app,
     nest generate library,
+    NestJS CLI monorepos,
   ]
 tags: [type/recipe, tech/nest-cli, tech/typescript]
 area: nestjs

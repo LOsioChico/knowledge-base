@@ -1,6 +1,14 @@
 ---
-title: Exception Filters
-aliases: [error handler, http exception filter, HttpException, BaseExceptionFilter, APP_FILTER]
+title: Exception filters
+aliases:
+  [
+    error handler,
+    http exception filter,
+    HttpException,
+    BaseExceptionFilter,
+    APP_FILTER,
+    Exception Filters,
+  ]
 tags: [type/concept, lifecycle, errors]
 area: nestjs
 status: evergreen

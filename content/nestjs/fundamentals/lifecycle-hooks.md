@@ -1,5 +1,5 @@
 ---
-title: Application lifecycle hooks
+title: Lifecycle hooks
 aliases:
   - lifecycle hooks
   - OnModuleInit
@@ -9,6 +9,7 @@ aliases:
   - OnApplicationShutdown
   - enableShutdownHooks
   - shutdown hooks
+  - Application lifecycle hooks
 tags: [type/concept, lifecycle]
 area: nestjs
 status: evergreen

@@ -1,6 +1,13 @@
 ---
-title: Request validation with class-validator
-aliases: [ValidationPipe, class-validator, DTO validation, validation groups]
+title: Validation with class-validator
+aliases:
+  [
+    ValidationPipe,
+    class-validator,
+    DTO validation,
+    validation groups,
+    Request validation with class-validator,
+  ]
 tags: [type/recipe, tech/class-validator, tech/http]
 area: nestjs
 status: evergreen

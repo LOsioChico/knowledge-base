@@ -1,6 +1,13 @@
 ---
-title: Global pipes, guards, interceptors, and filters via DI
-aliases: [APP_PIPE, APP_GUARD, APP_INTERCEPTOR, APP_FILTER, global providers, DI-aware globals]
+title: Global enhancers
+aliases:
+  - APP_PIPE
+  - APP_GUARD
+  - APP_INTERCEPTOR
+  - APP_FILTER
+  - global providers
+  - DI-aware globals
+  - "Global pipes, guards, interceptors, and filters via DI"
 tags: [type/concept, tech/typescript]
 area: nestjs
 status: evergreen
