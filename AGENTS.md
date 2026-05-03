@@ -238,6 +238,30 @@ The explorer is the primary navigation surface; titles must scan as a parallel l
 
 This applies to existing notes AND to any planned title scoped in `inbox.md` or anywhere else. When proposing a new note's path, also propose its final title against these rules.
 
+## Callouts
+
+Quartz renders Obsidian-style callouts (`> [!type]` / `> [!type]-` for collapsed). The vault uses **four types only**, with a defined intent for each. Picking the wrong type is a discoverability bug — the reader scans for visual hooks and learns to associate a color/icon with a kind of information. Inconsistency dilutes that signal.
+
+Vocabulary (canonical):
+
+| Type | Intent | Examples |
+|------|--------|----------|
+| `[!warning]` | Footgun, gotcha, silent failure mode, "X bypasses Y", "must do Z or breaks". | "`app.use()` loses DI", "Pass the class, not an instance", "Wildcard syntax changed since v11". |
+| `[!info]` | Side-note explainer, cross-cutting fact, comparison, "how this works". Anything informational that isn't itself a warning or an example. | "How this works", "Class vs. instance binding", "No `ExceptionContext` in middleware". |
+| `[!example]` | Worked-example snippet — runnable code with a one-line title that names what it demonstrates. The body is mostly a fenced code block. | "Recommended global setup", "Map a domain error to an HTTP status", "Per-route timeout". |
+| `[!todo]` | Open review item the maintainer must revisit. See [Open review items in notes](#open-review-items-in-notes). | "Verify on TypeORM 0.4 release". |
+
+**Forbidden** types (do not use, even though Obsidian/Quartz render them): `[!tip]`, `[!success]`, `[!question]`, `[!failure]`, `[!danger]`, `[!bug]`, `[!quote]`, `[!note]`, `[!abstract]`, `[!cite]`. Most overlap with one of the four above; using them fragments the visual vocabulary. Negative example: `> [!tip]- CommonJS vs ES modules` (this is a comparison, not actionable advice — `> [!info]-` is correct). Negative example: `> [!danger] Don't run migrations in production without a backup` (this is a footgun — `> [!warning]` is correct). If you find yourself reaching for a fifth type, the right move is almost always to split the content across two of the canonical four.
+
+Open vs collapsed (`[!type]` vs `[!type]-`):
+
+- **Open** (`[!type]` no trailing dash): the fact is **must-read at this point in the flow**. The reader cannot understand the next paragraph or skip the next snippet without internalizing it. Use sparingly: typically one open callout per major section, often at the top.
+- **Collapsed** (`[!type]-`): an **enumerable** side-fact, gotcha, or worked example the reader can expand on demand. Most callouts are collapsed; long lists of footgun warnings or alternative examples should always be collapsed so the section's main flow stays scannable.
+
+Negative example: `> [!warning]- Pass the class, not an instance` collapsed for the *primary* binding rule of a fundamentals note — the reader misses it and writes broken code. Required: open the canonical "pass the class" warning at the top of the binding section, collapse the secondary footguns ("BaseExceptionFilter cannot be `new`'d at route scope", etc.) below it.
+
+No automated enforcement (callout intent is too subjective for a linter). Audit advisory: `grep -rE '^> \[!(tip|success|question|failure|danger|bug|quote|note|abstract|cite)\]' content/` should always return zero matches.
+
 ## Open review items in notes
 
 When a note has a follow-up that is not blocking publication — verify against newer docs, expand once a planned recipe lands, double-check a behavior on the next release — mark it inline with a collapsed `todo` callout instead of leaving a TODO comment or opening an external tracker. Quartz/Obsidian render this natively.
