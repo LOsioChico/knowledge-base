@@ -18,6 +18,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/defaults/swc-defaults.ts
   - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
+  - https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts
   - https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts
 ---
 

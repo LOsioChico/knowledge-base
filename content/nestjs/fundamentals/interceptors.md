@@ -33,6 +33,9 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
   - https://rxjs.dev/api/operators/retry
+  - https://docs.nestjs.com/controllers#library-specific-approach
+  - https://docs.nestjs.com/faq/request-lifecycle
+  - https://github.com/typestack/class-transformer/blob/develop/README.md
   - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
 ---
 

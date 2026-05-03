@@ -34,6 +34,8 @@ source:
   - https://github.com/fastify/fastify-cors
   - https://github.com/expressjs/compression
   - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/middleware/middleware-config-proxy.interface.ts
+  - https://docs.stripe.com/webhooks/signature#verify-manually
+  - https://nodejs.org/docs/latest/api/http.html#event-finish
   - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
 ---
 

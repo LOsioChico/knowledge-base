@@ -20,6 +20,8 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/common/decorators/http/route-params.decorator.ts
   - https://github.com/nestjs/nest/blob/master/packages/platform-express/multer/interceptors/file.interceptor.ts
   - https://github.com/fastify/fastify-multipart
+  - https://docs.nestjs.com/techniques/validation
+  - https://github.com/nestjs/nest/blob/master/packages/platform-express/package.json
   - https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
 ---
 

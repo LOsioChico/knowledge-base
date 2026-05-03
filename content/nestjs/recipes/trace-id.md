@@ -25,6 +25,8 @@ source:
   - https://docs.nestjs.com/faq/hybrid-application
   - https://expressjs.com/en/guide/migrating-5.html
   - https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts
+  - https://docs.nestjs.com/middleware
+  - https://github.com/axios/axios/blob/v1.x/lib/core/AxiosHeaders.js
   - https://www.rfc-editor.org/rfc/rfc9562
 ---
 

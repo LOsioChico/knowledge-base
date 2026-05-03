@@ -29,6 +29,8 @@ source:
   - https://github.com/nestjs/config/blob/master/lib/config.service.ts
   - https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresDriver.ts
   - https://github.com/typeorm/typeorm/blob/master/src/migration/MigrationExecutor.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts
+  - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.telerik.com/blogs/learning-nestjs-part-2-connecting-database
 ---
 

@@ -26,6 +26,9 @@ source:
   - https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
   - https://docs.nestjs.com/exception-filters
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/data-source/DataSource.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/schema-builder/RdbmsSchemaBuilder.ts
   - https://docs.nestjs.com/techniques/database
 ---
 

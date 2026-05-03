@@ -27,6 +27,7 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts
+  - https://docs.nestjs.com/fundamentals/custom-providers
   - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts
 ---
 

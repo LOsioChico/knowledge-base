@@ -30,6 +30,9 @@ source:
   - https://github.com/nestjs/schematics/tree/master/src/lib/filter
   - https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts
   - https://nodejs.org/api/process.html#event-unhandledrejection
+  - https://expressjs.com/en/guide/error-handling.html
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter-context.ts
+  - https://github.com/nestjs/schematics/blob/master/src/lib/filter/filter.factory.ts
   - https://nodejs.org/api/cli.html#--unhandled-rejectionsmode
 ---
 

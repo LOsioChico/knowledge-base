@@ -30,6 +30,7 @@ source:
   - https://github.com/nestjs/passport/blob/master/lib/auth.guard.ts
   - https://github.com/mikenicholson/passport-jwt
   - https://github.com/mikenicholson/passport-jwt/blob/master/lib/strategy.js
+  - https://github.com/nestjs/passport/blob/master/lib/passport/passport.strategy.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/services/reflector.service.ts
 ---
 

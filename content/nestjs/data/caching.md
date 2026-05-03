@@ -23,6 +23,7 @@ source:
   - https://github.com/jaredwray/cacheable/pull/1134
   - https://github.com/jaredwray/cacheable/commit/ea37202931e255b0dfd2f62d7121c84671b1f4fd
   - https://www.telerik.com/blogs/learning-nestjs-part-3-data-caching
+  - https://github.com/nestjs/docs.nestjs.com/pull/3415
   - https://keyv.org/docs/
 ---
 

@@ -22,6 +22,7 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
   - https://expressjs.com/en/guide/error-handling.html
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
   - https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks
 ---
 
