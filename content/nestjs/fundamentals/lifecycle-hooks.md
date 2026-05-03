@@ -27,6 +27,7 @@ source:
   - https://github.com/nestjs/nest/releases/tag/v11.0.0
   - https://github.com/nestjs/nest/pull/14111
   - https://trilon.io/blog/announcing-nestjs-11-whats-new
+  - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
 ---
 
 > Hooks for **application** lifetime: when modules wake up, when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]], which fires once per HTTP call.
@@ -91,7 +92,7 @@ Within a single class, `onModuleInit` runs first, then later `onApplicationBoots
 - For an import graph `A → B → C` (A depends on B, B depends on C), init effectively goes `C → B → A` because Nest awaits each imported module before the importer.
 - Inside one module, hook execution is sequential: bootstrap waits for init.
 - Both hooks may return a `Promise` (or be `async`); Nest will not move on until it resolves or rejects.
-- `@Global()` modules are visible to every other module without an explicit `imports:` entry, so the documented "order depends on the order of module imports" rule doesn't pin down where they fall in the walk. Empirically they finish init first and tear down last (the implicit-import edge puts them at the deepest level of the graph, mirrored by the [[nestjs/releases/v11|v11]] reversed-teardown rule), but the official docs don't promise this. If the order is load-bearing, write a smoke test that logs from each hook rather than relying on it.
+- `@Global()` modules are visible to every other module without an explicit `imports:` entry, so the documented "order depends on the order of module imports" rule doesn't pin down where they fall in the walk. The [v11 migration guide](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#lifecycle-hooks-execution-order) states it directly: _"global modules are treated as a dependency of all other modules. This means that global modules are initialized first and destroyed last."_ Mirrors the [[nestjs/releases/v11|v11]] reversed-teardown rule. If the order is load-bearing, write a smoke test that logs from each hook rather than inferring it from the import graph.
 
 If you need "this provider should be ready before that controller starts handling requests", `onApplicationBootstrap` is the safer slot: by the time it runs, **every** module has finished `onModuleInit`.
 

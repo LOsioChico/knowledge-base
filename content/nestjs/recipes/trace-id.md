@@ -24,6 +24,8 @@ source:
   - https://docs.nestjs.com/fundamentals/injection-scopes
   - https://docs.nestjs.com/faq/hybrid-application
   - https://expressjs.com/en/guide/migrating-5.html
+  - https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts
+  - https://www.rfc-editor.org/rfc/rfc9562
 ---
 
 > Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". The propagation layer relies only on built-in `node:async_hooks` (`AsyncLocalStorage`) plus `randomUUID` from `node:crypto`.
@@ -120,7 +122,7 @@ When the client sends an inbound `X-Request-ID`, it's echoed back instead of rep
 
 ## Step 2: logger that injects the trace ID into every line
 
-The point of a trace ID is to find it in logs without sprinkling it through every `Logger.log()` call. Subclass Nest's `ConsoleLogger`:
+The point of a trace ID is to find it in logs without sprinkling it through every `Logger.log()` call. Subclass Nest's `ConsoleLogger` and override [`formatPid()`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts#L417-L419) (called by `printMessages()` for every log line):
 
 ```typescript
 // trace/trace-logger.service.ts
@@ -354,7 +356,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a meaningful CPU/GC cost. The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
-> Cryptographically random IDs (per [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions)) are safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
+> [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) emits an [RFC 9562 v4 UUID](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.4) backed by a CSPRNG, so the same value is safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
 
 > [!info]- Old C++ bindings can drop the async context
 > Most actively-maintained libraries propagate context cleanly because Node's [async_hooks](https://nodejs.org/api/async_hooks.html) integrates at the platform level. Older callback-style libraries that schedule work from native bindings without registering an [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on libraries you're likely to use today.
