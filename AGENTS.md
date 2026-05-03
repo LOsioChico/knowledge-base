@@ -159,6 +159,8 @@ Any section that describes an observable behavior change — "returns 400", "str
 
 Applies to recipes (`type/recipe`); fundamentals can stay narrative when the behavior is obvious from the snippet.
 
+**Scope: section bodies, not callouts.** This rule does NOT apply inside `> [!warning]` / `> [!info]` / `> [!example]` blocks. A callout is a compact visual flag — the warning IS the content; demanding paired request/response payloads inside every footgun bloats the visual and defeats the scan-friendly intent. If a callout's claim genuinely needs demonstration, promote the example into the surrounding section body and leave the callout as the pointer. The audit's `show-dont-tell` candidate finder skips callout interiors for this reason; do not work around the skip by restating the claim outside the callout just to trip the rule.
+
 ### Behavior-in-snippet, not buried in prose (MANDATORY for all notes with code)
 
 When prose around a snippet claims a runtime behavior — "Nest auto-rewrites this", "emits a deprecation warning", "falls back to the default", "throws at startup if X", "silently coerces to Y" — that behavior MUST also appear **inside the snippet**: as a comment on the affected line, in the return value, in a console output line, or via an annotated identifier (e.g. `findAllV4`, `findAll_DEPRECATED`). Prose-only claims fail the scan-the-code reader, who never reads the surrounding paragraph.

@@ -80,6 +80,7 @@ interface ScannedFile {
   lines: readonly string[];
   codeBlocks: readonly Block[];
   inCodeAt: ReadonlySet<number>; // 1-based line numbers inside any fence
+  inCalloutAt: ReadonlySet<number>; // 1-based lines inside an Obsidian callout (`> [!type]`)
 }
 
 function scanFile(repoRelPath: string, repoRoot: string): ScannedFile {
@@ -87,6 +88,7 @@ function scanFile(repoRelPath: string, repoRoot: string): ScannedFile {
   const text: string = readFileSync(abs, "utf8");
   const lines: string[] = text.split("\n");
   const inCode: Set<number> = new Set();
+  const inCallout: Set<number> = new Set();
   const blocks: Block[] = [];
   let openLine: number = -1;
   let openBuf: string[] = [];
@@ -123,7 +125,23 @@ function scanFile(repoRelPath: string, repoRoot: string): ScannedFile {
     }
     if (openLine !== -1) openBuf.push(stripped);
   }
-  return { lines, codeBlocks: blocks, inCodeAt: inCode };
+  // Second pass: mark Obsidian callout interiors. A callout opens on a line
+  // matching `> [!type]` (optionally followed by `-` for collapsed) and
+  // continues across consecutive blockquote lines (`>` prefix), terminating at
+  // the first non-blockquote line. The opening line itself is included so a
+  // claim placed there is also skipped.
+  for (let i = 0; i < lines.length; i++) {
+    if (i < frontEnd) continue;
+    const raw: string = lines[i] ?? "";
+    if (!/^\s*>\s*\[!\w+\]-?/.test(raw)) continue;
+    let j: number = i;
+    while (j < lines.length && /^\s*>/.test(lines[j] ?? "")) {
+      inCallout.add(j + 1);
+      j++;
+    }
+    i = j; // skip past the callout body
+  }
+  return { lines, codeBlocks: blocks, inCodeAt: inCode, inCalloutAt: inCallout };
 }
 
 function nearbyCodeBlocks(
@@ -179,6 +197,12 @@ export function findShowDontTellCandidates(
   for (let i: number = 0; i < scanned.lines.length; i++) {
     const lineNo: number = i + 1;
     if (scanned.inCodeAt.has(lineNo)) continue;
+    // Skip lines inside `> [!warning]` / `> [!info]` / `> [!example]` callouts.
+    // The reader expectation for a callout is a compact warning, not an
+    // expanded recipe section. Behavior-shown belongs in body sections; in
+    // callouts the warning IS the content. Empirically this rule was the
+    // single dominant noise source on full-vault audits.
+    if (scanned.inCalloutAt.has(lineNo)) continue;
     if (lineNo < bodyStart + TAGLINE_GUARD_LINES) continue;
     const line: string = scanned.lines[i] ?? "";
     if (!line.trim()) continue;
