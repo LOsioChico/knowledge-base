@@ -76,7 +76,10 @@ SWC strips and emits TypeScript fast because it does **no type checking**: it do
 # Without --type-check: build is fast, but `const x: string = 1` ships
 nest start -b swc
 
-# With --type-check: same fast emit + tsc errors print asynchronously
+# With --type-check + watch: SWC and tsc run in parallel, tsc errors print asynchronously
+nest start -b swc -w --type-check
+
+# With --type-check, no watch: build blocks on tsc before SWC runs
 nest start -b swc --type-check
 ```
 
