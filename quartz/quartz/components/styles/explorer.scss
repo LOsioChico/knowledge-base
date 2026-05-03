@@ -130,10 +130,33 @@ button.desktop-explorer {
       color: var(--dark);
       opacity: 0.75;
       pointer-events: all;
+      // Visually separate one entry from the next, and make wrapped
+      // titles obviously belong to a single entry via a hanging indent.
+      display: block;
+      position: relative;
+      padding: 0.15rem 0 0.15rem 0.9rem;
+      line-height: 1.35;
+
+      // Bullet marker anchors where each entry begins; wrapped lines
+      // have no bullet, so the eye groups them with their parent.
+      &::before {
+        content: "•";
+        position: absolute;
+        left: 0.15rem;
+        top: 0.15rem;
+        color: var(--gray);
+        opacity: 0.6;
+      }
 
       &.active {
         opacity: 1;
         color: var(--tertiary);
+        font-weight: $semiBoldWeight;
+
+        &::before {
+          color: var(--tertiary);
+          opacity: 1;
+        }
       }
     }
   }
