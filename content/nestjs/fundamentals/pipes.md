@@ -36,6 +36,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
   - https://github.com/typestack/class-validator
   - https://github.com/typestack/class-transformer
+  - https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json
   - https://github.com/typestack/class-transformer/blob/develop/src/TransformOperationExecutor.ts
 ---
 
@@ -68,7 +69,7 @@ nest g pi parse-int --no-spec  # skip the *.spec.ts test file
 nest g pi parse-int --dry-run  # preview the file plan, write nothing
 ```
 
-Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Verify any path with `--dry-run` (the schematic schema [defaults `flat` to `true`](https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json#L31), but [`@nestjs/cli` overrides it to `false` for guard/pipe/interceptor in `actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L59), so the runtime default is folder-wrapped output regardless of the schema file).
+Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Verify any path with `--dry-run`: the [pipe schematic schema defaults `flat` to `true`](https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json#L31) (same for `guard`, `interceptor`, `filter`), but [`@nestjs/cli` always passes the CLI flag's value to the schematic](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L59) (`!!flat?.value`, which is `false` when `--flat` is absent), overriding the schema default. The runtime default is folder-wrapped output regardless of the schema file.
 
 ## Why a pipe, not [[nestjs/fundamentals/middleware|middleware]] / [[nestjs/fundamentals/guards|a guard]] / [[nestjs/fundamentals/interceptors|an interceptor]]
 
