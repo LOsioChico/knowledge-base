@@ -1,3 +1,41 @@
 @use "./base.scss";
 
-// put your custom CSS here!
+// Folder-tree blocks: <pre class="folder-tree"> with annotated <span> children.
+// Match Quartz's native `pre` shell (border + radius, no fill) so they sit
+// alongside Shiki code blocks without visual mismatch.
+pre.folder-tree {
+  font-family: var(--codeFont);
+  border: 1px solid var(--lightgray);
+  border-radius: 5px;
+  padding: 0 0.5rem;
+  overflow-x: auto;
+
+  & > code {
+    background: none;
+    padding: 0.5rem 0;
+    color: var(--darkgray);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    // Override base.scss `pre > code { display: grid }`, which would otherwise
+    // turn each <span> annotation into its own grid row (broken layout).
+    display: block;
+
+    .tree-moved {
+      color: var(--secondary);
+      font-style: italic;
+    }
+    .tree-new {
+      color: var(--tertiary);
+      font-weight: 600;
+    }
+    .tree-changed {
+      color: var(--secondary);
+      font-weight: 600;
+    }
+    .tree-unchanged,
+    .tree-note {
+      color: var(--gray);
+      font-style: italic;
+    }
+  }
+}

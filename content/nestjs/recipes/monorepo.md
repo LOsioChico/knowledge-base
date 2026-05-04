@@ -74,21 +74,20 @@ nest g app my-app-2
 
 The schematic detects you're in a single-project workspace and **rewrites the layout in place** ([Nest CLI → Workspaces](https://docs.nestjs.com/cli/monorepo#workspaces) describes the conversion: the original `src/` and `test/` folders are moved under `apps/<name>/`):
 
-```
-.
+<pre class="folder-tree"><code>.
 ├── apps/
-│   ├── my-app/                          # MOVED: was the project root
-│   │   ├── src/                         # MOVED from ./src (filenames keep the original `app.*` prefix)
+│   ├── my-app/                          <span class="tree-moved">// MOVED: was the project root</span>
+│   │   ├── src/                         <span class="tree-moved">// MOVED from ./src (filenames keep the original app.* prefix)</span>
 │   │   │   ├── app.controller.ts
 │   │   │   ├── app.controller.spec.ts
 │   │   │   ├── app.module.ts
 │   │   │   ├── app.service.ts
 │   │   │   └── main.ts
-│   │   ├── test/                        # MOVED from ./test
+│   │   ├── test/                        <span class="tree-moved">// MOVED from ./test</span>
 │   │   │   ├── app.e2e-spec.ts
 │   │   │   └── jest-e2e.json
-│   │   └── tsconfig.app.json            # NEW: extends root tsconfig.json
-│   └── my-app-2/                        # NEW: standard starter (filenames use the new app's name)
+│   │   └── tsconfig.app.json            <span class="tree-new">// NEW: extends root tsconfig.json</span>
+│   └── my-app-2/                        <span class="tree-new">// NEW: standard starter (filenames use the new app's name)</span>
 │       ├── src/
 │       │   ├── my-app-2.controller.ts
 │       │   ├── my-app-2.controller.spec.ts
@@ -99,15 +98,15 @@ The schematic detects you're in a single-project workspace and **rewrites the la
 │       │   ├── app.e2e-spec.ts
 │       │   └── jest-e2e.json
 │       └── tsconfig.app.json
-├── nest-cli.json                        # CHANGED: now "monorepo": true (see snippet below)
-├── package.json                         # unchanged (single, shared)
-├── tsconfig.json                        # unchanged (root, extended by every app)
-├── tsconfig.build.json                  # unchanged (from `nest new`)
-├── eslint.config.mjs                    # unchanged
-├── .prettierrc                          # unchanged
-├── .gitignore                           # unchanged
-└── README.md                            # unchanged
-```
+├── nest-cli.json                        <span class="tree-changed">// CHANGED: now "monorepo": true (see snippet below)</span>
+├── package.json                         <span class="tree-unchanged">// unchanged (single, shared)</span>
+├── tsconfig.json                        <span class="tree-unchanged">// unchanged (root, extended by every app)</span>
+├── tsconfig.build.json                  <span class="tree-unchanged">// unchanged (from nest new)</span>
+├── eslint.config.mjs                    <span class="tree-unchanged">// unchanged</span>
+├── .prettierrc                          <span class="tree-unchanged">// unchanged</span>
+├── .gitignore                           <span class="tree-unchanged">// unchanged</span>
+└── README.md                            <span class="tree-unchanged">// unchanged</span>
+</code></pre>
 
 The asymmetric filenames are a real artifact, not a typo: `nest new my-app` always uses `app.*` as the prefix in `src/`, so the moved files keep that name; `nest g app my-app-2` interpolates the new app's name into its template, so its files are `my-app-2.*`. This tripwires the muscle memory of "go edit `app.controller.ts` in `my-app-2`": the file is `my-app-2.controller.ts` there.
 
@@ -180,14 +179,13 @@ nest start --watch my-app-2
 
 `dist/` ends up structured per project:
 
-```
-dist/
+<pre class="folder-tree"><code>dist/
 └── apps/
     ├── my-app/
     │   └── main.js
     └── my-app-2/
         └── main.js
-```
+</code></pre>
 
 > [!info]- `package.json` scripts target the default project only
 > The original `start`, `start:dev`, `build`, `test` scripts that `nest new` generated still exist after conversion, and they still target only the default project (because they don't pass a name). Add per-app scripts yourself; see [step 4](#step-4-run-multiple-apps-in-one-terminal).
@@ -268,15 +266,14 @@ What prefix would you like to use for the library (default: @app)?
 
 Press enter to accept `@app`. The schematic creates:
 
-```
-libs/
+<pre class="folder-tree"><code>libs/
 └── popcorn/
     ├── src/
-    │   ├── index.ts                # entry barrel: what `@app/popcorn` resolves to
+    │   ├── index.ts                <span class="tree-note">// entry barrel: what @app/popcorn resolves to</span>
     │   ├── popcorn.module.ts
     │   └── popcorn.service.ts
-    └── tsconfig.lib.json           # extends root tsconfig.json
-```
+    └── tsconfig.lib.json           <span class="tree-note">// extends root tsconfig.json</span>
+</code></pre>
 
 It also updates the root `tsconfig.json` with a `paths` mapping:
 
