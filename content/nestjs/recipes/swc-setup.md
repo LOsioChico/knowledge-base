@@ -51,17 +51,17 @@ nest start -b swc --type-check -w
 
 `-b` is the short form of `--builder` and selects the compiler backend. The enum is `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L19) declares the option; the action validates against `availableBuilders = ['tsc', 'webpack', 'swc']` at [`start.command.ts#L108-L113`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L108-L113)). `-w` is `--watch`. Both flags also accept their long form if you prefer scripts to be self-explanatory.
 
-Make it permanent in `nest-cli.json` (`compilerOptions.builder` accepts the same `'tsc' | 'swc' | 'webpack'` union, optionally as `{ type, options }`; see [`CompilerOptions` in `nest-cli/configuration.ts`](https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts)):
+Make it permanent in `nest-cli.json` (`compilerOptions.builder` accepts the same `'tsc' | 'swc' | 'webpack'` union, optionally as `{ type, options }`; see [`CompilerOptions` in `nest-cli/configuration.ts`](https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts)). The starter file has the first three top-level keys; the two `compilerOptions` entries are the additions:
 
-```json
+```jsonc
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
   "sourceRoot": "src",
   "compilerOptions": {
-    "builder": "swc",
-    "typeCheck": true
-  }
+    "builder": "swc", // added: swap tsc for SWC on `nest start` / `nest build`
+    "typeCheck": true, // added: run `tsc --noEmit` alongside SWC for type errors
+  },
 }
 ```
 
