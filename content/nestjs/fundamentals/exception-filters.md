@@ -195,7 +195,7 @@ export class CatsController {
 
 ## Order: route first, then controller, then global
 
-Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`router-exception-filters.ts#L43`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts#L23-L46) merges method, then class, then global filters and reverses the merged list):
+Filters resolve **bottom-up**, the opposite of every other pipeline layer ([`context-creator.ts#L23-L41`](https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts#L23-L41) concatenates global, then class, then method filter metadata; [`router-exception-filters.ts#L41-L43`](https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts#L41-L43) then calls `filters.reverse()`, so route-bound filters are tried first):
 
 1. Route-bound filter
 2. Controller-bound filter
