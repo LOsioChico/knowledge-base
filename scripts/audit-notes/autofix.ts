@@ -72,6 +72,7 @@ function fixFile(absPath: string): FixResult {
   let lines: string[] = text.split("\n");
 
   lines = stripOrphanSources(lines);
+  lines = addMissingInlineSources(lines);
 
   let inFrontmatter: boolean = false;
   let inFence: boolean = false;
@@ -201,6 +202,90 @@ function normalizeUrl(u: string): string {
   // entry `https://x/y/z`.
   const noFrag: string = u.split("#")[0] ?? u;
   return noFrag.replace(/[.,;:]+$/, "").replace(/\/$/, "");
+}
+
+// Mirrors `PRIMARY_SOURCE_RE` in `quartz/scripts/lint-wikilinks-core.mjs`. Any
+// inline markdown link whose target matches this regex must appear in
+// frontmatter `source:`. The `inline-source-citations` linter rule enforces
+// the requirement; this autofixer adds the missing entries.
+const PRIMARY_SOURCE_INLINE_RE =
+  /\]\((https:\/\/(?:github\.com\/[^\s)]+\/blob\/[^\s)]+|docs\.nestjs\.com\/[^\s)]+))\)/g;
+
+// For every inline primary-source link in the body that is not in
+// frontmatter `source:`, append the normalized URL to the `source:` list.
+//
+// Block form only (`source:\n  - <url>`); skips when the note has no `source:`
+// key at all (the linter's frontmatter-schema check forbids that, so we
+// don't need to create one).
+function addMissingInlineSources(lines: string[]): string[] {
+  if (lines[0] !== "---") return lines;
+  let fmEnd: number = -1;
+  for (let i: number = 1; i < lines.length; i++) {
+    if (lines[i] === "---") {
+      fmEnd = i;
+      break;
+    }
+  }
+  if (fmEnd === -1) return lines;
+
+  let sourceStart: number = -1;
+  for (let i: number = 1; i < fmEnd; i++) {
+    if (/^source:\s*$/.test(lines[i] ?? "")) {
+      sourceStart = i;
+      break;
+    }
+  }
+  if (sourceStart === -1) return lines;
+
+  // Find the end of the block-list under `source:`.
+  let sourceEnd: number = sourceStart;
+  for (let i: number = sourceStart + 1; i < fmEnd; i++) {
+    const ln: string = lines[i] ?? "";
+    if (/^\s+-\s+/.test(ln)) {
+      sourceEnd = i;
+    } else if (ln.trim() === "") {
+      break;
+    } else {
+      break;
+    }
+  }
+
+  // Existing `source:` URLs (normalized).
+  const existing: Set<string> = new Set<string>();
+  const itemRe = /^\s+-\s+(.+?)\s*$/;
+  for (let i: number = sourceStart + 1; i <= sourceEnd; i++) {
+    const m = itemRe.exec(lines[i] ?? "");
+    if (!m || m[1] === undefined) continue;
+    const raw: string = m[1].replace(/^["']|["']$/g, "");
+    if (/^https?:\/\//.test(raw)) existing.add(normalizeUrl(raw));
+  }
+
+  // Inline primary-source URLs in the body.
+  const body: string = lines.slice(fmEnd + 1).join("\n");
+  const additions: string[] = [];
+  const seen: Set<string> = new Set<string>();
+  for (const m of body.matchAll(PRIMARY_SOURCE_INLINE_RE)) {
+    const url: string = m[1] ?? "";
+    if (!url) continue;
+    const norm: string = normalizeUrl(url);
+    if (existing.has(norm)) continue;
+    if (seen.has(norm)) continue;
+    seen.add(norm);
+    additions.push(norm);
+  }
+  if (additions.length === 0) return lines;
+
+  // Insert new `  - <url>` lines after the last existing source entry. Use
+  // the same indent as that line; fall back to two spaces when the list
+  // is empty (sourceEnd === sourceStart means no items yet).
+  const indent: string =
+    sourceEnd > sourceStart
+      ? (lines[sourceEnd] ?? "").match(/^(\s+)-/)?.[1] ?? "  "
+      : "  ";
+  const insertAt: number = sourceEnd + 1;
+  const newLines: string[] = additions.map((u) => `${indent}- ${u}`);
+
+  return [...lines.slice(0, insertAt), ...newLines, ...lines.slice(insertAt)];
 }
 
 function main(): void {
