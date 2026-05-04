@@ -442,7 +442,7 @@ Full table: [Validation docs](https://docs.nestjs.com/techniques/validation).
 > Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
 
 > [!warning]- Generics and interfaces have no runtime metadata
-> TypeScript erases generics and interfaces during compilation, so they leave nothing for `class-validator` to inspect. `ValidationPipe` will not validate `Partial<CreateCatDto>`, `Pick<...>`, a bare interface, or a union type. Use a concrete class (often via [`@nestjs/mapped-types`](https://docs.nestjs.com/openapi/mapped-types) helpers like `PartialType`, `PickType`, `OmitType`, `IntersectionType`). Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
+> TypeScript erases generics and interfaces during compilation, so they leave nothing for `class-validator` to inspect. `ValidationPipe` will not validate `Partial<CreateCatDto>`, `Pick<...>`, a bare interface, or a union type. Use a concrete class (often via [`@nestjs/mapped-types`](https://docs.nestjs.com/techniques/validation#mapped-types) helpers like `PartialType`, `PickType`, `OmitType`, `IntersectionType`). Source: [Auto-validation](https://docs.nestjs.com/techniques/validation#auto-validation).
 
 > [!warning]- `body: CreateUserDto[]` is not validated as an array of DTOs
 > `@Body() bulk: CreateUserDto[]` reaches the pipe with `metatype = Array`: the element type is gone. The pipe iterates nothing and passes the array through. Two fixes:
