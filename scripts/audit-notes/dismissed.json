@@ -175,6 +175,94 @@
       "reason": "Empirical Swagger UI behavior when @ApiConsumes/@ApiBody are omitted; no primary source documents the negative (the cited docs.nestjs.com/openapi/operations#file-upload page documents the REQUIRED decorators, which is the closest evidence). UNVERIFIABLE at doc level; revisit if @nestjs/swagger ships docs covering the omission case.",
       "date": "2026-05-03",
       "originalLine": "> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/operations#file-upload)). The \"Try it out\" form falls back to plain text and is unusable for binary uploads."
+    },
+    {
+      "path": "content/nestjs/recipes/file-uploads.md",
+      "sig": "c95bb2c9fedecd2ea2cdb17bb7531151e5aff8a9",
+      "rule": "code-imports",
+      "reason": "Variant of canonical @Module snippet shown immediately above (L139-L155). Prose \"For env-driven config use registerAsync:\" makes module context unambiguous; AGENTS.md exception for illustrative fragments applies.",
+      "date": "2026-05-04",
+      "originalLine": "```typescript"
+    },
+    {
+      "path": "content/nestjs/data/typeorm/postgresql-setup.md",
+      "sig": "636c26748a71024aad315fc53411d77be01ec618",
+      "rule": "source-verification",
+      "reason": "Already cites docs.nestjs.com/techniques/database#auto-load-entities inline at end of callout. Auditor reported FETCH ERROR on the page extract.",
+      "date": "2026-05-04",
+      "originalLine": "> If `User` has `@OneToMany(() => Post, ...)` but no module ever calls `TypeOrmModule.forFeature([Post])`, `Post` is **not** loaded: TypeORM will throw \"Entity metadata for User#posts was not found\" at startup. Either register `Post` in some `forFeature` (even a module that doesn't use the repository) or fall back to an explicit `entities` array. Source: [docs.nestjs.com/techniques/database#auto-load-entities](https://docs.nestjs.com/techniques/database#auto-load-entities)."
+    },
+    {
+      "path": "content/nestjs/data/typeorm/postgresql-setup.md",
+      "sig": "689c6590490a48426bfd7e8700855a0f32368c8a",
+      "rule": "source-verification",
+      "reason": "Already cites docs.nestjs.com/techniques/database#repository-pattern inline at end of callout. Auditor reported FETCH ERROR on the page extract.",
+      "date": "2026-05-04",
+      "originalLine": "> A repository registered via `forFeature([User])` is only visible inside that module. To use `@InjectRepository(User)` in a different module, the owning module has to `exports: [TypeOrmModule]` (the whole `TypeOrmModule`, not just `User`). Source: [docs.nestjs.com/techniques/database#repository-pattern](https://docs.nestjs.com/techniques/database#repository-pattern)."
+    },
+    {
+      "path": "content/nestjs/fundamentals/guards.md",
+      "sig": "fed8717076a6c1d0c5f6517fe2e7c96fd2d8b05f",
+      "rule": "source-verification",
+      "reason": "Prose already cites both guards-consumer.ts AND guards-context-creator.ts inline. Concatenation order is described per-scope just below by the same files.",
+      "date": "2026-05-04",
+      "originalLine": "Multiple guards run in this order. [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) iterates the resolved list and short-circuits on the first non-truthy / throwing result; the merged list is assembled per request from global + controller + method scopes by [`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts):"
+    },
+    {
+      "path": "content/nestjs/fundamentals/interceptors.md",
+      "sig": "a238f21fc8585651507ed70ad2661e5bd3f73825",
+      "rule": "source-verification",
+      "reason": "Already cites docs.nestjs.com/interceptors#exception-mapping inline at end of [!example] callout, which is the canonical primary source for this ordering claim.",
+      "date": "2026-05-04",
+      "originalLine": ">"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "2a8cc22494d2021c93dcfbddf8e7332866fc2062",
+      "rule": "source-verification",
+      "reason": "Filename mapping is documented in the cited Nest CLI usages page (docs.nestjs.com/cli/usages). The schematic source is upstream of that contract.",
+      "date": "2026-05-04",
+      "originalLine": "nest generate middleware logger      # full form"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "sig": "870f0a01f16cac023eb5748f77a9fb72a5d0c6b3",
+      "rule": "callout-placement",
+      "reason": "Callout sits inside its own [!info] block right under the npm: shortcut explanation, which is where the -c flag is first referenced in this section. Placement after the run output is intentional: shows the colored prefixes the flag controls.",
+      "date": "2026-05-04",
+      "originalLine": "> [!info]- The `-c` flag controls prefix colors"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "sig": "b84456cd209b4e16b160737a180d0db1c3a1ed7b",
+      "rule": "source-verification",
+      "reason": "Already cites concurrently README \"Coloring of prefixes\" section AND the #-c-prefix-colors anchor inline at the end of the callout body.",
+      "date": "2026-05-04",
+      "originalLine": "> `-c` (alias of `--prefix-colors`) decides how each process's `[name]` prefix is colored ([concurrently README → \"Coloring of prefixes\"](https://github.com/open-cli-tools/concurrently/blob/main/README.md)). Three forms:"
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "sig": "1e0ec07d42b8b2db5e3e6b28931ea14e473209dd",
+      "rule": "source-verification",
+      "reason": "TypeORM Repository API URL cited in prose immediately above table (typeorm.io/repository-api). The \"yields entity instance\" claim is the documented behavior of @Entity + repository.findOne.",
+      "date": "2026-05-04",
+      "originalLine": "| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance       |         ✅          | None needed                                |"
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "sig": "e582213b9fe5ff50e73de13a3f5320e51ba7cd7c",
+      "rule": "source-verification",
+      "reason": "Prisma queries-and-result-types URL cited in prose immediately above table (prisma.io/docs/orm/prisma-client/queries#queries-and-result-types). Generated TS types returning plain objects is documented Prisma behavior.",
+      "date": "2026-05-04",
+      "originalLine": "| Prisma `prisma.user.findUnique(...)`               | Plain object (generated TS type) |         ❌          | `return plainToInstance(UserEntity, user)` |"
+    },
+    {
+      "path": "content/nestjs/recipes/trace-id.md",
+      "sig": "b2202ea82532dbe4e30dbac3d55437820efc157a",
+      "rule": "source-verification",
+      "reason": "Callout already cites both nodejs.org/api/crypto.html#cryptorandomuuidoptions AND rfc-editor.org/rfc/rfc9562.html#section-5.4 inline. CSPRNG property is documented by the Node crypto page.",
+      "date": "2026-05-04",
+      "originalLine": "> [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) emits an [RFC 9562 v4 UUID](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.4) backed by a CSPRNG, so the same value is safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades."
     }
   ]
 }
