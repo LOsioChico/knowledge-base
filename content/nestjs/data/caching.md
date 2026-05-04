@@ -23,6 +23,7 @@ source:
   - https://www.telerik.com/blogs/learning-nestjs-part-3-data-caching
   - https://github.com/nestjs/docs.nestjs.com/pull/3415
   - https://keyv.org/docs/
+  - https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts
 ---
 
 > Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for "cache anything you want under a key you control".
@@ -159,7 +160,7 @@ export class AppModule {}
 > Two silent failure modes baked into the interceptor:
 >
 > 1. Non-`GET` handlers (`POST`, `PUT`, `PATCH`, `DELETE`) are passed through untouched. No error, just no caching.
-> 2. Handlers that inject `@Res() res: Response` and write to the response directly opt out of Nest's response-mapping path: the [[nestjs/fundamentals/interceptors|interceptor]]'s `tap()` still runs but the handler returned `undefined`, so the cache stores `undefined` on miss and `of(undefined)` is discarded on hit because the bytes already left through `res.send(...)`. Net effect: cache stays empty, the route serves fresh every time.
+> 2. Handlers that inject `@Res() res: Response` and write to the response directly opt out of Nest's response-mapping path: the [[nestjs/fundamentals/interceptors|interceptor]]'s `tap()` still runs but the handler returned `undefined`, so the cache stores `undefined` on miss and `of(undefined)` is discarded on hit because the bytes already left through `res.send(...)` ([`cache.interceptor.ts#L62-L86`](https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts#L62-L86)). Net effect: cache stays empty, the route serves fresh every time.
 >
 > Symptom in both cases: the endpoint works but the cache stays empty. If you need write-side caching or you're using `@Res()`, drop the interceptor and use `CACHE_MANAGER` directly.
 
@@ -272,7 +273,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
 }
 ```
 
-Returning `undefined` from `trackBy()` makes the interceptor skip caching for that request. Bind `HttpCacheInterceptor` exactly like the built-in one (per controller, per route, or globally via `APP_INTERCEPTOR`).
+Returning `undefined` from `trackBy()` makes the interceptor skip caching for that request ([`cache.interceptor.ts#L50-L52`](https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts#L50-L52): `if (!key) return next.handle();`). Bind `HttpCacheInterceptor` exactly like the built-in one (per controller, per route, or globally via `APP_INTERCEPTOR`).
 
 > [!warning] Authenticated responses without `trackBy` leak across users
 > The default key is the request URL ([Nest caching docs → Different stores](https://docs.nestjs.com/techniques/caching) describes the auto-caching behavior). `GET /me` from Alice and Bob is the **same URL**, so without a custom `trackBy()` Bob will get Alice's cached response. For per-user caching, always subclass and include the user identifier in the key, or skip auto-caching and use the imperative `CACHE_MANAGER` API with explicit per-user keys.

@@ -22,12 +22,12 @@ source:
   - https://docs.nestjs.com/cli/usages
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
-  - https://github.com/nestjs/nest/tree/master/packages/common
   - https://github.com/nestjs/schematics/blob/master/src/lib/guard/schema.json
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://docs.nestjs.com/recipes/passport
   - https://docs.nestjs.com/security/authentication
   - https://docs.nestjs.com/techniques/http-module
+  - https://github.com/nestjs/nest/blob/master/packages/common/index.ts
 ---
 
 > Decide whether a request reaches the route handler. Used for **authorization**: roles, permissions, ownership, anything that should short-circuit before the handler runs.
@@ -142,7 +142,7 @@ Both run before the handler, but middleware is "dumb": it doesn't know which han
 
 ## Built-in guards
 
-Nest core ships **no concrete guard classes**: the [`@nestjs/common` package](https://github.com/nestjs/nest/tree/master/packages/common) exposes the `CanActivate` interface and the `@UseGuards` decorator but no ready-to-use guard implementations. Authorization is application-specific, so you write your own: or pull one from a peer package.
+Nest core ships **no concrete guard classes**: the [`@nestjs/common` package barrel](https://github.com/nestjs/nest/blob/master/packages/common/index.ts) exposes the `CanActivate` interface and the `@UseGuards` decorator but no ready-to-use guard implementations. Authorization is application-specific, so you write your own: or pull one from a peer package.
 
 | Guard                 | Package             | Purpose                                                                                                                                                                                                                  |
 | --------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

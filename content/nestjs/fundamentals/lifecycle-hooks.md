@@ -24,6 +24,8 @@ source:
   - https://github.com/nestjs/nest/pull/14111
   - https://trilon.io/blog/announcing-nestjs-11-whats-new
   - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-destroy.interface.ts
+  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-application-shutdown.interface.ts
 ---
 
 > Hooks for **application** lifetime: when modules wake up, when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]], which fires once per HTTP call.
@@ -62,7 +64,7 @@ Implement an interface, define the matching method. The interface itself disappe
 | `OnApplicationShutdown`     | `onApplicationShutdown(signal?: string): any`     | terminate | yes              |
 
 > [!info] Only the last two get the signal
-> The official docs say "with the corresponding signal as the first parameter" when describing the terminate phase, but `OnModuleDestroy.onModuleDestroy()` takes no arguments per its interface. `beforeApplicationShutdown` runs **after** every `onModuleDestroy`, so it can't pass the signal back; if you need the signal name inside `onModuleDestroy`, stash it from your own signal handler **before** calling `app.close()`.
+> The official docs say "with the corresponding signal as the first parameter" when describing the terminate phase, but `OnModuleDestroy.onModuleDestroy()` takes no arguments per its [interface declaration](https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-destroy.interface.ts). Only `BeforeApplicationShutdown` and `OnApplicationShutdown` declare the `signal?: string` parameter ([source](https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-application-shutdown.interface.ts)). `beforeApplicationShutdown` runs **after** every `onModuleDestroy`, so it can't pass the signal back; if you need the signal name inside `onModuleDestroy`, stash it from your own signal handler **before** calling `app.close()`.
 
 Hooks live on **modules, providers, and controllers**. Same class can implement multiple.
 

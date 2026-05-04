@@ -26,6 +26,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts
   - https://github.com/nestjs/nest-cli/blob/master/lib/configuration/configuration.ts
+  - https://github.com/nestjs/typescript-starter/blob/master/package.json
 ---
 
 > [SWC](https://swc.rs) is a Rust-based TS/JS compiler that's roughly **20× faster** than `tsc` on Nest builds. The Nest CLI has built-in support since [[nestjs/releases/v10|v10]]: opt in with one flag, then layer `tsc --noEmit` on top for type-checking. This is the default builder for new and existing Nest projects in this knowledge base; reach for `tsc` or `webpack` only when noted.
@@ -96,7 +97,7 @@ Default to `swc` and only fall back when you hit a known incompatibility or you'
 
 ## Tests: SWC + Jest
 
-Default Nest projects ship with `ts-jest`. Swap to `@swc/jest` for parity with the build:
+Default Nest projects ship with `ts-jest` ([`typescript-starter/package.json`](https://github.com/nestjs/typescript-starter/blob/master/package.json)). Swap to `@swc/jest` for parity with the build:
 
 ```shell
 npm i --save-dev @swc/jest

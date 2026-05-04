@@ -32,6 +32,8 @@ source:
   - https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
   - https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts
 ---
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.
@@ -311,7 +313,7 @@ Sample response for a duplicate email:
 > `QueryFailedError`'s constructor spreads every enumerable own property of `driverError` (except `name`) onto the error instance via `ObjectUtils.assign` ([source: `QueryFailedError.ts`](https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts#L21-L31)), so `err.code` and `err.driverError.code` return the same value at runtime. **Read through `err.driverError`**: `pg` exports `DatabaseError` with all fields properly typed (`code`, `constraint`, `detail`, etc., as `string | undefined`). The flat copies on the wrapper are typed as `any` (TypeORM doesn't model them) and force casts.
 
 > [!warning]- Transaction rollback is not automatic for non-`QueryRunner` errors
-> If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging.
+> If you `await dataSource.transaction(...)` and **throw** inside the callback, TypeORM rolls back. If you `try/catch` inside the callback and **don't re-throw**, the transaction commits with the broken state. Always re-throw after logging. The wrapper at [`EntityManager.transaction`](https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts#L161-L167) calls `commitTransaction()` if the callback returns and `rollbackTransaction()` only if it throws.
 
 > [!info]- FK violations: 409 vs 422 depends on direction
 > Recipe 1 maps `23503` to `409 Conflict` uniformly. That's right when the violation comes from a **delete** with surviving dependents (the resource state conflicts with the request). For an **insert** that references a missing parent, `422 Unprocessable Entity` (or `400`) is more accurate: the input is well-formed but semantically invalid. Postgres doesn't distinguish the two cases in the error code itself; if you care, branch on the operation in the service layer or inspect `err.detail` (which contains `Key (...)=(...) is not present in table "..."` for inserts vs `Key (...)=(...) is still referenced from table "..."` for deletes).
@@ -323,7 +325,7 @@ Sample response for a duplicate email:
 > Postgres `40001` (`serialization_failure`) and MySQL `1213` (deadlock) are recoverable: retry the transaction with backoff. Map them to a 503 with `Retry-After` rather than 500.
 
 > [!info]- `EntityNotFoundError` is separate
-> `repository.findOneOrFail()` throws `EntityNotFoundError`, not `QueryFailedError`. Catch it independently and map to 404. The filter above does not cover it.
+> `repository.findOneOrFail()` throws [`EntityNotFoundError`](https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts), not `QueryFailedError`. Catch it independently and map to 404. The filter above does not cover it.
 
 > [!todo]- Verify on TypeORM 0.4 release
 > `QueryFailedError` constructor signature has been stable through 0.3.x; re-check that the `Object.assign(this, ...driverError)` spread still happens in 0.4.
