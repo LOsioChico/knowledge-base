@@ -45,7 +45,10 @@ import { Observable, tap } from "rxjs";
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler,
+  ): Observable<any> | Promise<Observable<any>> {
     console.log("Before..."); // pre
     const start = Date.now();
     return next.handle().pipe(
@@ -55,7 +58,14 @@ export class LoggingInterceptor implements NestInterceptor {
 }
 ```
 
-`NestInterceptor<T, R>` is generic: `T` is the type emitted by the handler (`Observable<T>`) and `R` is what your interceptor emits downstream (`Observable<R>`). `intercept()` can be `async` (return `Promise<Observable<R>>`); the handler stream itself is always an `Observable`.
+The interface is `NestInterceptor<T, R>`, with two type parameters that describe the **before/after** values:
+
+- `T`: what the handler returns (the value flowing **into** the interceptor via `next.handle(): Observable<T>`).
+- `R`: what the interceptor emits **out** to the next layer (`Observable<R>`).
+
+When the interceptor passes the value through unchanged, `T === R` and you can leave both off (that's why the snippet above gets away with `Observable<any>`). When it reshapes the response, the two diverge: see the [wrap-response recipe](#common-recipes), declared as `NestInterceptor<T, { data: T }>`: handler returns `T`, client sees `{ data: T }`.
+
+`intercept()` can also be `async` and return `Promise<Observable<R>>` (Nest awaits before subscribing); the handler stream itself is always an `Observable`.
 
 ## Generate with the CLI
 
