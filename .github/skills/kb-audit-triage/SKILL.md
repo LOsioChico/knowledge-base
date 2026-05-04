@@ -40,22 +40,29 @@ finding → act → persist.
 
 ## Step 1 — Run the audit
 
-From repo root:
+From repo root. **Default scope is the whole vault** (every `.md` under `content/`); narrow
+only when the user asks for "my last commit" or names specific files.
 
 ```bash
 set -a; source .env; set +a   # loads CURSOR_API_KEY (gitignored)
 cd scripts/audit-notes
-yarn start --json --base HEAD~1 > /tmp/audit.json 2> /tmp/audit.err
+# Default: full-vault audit. Excludes content/inbox.md — it's a planning queue
+# (status: seed, external URLs as bullets, no claims-to-verify); the source /
+# show-don't-tell / behavior-in-snippet passes don't apply to it.
+yarn start --json $(find ../../content -name '*.md' -not -path '*/inbox.md' | sort) > /tmp/audit.json 2> /tmp/audit.err
 ```
 
-Variants:
+Variants (use only when the user scopes the request):
 
-- `--base HEAD~1` — only files changed in last commit (cheapest, default for "audit my last
-  commit").
+- `--base HEAD~1` — only files changed in last commit. Use when the user says "audit my
+  last commit" or similar.
 - `--base origin/main` — everything since the branch diverged.
 - `--base <ref>` — committed + staged + unstaged changes since `<ref>`.
-- Explicit paths: `yarn start --json ../../content/<path>.md [more.md ...]` (full re-audit of
-  a specific note).
+- Explicit paths: `yarn start --json ../../content/<path>.md [more.md ...]` (full re-audit
+  of a specific note).
+- Bare `yarn start --json` (no args, no `--base`) falls back to a small hardcoded
+  `DEFAULT_TARGETS` list inside `audit-notes.ts` — NOT the whole vault. Avoid; pass the
+  `find` glob above instead.
 - Empty diff exits cleanly (`{ "files": [] }`).
 
 Read `/tmp/audit.json`. Skim `/tmp/audit.err` for `[pass-1c] anchor-verifier dropped N`,
