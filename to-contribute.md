@@ -6,14 +6,15 @@ Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. E
 
 ### 1. `PaymentRequiredException` (HTTP 402) missing from `@nestjs/common`
 
-- **Status: filed as [nestjs/nest#16878](https://github.com/nestjs/nest/pull/16878) (May 2026).** Awaiting maintainer review.
+- **Status: closed by maintainer ([nestjs/nest#16878](https://github.com/nestjs/nest/pull/16878), May 2026).** Kamil declined with "Please search through some of our old issues on this (this has been discussed several times in the past)." Treat as previously-rejected: do NOT refile, and do NOT re-open as an issue without first surfacing the prior threads and a new argument that wasn't already addressed there. The "no class for 402" gap stays documented in [content/nestjs/fundamentals/exception-filters.md](content/nestjs/fundamentals/exception-filters.md) as a permanent quirk, not a pending fix.
+- Lesson (workflow): I went straight to PR instead of issue-first, even though the workflow note below says items 1–3 are "API/behavior decisions the maintainers should weigh in on" and should be filed as issues first. The decline cost is one PR + one re-commit (subject-case fix) + the maintainer's time. Issue-first would have surfaced the prior-rejection history before any code was written. Reinforces the existing rule rather than overturning it.
 - Repo: [`nestjs/nest`](https://github.com/nestjs/nest)
 - Evidence (verified against `nestjs/nest@52030c9`):
   - The HTTP-status enum already lists 402: [`packages/common/enums/http-status.enum.ts#L28`](https://github.com/nestjs/nest/blob/52030c9f4fbceadaf1f20011831ae8a10faee75c/packages/common/enums/http-status.enum.ts#L28) declares `PAYMENT_REQUIRED = 402`.
   - But there is no class to throw. [`packages/common/exceptions/`](https://github.com/nestjs/nest/tree/52030c9f4fbceadaf1f20011831ae8a10faee75c/packages/common/exceptions) is missing a `payment-required.exception.ts` file, and the [barrel `index.ts` (23 lines)](https://github.com/nestjs/nest/blob/52030c9f4fbceadaf1f20011831ae8a10faee75c/packages/common/exceptions/index.ts) exports 22 sibling exceptions but skips 402.
   - Coverage of other 4xx is otherwise complete: 400 `BadRequest`, 401 `Unauthorized`, 403 `Forbidden`, 404 `NotFound`, 405 `MethodNotAllowed`, 406 `NotAcceptable`, 408 `RequestTimeout`, 409 `Conflict`, 410 `Gone`, 412 `PreconditionFailed`, 413 `PayloadTooLarge`, 415 `UnsupportedMediaType`, 418 `ImATeapot`, 421 `Misdirected`, 422 `UnprocessableEntity`. 402 is the only gap in the 400–422 range.
   - User impact: anyone implementing a paywall/quota wall has to write `throw new HttpException('Payment required', HttpStatus.PAYMENT_REQUIRED)` instead of the symmetric `throw new PaymentRequiredException('...')`.
-- Action: small PR adding `payment-required.exception.ts` (mirror `im-a-teapot.exception.ts` as the template) and the corresponding `export * from './payment-required.exception';` line to the barrel.
+- ~~Action: small PR adding `payment-required.exception.ts` (mirror `im-a-teapot.exception.ts` as the template) and the corresponding `export * from './payment-required.exception';` line to the barrel.~~ Declined upstream; do not pursue.
 
 ### 2. `nest new --package-manager` doesn't accept `bun`
 
