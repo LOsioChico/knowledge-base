@@ -22,9 +22,6 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/index.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/package.json
-  - https://github.com/typeorm/typeorm/blob/master/docs/docs/working-with-entity-manager/6-repository-api.md
-  - https://www.prisma.io/docs/orm/prisma-client/queries/crud
-  - https://github.com/Automattic/mongoose/blob/master/docs/tutorials/lean.md
   - https://typeorm.io/repository-api
   - https://www.prisma.io/docs/orm/prisma-client/queries
   - https://mongoosejs.com/docs/tutorials/lean.html

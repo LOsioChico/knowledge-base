@@ -24,23 +24,14 @@ source:
   - https://github.com/typeorm/typeorm/blob/master/src/util/ObjectUtils.ts
   - https://github.com/typeorm/typeorm/blob/master/src/decorator/Unique.ts
   - https://github.com/typeorm/typeorm/blob/master/src/decorator/Index.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/decorator/columns/Column.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/naming-strategy/DefaultNamingStrategy.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts
   - https://github.com/brianc/node-postgres/blob/master/packages/pg-protocol/src/messages.ts
   - https://www.postgresql.org/docs/current/errcodes-appendix.html
   - https://www.postgresql.org/docs/current/protocol-error-fields.html
   - https://www.postgresql.org/docs/current/catalog-pg-constraint.html
   - https://www.postgresql.org/docs/current/view-pg-indexes.html
   - https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html
-  - https://www.sqlite.org/rescode.html
   - https://github.com/WiseLibs/better-sqlite3/blob/master/docs/api.md
-  - https://docs.nestjs.com/exception-filters
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/data-source/DataSource.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/error/EntityNotFoundError.ts
-  - https://github.com/typeorm/typeorm/blob/master/src/schema-builder/RdbmsSchemaBuilder.ts
-  - https://docs.nestjs.com/techniques/database
 ---
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.

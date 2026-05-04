@@ -17,13 +17,9 @@ related:
   - "[[nestjs/data/caching]]"
 source:
   - https://docs.nestjs.com/faq/request-lifecycle
-  - https://docs.nestjs.com/middleware
-  - https://docs.nestjs.com/exception-filters
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts
-  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts
   - https://expressjs.com/en/guide/error-handling.html
-  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
   - https://fastify.dev/docs/latest/Reference/Hooks/#errors-in-hooks
 ---
 

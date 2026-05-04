@@ -37,14 +37,9 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-proxy.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
-  - https://github.com/nestjs/schematics/tree/master/src/lib/filter
   - https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts
-  - https://nodejs.org/api/process.html#event-unhandledrejection
-  - https://expressjs.com/en/guide/error-handling.html
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter-context.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
-  - https://github.com/nestjs/schematics/blob/master/src/lib/filter/filter.factory.ts
-  - https://nodejs.org/api/cli.html#--unhandled-rejectionsmode
 ---
 
 > Catch unhandled exceptions and turn them into HTTP responses. Think of filters as the **last-chance handler**: every other request-pipeline component is a forward checkpoint that runs in order; a filter runs _only_ when something blew up somewhere upstream ([[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, or the response interceptor chain).

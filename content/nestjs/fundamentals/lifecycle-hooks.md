@@ -20,16 +20,10 @@ related:
   - "[[nestjs/releases/v11]]"
 source:
   - https://docs.nestjs.com/fundamentals/lifecycle-events
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-init.interface.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-application-bootstrap.interface.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-destroy.interface.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/before-application-shutdown.interface.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/hooks/on-application-shutdown.interface.ts
   - https://github.com/nestjs/nest/releases/tag/v11.0.0
   - https://github.com/nestjs/nest/pull/14111
   - https://trilon.io/blog/announcing-nestjs-11-whats-new
   - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
-  - https://nodejs.org/api/events.html#emittersetmaxlistenersn
 ---
 
 > Hooks for **application** lifetime: when modules wake up, when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]], which fires once per HTTP call.

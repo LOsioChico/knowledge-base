@@ -8,8 +8,6 @@ related:
   - "[[nestjs/index]]"
   - "[[nestjs/fundamentals/guards]]"
 source:
-  - https://docs.nestjs.com/security/authentication
-  - https://docs.nestjs.com/recipes/passport
 ---
 
 Map of content for authentication and authorization in NestJS. Auth in Nest is built on top of [[nestjs/fundamentals/guards|guards]], so start there if you haven't read it.

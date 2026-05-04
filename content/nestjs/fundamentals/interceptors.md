@@ -21,24 +21,16 @@ related:
 source:
   - https://docs.nestjs.com/interceptors
   - https://docs.nestjs.com/cli/usages
-  - https://docs.nestjs.com/fundamentals/execution-context
   - https://github.com/nestjs/nest/tree/master/packages/common/serializer
-  - https://github.com/nestjs/nest/tree/master/packages/core/interceptors
   - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/execution-context.interface.ts
-  - https://github.com/nestjs/nest/blob/master/packages/common/interfaces/features/arguments-host.interface.ts
-  - https://github.com/typestack/class-transformer/blob/develop/src/index.ts
   - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
   - https://rxjs.dev/api/operators/retry
   - https://docs.nestjs.com/controllers#library-specific-approach
-  - https://docs.nestjs.com/faq/request-lifecycle
-  - https://github.com/typestack/class-transformer/blob/develop/README.md
-  - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/execution-context-host.ts
 ---
 

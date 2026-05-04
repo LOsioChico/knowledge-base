@@ -24,7 +24,6 @@ source:
   - https://docs.nestjs.com/cli/libraries
   - https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md
   - https://github.com/open-cli-tools/concurrently/blob/main/README.md
-  - https://github.com/nestjs/nest-cli/blob/master/commands/new.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/actions/new.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/build.command.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts

@@ -9,8 +9,6 @@ related:
   - "[[nestjs/data/typeorm/handle-database-errors]]"
   - "[[nestjs/data/typeorm/postgresql-setup]]"
 source:
-  - https://docs.nestjs.com/techniques/database
-  - https://typeorm.io
 ---
 
 NestJS + TypeORM patterns: integration glue (`TypeOrmModule`, `@InjectRepository`), error handling, and gotchas specific to running TypeORM under Nest's DI container.

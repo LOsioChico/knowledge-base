@@ -31,12 +31,7 @@ source:
   - https://docs.nestjs.com/faq/hybrid-application
   - https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers
   - https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts
-  - https://github.com/nestjs/nest/blob/master/packages/core/constants.ts
-  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
-  - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts
-  - https://docs.nestjs.com/fundamentals/custom-providers
-  - https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-context-creator.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts
 ---
 
@@ -95,13 +90,13 @@ The container instantiates the component, so it can inject other providers, run 
 
 `useGlobal*` is the **shortcut**: instantiate it yourself, no DI, no surprises. `APP_*` is the **DI-aware** version: the container builds it, so it can inject providers, take request scope, and apply to hybrid apps. Same effect on the wire; different powers under the hood.
 
-| Concern                                                                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }`                                                        |
-| -------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- |
-| Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                   | ✅                                                                                       |
-| Supports request scope                                                                             | ❌                                   | ✅                                                                                       |
-| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`   | ✅ (community-confirmed; not in the official hybrid-app page — verify on your transport) |
-| Where it lives                                                                                     | `main.ts`, near `NestFactory.create` | Any module's `providers` array                                                           |
-| Can pass options as a literal object                                                               | ✅ trivially                         | ⚠️ via `useValue` or `useFactory`                                                        |
+| Concern                                                                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }`                                                       |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------- |
+| Can inject providers (`ConfigService`, repositories, loggers)                                      | ❌                                   | ✅                                                                                      |
+| Supports request scope                                                                             | ❌                                   | ✅                                                                                      |
+| Applies to gateways/microservices in [hybrid apps](https://docs.nestjs.com/faq/hybrid-application) | ❌ unless `inheritAppConfig: true`   | ✅ (community-confirmed; not in the official hybrid-app page: verify on your transport) |
+| Where it lives                                                                                     | `main.ts`, near `NestFactory.create` | Any module's `providers` array                                                          |
+| Can pass options as a literal object                                                               | ✅ trivially                         | ⚠️ via `useValue` or `useFactory`                                                       |
 
 Rule of thumb: **stateless component + static config → either works**. **Needs DI or request scope → `APP_*` provider**.
 

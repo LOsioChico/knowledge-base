@@ -11,7 +11,6 @@ related:
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/releases/index]]"
 source:
-  - https://docs.nestjs.com
 ---
 
 Map of content for NestJS. Links marked planned are pending topics. They will get filled in over time.

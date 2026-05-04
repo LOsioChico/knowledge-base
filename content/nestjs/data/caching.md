@@ -17,10 +17,7 @@ related:
   - "[[nestjs/releases/v11]]"
 source:
   - https://docs.nestjs.com/techniques/caching
-  - https://github.com/nestjs/cache-manager
-  - https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts
   - https://github.com/nestjs/cache-manager/blob/master/package.json
-  - https://github.com/jaredwray/cacheable/tree/main/packages/cache-manager
   - https://github.com/jaredwray/cacheable/pull/1134
   - https://github.com/jaredwray/cacheable/commit/ea37202931e255b0dfd2f62d7121c84671b1f4fd
   - https://www.telerik.com/blogs/learning-nestjs-part-3-data-caching
