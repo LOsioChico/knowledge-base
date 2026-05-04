@@ -30,6 +30,7 @@ source:
   - https://docs.nestjs.com/exception-filters#binding-filters
   - https://docs.nestjs.com/faq/hybrid-application
   - https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers
+  - https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/constants.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/router/router-exception-filters.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts
@@ -273,7 +274,7 @@ export class AppModule {}
 ## Edge cases worth knowing
 
 - **Multiple registrations stack.** You can register the same `APP_*` token more than once across modules; all of them run. Good for layering (e.g., a `LoggingInterceptor` plus a `TimeoutInterceptor`).
-- **Mixing `useGlobalPipes` and an `APP_PIPE` provider** isn't addressed by the official docs. Empirically both fire, but the relative order isn't documented either: pick one binding style per enhancer kind so you never have to reason about it.
+- **Mixing `useGlobalPipes` and an `APP_PIPE` provider** still ends up in one global pipe list: `useGlobalPipes` concats instances onto `ApplicationConfig.globalPipes` ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62)), and module scan resolves each `APP_PIPE` through `addGlobalPipe` ([`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695) maps the token onto `ApplicationConfig.addGlobalPipe`), which `PipesContextCreator#getGlobalMetadata` then returns as the global slice for every handler ([`pipes-context-creator.ts#L87-L97`](https://github.com/nestjs/nest/blob/master/packages/core/pipes/pipes-context-creator.ts#L87-L97)). Both fire; tie-break is registration order. Pick one binding style per enhancer kind so you never have to reason about which fires first.
 - **No need to add `APP_*` to `exports`.** The framework collects enhancer providers from any module's `providers` array, so the usual cross-module export contract doesn't apply (none of the official binding examples in the [pipes](https://docs.nestjs.com/pipes#binding-pipes), [guards](https://docs.nestjs.com/guards#binding-guards), [interceptors](https://docs.nestjs.com/interceptors#binding-interceptors), or [exception-filters](https://docs.nestjs.com/exception-filters#binding-filters) docs export the `APP_*` token).
 - **Testing.** Overriding an `APP_*`-bound enhancer in `Test.createTestingModule(...)` is **not** a one-step `.overrideProvider(APP_GUARD).useClass(MockGuard)`: that token is a multi-provider slot, not a regular provider. The official two-step recipe is to first refactor the registration to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` (plus `JwtAuthGuard` as a normal provider), then override the regular class: `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` (see [Testing → Overriding globally registered enhancers](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). The `useGlobalX` form bypasses the testing module entirely.
 
