@@ -91,9 +91,9 @@ For GitHub blob URLs, swap `github.com/<owner>/<repo>/blob/<ref>/` for
 
 | Bucket | Condition | Action |
 | --- | --- | --- |
-| **TRUE-and-cited** | Claim is supported by a URL already in `source:`. Auditor's extract failed. | Dismiss. `reason:` names the verifying file/anchor (e.g. "verified at `provider-scopes.md#L152`: '~5% latency-wise' is verbatim"). |
-| **TRUE-but-uncited** | Claim is supported by a URL not yet in `source:`. | **ADD the URL to `source:`**. Do NOT dismiss — the audit's job was to surface this gap. Then optionally dismiss the now-cited finding. |
-| **WRONG-claim** | Primary source contradicts the prose. | **Fix the prose** with a citation to the contradicting source. Add the source URL to `source:` if missing. |
+| **TRUE-and-cited** | Claim is supported by a URL already cited inline. Auditor's extract failed. | Dismiss. `reason:` names the verifying file/anchor (e.g. "verified at `provider-scopes.md#L152`: '~5% latency-wise' is verbatim"). |
+| **TRUE-but-uncited-inline** | Claim is supported by a URL but never cited inline next to the claim. | **ADD the inline citation** to the prose (`([source](URL))` next to the claim). Do NOT edit `source:` by hand — `yarn autofix` keeps the frontmatter list in sync from inline URLs. Do NOT dismiss until the inline citation is in place; the audit's job was to surface this gap. |
+| **WRONG-claim** | Primary source contradicts the prose. | **Fix the prose** with an inline citation to the contradicting source. `yarn autofix` will sync `source:`. |
 | **UNVERIFIABLE** | No usable primary source within the session. | Leave a `// TODO: verify` advisory in place; dismiss with `reason: "no primary source available; revisit"`. |
 
 ### Forbidden classifications
@@ -107,14 +107,15 @@ For GitHub blob URLs, swap `github.com/<owner>/<repo>/blob/<ref>/` for
 
 ## Step 3 — Apply true positives
 
-For WRONG-claim and TRUE-but-uncited findings:
+For WRONG-claim and TRUE-but-uncited-inline findings:
 
 1. Use `multi_replace_string_in_file` for clusters in the same file.
-2. Add new source URLs to frontmatter `source:` lists.
+2. Add new citations **inline** in the prose as `([source](URL))` next to the claim. Never edit frontmatter `source:` by hand: the `source-list-completeness` linter rule plus `yarn autofix` keep that list synced from the inline URLs. A URL added to `source:` that does not appear inline is a phantom citation — the autofixer will strip it on the next run.
 3. **Bundle related fixes into one commit** when the same wrong claim appears in N notes
    (e.g. "rethrow chain" in both `exception-filters.md` and `request-lifecycle.md`).
 4. Commit messages: `fix(<area>): <correction>` for prose, `docs: cite primary sources for
-   <topic>` for source-only adds.
+   <topic>` for citation-only adds.
+5. After a batch of edits, run `yarn autofix` (in `scripts/audit-notes/`, no args walks `content/`) to sync `source:` lists with the new inline citations and to strip any orphaned URLs.
 
 If the finding has a `suggestedFix: {kind, before, after, primarySource, rationale}` field
 (Pass 3 fix-proposer), it's a **starting point**, not a mandate. The proposer is hard-prompted
@@ -213,7 +214,7 @@ Group fixes by intent. A typical post-audit batch produces 3–5 commits:
 1. **Prose fix per cluster of related WRONG-claims** (one commit per topic, even if it spans
    multiple notes — co-locating the corrected claim with its corrected siblings keeps the
    commit greppable).
-2. **Source additions** for TRUE-but-uncited findings (`docs: cite primary sources for …`).
+2. **Citation additions** for TRUE-but-uncited-inline findings (`docs: cite primary sources for …`). The diff is the inline `([source](URL))` plus whatever `source:` deltas `yarn autofix` produces.
 3. **Dismissals batch** at the end (`chore(audit): persist verified-cited dismissals from
    <triage-context>`).
 
