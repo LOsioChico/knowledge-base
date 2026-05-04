@@ -15,7 +15,7 @@ pre.folder-tree {
     padding: 0.5rem 0;
     color: var(--darkgray);
     font-size: 0.85rem;
-    line-height: 1.5;
+    line-height: 1.75;
     // Override base.scss `pre > code { display: grid }`, which would otherwise
     // turn each <span> annotation into its own grid row (broken layout).
     display: block;
