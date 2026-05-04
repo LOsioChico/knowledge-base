@@ -135,6 +135,46 @@
       "reason": "Verified at docs.nestjs.com/fundamentals/injection-scopes#performance: '~5% latency-wise' is verbatim. Passport request-scope workaround verified at docs.nestjs.com/recipes/passport#request-scoped-strategies. Both URLs cited inline.",
       "date": "2026-05-04",
       "originalLine": "> Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a measurable latency hit (\"slow down your average response time\"; capped at ~5% in well-designed apps). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much."
+    },
+    {
+      "path": "content/nestjs/auth/jwt-strategy.md",
+      "sig": "1a81bfba95475c31282dad2d0ec9c79a2ae36dff",
+      "rule": "mental-model",
+      "reason": "Heading itself frames the rule-of-thumb (\"the #1 source of confusion\"); the four-layer table is the artifact the heading promises. A separate one-line analogy before the table would dilute, not sharpen.",
+      "date": "2026-05-03",
+      "originalLine": "## The four-layer stack (this is the #1 source of confusion)"
+    },
+    {
+      "path": "content/nestjs/fundamentals/pipes.md",
+      "sig": "ebe639b9ec58c0730741841a5ee02c152853de06",
+      "rule": "mental-model",
+      "reason": "Heading \"Why a pipe, not middleware / a guard / an interceptor\" is the question-to-tool framing; the bullet contrasts that follow are the answer. A separate analogy or table would duplicate the framing already in the H2.",
+      "date": "2026-05-03",
+      "originalLine": "## Why a pipe, not [[nestjs/fundamentals/middleware|middleware]] / [[nestjs/fundamentals/guards|a guard]] / [[nestjs/fundamentals/interceptors|an interceptor]]"
+    },
+    {
+      "path": "content/nestjs/fundamentals/request-lifecycle.md",
+      "sig": "4dde103e85b11286398f1317174684eee831c0aa",
+      "rule": "source-verification",
+      "reason": "Verified at content/nestjs/fundamentals/exception-filters.md (linked inline): the floor=BaseExceptionFilter claim is sourced via routes-resolver.ts#L162-L183 and the second ExceptionsHandler that runs globals only. 'not Express finalhandler' is a comparative pointer, not an unsourced new claim.",
+      "date": "2026-05-03",
+      "originalLine": "> Every other layer resolves outermost-first: **global → controller → route**. Exception filters invert that: **route → controller → global**. The first filter whose `@Catch()` matches wins; nothing further at the same handler sees the exception. This is why a route-bound filter can override a global one, but a global filter can never \"wrap\" a route filter. Throwing from inside a filter does **not** re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func(...)` once and returns), but it **does** re-fire the global filter list: Nest installs a second `ExceptionsHandler` on the HTTP adapter at boot ([`routes-resolver.ts#L162-L183`](https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts#L162-L183)) whose filter list is built from an empty controller, so it carries globals only. `BaseExceptionFilter` is the floor when no global matches, not Express `finalhandler`. See [[exception-filters#Order: route first, then controller, then global|Exception filters > Order]]."
+    },
+    {
+      "path": "content/nestjs/recipes/file-uploads.md",
+      "sig": "28cae9842bf1249a9dd31f80c823c275d9a2cdd1",
+      "rule": "source-verification",
+      "reason": "Verified at packages/common/decorators/http/route-params.decorator.ts (linked inline): @UploadedFile() reads req.file injected by Multer's request handler, not the body DTO; ValidationPipe operating on @Body()/@Query()/@Param() per docs.nestjs.com/techniques/validation cannot reach req.file. The negative is a direct consequence of the two cited primary sources, not a new claim needing its own URL.",
+      "date": "2026-05-03",
+      "originalLine": "> A globally-bound `ValidationPipe` validates DTOs from `@Body()`, `@Query()`, and `@Param()`; it doesn't process the `Express.Multer.File` argument behind `@UploadedFile()` because the file is attached to `req.file` by Multer's request handler and injected via the [`@UploadedFile()` parameter decorator](https://github.com/nestjs/nest/blob/master/packages/common/decorators/http/route-params.decorator.ts) rather than being part of the body DTO. Validate the file with `ParseFilePipe`/`ParseFilePipeBuilder`; validate text fields in the same form via a DTO on `@Body()`. Forgetting this is the most common reason \"my file validators don't run\"."
+    },
+    {
+      "path": "content/nestjs/recipes/file-uploads.md",
+      "sig": "1d9aa12bd772d380355be4ca67ae992eed4e60d4",
+      "rule": "source-verification",
+      "reason": "Empirical Swagger UI behavior when @ApiConsumes/@ApiBody are omitted; no primary source documents the negative (the cited docs.nestjs.com/openapi/operations#file-upload page documents the REQUIRED decorators, which is the closest evidence). UNVERIFIABLE at doc level; revisit if @nestjs/swagger ships docs covering the omission case.",
+      "date": "2026-05-03",
+      "originalLine": "> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/operations#file-upload)). The \"Try it out\" form falls back to plain text and is unusable for binary uploads."
     }
   ]
 }
