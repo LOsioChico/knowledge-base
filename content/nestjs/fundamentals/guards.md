@@ -31,6 +31,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://docs.nestjs.com/recipes/passport
   - https://docs.nestjs.com/security/authentication
+  - https://docs.nestjs.com/techniques/http-module
 ---
 
 > Decide whether a request reaches the route handler. Used for **authorization**: roles, permissions, ownership, anything that should short-circuit before the handler runs.
@@ -100,7 +101,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>`; gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly).
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>` ([HTTP module docs](https://docs.nestjs.com/techniques/http-module#getting-started)); gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly).
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
