@@ -1,9 +1,11 @@
 #!/usr/bin/env -S npx tsx
 // Apply deterministic auto-fixes to markdown notes.
 //
-// Rules covered (mirror the Pass-0 detectors in `deterministic.ts`):
-//   - style-em-dash      \u2014 (em-dash) -> ":"
-//   - style-double-hyphen `--` (outside code/frontmatter) -> ":"
+// Rules covered (mirror the Pass-0 detectors in `deterministic.ts` and the
+// `source-list-completeness` check in `lint-wikilinks-core.mjs`):
+//   - style-em-dash             \u2014 (em-dash) -> ":"
+//   - style-double-hyphen       `--` (outside code/frontmatter) -> ":"
+//   - source-list-completeness  remove `source:` URLs absent from body
 //
 // Skips frontmatter, fenced code blocks, inline backtick spans, and URLs so we
 // don't munge code or links. Writes files in place. Prints the list of files
@@ -14,8 +16,9 @@
 //
 // Exits 0 always. The list of changed files (possibly empty) is the contract.
 
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 interface FixResult {
   changed: boolean;
@@ -66,7 +69,9 @@ function applyOutsideCode(s: string): string {
 
 function fixFile(absPath: string): FixResult {
   const text: string = readFileSync(absPath, "utf8");
-  const lines: string[] = text.split("\n");
+  let lines: string[] = text.split("\n");
+
+  lines = stripOrphanSources(lines);
 
   let inFrontmatter: boolean = false;
   let inFence: boolean = false;
@@ -104,21 +109,131 @@ function fixFile(absPath: string): FixResult {
   return { changed: true, out: next };
 }
 
+// Strip `source:` block-list entries whose URL doesn't appear anywhere in the
+// note body. Block form only:
+//
+//   source:
+//     - https://...
+//     - https://...
+//
+// Both sides are normalized (fragment + trailing slash stripped) so anchored
+// inline links satisfy file-level frontmatter entries.
+//
+// Skips when:
+//   - no frontmatter or no `source:` key
+//   - `source:` uses flow form (`source: [...]`); too rare to be worth parsing
+function stripOrphanSources(lines: string[]): string[] {
+  if (lines[0] !== "---") return lines;
+  let fmEnd: number = -1;
+  for (let i: number = 1; i < lines.length; i++) {
+    if (lines[i] === "---") {
+      fmEnd = i;
+      break;
+    }
+  }
+  if (fmEnd === -1) return lines;
+
+  let sourceStart: number = -1;
+  for (let i: number = 1; i < fmEnd; i++) {
+    if (/^source:\s*$/.test(lines[i] ?? "")) {
+      sourceStart = i;
+      break;
+    }
+  }
+  if (sourceStart === -1) return lines;
+
+  // Collect block-list lines: `  - <url>` (any indent ≥ 2 spaces, dash, space).
+  let sourceEnd: number = sourceStart;
+  for (let i: number = sourceStart + 1; i < fmEnd; i++) {
+    const ln: string = lines[i] ?? "";
+    if (/^\s+-\s+/.test(ln)) {
+      sourceEnd = i;
+    } else if (ln.trim() === "") {
+      // Allow blank lines inside the block conservatively as terminators.
+      break;
+    } else {
+      break;
+    }
+  }
+  if (sourceEnd === sourceStart) return lines;
+
+  const body: string = lines.slice(fmEnd + 1).join("\n");
+  const bodyUrls: Set<string> = new Set<string>();
+  const urlRe = /https?:\/\/[^\s)\]"'<>]+/g;
+  for (const m of body.matchAll(urlRe)) {
+    bodyUrls.add(normalizeUrl(m[0]));
+  }
+
+  const itemRe = /^(\s+-\s+)(.+?)\s*$/;
+  const kept: string[] = [];
+  let changed: boolean = false;
+  for (let i: number = sourceStart + 1; i <= sourceEnd; i++) {
+    const ln: string = lines[i] ?? "";
+    const m = itemRe.exec(ln);
+    if (!m || m[2] === undefined) {
+      kept.push(ln);
+      continue;
+    }
+    const raw: string = m[2].replace(/^["']|["']$/g, "");
+    if (!/^https?:\/\//.test(raw)) {
+      kept.push(ln);
+      continue;
+    }
+    if (bodyUrls.has(normalizeUrl(raw))) {
+      kept.push(ln);
+    } else {
+      changed = true;
+    }
+  }
+  if (!changed) return lines;
+
+  return [
+    ...lines.slice(0, sourceStart + 1),
+    ...kept,
+    ...lines.slice(sourceEnd + 1),
+  ];
+}
+
+function normalizeUrl(u: string): string {
+  // Mirrors `normalizeAnyUrl` in `quartz/scripts/lint-wikilinks-core.mjs`:
+  // strip fragment, trailing markdown punctuation, and a single trailing
+  // slash so prose like `see https://x/y/z.` matches the bare frontmatter
+  // entry `https://x/y/z`.
+  const noFrag: string = u.split("#")[0] ?? u;
+  return noFrag.replace(/[.,;:]+$/, "").replace(/\/$/, "");
+}
+
 function main(): void {
   const argv: string[] = process.argv.slice(2);
+  let targets: string[];
   if (argv.length === 0) {
-    process.stderr.write("usage: autofix.ts <file...>\n");
-    process.exit(0);
-    return;
+    // No args: walk content/ from the repo root (this file lives at
+    // scripts/audit-notes/autofix.ts, so ../../content is the vault).
+    const repoRoot: string = resolve(
+      fileURLToPath(new URL("../..", import.meta.url)),
+    );
+    const contentRoot: string = join(repoRoot, "content");
+    targets = [];
+    walkMarkdown(contentRoot, targets);
+  } else {
+    targets = argv.map((a) => resolve(process.cwd(), a));
   }
   const changed: string[] = [];
-  for (const arg of argv) {
-    const abs: string = resolve(process.cwd(), arg);
+  for (const abs of targets) {
     const r: FixResult = fixFile(abs);
-    if (r.changed) changed.push(arg);
+    if (r.changed) changed.push(abs);
   }
   for (const f of changed) process.stdout.write(`${f}\n`);
   process.exit(0);
+}
+
+function walkMarkdown(dir: string, out: string[]): void {
+  for (const entry of readdirSync(dir)) {
+    const full: string = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) walkMarkdown(full, out);
+    else if (st.isFile() && entry.endsWith(".md")) out.push(full);
+  }
 }
 
 main();

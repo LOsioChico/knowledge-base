@@ -777,6 +777,46 @@ function validateInlineSourceCitations(result, notes) {
   }
 }
 
+// Inverse of validateInlineSourceCitations: every URL in `source:` must appear
+// somewhere in the note body. Catches dead `source:` entries that no longer
+// back any prose claim — the bidirectional contract makes the frontmatter list
+// a compact reflection of what's cited inline, not a grab-bag.
+//
+// Body presence = any occurrence of the URL (markdown link target, plain text,
+// inside code fences). Both sides are normalized (fragment + trailing
+// punctuation/slash stripped) so anchored inline links satisfy file-level
+// frontmatter entries and prose like "see https://x/y." matches "https://x/y".
+const ANY_URL_RE = /https?:\/\/[^\s)\]"'<>]+/g
+
+function normalizeAnyUrl(url) {
+  return url
+    .split("#")[0]
+    .replace(/[.,;:]+$/, "")
+    .replace(/\/$/, "")
+}
+
+function validateSourceListCompleteness(result, notes) {
+  for (const note of notes) {
+    if (isIndexNote(note)) continue
+    const sources = asArray(note.data.source).map(cleanScalar).filter(Boolean)
+    if (sources.length === 0) continue
+    const bodyUrls = new Set()
+    for (const match of note.body.matchAll(ANY_URL_RE)) {
+      bodyUrls.add(normalizeAnyUrl(match[0]))
+    }
+    for (const src of sources) {
+      const normalized = normalizeAnyUrl(src)
+      if (bodyUrls.has(normalized)) continue
+      addViolation(result, {
+        check: "source-list-completeness",
+        file: note.file,
+        line: 1,
+        message: `frontmatter \`source:\` URL \`${normalized}\` is not referenced anywhere in the note body`,
+      })
+    }
+  }
+}
+
 function tokenize(text) {
   const words = text
     .toLowerCase()
@@ -1089,6 +1129,16 @@ export function formatHuman(result) {
       inlineSources,
     )
 
+  const sourceCompleteness = groupByCheck(errors, "source-list-completeness")
+  if (sourceCompleteness.length === 0)
+    stdout.push("✓ source-list-completeness: every `source:` URL is referenced in the body")
+  else
+    printGeneric(
+      stderr,
+      `✗ source-list-completeness: ${sourceCompleteness.length} orphan \`source:\` ${plural(sourceCompleteness.length, "URL")} not referenced in body (run \`yarn autofix\` to strip)`,
+      sourceCompleteness,
+    )
+
   const discovery = groupByCheck(decisions, "discoverability")
   if (discovery.length === 0) {
     stdout.push(
@@ -1195,6 +1245,7 @@ export async function lintVault({
   validateOrphans(result, notes)
   validateTagline(result, notes)
   validateInlineSourceCitations(result, notes)
+  validateSourceListCompleteness(result, notes)
   validateDiscoverability(result, notes)
   await validateAgentsMirror(result, repoRoot)
 
