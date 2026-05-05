@@ -30,6 +30,7 @@ import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
 import { groundFindings } from "./ground.js";
 import { runSourceVerifyPass } from "./source-verify.js";
+import { runJargonVerifyPass } from "./jargon-verify.js";
 import { runAnchorVerifyPass } from "./anchor-verify.js";
 import { runFactGroundPass } from "./fact-ground.js";
 import { filterDismissed } from "./dismissed.js";
@@ -460,12 +461,19 @@ async function main(): Promise<void> {
   const detAdvisoryFlat: FlatFinding[] = flatten({ files: detAdvisory });
   log(`[pass-0b] ${detAdvisoryFlat.length} advisory hedge findings`);
 
-  // Pass 1, 1a, 1b run concurrently — they're independent and all network-bound.
-  log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1b (source verify) in parallel ---");
-  const [audit, sdtFindings, sourceFindings] = await Promise.all([
+  // Pass 1, 1a, 1b, 1e run concurrently — they're independent and all network-bound.
+  log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1b (source verify) + 1e (jargon judge) in parallel ---");
+  const [audit, sdtFindings, sourceFindings, jargonFindings] = await Promise.all([
     runAuditorPass(args.targets),
     runShowDontTellPass(args.targets),
     runSourceVerifyPass({
+      repoRoot: REPO_ROOT,
+      targets: args.targets,
+      runAgent,
+      extractJson,
+      log,
+    }),
+    runJargonVerifyPass({
       repoRoot: REPO_ROOT,
       targets: args.targets,
       runAgent,
@@ -477,6 +485,7 @@ async function main(): Promise<void> {
   log(`[pass-1]  ${auditFlat.length} candidate findings`);
   log(`[pass-1a] ${sdtFindings.length} show-dont-tell finding(s)`);
   log(`[pass-1b] ${sourceFindings.length} source-verification finding(s)`);
+  log(`[pass-1e] ${jargonFindings.length} jargon finding(s)`);
 
   // Pass 1c: deterministic anchor verifier. Drops `source-verification`
   // findings whose only complaint is a wrong GitHub line anchor when the
@@ -661,6 +670,12 @@ async function main(): Promise<void> {
       }),
     ),
     ...detAdvisoryFlat.map(
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+        ...f,
+        tier: "advisory",
+      }),
+    ),
+    ...jargonFindings.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
         ...f,
         tier: "advisory",
