@@ -37,13 +37,13 @@ The unit of "I have a database" is the **DB instance**; the unit of "I have a ba
 
 Almost every "move this database somewhere" workflow is a snapshot dance:
 
-| Goal                                         | Snapshot move                                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| Different Region, same account               | `copy-db-snapshot` with `--source-region`.                                                                                            |
-| Different account, same Region (unencrypted) | `modify-db-snapshot-attribute --attribute-name restore` to add the target account.                                                    |
-| Different account, encrypted                 | Re-encrypt under a customer-managed KMS key first; the default service key cannot be shared. See [[aws/recipes/cross-account-snapshot | cross-account snapshot recipe]]. |
-| New parameter group / instance class         | Restore from snapshot into the new shape; cut over.                                                                                   |
-| Major-version upgrade test                   | Restore snapshot into a throwaway instance; run the upgrade against that.                                                             |
+| Goal                                         | Snapshot move                                                                                                                                                           |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Different Region, same account               | `copy-db-snapshot` with `--source-region`.                                                                                                                              |
+| Different account, same Region (unencrypted) | `modify-db-snapshot-attribute --attribute-name restore` to add the target account.                                                                                      |
+| Different account, encrypted                 | Re-encrypt under a customer-managed KMS key first; the default service key cannot be shared. See [[aws/recipes/cross-account-snapshot\|cross-account snapshot recipe]]. |
+| New parameter group / instance class         | Restore from snapshot into the new shape; cut over.                                                                                                                     |
+| Major-version upgrade test                   | Restore snapshot into a throwaway instance; run the upgrade against that.                                                                                               |
 
 > [!warning] Default-key encrypted snapshots can't be shared
 > If your instance was encrypted with the AWS-managed RDS key (`alias/aws/rds`), the snapshot cannot be shared cross-account no matter what permissions you set. The fix is to copy the snapshot under a customer-managed KMS key first, then share the copy. Full walkthrough: [[aws/recipes/cross-account-snapshot|cross-account RDS snapshot]].

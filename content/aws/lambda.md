@@ -25,9 +25,9 @@ A **Lambda function** is a deployment unit (code + dependencies + config) that r
 The pieces:
 
 | Piece                        | What it controls                                                                                                                                                                           |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Function**                 | The named unit. Has a runtime, a handler, code (zip or container image), env vars.                                                                                                         |
-| **Execution role**           | [[aws/iam                                                                                                                                                                                  | IAM]] role the function runs as. This is what calls to other AWS services use. |
+| **Execution role**           | [[aws/iam\|IAM]] role the function runs as. This is what calls to other AWS services use.                                                                                                  |
 | **Triggers / event sources** | What invokes the function (API Gateway, SQS, S3 event, EventBridge (managed event bus), Function URL, direct invoke).                                                                      |
 | **Versions + aliases**       | Versions are immutable snapshots of the function; aliases are re-pointable names. Use aliases (`prod`, `staging`) in triggers so you can flip traffic without touching the trigger itself. |
 

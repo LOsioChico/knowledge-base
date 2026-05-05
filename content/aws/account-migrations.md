@@ -54,7 +54,7 @@ related:
 ## Recommended order
 
 1. **CLI + identities**: profiles, `sts get-caller-identity` on both sides.
-2. **IAM [[aws/recipes/cross-account-role-pattern|cross-account role]](s)**: set them up early so the new account can talk to anything that's staying behind.
+2. **IAM [[aws/recipes/cross-account-role-pattern|cross-account roles]]**: set them up early so the new account can talk to anything that's staying behind.
 3. **Data services first** (RDS, S3): they take the longest to copy and have the largest rollback windows.
 4. **Compute next** ([[aws/lambda|Lambda]], ECS): once the data is in place.
 5. **Frontend + DNS last** (Amplify, CloudFront, Route53): flipping the domain is the user-visible cutover. Don't do this before the data and compute behind it are validated.
