@@ -29,10 +29,13 @@ source:
   - https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json
   - https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts
   - https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts
-  - https://rxjs.dev/api/operators/retry
   - https://docs.nestjs.com/controllers#library-specific-approach
   - https://github.com/nestjs/nest/blob/master/packages/core/helpers/execution-context-host.ts
   - https://github.com/nestjs/graphql/blob/master/packages/graphql/lib/services/gql-execution-context.ts
+  - https://github.com/typestack/class-transformer/blob/develop/src/index.ts
+  - https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts
+  - https://docs.nestjs.com/faq/request-lifecycle
+  - https://github.com/nestjs/nest-cli/blob/master/lib/utils/project-utils.ts
 ---
 
 > Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.
@@ -79,7 +82,7 @@ nest g itc logging --no-spec        # skip the *.spec.ts test file
 nest g itc logging --dry-run        # preview the file plan, write nothing
 ```
 
-Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Note: the schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json)) but the CLI overrides that default to `false` in [`actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts) (`const flatValue = !!flat?.value` makes an absent flag resolve to `false`), so the schema default is unreachable through `nest g`. Trust `--dry-run` over the schema. Sources: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the exact file plan.
+Creates `<name>.interceptor.ts` (and `<name>.interceptor.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Note: the schematic schema declares `"flat": { "default": true }` ([`schema.json`](https://github.com/nestjs/schematics/blob/master/src/lib/interceptor/schema.json)) but `nest g` does not pass that schema default straight through: an absent `--flat` flag enters the CLI path as `false` in [`actions/generate.action.ts`](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L58-L69), then [`shouldGenerateFlat()`](https://github.com/nestjs/nest-cli/blob/master/lib/utils/project-utils.ts#L71-L90) returns `true` only for an explicit `--flat` flag or a `generateOptions.flat` boolean in project config. Trust `--dry-run` over the schema. Sources: [`@nestjs/cli` generate command](https://github.com/nestjs/nest-cli/blob/master/commands/generate.command.ts), [Nest CLI usages](https://docs.nestjs.com/cli/usages). Run any of these with `--dry-run` to confirm the exact file plan.
 
 ## The pre/post pattern
 
@@ -133,9 +136,9 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 
 [`@nestjs/common`](https://github.com/nestjs/nest/tree/master/packages/common/serializer) ships `ClassSerializerInterceptor` as the lone built-in; the rest you compose yourself with RxJS.
 
-| Interceptor                  | Package          | Purpose                                                                                                                                                                                                                                                         |
-| ---------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`) on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
+| Interceptor                  | Package          | Purpose                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ClassSerializerInterceptor` | `@nestjs/common` | Runs `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`, per the deprecated [`classToPlain` export](https://github.com/typestack/class-transformer/blob/develop/src/index.ts#L15-L24)) on the response. Honors `@Exclude()`, `@Expose()`, `@Transform()`, and `groups` set via `@SerializeOptions()`. See [[nestjs/recipes/serialization\|the serialization recipe]] |
 
 > [!example]- Excluding fields from the response
 >
@@ -336,7 +339,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 > }
 > ```
 >
-> [`retry`](https://rxjs.dev/api/operators/retry) resubscribes to the source observable on error. Because the source here is `next.handle()`, resubscribing **re-invokes the handler**: [`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) wraps the handler in `defer(...transformDeferred(next))`, and `defer` re-runs its factory (which calls the handler) on every subscription. Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry.
+> [`retry`](https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts#L35-L45) resubscribes to the source observable on error. Its object overload accepts `count`, `delay`, and `resetOnSuccess` via [`RetryConfig`](https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts#L7-L33). Because the source here is `next.handle()`, resubscribing **re-invokes the handler**: [`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) wraps the handler in `defer(...transformDeferred(next))`, and `defer` re-runs its factory (which calls the handler) on every subscription. Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry.
 
 > [!example]- Async pre phase (returning `Promise<Observable>`)
 >
@@ -416,7 +419,7 @@ The post-phase operators you'll actually reach for. Imports come from `rxjs` or 
 
 ## When not to
 
-- Mutating the raw request, attaching correlation IDs **before** auth runs: use [[nestjs/fundamentals/middleware|middleware]] (interceptors run **after** guards).
+- Mutating the raw request, attaching correlation IDs **before** auth runs: use [[nestjs/fundamentals/middleware|middleware]] (interceptors run **after** guards in the [request lifecycle](https://docs.nestjs.com/faq/request-lifecycle)).
 - Authorization decisions: use [[nestjs/fundamentals/guards|a guard]]. Throwing from an interceptor works but loses the declarative role/permission shape.
 - Validating or coercing a single handler argument: use [[nestjs/fundamentals/pipes|a pipe]].
 - Catching every thrown exception across the app to shape the error response: that's an [[nestjs/fundamentals/exception-filters|exception filter]]. Interceptors can map errors with `catchError`, but only for the handler stream.

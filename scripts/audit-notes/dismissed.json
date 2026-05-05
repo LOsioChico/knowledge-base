@@ -177,14 +177,6 @@
       "originalLine": "> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/operations#file-upload)). The \"Try it out\" form falls back to plain text and is unusable for binary uploads."
     },
     {
-      "path": "content/nestjs/recipes/file-uploads.md",
-      "sig": "c95bb2c9fedecd2ea2cdb17bb7531151e5aff8a9",
-      "rule": "code-imports",
-      "reason": "Variant of canonical @Module snippet shown immediately above (L139-L155). Prose \"For env-driven config use registerAsync:\" makes module context unambiguous; AGENTS.md exception for illustrative fragments applies.",
-      "date": "2026-05-04",
-      "originalLine": "```typescript"
-    },
-    {
       "path": "content/nestjs/data/typeorm/postgresql-setup.md",
       "sig": "636c26748a71024aad315fc53411d77be01ec618",
       "rule": "source-verification",
@@ -207,14 +199,6 @@
       "reason": "Prose already cites both guards-consumer.ts AND guards-context-creator.ts inline. Concatenation order is described per-scope just below by the same files.",
       "date": "2026-05-04",
       "originalLine": "Multiple guards run in this order. [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts) iterates the resolved list and short-circuits on the first non-truthy / throwing result; the merged list is assembled per request from global + controller + method scopes by [`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts):"
-    },
-    {
-      "path": "content/nestjs/fundamentals/interceptors.md",
-      "sig": "a238f21fc8585651507ed70ad2661e5bd3f73825",
-      "rule": "source-verification",
-      "reason": "Already cites docs.nestjs.com/interceptors#exception-mapping inline at end of [!example] callout, which is the canonical primary source for this ordering claim.",
-      "date": "2026-05-04",
-      "originalLine": ">"
     },
     {
       "path": "content/nestjs/fundamentals/middleware.md",
@@ -263,6 +247,14 @@
       "reason": "Callout already cites both nodejs.org/api/crypto.html#cryptorandomuuidoptions AND rfc-editor.org/rfc/rfc9562.html#section-5.4 inline. CSPRNG property is documented by the Node crypto page.",
       "date": "2026-05-04",
       "originalLine": "> [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) emits an [RFC 9562 v4 UUID](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.4) backed by a CSPRNG, so the same value is safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades."
+    },
+    {
+      "path": "content/nestjs/fundamentals/interceptors.md",
+      "sig": "f736656033561fa9e90c611f234fb78834dc3feb",
+      "rule": "callout-severity",
+      "reason": "Warning gives the full @Res() passthrough mitigation in Gotchas; the Common errors row is a compact symptom lookup. Intentional duplicate navigation, not a consolidation target.",
+      "date": "2026-05-04",
+      "originalLine": "> [!warning]- `@Res()` disables response mapping"
     }
   ]
 }
