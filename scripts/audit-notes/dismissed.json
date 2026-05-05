@@ -271,6 +271,46 @@
       "reason": "Verified: https://docs.aws.amazon.com/cli/v1/reference/configure/list-profiles.html 302-redirects to the v1 configure index (no list-profiles entry). The auditor saw a link in cli-configure-files extract pointing at that v1 URL but did not follow the redirect; the v1 reference does not document list-profiles. Original claim 'absent from the v1 configure reference' is correct.",
       "date": "2026-05-05",
       "originalLine": "> The subcommand is documented under v2 ([source](https://docs.aws.amazon.com/cli/latest/reference/configure/list-profiles.html)) and absent from the v1 `configure` reference ([source](https://docs.aws.amazon.com/cli/v1/reference/configure/)). If it errors out, read `~/.aws/credentials` and `~/.aws/config` directly, or upgrade to v2."
+    },
+    {
+      "path": "content/aws/cli/profiles-and-credentials.md",
+      "sig": "ab737659281af943050e034cb34b22e7f8f72b09",
+      "rule": "source-verification",
+      "reason": "Verified: https://docs.aws.amazon.com/cli/v1/reference/configure/list-profiles.html canonicalizes to the v1 configure index whose Available Commands are add-model/get/list/set (no list-profiles). Original claim 'CLI v2 only and absent from the v1 configure reference' is correct. Re-dismissal of the previously dismissed L67 finding (same claim, sig drifted because the auditor anchored on the callout title L66 this run).",
+      "date": "2026-05-05",
+      "originalLine": "> [!warning] `aws configure list-profiles` is CLI v2 only"
+    },
+    {
+      "path": "content/aws/recipes/alternate-domain-claim.md",
+      "sig": "983e2e029935d98962262274d4eba81f3b57b5f2",
+      "rule": "source-verification",
+      "reason": "Empirical observation: error text shown is the verbatim CloudFront response observed in the field when the ghost-claim trap fires; AWS docs link to a troubleshooting topic but do not publish the exact wording. The note frames it as 'You attempt to attach... and get:' which preserves the observed-output framing. No primary source to cite for the literal string; softening the verbatim error message would degrade the recipe.",
+      "date": "2026-05-05",
+      "originalLine": "One or more aliases specified for the distribution includes an incorrectly"
+    },
+    {
+      "path": "content/aws/recipes/alternate-domain-claim.md",
+      "sig": "a9f9fe3629c0491ba914f43dec2ce3e830dfb421",
+      "rule": "source-verification",
+      "reason": "Empirical: prose already explicitly discloses provenance ('community reports and AWS Support cases put it at hours, sometimes longer; AWS does not document the duration'). Auditor flag is asking for a primary source for an undocumented behavior; the disclaimer is the honest framing.",
+      "date": "2026-05-05",
+      "originalLine": "> When an Amplify-managed certificate fails to validate in time, deleting and recreating the domain association provisions a brand-new CloudFront distribution. The previous distribution may be gone, but the alternate-domain claim is observably not released right away (community reports and AWS Support cases put it at hours, sometimes longer; AWS does not document the duration). Each retry stacks another ghost claim. Don't retry the same broken path; switch strategies instead."
+    },
+    {
+      "path": "content/aws/recipes/alternate-domain-claim.md",
+      "sig": "f0896a9368fdf1f3b13e6946208cac7513fb7d38",
+      "rule": "source-verification",
+      "reason": "Empirical: prose already says 'AWS does not document this as a sanctioned bypass, but it is what AWS Support routinely recommends'. The maximally-honest framing for a field-experience claim. No primary source exists; that's the point of the disclaimer.",
+      "date": "2026-05-05",
+      "originalLine": "The Amplify managed-domain flow does not expose `update-domain-association`, and if a previous attempt left an orphaned distribution you may not be able to reach the source to disable it. Empirically, requesting your own public ACM certificate that covers the alias and attaching it to the new association lets the alias attach where vanilla retries kept failing. AWS does not document this as a sanctioned bypass, but it is what AWS Support routinely recommends for Amplify domain-stuck cases."
+    },
+    {
+      "path": "content/aws/recipes/alternate-domain-claim.md",
+      "sig": "d4fdeab44c479320c505e207bf52022cf8ccb39f",
+      "rule": "source-verification",
+      "reason": "Empirical wait time. Prose says 'Wait at least 2-4 hours, often longer.' AWS does not document a duration; this is a field-experience floor. Softening would strip the actionable number.",
+      "date": "2026-05-05",
+      "originalLine": "If you can't or won't manage your own cert, the only remaining option is **time**. Stop all retries. Wait at least 2-4 hours, often longer. Then attempt the original prefix once. If it still fails, the AWS-documented escalation path is to disable the lingering source distribution and contact AWS Support to release the alias ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html#alternate-domain-names-move-contact-support)). Basic Support is free, response is typically next business day."
     }
   ]
 }
