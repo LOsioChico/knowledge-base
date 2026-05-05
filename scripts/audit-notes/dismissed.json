@@ -263,6 +263,14 @@
       "reason": "Warning gives the full @Res() passthrough mitigation in Gotchas; the Common errors row is a compact symptom lookup. Intentional duplicate navigation, not a consolidation target.",
       "date": "2026-05-04",
       "originalLine": "> [!warning]- `@Res()` disables response mapping"
+    },
+    {
+      "path": "content/aws/cli/profiles-and-credentials.md",
+      "sig": "88ff2c1caf4f49e7b2d74997b0aa747a79c3778e",
+      "rule": "source-verification",
+      "reason": "Verified: https://docs.aws.amazon.com/cli/v1/reference/configure/list-profiles.html 302-redirects to the v1 configure index (no list-profiles entry). The auditor saw a link in cli-configure-files extract pointing at that v1 URL but did not follow the redirect; the v1 reference does not document list-profiles. Original claim 'absent from the v1 configure reference' is correct.",
+      "date": "2026-05-05",
+      "originalLine": "> The subcommand is documented under v2 ([source](https://docs.aws.amazon.com/cli/latest/reference/configure/list-profiles.html)) and absent from the v1 `configure` reference ([source](https://docs.aws.amazon.com/cli/v1/reference/configure/)). If it errors out, read `~/.aws/credentials` and `~/.aws/config` directly, or upgrade to v2."
     }
   ]
 }
