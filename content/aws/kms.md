@@ -22,7 +22,7 @@ source:
   - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
 ---
 
-> AWS Key Management Service is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds|RDS]], EBS (Elastic Block Store), and Secrets Manager call KMS on your behalf to encrypt + decrypt data keys.
+> AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds|RDS]], EBS (Elastic Block Store), and Secrets Manager call KMS on your behalf to encrypt + decrypt data keys.
 
 ## Mental model
 

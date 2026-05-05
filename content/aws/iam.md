@@ -21,7 +21,7 @@ source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
 ---
 
-> AWS Identity and Access Management is the authn + authz layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
+> AWS Identity and Access Management (IAM) is the authn + authz layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
 
 ## Mental model
 
