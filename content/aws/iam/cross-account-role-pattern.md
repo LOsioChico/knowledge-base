@@ -5,8 +5,11 @@ tags: [type/pattern, tech/aws, tech/iam]
 area: aws
 status: evergreen
 related:
-  - "[[aws/index]]"
-  - "[[aws/cross-account-rds-snapshot]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/rds/cross-account-snapshot]]"
+  - "[[aws/s3/cross-account-bucket-migration]]"
+  - "[[aws/cli/profiles-and-credentials]]"
+  - "[[aws/migrations/index]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
   - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
@@ -38,6 +41,13 @@ Per the [IAM cross-account role tutorial](https://docs.aws.amazon.com/IAM/latest
 ## Recipe
 
 Uses two named CLI profiles, `account-a` (resource owner) and `account-b` (caller).
+
+### Pre-flight: confirm profile identities
+
+```bash
+aws sts get-caller-identity --profile account-a --output json
+aws sts get-caller-identity --profile account-b --output json
+```
 
 ### 1. In account A, create the role
 
@@ -95,6 +105,19 @@ aws iam put-role-policy \
   --policy-document file://permission-policy.json
 ```
 
+Verify the role and its inline policies are wired up before continuing ([`aws iam get-role`](https://docs.aws.amazon.com/cli/latest/reference/iam/get-role.html), [`aws iam list-role-policies`](https://docs.aws.amazon.com/cli/latest/reference/iam/list-role-policies.html)):
+
+```bash
+aws iam get-role \
+  --profile account-a \
+  --role-name CrossAccountServiceRole \
+  --query 'Role.{Arn:Arn,Trust:AssumeRolePolicyDocument}' --output json
+
+aws iam list-role-policies \
+  --profile account-a \
+  --role-name CrossAccountServiceRole
+```
+
 ### 2. In account B, grant `sts:AssumeRole`
 
 Add to the Lambda (or ECS task) execution role. Save as `assume-policy.json`:
@@ -131,6 +154,20 @@ aws sts assume-role \
 ```
 
 A successful response with `Credentials` proves the trust + permission chain works before app code runs.
+
+For a permission-only check (no temporary credentials issued), use [`aws iam simulate-principal-policy`](https://docs.aws.amazon.com/cli/latest/reference/iam/simulate-principal-policy.html) against the role:
+
+```bash
+aws iam simulate-principal-policy \
+  --profile account-a \
+  --policy-source-arn arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole \
+  --action-names ses:SendEmail \
+  --resource-arns arn:aws:ses:REGION:ACCOUNT_A_ID:identity/example.com \
+  --query 'EvaluationResults[].{action:EvalActionName,decision:EvalDecision,denied:MatchedStatements[?Effect==`Deny`].SourcePolicyId}' \
+  --output table
+```
+
+A `Decision: allowed` means the action is permitted; anything else lists the policy that denied it.
 
 ### 3. In application code, assume the role at startup
 
@@ -183,7 +220,27 @@ Read the first `AccessDenied` carefully: it names the exact ARN that was checked
 ## Cleanup checklist after the original migration completes
 
 - Migrate the held-back service to the new account when the blocker clears (e.g. SES production access granted).
-- Delete the cross-account role in account A.
-- Remove the `sts:AssumeRole` permission from account B's execution role.
+- Delete the cross-account role in account A:
+
+  ```bash
+  aws iam delete-role-policy \
+    --profile account-a \
+    --role-name CrossAccountServiceRole \
+    --policy-name SesSendOnly
+
+  aws iam delete-role \
+    --profile account-a \
+    --role-name CrossAccountServiceRole
+  ```
+
+- Remove the `sts:AssumeRole` permission from account B's execution role:
+
+  ```bash
+  aws iam delete-role-policy \
+    --profile account-b \
+    --role-name MyLambdaExecutionRole \
+    --policy-name AssumeCrossAccountSes
+  ```
+
 - Remove the role-assumption logic from the application (drop back to the default credential provider chain).
 - Rotate the external ID before the cleanup if it was checked into source control.

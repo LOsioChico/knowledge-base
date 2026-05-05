@@ -7,11 +7,13 @@ aliases:
     amplify domain stuck,
     cloudfront ownership protection,
   ]
-tags: [type/gotcha, tech/aws, tech/cloudfront, tech/amplify, tech/acm]
+tags: [type/gotcha, tech/aws, tech/cloudfront, tech/amplify, tech/acm, tech/route53]
 area: aws
 status: evergreen
 related:
-  - "[[aws/index]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/amplify/cross-account-app-migration]]"
+  - "[[aws/migrations/index]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html
@@ -33,6 +35,42 @@ update the DNS record to correct the problem.
 ```
 
 DNS is correct, you have nothing else claiming the alias today, and you still get the error. Each retry generates a NEW CloudFront target, so updating DNS to chase it is a losing race.
+
+## Diagnose: what currently holds the alias
+
+Before deciding between the documented move path and the workaround below, find out which distribution still claims the alias and what your DNS actually points at:
+
+```bash
+# Which distributions currently list the alias as an alternate domain name?
+aws cloudfront list-distributions \
+  --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, 'app.example.com')].{Id:Id,Domain:DomainName,Status:Status,Enabled:Enabled}" \
+  --output table
+
+# What does DNS actually return for the apex / subdomain?
+aws route53 list-hosted-zones --query 'HostedZones[].{Id:Id,Name:Name}' --output table
+
+aws route53 list-resource-record-sets \
+  --hosted-zone-id /hostedzone/ZXXXXXXXXXXXXX \
+  --query "ResourceRecordSets[?Name=='app.example.com.'].{Type:Type,Value:ResourceRecords[0].Value,Alias:AliasTarget.DNSName}" \
+  --output table
+```
+
+If the Amplify-managed flow is involved, also inspect Amplify's view of the association ([`aws amplify list-domain-associations`](https://docs.aws.amazon.com/cli/latest/reference/amplify/list-domain-associations.html), [`aws amplify get-domain-association`](https://docs.aws.amazon.com/cli/latest/reference/amplify/get-domain-association.html)):
+
+```bash
+aws amplify list-domain-associations \
+  --app-id <APP_ID> \
+  --query 'domainAssociations[].{domain:domainName,status:domainStatus}' \
+  --output table
+
+aws amplify get-domain-association \
+  --app-id <APP_ID> \
+  --domain-name example.com \
+  --query 'domainAssociation.{status:domainStatus,reason:statusReason,subs:subDomains[].subDomainSetting,dns:subDomains[0].dnsRecord,verified:subDomains[0].verified}' \
+  --output json
+```
+
+If `list-distributions` shows a distribution you control still holds the alias, prefer the documented `update-domain-association` move path. The workaround below is for the case where the holding distribution is unreachable or Amplify-managed.
 
 > [!warning] Why retries make it worse
 > When an Amplify-managed certificate fails to validate in time, deleting and recreating the domain association provisions a brand-new CloudFront distribution. The previous distribution may be gone, but the alternate-domain claim is observably not released right away (community reports and AWS Support cases put it at hours, sometimes longer; AWS does not document the duration). Each retry stacks another ghost claim. Don't retry the same broken path; switch strategies instead.
@@ -92,6 +130,18 @@ Empirically unblocks the case where retries against the same prefix keep failing
    ```
 
    CloudFront sees the cert covers the alias, accepts the alternate-domain attachment, and the association moves through `UPDATING` → `AVAILABLE`.
+
+5. **Poll the association** until it settles:
+
+   ```bash
+   aws amplify get-domain-association \
+     --app-id <APP_ID> \
+     --domain-name example.com \
+     --query 'domainAssociation.{status:domainStatus,reason:statusReason,verified:subDomains[0].verified}' \
+     --output json
+   ```
+
+   Expected progression: `PENDING_VERIFICATION` → `IN_PROGRESS` / `UPDATING` → `AVAILABLE`. A stuck `PENDING_VERIFICATION` past 10 minutes usually means the verification CNAME is missing or wrong; re-check `describe-certificate` output against your DNS provider.
 
 ## Cheaper paths that fail
 
