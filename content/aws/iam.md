@@ -12,6 +12,7 @@ related:
   - "[[aws/kms]]"
   - "[[aws/lambda]]"
   - "[[aws/s3]]"
+  - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/recipes/cross-account-snapshot]]"

@@ -4,7 +4,6 @@ aliases:
   - "AWS account migrations"
   - "aws cross-account migration"
   - "account migration playbook"
-  - "simplica we4labs migration"
 tags: [type/moc, tech/aws]
 area: aws
 status: evergreen
@@ -22,6 +21,7 @@ related:
   - "[[aws/iam]]"
   - "[[aws/lambda]]"
   - "[[aws/kms]]"
+  - "[[aws/secrets-manager]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/cli/kms-cheatsheet]]"
 ---
@@ -49,7 +49,7 @@ related:
 | [[aws/amplify\|Amplify]]       | [[aws/recipes/cross-account-app-migration]]    | `create-app` → branch → manual zip deployment → domain-association move.                                                |
 | [[aws/cloudfront\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]         | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                       |
 | [[aws/iam\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]     | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                         |
-| [[aws/kms\|KMS]]               | [[aws/kms]]                                    | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, Secrets Manager.                                  |
+| [[aws/kms\|KMS]]               | [[aws/kms]]                                    | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].         |
 
 ## Recommended order
 

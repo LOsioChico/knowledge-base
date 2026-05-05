@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[aws/iam]]"
   - "[[aws/kms]]"
+  - "[[aws/secrets-manager]]"
   - "[[aws/lambda]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-snapshot]]"
