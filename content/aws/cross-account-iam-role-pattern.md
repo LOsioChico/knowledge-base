@@ -1,0 +1,150 @@
+---
+title: Cross-account IAM assume-role pattern
+aliases: [cross-account role, sts assumerole, partial migration role]
+tags: [type/pattern, tech/aws, tech/iam]
+area: aws
+status: evergreen
+related:
+  - "[[aws/index]]"
+  - "[[aws/cross-account-rds-snapshot]]"
+source:
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
+  - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
+---
+
+> Pattern for partial AWS account migrations: leave a service in the old account and let new-account compute reach it via STS AssumeRole with an external ID and a tightly-scoped permission policy.
+
+When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account IAM role. Most useful during partial migrations where the new account doesn't yet have production access for SES, Bedrock, or any service with a regional approval flow.
+
+## Shape
+
+```text
+account B (new)                      account A (old, partially retained)
+┌────────────────┐                   ┌──────────────────────────┐
+│  Lambda /      │   sts:AssumeRole  │  IAM role with           │
+│  ECS task      │ ────────────────▶ │  ses:SendEmail (or       │
+│  (exec role)   │   temp creds      │  whatever service)       │
+│                │ ◀──────────────── │                          │
+│  Service       │   API call        │  SES / S3 / DynamoDB     │
+│  client        │ ────────────────▶ │  identity in account A   │
+└────────────────┘                   └──────────────────────────┘
+```
+
+Per the [IAM cross-account role tutorial](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), the trust direction is **the role lives in the account that owns the resource**, and the principal in the trust policy is the account (or specific role) that needs access.
+
+## Recipe
+
+### 1. In account A, create the role
+
+Trust policy: allow account B's root principal (or a specific role) to assume.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::ACCOUNT_B_ID:root" },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": { "sts:ExternalId": "your-external-id" }
+      }
+    }
+  ]
+}
+```
+
+> [!warning] Always set an external ID
+> [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured Lambda, a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
+
+Permission policy: only the actions on the specific resource you need.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+      "Resource": [
+        "arn:aws:ses:REGION:ACCOUNT_A_ID:identity/example.com",
+        "arn:aws:ses:REGION:ACCOUNT_A_ID:configuration-set/*"
+      ]
+    }
+  ]
+}
+```
+
+### 2. In account B, grant `sts:AssumeRole`
+
+Add to the Lambda (or ECS task) execution role:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "sts:AssumeRole",
+      "Resource": "arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole"
+    }
+  ]
+}
+```
+
+### 3. In application code, assume the role at startup
+
+```ts
+import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
+import { SESClient } from "@aws-sdk/client-ses";
+
+async function buildSesClient() {
+  const sts = new STSClient({});
+  const res = await sts.send(
+    new AssumeRoleCommand({
+      RoleArn: process.env.SES_ROLE_ARN,
+      RoleSessionName: "my-app",
+      DurationSeconds: 3600,
+      ExternalId: process.env.SES_EXTERNAL_ID,
+    }),
+  );
+  const c = res.Credentials!;
+  return new SESClient({
+    region: "us-east-2",
+    credentials: {
+      accessKeyId: c.AccessKeyId!,
+      secretAccessKey: c.SecretAccessKey!,
+      sessionToken: c.SessionToken!,
+    },
+  });
+}
+```
+
+[`AssumeRole`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) returns short-lived credentials ([`DurationSeconds`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters) defaults to 3600s, max 43200s capped by the role's maximum session duration; **role chaining is capped at 1 hour** and the call fails if you ask for more). For long-running processes, refresh before expiry; the AWS SDK credential provider chain has built-in helpers (e.g. [`fromTemporaryCredentials`](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-credential-providers/Function/fromTemporaryCredentials/) in JS SDK v3) that handle refresh automatically.
+
+## Permission scope traps
+
+The first call after deploying a fresh role will often fail with an unexpected `AccessDenied` because the resource you targeted has more parts than the obvious one. Common offenders:
+
+| Service         | Obvious resource       | Hidden additional resource                                             |
+| --------------- | ---------------------- | ---------------------------------------------------------------------- |
+| SES `SendEmail` | `identity/example.com` | The configuration set attached to the identity (`configuration-set/*`) |
+| S3 `GetObject`  | `bucket/key`           | The bucket itself for some operations (`bucket`)                       |
+| KMS `Decrypt`   | The key                | A grant on the key for ephemeral consumers                             |
+
+Read the first `AccessDenied` carefully: it names the exact ARN that was checked. Add it to the resource list and retry.
+
+## When NOT to use this pattern
+
+- **Both accounts under your control and the service has no migration blocker**: just migrate the service. Each cross-account hop adds latency, a credential-refresh failure mode, and an audit step.
+- **You'd need to refresh credentials more often than once an hour**: for high-throughput callers, the `AssumeRole` overhead and refresh complexity dominate; consider IAM Identity Center or a longer-lived federated mechanism.
+- **The downstream service supports resource policies** (S3, SQS, SNS, KMS): you can often grant cross-account access on the resource itself without an intermediate role, which is simpler.
+
+## Cleanup checklist after the original migration completes
+
+- Migrate the held-back service to the new account when the blocker clears (e.g. SES production access granted).
+- Delete the cross-account role in account A.
+- Remove the `sts:AssumeRole` permission from account B's execution role.
+- Remove the role-assumption logic from the application (drop back to the default credential provider chain).
+- Rotate the external ID before the cleanup if it was checked into source control.

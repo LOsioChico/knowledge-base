@@ -6,6 +6,7 @@ area: root
 status: evergreen
 related:
   - "[[nestjs/index]]"
+  - "[[aws/index]]"
   - "[[inbox]]"
 ---
 
@@ -14,6 +15,7 @@ Welcome to my personal knowledge base. Patterns, gotchas, and notes I keep comin
 ## Areas
 
 - [[nestjs/index|NestJS]]: fundamentals, patterns, data, auth, testing, observability
+- [[aws/index|AWS]]: cross-account migration patterns and gotchas
 
 ## Meta
 
