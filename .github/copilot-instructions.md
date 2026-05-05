@@ -192,6 +192,30 @@ One sentence inline next to the affected line beats one paragraph above the bloc
 
 Advisory only — no automated detector. Audit during the post-edit code-block pass: for each prose claim about runtime behavior near a snippet, verify the snippet itself reflects the claim. See [`kb-author` Audit O](.github/skills/kb-author/audits/O-behavior-in-snippet.md).
 
+### No assumed-knowledge jargon (MANDATORY for all notes)
+
+A reader landing on a note for the first time should not need a second tab open to decode it. Every domain term, acronym, or named feature MUST be either (a) defined inline at first use in 3-10 words, (b) wikilinked to the note that defines it, or (c) replaced with the plain-English behavior it names. Compressed jargon-stacks ("WORM retention feature for concurrent-writer arbitration", "last-writer-wins by S3-side timestamp", "TLS terminator with origin shielding") fail the scan-the-note reader who came to learn the concept, not to confirm vocabulary they already have.
+
+The reflex: when you reach for a noun phrase that took you more than a session of reading to internalize, ask "would the reader who needs this note already know this word?" If no, define it inline (`write-once-read-many (WORM)`, `the request that bypasses the cache and hits the origin`) or rewrite the claim around the observable behavior.
+
+Forbidden (single bullet, three undefined terms in 50 words):
+
+> No object locking for concurrent writers by default. Two PUTs to the same key resolve last-writer-wins by S3-side timestamp; the order is not predictable across clients. S3 Object Lock is a WORM retention feature for delete/overwrite protection, not concurrent-writer arbitration.
+
+Required (lead with the observable behavior; jargon defined inline; trap promoted to a sub-bullet):
+
+> Concurrent writes to the same key: last write wins, unpredictably. If two clients PUT to the same key at the same time, both succeed and S3 keeps the one with the later internal timestamp. You can't tell in advance which client that will be. S3 has no built-in lock for this; if you need ordering, gate writes through your own coordinator (a DynamoDB conditional write, a single-writer queue, etc.).
+>
+> - Don't reach for **S3 Object Lock** here: despite the name, it's a write-once-read-many (WORM) retention feature that prevents delete or overwrite for a fixed period, not a concurrency primitive.
+
+Three patterns to apply when rewriting:
+
+1. **Lead with the observable behavior, not the AWS/Nest/etc. name for it.** "Last write wins" before "last-writer-wins by S3-side timestamp". The named feature, if relevant, can follow.
+2. **Define acronyms on first use.** `WORM (write-once-read-many)`, `MOC (map of content)`, `BPA (Block Public Access)`. After the first definition, the acronym alone is fine.
+3. **Promote name-collision traps to sub-bullets.** When a feature has a misleading name ("S3 Object Lock isn't a lock", "Nest pipes aren't shell pipes"), make the warning a visually-distinct sub-item, not a tail clause of the main sentence.
+
+Advisory only — no automated detector (jargon density is too subjective). Audit during the post-edit reading pass: read each section as if you'd never seen the technology. Flag anything that requires an external glossary lookup. See [`kb-author` Audit P](.github/skills/kb-author/audits/P-no-assumed-jargon.md).
+
 ## Sourcing rule (NON-NEGOTIABLE)
 
 Never write a technical claim from training-data memory. Every fact MUST be verified against primary sources at the moment of writing.
