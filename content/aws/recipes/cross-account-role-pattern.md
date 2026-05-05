@@ -5,10 +5,14 @@ tags: [type/pattern, tech/aws, tech/iam]
 area: aws
 status: evergreen
 related:
-  - "[[aws/iam/index]]"
-  - "[[aws/rds/cross-account-snapshot]]"
+  - "[[aws/iam]]"
+  - "[[aws/kms]]"
+  - "[[aws/lambda]]"
+  - "[[aws/recipes/index]]"
+  - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/cli/profiles-and-credentials]]"
+  - "[[aws/cli/iam-cheatsheet]]"
   - "[[aws/migrations/index]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
@@ -18,7 +22,7 @@ source:
 
 > Pattern for partial AWS account migrations: leave a service in the old account and let new-account compute reach it via STS AssumeRole with an external ID and a tightly-scoped permission policy.
 
-When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account IAM role. Most useful during partial migrations where the new account doesn't yet have production access for SES, Bedrock, or any service with a regional approval flow.
+When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account [[aws/iam|IAM]] role. Most useful during partial migrations where the new account doesn't yet have production access for SES, Bedrock, or any service with a regional approval flow.
 
 ## Shape
 
@@ -70,7 +74,7 @@ Trust policy: allow account B's root principal (or a specific role) to assume. S
 ```
 
 > [!warning] Always set an external ID
-> [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured Lambda, a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
+> [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured [[aws/lambda|Lambda]], a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
 
 Permission policy: only the actions on the specific resource you need. Save as `permission-policy.json`:
 
@@ -204,10 +208,10 @@ async function buildSesClient() {
 The first call after deploying a fresh role will often fail with an unexpected `AccessDenied` because the resource you targeted has more parts than the obvious one. Common offenders:
 
 | Service         | Obvious resource       | Hidden additional resource                                             |
-| --------------- | ---------------------- | ---------------------------------------------------------------------- |
+| --------------- | ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
 | SES `SendEmail` | `identity/example.com` | The configuration set attached to the identity (`configuration-set/*`) |
 | S3 `GetObject`  | `bucket/key`           | The bucket itself for some operations (`bucket`)                       |
-| KMS `Decrypt`   | The key                | A grant on the key for ephemeral consumers                             |
+| [[aws/kms       | KMS]] `Decrypt`        | The key                                                                | A grant on the key for ephemeral consumers |
 
 Read the first `AccessDenied` carefully: it names the exact ARN that was checked. Add it to the resource list and retry.
 

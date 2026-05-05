@@ -12,7 +12,12 @@ related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/query-and-output]]"
   - "[[aws/cli/s3]]"
-  - "[[aws/iam/cross-account-role-pattern]]"
+  - "[[aws/cli/iam-cheatsheet]]"
+  - "[[aws/cli/rds-cheatsheet]]"
+  - "[[aws/iam]]"
+  - "[[aws/kms]]"
+  - "[[aws/rds]]"
+  - "[[aws/recipes/cross-account-role-pattern]]"
 ---
 
 > Use named CLI profiles to drive multiple AWS accounts from one shell; verify which account each profile resolves to with `aws sts get-caller-identity` before any write.
@@ -76,13 +81,13 @@ aws sts get-caller-identity --profile pentica --output json
 aws sts get-caller-identity --profile we4labs --query Arn --output text
 ```
 
-Run this for every profile you're about to use, every time you start a new shell session, before any KMS, IAM, or RDS write.
+Run this for every profile you're about to use, every time you start a new shell session, before any [[aws/kms|KMS]], [[aws/iam|IAM]], or [[aws/rds|RDS]] write.
 
 ## Common patterns
 
 - **Per-shell pinning**: `export AWS_PROFILE=pentica` at the top of a session, then drop `--profile` from individual commands. Easier to read, but `sts get-caller-identity` is still mandatory.
 - **Per-command profile + region**: `aws --profile we4labs --region us-east-1 <service> <verb>` makes each command self-contained, which is what to use in shared snippets and runbooks.
-- **Cross-account assume-role**: a base profile with credentials, plus a derived profile with `role_arn` + `source_profile` in `~/.aws/config`. The CLI calls `sts:AssumeRole` transparently. See [[aws/iam/cross-account-role-pattern|the cross-account role pattern]] for the trust-policy and external-id details.
+- **Cross-account assume-role**: a base profile with credentials, plus a derived profile with `role_arn` + `source_profile` in `~/.aws/config`. The CLI calls `sts:AssumeRole` transparently. See [[aws/recipes/cross-account-role-pattern|the cross-account role pattern]] for the trust-policy and external-id details.
 
 ## Order of credential resolution
 

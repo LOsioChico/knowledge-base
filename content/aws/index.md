@@ -8,39 +8,44 @@ related:
   - "[[index]]"
   - "[[aws/cli/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/iam/index]]"
-  - "[[aws/rds/index]]"
-  - "[[aws/cloudfront/index]]"
-  - "[[aws/amplify/index]]"
+  - "[[aws/iam]]"
+  - "[[aws/rds]]"
+  - "[[aws/cloudfront]]"
+  - "[[aws/amplify]]"
   - "[[aws/s3]]"
-  - "[[aws/kms/index]]"
-  - "[[aws/lambda/index]]"
+  - "[[aws/kms]]"
+  - "[[aws/lambda]]"
   - "[[aws/migrations/index]]"
 ---
 
-> Map of content for AWS. Service notes (`aws/<service>.md` once converted) explain what each service is, how it works, and when to use it; CLI cheatsheets for the same services live under [[aws/cli/index|aws/cli]]; cross-cutting recipes live under [[aws/recipes/index|aws/recipes]]. Folders that still hold an `index.md` are pre-restructure leftovers and will collapse into the same shape as files land.
+> Map of content for AWS. Each service has a concept note at `aws/<service>.md` ("what is it, how does it work, when to use it"); the matching CLI cheatsheet lives at [[aws/cli/index|aws/cli/<service>.md]]; cross-cutting recipes that touch more than one service or don't fit cleanly inside one live under [[aws/recipes/index|aws/recipes]].
 
 ## Foundations
 
-- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns I reach for. Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
+- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns. Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
 
 ## Services
 
 - [[aws/s3|S3]]: object storage. Buckets, keys, consistency model, default privacy.
-- [[aws/iam/index|IAM]]: identities, roles, cross-account trust, permission diagnosis.
-- [[aws/rds/index|RDS]]: relational databases, snapshots, cross-account moves.
-- [[aws/cloudfront/index|CloudFront]]: distributions, alternate domain names, ACM wiring.
-- [[aws/amplify/index|Amplify Hosting]]: app, branch, deployment, domain associations.
-- [[aws/kms/index|KMS]]: customer-managed keys, key policies, cross-account grants.
-- [[aws/lambda/index|Lambda]]: functions, deployments, region pinning.
+- [[aws/iam|IAM]]: identities, roles, policy evaluation, cross-account trust.
+- [[aws/rds|RDS]]: managed relational databases. Snapshots, encryption, multi-AZ.
+- [[aws/cloudfront|CloudFront]]: CDN. Distributions, alternate domain names, edge defaults.
+- [[aws/amplify|Amplify Hosting]]: managed frontend hosting. Apps, branches, deployments, custom domains.
+- [[aws/kms|KMS]]: encryption keys. Customer-managed vs AWS-managed, key policies, cross-account grants.
+- [[aws/lambda|Lambda]]: functions, versions, aliases. (Seed.)
 
 ## Recipes
 
 - [[aws/recipes/index|AWS recipes]]: end-to-end procedures that touch more than one service or don't fit cleanly inside a single service note.
+  - [[aws/recipes/cross-account-bucket-migration|Cross-account S3 bucket migration]]
+  - [[aws/recipes/cross-account-role-pattern|Cross-account IAM role pattern]]
+  - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]
+  - [[aws/recipes/alternate-domain-claim|Alternate-domain ghost claims]]
+  - [[aws/recipes/cross-account-app-migration|Cross-account Amplify app migration]]
 
 ## Cross-cutting workflows
 
-- [[aws/migrations/index|Account migrations]]: end-to-end Simplica → we4labs migration playbook covering RDS, IAM, S3, Amplify and CloudFront in a single narrative, with the per-service recipes linked from each step.
+- [[aws/migrations/index|Account migrations]]: end-to-end migration playbook that stitches the per-service recipes (RDS, IAM, S3, Amplify, CloudFront, KMS) into a single ordered narrative.
 
 ## When to read this area
 

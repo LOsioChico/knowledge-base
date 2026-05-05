@@ -6,7 +6,10 @@ import remarkGfm from "remark-gfm"
 import remarkParse from "remark-parse"
 import { unified } from "unified"
 
-export const DEFAULT_INDEXED_FOLDERS = [{ area: "nestjs", folder: "recipes" }]
+export const DEFAULT_INDEXED_FOLDERS = [
+  { area: "nestjs", folder: "recipes" },
+  { area: "aws", folder: "recipes" },
+]
 
 const SIMILARITY_THRESHOLD = 0.2
 const ADVISORY_SIMILARITY_THRESHOLD = 0.16

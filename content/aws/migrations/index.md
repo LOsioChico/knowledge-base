@@ -6,12 +6,12 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/rds/cross-account-snapshot]]"
-  - "[[aws/iam/cross-account-role-pattern]]"
-  - "[[aws/cloudfront/alternate-domain-claim]]"
-  - "[[aws/amplify/cross-account-app-migration]]"
+  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/recipes/cross-account-role-pattern]]"
+  - "[[aws/recipes/alternate-domain-claim]]"
+  - "[[aws/recipes/cross-account-app-migration]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
-  - "[[aws/kms/index]]"
+  - "[[aws/kms]]"
   - "[[aws/cli/profiles-and-credentials]]"
 ---
 
@@ -27,34 +27,34 @@ related:
 
 1. Set up [[aws/cli/profiles-and-credentials|named CLI profiles]] for both accounts. Convention used in every recipe in this playbook: `account-a` (source), `account-b` (target).
 2. Run `aws sts get-caller-identity --profile account-a` and `--profile account-b` and confirm the `Account` field matches what you expect. Mixing up profiles is the most expensive mistake.
-3. Decide which services are moving today and which (if any) are staying in `account-a` temporarily. Anything staying needs the [[aws/iam/cross-account-role-pattern|cross-account assume-role pattern]] so the new compute can still reach it.
+3. Decide which services are moving today and which (if any) are staying in `account-a` temporarily. Anything staying needs the [[aws/recipes/cross-account-role-pattern|cross-account assume-role pattern]] so the new compute can still reach it.
 
 ## Per-service moves
 
-| Service    | Recipe                                         | What it covers                                                                                  |
-| ---------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| RDS        | [[aws/rds/cross-account-snapshot]]             | Encrypted snapshot share via re-encrypt-with-CMK + restore in target account.                   |
-| S3         | [[aws/recipes/cross-account-bucket-migration]] | Recreate bucket config + cross-account `s3 sync`.                                               |
-| Amplify    | [[aws/amplify/cross-account-app-migration]]    | `create-app` → branch → manual zip deployment → domain-association move.                        |
-| CloudFront | [[aws/cloudfront/alternate-domain-claim]]      | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.               |
-| IAM        | [[aws/iam/cross-account-role-pattern]]         | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account". |
-| KMS        | [[aws/kms/index]]                              | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, Secrets Manager.          |
+| Service                        | Recipe                                         | What it covers                                                                                  |
+| ------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [[aws/rds\|RDS]]               | [[aws/recipes/cross-account-snapshot]]         | Encrypted snapshot share via re-encrypt-with-CMK + restore in target account.                   |
+| [[aws/s3\|S3]]                 | [[aws/recipes/cross-account-bucket-migration]] | Recreate bucket config + cross-account `s3 sync`.                                               |
+| [[aws/amplify\|Amplify]]       | [[aws/recipes/cross-account-app-migration]]    | `create-app` → branch → manual zip deployment → domain-association move.                        |
+| [[aws/cloudfront\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]         | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.               |
+| [[aws/iam\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]     | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account". |
+| [[aws/kms\|KMS]]               | [[aws/kms]]                                    | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, Secrets Manager.          |
 
 ## Recommended order
 
 1. **CLI + identities**: profiles, `sts get-caller-identity` on both sides.
-2. **IAM [[aws/iam/cross-account-role-pattern|cross-account role]](s)**: set them up early so the new account can talk to anything that's staying behind.
+2. **IAM [[aws/recipes/cross-account-role-pattern|cross-account role]](s)**: set them up early so the new account can talk to anything that's staying behind.
 3. **Data services first** (RDS, S3): they take the longest to copy and have the largest rollback windows.
-4. **Compute next** (Lambda, ECS): once the data is in place.
+4. **Compute next** ([[aws/lambda|Lambda]], ECS): once the data is in place.
 5. **Frontend + DNS last** (Amplify, CloudFront, Route53): flipping the domain is the user-visible cutover. Don't do this before the data and compute behind it are validated.
 6. **Cleanup**: revoke cross-account grants, delete the source resources after a comfortable rollback window.
 
 ## Failure modes worth knowing about up front
 
-- **Encrypted snapshots can't be shared with the default service KMS key.** [[aws/rds/cross-account-snapshot|Recipe]] handles the re-encrypt step.
-- **CloudFront alternate-domain claims linger after distribution deletion.** [[aws/cloudfront/alternate-domain-claim|Bypass with your own ACM cert]].
+- **Encrypted snapshots can't be shared with the default service KMS key.** [[aws/recipes/cross-account-snapshot|Recipe]] handles the re-encrypt step.
+- **CloudFront alternate-domain claims linger after distribution deletion.** [[aws/recipes/alternate-domain-claim|Bypass with your own ACM cert]].
 - **Cross-account KMS needs BOTH the owning-account key policy AND an IAM policy on the consumer principal.** Granting only one and wondering why it fails is universal.
-- **`sts:AssumeRole` without `ExternalId` in the trust policy** is a confused-deputy waiting to happen. [[aws/iam/cross-account-role-pattern|Always set one]].
+- **`sts:AssumeRole` without `ExternalId` in the trust policy** is a confused-deputy waiting to happen. [[aws/recipes/cross-account-role-pattern|Always set one]].
 - **Wrong `--profile` on a write command.** Run `aws sts get-caller-identity` first, every time.
 
 ## What's NOT in this playbook (yet)

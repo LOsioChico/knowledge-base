@@ -8,12 +8,15 @@ source:
   - https://docs.aws.amazon.com/cli/latest/reference/amplify/create-deployment.html
   - https://docs.aws.amazon.com/cli/latest/reference/amplify/start-deployment.html
 related:
-  - "[[aws/amplify/index]]"
-  - "[[aws/cloudfront/alternate-domain-claim]]"
+  - "[[aws/amplify]]"
+  - "[[aws/cloudfront]]"
+  - "[[aws/recipes/index]]"
+  - "[[aws/recipes/alternate-domain-claim]]"
+  - "[[aws/cli/amplify-cheatsheet]]"
   - "[[aws/migrations/index]]"
 ---
 
-> Recreate an Amplify Hosting app in a new AWS account by `create-app` → `create-branch` → manual zip deployment via `create-deployment` + `start-deployment`, then move the custom domain. The custom-rules JSON, build env vars, and domain association are all CLI-driven so the move is reproducible.
+> Recreate an [[aws/amplify|Amplify Hosting]] app in a new AWS account by `create-app` → `create-branch` → manual zip deployment via `create-deployment` + `start-deployment`, then move the custom domain. The custom-rules JSON, build env vars, and domain association are all CLI-driven so the move is reproducible.
 
 ## When to use this recipe
 
@@ -153,7 +156,7 @@ The default Amplify URL `https://main.<NEW_APP_ID>.amplifyapp.com` is live as so
 
 ### 6. Move the custom domain
 
-This is where the [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost-claim]] gotcha hits. Read that note before deleting anything in account A.
+This is where the [[aws/recipes/alternate-domain-claim|alternate-domain ghost-claim]] gotcha hits. Read that note before deleting anything in account A.
 
 ```bash
 # Inspect the source association first; capture the subdomain prefixes you'll need to recreate
@@ -215,7 +218,7 @@ Expected progression: `PENDING_VERIFICATION` → `IN_PROGRESS` / `UPDATING` → 
 
 ### 8. Cut traffic over
 
-Update the production CNAME(s) at your DNS provider to point at the new app's CloudFront target (`d<RANDOM>.cloudfront.net`, visible in `get-domain-association` output). Verify with `dig` and a fresh browser before deleting the source app.
+Update the production CNAME(s) at your DNS provider to point at the new app's [[aws/cloudfront|CloudFront]] target (`d<RANDOM>.cloudfront.net`, visible in `get-domain-association` output). Verify with `dig` and a fresh browser before deleting the source app.
 
 ## Cleanup
 

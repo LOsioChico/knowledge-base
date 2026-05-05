@@ -11,8 +11,11 @@ tags: [type/gotcha, tech/aws, tech/cloudfront, tech/amplify, tech/acm, tech/rout
 area: aws
 status: evergreen
 related:
-  - "[[aws/cloudfront/index]]"
-  - "[[aws/amplify/cross-account-app-migration]]"
+  - "[[aws/cloudfront]]"
+  - "[[aws/amplify]]"
+  - "[[aws/recipes/index]]"
+  - "[[aws/recipes/cross-account-app-migration]]"
+  - "[[aws/cli/cloudfront-cheatsheet]]"
   - "[[aws/migrations/index]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions
@@ -20,7 +23,7 @@ source:
   - https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html
 ---
 
-> CloudFront alternate domain names are globally unique across accounts; the documented way to take an alias from another distribution is `update-domain-association`, but if you can't reach that path (Amplify-managed flow, source unreachable) presenting your own ACM certificate is the empirical workaround.
+> [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts; the documented way to take an alias from another distribution is `update-domain-association`, but if you can't reach that path ([[aws/amplify|Amplify]]-managed flow, source unreachable) presenting your own ACM certificate is the empirical workaround.
 
 CloudFront enforces global uniqueness on alternate domain names (CNAMEs): a given domain can be attached to only one distribution at a time, [even across AWS accounts](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions). The trap, especially with Amplify's managed flow, is that retrying a failed domain association can stack lingering claims faster than you can clear them.
 

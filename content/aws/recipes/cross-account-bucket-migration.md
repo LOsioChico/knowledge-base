@@ -8,14 +8,17 @@ source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html
 related:
   - "[[aws/s3]]"
+  - "[[aws/iam]]"
   - "[[aws/cli/s3]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/iam/cross-account-role-pattern]]"
-  - "[[aws/rds/cross-account-snapshot]]"
+  - "[[aws/recipes/cross-account-role-pattern]]"
+  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/kms]]"
+  - "[[aws/rds]]"
   - "[[aws/migrations/index]]"
 ---
 
-> Move an S3 bucket between AWS accounts by inspecting the source bucket's configuration, recreating it in the target account, granting cross-account read on the source, and using `aws s3 sync` (server-side copies) to replicate the contents.
+> Move an S3 bucket between AWS accounts by inspecting the source bucket's configuration, recreating it in the target account, granting cross-account read on the source via [[aws/iam|IAM]] + bucket policy, and using `aws s3 sync` (server-side copies) to replicate the contents.
 
 ## Trade-off vs. cross-account replication
 
@@ -74,7 +77,7 @@ aws s3api put-bucket-encryption \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
-If the source used SSE-KMS with a CMK, replicate the CMK in account B (or share the source CMK to account B, same pattern as [[aws/rds/cross-account-snapshot|RDS cross-account snapshots]]).
+If the source used SSE with a customer-managed [[aws/kms|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
 
 ### 3. Grant account B read on the source bucket
 
@@ -103,7 +106,7 @@ aws s3api put-bucket-policy \
   --policy file://src-bucket-grant.json
 ```
 
-If the source bucket is SSE-KMS-encrypted, also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/rds/cross-account-snapshot|RDS recipe]] step 2).
+If the source bucket is SSE-KMS-encrypted, also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/recipes/cross-account-snapshot|RDS recipe]] step 2).
 
 ### 4. Sync the data
 
