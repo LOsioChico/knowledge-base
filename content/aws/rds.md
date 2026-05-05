@@ -11,6 +11,7 @@ related:
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/kms]]"
   - "[[aws/account-migrations]]"
 source:

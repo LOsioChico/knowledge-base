@@ -11,6 +11,7 @@ related:
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/recipes/cross-account-app-migration]]"
+  - "[[aws/recipes/ec2-snapshot-all-instances]]"
 ---
 
 > Cross-cutting AWS recipes that span more than one service or that don't belong inside a single service note. The per-service "what is X / how does X work" framing lives one level up at [[aws/index|aws/index]]; runnable end-to-end procedures live here.
@@ -22,3 +23,4 @@ related:
 - [[aws/rds|RDS]] / [[aws/recipes/cross-account-snapshot|cross-account snapshot]]: re-encrypt under a customer-managed [[aws/kms|KMS]] key (CMK), share the snapshot, restore in the destination account.
 - [[aws/cloudfront|CloudFront]] / [[aws/recipes/alternate-domain-claim|alternate-domain ghost claims]]: bypass `CNAMEAlreadyExists` when the alias is still held by a deleted distribution.
 - [[aws/amplify|Amplify Hosting]] / [[aws/recipes/cross-account-app-migration|cross-account app migration]]: rebuild the app in the destination via the zip-deployment path, then reattach the custom domain.
+- EC2 / [[aws/recipes/ec2-snapshot-all-instances|snapshot every EC2 instance with AMIs]]: one-shot AMI per running/stopped instance, tagged for batch restore or cleanup.

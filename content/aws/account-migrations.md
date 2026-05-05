@@ -13,6 +13,7 @@ related:
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/recipes/cross-account-app-migration]]"
+  - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/rds]]"
   - "[[aws/s3]]"
