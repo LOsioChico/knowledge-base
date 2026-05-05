@@ -207,11 +207,11 @@ async function buildSesClient() {
 
 The first call after deploying a fresh role will often fail with an unexpected `AccessDenied` because the resource you targeted has more parts than the obvious one. Common offenders:
 
-| Service         | Obvious resource       | Hidden additional resource                                             |
-| --------------- | ---------------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
-| SES `SendEmail` | `identity/example.com` | The configuration set attached to the identity (`configuration-set/*`) |
-| S3 `GetObject`  | `bucket/key`           | The bucket itself for some operations (`bucket`)                       |
-| [[aws/kms       | KMS]] `Decrypt`        | The key                                                                | A grant on the key for ephemeral consumers |
+| Service                    | Obvious resource       | Hidden additional resource                                             |
+| -------------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| SES `SendEmail`            | `identity/example.com` | The configuration set attached to the identity (`configuration-set/*`) |
+| S3 `GetObject`             | `bucket/key`           | The bucket itself for some operations (`bucket`)                       |
+| [[aws/kms\|KMS]] `Decrypt` | The key                | A grant on the key for ephemeral consumers                             |
 
 Read the first `AccessDenied` carefully: it names the exact ARN that was checked. Add it to the resource list and retry.
 

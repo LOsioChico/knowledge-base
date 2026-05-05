@@ -29,10 +29,10 @@ Every AWS API call is signed by a **principal** (an IAM user, an IAM role sessio
 Principals you'll touch directly come in three shapes (the JSON `Principal` element [recognizes more](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html#Principal_specifying): role sessions, federated users, AWS service principals, and `"*"` for any principal):
 
 | Principal kind | Long-lived credentials?                          | Use for                                                                                                                                                                                                      |
-| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Root user**  | Yes (account password + access keys)             | Only the [tasks that require root credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#root-user-tasks) (account close, billing settings, a handful of others). Then never again. |
 | **IAM user**   | Yes (password, access keys)                      | Avoid for new workloads. Real humans should federate via IAM Identity Center (the AWS-managed single sign-on, SSO, service, formerly AWS SSO).                                                               |
-| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda                                                                                                                                                                         | Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account access is `sts:AssumeRole`. |
+| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account access is `sts:AssumeRole`.                                                     |
 
 ## Policies
 
@@ -41,7 +41,7 @@ Permissions live on **policies**, JSON documents that grant or deny actions on r
 - **Identity-based policies** attach to a user, group, or role and say "this principal can do X on Y".
 - **Resource-based policies** attach to a resource (S3 bucket, [[aws/kms|KMS]] key, SNS topic, IAM role trust policy) and say "these principals can do X on me". This is what makes cross-account access possible without first creating a user in the other account.
 
-Evaluation rule of thumb: an action is allowed only if **at least one** policy explicitly allows it AND **no** policy explicitly denies it. Default is deny. Service Control Policies (org-level) and permission boundaries are evaluated as **intersections** with the identity policy: an action must be allowed by all of them ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The mental model "they subtract, never add" is correct in effect because intersection cannot expand the allow set.
+Evaluation rule of thumb: an action is allowed only if **at least one** policy explicitly allows it AND **no** policy explicitly denies it. Default is deny. Service Control Policies (SCPs, org-level), Resource Control Policies (RCPs, org-level), and permission boundaries are evaluated as **intersections** with the identity policy: for an Organizations member account, an action must be allowed by all of them ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The mental model "they subtract, never add" is correct in effect because intersection cannot expand the allow set.
 
 ## Cross-account access
 
@@ -59,7 +59,7 @@ Most "why does this fail with `AccessDenied`?" questions resolve by asking, in o
 1. **Who is the caller?** `aws sts get-caller-identity` confirms which principal AWS sees. Wrong CLI profile is the #1 cause of mystery denials.
 2. **What policies attach to that principal?** Identity policies (managed + inline) AND group memberships AND any session policies passed at assume-role time.
 3. **What does the resource policy say?** S3 buckets, KMS keys, and SNS topics can deny even when the identity policy allows.
-4. **Is there an explicit deny somewhere up the chain?** Service control policies (SCPs), permission boundaries, and session policies all subtract.
+4. **Is there an explicit deny somewhere up the chain?** Service control policies (SCPs), resource control policies (RCPs), permission boundaries, and session policies all subtract.
 5. **Simulate.** `iam simulate-principal-policy` evaluates the same chain AWS does and tells you which statement decided the call.
 
 The exact commands are in the [[aws/cli/iam-cheatsheet|IAM CLI cheatsheet]].

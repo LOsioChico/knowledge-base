@@ -70,7 +70,14 @@ KEY_ID=$(aws kms create-key \
   --query KeyMetadata.KeyId --output text)
 ```
 
-`json` keeps quotes around strings; `text` does not. `text` also strips field names, so the order of fields in your `--query` projection becomes the column order in output: keep it stable across runs.
+`json` keeps quotes around strings; `text` does not. `text` also strips field names. **Important:** `text` columns are sorted **alphabetically** by the underlying JSON key names regardless of the order you write them in a `{...}` projection ([source](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-output-format.html#cli-usage-output-format-text)). To pin column order, use the list-projection syntax `[key1, key2, ...]`:
+
+```bash
+# Stable column order: NAME first, RUNTIME second, regardless of underlying key names.
+aws lambda list-functions \
+  --query 'Functions[].[FunctionName, Runtime, LastModified]' \
+  --output text
+```
 
 ## Combining with : max-items and pagination
 

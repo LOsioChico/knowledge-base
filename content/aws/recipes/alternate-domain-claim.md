@@ -114,7 +114,7 @@ Empirically unblocks the case where retries against the same prefix keep failing
      --query 'Certificate.DomainValidationOptions[].ResourceRecord' --output table
    ```
 
-   ACM polls every minute or so; certs typically issue in under five minutes once the record is live. AWS documents the upper bound as up to 30 minutes for the certificate status to move to `ISSUED` ([source](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#dns-validation)).
+   ACM polls DNS for the verification CNAME and issues the certificate once it appears; AWS documents a hard timeout of **72 hours** with `Validation timed out` if the record never resolves ([source](https://docs.aws.amazon.com/acm/latest/userguide/troubleshooting-DNS-validation.html)). In practice issuance takes minutes once the record is live, but AWS does not publish a typical latency.
 
 3. **Wait for `Status: ISSUED`** before proceeding:
 

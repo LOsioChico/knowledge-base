@@ -22,7 +22,6 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts
   - https://github.com/nestjs/nest/blob/master/packages/core/index.ts
   - https://github.com/nestjs/nest/blob/master/packages/common/package.json
-  - https://typeorm.io/repository-api
   - https://www.prisma.io/docs/orm/prisma-client/queries
   - https://mongoosejs.com/docs/tutorials/lean.html
 ---
@@ -247,15 +246,15 @@ Same data, different type, very different blast radius.
 
 ### How your ORM affects this
 
-The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `classToPlain(user)`. The trap: not every ORM gives you class instances. The exact return shapes are documented per library: [TypeORM `Repository` API](https://typeorm.io/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html).
+The handler is free to use every field of a class instance: `user.password`, hash comparisons, audit logs all work. The stripping happens **after** `return`, when the interceptor calls `classToPlain(user)`. The trap: not every ORM gives you class instances. The exact return shapes are documented per library: [TypeORM `Repository` API](https://typeorm.io/docs/working-with-entity-manager/repository-api), [Prisma client output types](https://www.prisma.io/docs/orm/prisma-client/queries#queries-and-result-types), [Mongoose `.lean()`](https://mongoosejs.com/docs/tutorials/lean.html).
 
-| Source                                             | What you get back                | `@Exclude()` works? | Fix                                        |
-| -------------------------------------------------- | -------------------------------- | :-----------------: | ------------------------------------------ |
-| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance       |         ✅          | None needed                                |
-| Prisma `prisma.user.findUnique(...)`               | Plain object (generated TS type) |         ❌          | `return plainToInstance(UserEntity, user)` |
-| Mongoose `.lean()`                                 | Plain object                     |         ❌          | `return plainToInstance(UserEntity, doc)`  |
-| Raw SQL via `dataSource.query(...)`                | Plain object                     |         ❌          | `return plainToInstance(UserEntity, row)`  |
-| `fetch()` / external HTTP call                     | Plain object                     |         ❌          | `return plainToInstance(UserEntity, body)` |
+| Source                                             | What you get back                                                                                                                                   | `@Exclude()` works? | Fix                                        |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | :-----------------: | ------------------------------------------ |
+| TypeORM `repository.findOne(...)` with `@Entity()` | Real `UserEntity` instance ([source](https://typeorm.io/docs/working-with-entity-manager/repository-api))                                           |         ✅          | None needed                                |
+| Prisma `prisma.user.findUnique(...)`               | Plain object (generated TS type)                                                                                                                    |         ❌          | `return plainToInstance(UserEntity, user)` |
+| Mongoose `.lean()`                                 | Plain object                                                                                                                                        |         ❌          | `return plainToInstance(UserEntity, doc)`  |
+| Raw SQL via `dataSource.query(...)`                | Plain object ([source](https://typeorm.io/docs/working-with-entity-manager/repository-api): `query - Executes a raw SQL query` returning `rawData`) |         ❌          | `return plainToInstance(UserEntity, row)`  |
+| `fetch()` / external HTTP call                     | Plain object                                                                                                                                        |         ❌          | `return plainToInstance(UserEntity, body)` |
 
 Mental check: if `console.log(returned instanceof UserEntity)` would print `false` right before `return`, serialization is silently skipped. Wrap with `plainToInstance(UserEntity, raw)` (or `new UserEntity(raw)` if your constructor copies fields).
 
