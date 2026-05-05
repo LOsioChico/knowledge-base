@@ -17,7 +17,7 @@ related:
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/cli/kms-cheatsheet]]"
   - "[[aws/cli/rds-cheatsheet]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 ---
 
 > Move an encrypted [[aws/rds|RDS]] database between AWS accounts by sharing a snapshot: the trap is that the default service [[aws/kms|KMS]] key cannot be shared, so a re-encrypt copy step is required first.

@@ -11,6 +11,7 @@ related:
   - "[[aws/recipes/cross-account-app-migration]]"
   - "[[aws/amplify]]"
   - "[[aws/s3]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html

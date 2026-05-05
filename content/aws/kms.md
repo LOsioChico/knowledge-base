@@ -13,6 +13,7 @@ related:
   - "[[aws/rds]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
 unrelated:
   - "[[aws/s3]]"

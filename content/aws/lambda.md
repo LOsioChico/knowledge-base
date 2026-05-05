@@ -11,7 +11,7 @@ related:
   - "[[aws/amplify]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
 ---

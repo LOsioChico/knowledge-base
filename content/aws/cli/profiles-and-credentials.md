@@ -17,6 +17,7 @@ related:
   - "[[aws/iam]]"
   - "[[aws/kms]]"
   - "[[aws/rds]]"
+  - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
 ---
 

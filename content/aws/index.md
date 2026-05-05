@@ -15,7 +15,7 @@ related:
   - "[[aws/s3]]"
   - "[[aws/kms]]"
   - "[[aws/lambda]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 ---
 
 > Map of content for AWS. Each service has a concept note at `aws/<service>.md` ("what is it, how does it work, when to use it"); the matching CLI cheatsheet lives at [[aws/cli/index|aws/cli/<service>.md]]; cross-cutting recipes that touch more than one service or don't fit cleanly inside one live under [[aws/recipes/index|aws/recipes]].
@@ -45,7 +45,7 @@ related:
 
 ## Cross-cutting workflows
 
-- [[aws/migrations/index|Account migrations]]: end-to-end migration playbook that stitches the per-service recipes (RDS, IAM, S3, Amplify, CloudFront, KMS) into a single ordered narrative.
+- [[aws/account-migrations|Account migrations]]: end-to-end migration playbook that stitches the per-service recipes (RDS, IAM, S3, Amplify, CloudFront, KMS) into a single ordered narrative.
 
 ## When to read this area
 

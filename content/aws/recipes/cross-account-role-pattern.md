@@ -13,14 +13,14 @@ related:
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/cli/iam-cheatsheet]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
   - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
 ---
 
-> Pattern for partial AWS account migrations: leave a service in the old account and let new-account compute reach it via STS AssumeRole with an external ID and a tightly-scoped permission policy.
+> Pattern for partial [[aws/account-migrations|AWS account migrations]]: leave a service in the old account and let new-account compute reach it via STS AssumeRole with an external ID and a tightly-scoped permission policy.
 
 When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account [[aws/iam|IAM]] role. Most useful during partial migrations where the new account doesn't yet have production access for SES, Bedrock, or any service with a regional approval flow.
 

@@ -13,7 +13,7 @@ related:
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/cli/amplify-cheatsheet]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 ---
 
 > Recreate an [[aws/amplify|Amplify Hosting]] app in a new AWS account by `create-app` → `create-branch` → manual zip deployment via `create-deployment` + `start-deployment`, then move the custom domain. The custom-rules JSON, build env vars, and domain association are all CLI-driven so the move is reproducible.

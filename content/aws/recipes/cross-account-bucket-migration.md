@@ -15,7 +15,7 @@ related:
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/kms]]"
   - "[[aws/rds]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 ---
 
 > Move an S3 bucket between AWS accounts by inspecting the source bucket's configuration, recreating it in the target account, granting cross-account read on the source via [[aws/iam|IAM]] + bucket policy, and using `aws s3 sync` (server-side copies) to replicate the contents.

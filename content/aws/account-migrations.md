@@ -1,6 +1,10 @@
 ---
-title: AWS account migrations
-aliases: [aws cross-account migration, account migration playbook, simplica we4labs migration]
+title: Account migrations
+aliases:
+  - "AWS account migrations"
+  - "aws cross-account migration"
+  - "account migration playbook"
+  - "simplica we4labs migration"
 tags: [type/moc, tech/aws]
 area: aws
 status: evergreen
@@ -11,6 +15,12 @@ related:
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/recipes/cross-account-app-migration]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/rds]]"
+  - "[[aws/s3]]"
+  - "[[aws/amplify]]"
+  - "[[aws/cloudfront]]"
+  - "[[aws/iam]]"
+  - "[[aws/lambda]]"
   - "[[aws/kms]]"
   - "[[aws/cli/profiles-and-credentials]]"
 ---

@@ -16,7 +16,7 @@ related:
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-app-migration]]"
   - "[[aws/cli/cloudfront-cheatsheet]]"
-  - "[[aws/migrations/index]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html

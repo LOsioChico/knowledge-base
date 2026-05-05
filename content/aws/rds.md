@@ -12,6 +12,7 @@ related:
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/kms]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html

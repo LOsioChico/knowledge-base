@@ -15,6 +15,7 @@ related:
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
