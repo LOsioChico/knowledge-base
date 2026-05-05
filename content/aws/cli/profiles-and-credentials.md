@@ -48,7 +48,7 @@ aws_access_key_id = AKIA...
 aws_secret_access_key = ...
 ```
 
-For SSO-backed profiles, [`aws configure sso`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) writes the `sso_session` block and you authenticate with `aws sso login --profile <name>`; no long-lived keys live on disk.
+For single sign-on (SSO)-backed profiles, [`aws configure sso`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) writes the `sso_session` block and you authenticate with `aws sso login --profile <name>`; no long-lived keys live on disk.
 
 ## Inspect what's configured
 
@@ -68,7 +68,7 @@ aws configure get region --profile pentica
 
 ## Confirm which account a profile points at
 
-The most expensive mistake when juggling profiles is running a write against the wrong account. [`aws sts get-caller-identity`](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) is the universal pre-flight check: it returns the account, ARN, and UserId for whichever credentials the CLI just resolved.
+The most expensive mistake when juggling profiles is running a write against the wrong account. [`aws sts get-caller-identity`](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) is the universal pre-flight check: it returns the account, ARN (Amazon Resource Name), and UserId for whichever credentials the CLI just resolved.
 
 ```bash
 aws sts get-caller-identity --profile pentica --output json
@@ -91,4 +91,4 @@ Run this for every profile you're about to use, every time you start a new shell
 
 ## Order of credential resolution
 
-The CLI walks the standard chain: explicit env vars (`AWS_ACCESS_KEY_ID`, ...) → `--profile` flag → `AWS_PROFILE` → `default` profile → IMDS (on EC2). The first source that yields a usable identity wins, and `sts get-caller-identity` will tell you exactly which one.
+The CLI walks the standard chain: explicit env vars (`AWS_ACCESS_KEY_ID`, ...) → `--profile` flag → `AWS_PROFILE` → `default` profile → the instance metadata service (IMDS) on EC2. The first source that yields a usable identity wins, and `sts get-caller-identity` will tell you exactly which one.

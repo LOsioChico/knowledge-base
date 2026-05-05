@@ -31,7 +31,7 @@ The four primitives:
 
 | Primitive              | What it is                                                                                                                                                                     |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **App**                | Top-level container. Has a name, a platform (`WEB`, `WEB_COMPUTE` for SSR), build settings, env vars, custom rewrite rules.                                                    |
+| **App**                | Top-level container. Has a name, a platform (`WEB`, `WEB_COMPUTE` for server-side rendering, SSR), build settings, env vars, custom rewrite rules.                             |
 | **Branch**             | Per-environment config: which git branch to track (or no git, for zip-only), which env vars, which stage (`PRODUCTION`/`STAGING`/`DEVELOPMENT`/`PULL_REQUEST`/`EXPERIMENTAL`). |
 | **Deployment / Job**   | One build. `JobType` is `RELEASE` (git push), `RETRY`, `MANUAL` (zip upload), or `WEB_HOOK`.                                                                                   |
 | **Domain association** | Custom hostnames mapped to branches (`app.example.com` → `main`, `staging.example.com` → `staging`).                                                                           |
@@ -54,9 +54,9 @@ Amplify owns the ACM certificate, the CloudFront distribution, the alias claim, 
 
 ## When to use Amplify Hosting vs. something else
 
-- **Use Amplify Hosting** for: SPA frontends with a build step, Next.js SSR (the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
-- **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, [[aws/lambda|Lambda]]@Edge): use S3 + CloudFront directly.
-- **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services. Amplify Hosting itself ships full-stack and Amplify Gen 2 lets you co-deploy data/auth/storage from the same project ([source](https://docs.aws.amazon.com/amplify/latest/userguide/deploy-backend.html)); when those managed primitives don't fit (long-running workers, custom containers, non-Node runtimes), provision compute on [[aws/lambda|Lambda]], ECS, or App Runner instead.
+- **Use Amplify Hosting** for: single-page app (SPA) frontends with a build step, Next.js SSR (the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
+- **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, [[aws/lambda|Lambda]]@Edge: Lambda functions that run at CloudFront edge locations): use S3 + CloudFront directly.
+- **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services. Amplify Hosting itself ships full-stack and Amplify Gen 2 (the code-first successor to the original Amplify CLI) lets you co-deploy data/auth/storage from the same project ([source](https://docs.aws.amazon.com/amplify/latest/userguide/deploy-backend.html)); when those managed primitives don't fit (long-running workers, custom containers, non-Node runtimes), provision compute on [[aws/lambda|Lambda]], ECS, or App Runner (the managed-container service for source-to-URL deployments) instead.
 
 ## See also
 

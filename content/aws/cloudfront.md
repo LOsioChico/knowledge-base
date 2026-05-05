@@ -31,7 +31,7 @@ A **distribution** is the unit of "I have a CDN endpoint". Each distribution has
 
 Defaults to know:
 
-- Default TTL is 24h. Most teams discover this when a deploy looks fine in `curl` against the origin but stale in the browser. Either set the TTL low and rely on origin `Cache-Control`, or invalidate explicitly after each deploy (`aws cloudfront create-invalidation --paths '/*'` is the lazy nuke).
+- Default TTL (time to live) is 24h. Most teams discover this when a deploy looks fine in `curl` against the origin but stale in the browser. Either set the TTL low and rely on origin `Cache-Control`, or invalidate explicitly after each deploy (`aws cloudfront create-invalidation --paths '/*'` is the lazy nuke).
 - The lookup key by default is just the path. Forwarded headers, cookies, and query strings are opt-in and each one fragments the lookup. Adding `Authorization` to the key is what turns a CDN into "free origin proxy" by accident.
 - `Cache-Control: no-store` from the origin is honored. `no-cache` is honored too but means "revalidate", not "skip the edge": a common source of unexpected origin load.
 
@@ -50,7 +50,7 @@ The collision matters because in practice the source distribution is often unrea
 
 ## When to use CloudFront vs. something else
 
-- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical SPA setup), serving API responses at the edge, custom domain + TLS in front of an ALB, geo-restricted distribution.
+- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical single-page app, SPA, setup), serving API responses at the edge, custom domain + TLS in front of an ALB, geo-restricted distribution.
 - **Don't use CloudFront** as a load balancer: it's an edge proxy, not a balancer. Put an ALB in front of your origins; put CloudFront in front of the ALB if you also need edge serving.
 - **Don't use CloudFront** for low-latency dynamic API responses with tight key constraints: each forwarded header/cookie/query-string fragments the lookup.
 
