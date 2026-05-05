@@ -58,7 +58,7 @@ End-to-end recipe: [[aws/recipes/cross-account-role-pattern|cross-account assume
 Most "why does this fail with `AccessDenied`?" questions resolve by asking, in order:
 
 1. **Who is the caller?** `aws sts get-caller-identity` confirms which principal AWS sees. Wrong CLI profile is the #1 cause of mystery denials.
-2. **What policies attach to that principal?** Identity policies (managed + inline) AND group memberships AND any session policies passed at assume-role time.
+2. **What policies attach to that principal?** Identity policies (managed, reusable across principals, plus inline, embedded in one principal) AND group memberships AND any session policies (extra constraints injected at `AssumeRole` time, can only narrow, never widen).
 3. **What does the resource policy say?** S3 buckets, KMS keys, and SNS topics can deny even when the identity policy allows.
 4. **Is there an explicit deny somewhere up the chain?** Service control policies (SCPs), resource control policies (RCPs), permission boundaries, and session policies all subtract.
 5. **Simulate.** `iam simulate-principal-policy` evaluates the same chain AWS does and tells you which statement decided the call.

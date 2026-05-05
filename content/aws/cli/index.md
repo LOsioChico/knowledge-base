@@ -22,7 +22,7 @@ related:
 ## CLI fundamentals
 
 - [[aws/cli/profiles-and-credentials|Profiles and credentials]]: named profiles, `--profile`, `~/.aws/config`, `aws sts get-caller-identity` as the universal sanity check.
-- [[aws/cli/query-and-output|Query and output]]: `--query` (JMESPath), `--output {json,table,text}`, picking shapes that survive in a script.
+- [[aws/cli/query-and-output|Query and output]]: `--query` (uses JMESPath, AWS CLI's JSON query language), `--output {json,table,text}`, picking shapes that survive in a script.
 
 ## Per-service cheatsheets
 

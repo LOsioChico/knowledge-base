@@ -21,7 +21,7 @@ related:
 ## When to use this recipe
 
 - The Amplify-hosted frontend has to live in a new AWS account (account ownership change, billing split, sandbox graduation).
-- The git connection in the source app uses an OAuth token tied to a person who's leaving: easier to skip the git connection on the new app and push deployments via zip from CI you already control.
+- The git connection in the source app uses an OAuth (open delegated-authorization) token tied to a person who's leaving: easier to skip the git connection on the new app and push deployments via zip from CI (the continuous integration pipeline) you already control.
 - You want a deterministic, scriptable migration so you can dry-run it in a staging account first.
 
 ## Recipe
@@ -70,7 +70,7 @@ aws amplify get-branch \
 
 ### 2. Create the app in account B
 
-The `--custom-rules` value is the SPA rewrite that returns `index.html` for any unmatched path with a 404→200 status code; without it client-side routing breaks on hard refresh ([Amplify rewrites and redirects](https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html)).
+The `--custom-rules` value is the SPA (single-page app) rewrite that returns `index.html` for any unmatched path with a 404→200 status code; without it client-side routing breaks on hard refresh ([Amplify rewrites and redirects](https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html)).
 
 ```bash
 NEW_APP_ID=$(aws amplify create-app \

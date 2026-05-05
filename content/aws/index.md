@@ -22,14 +22,14 @@ related:
 
 ## Foundations
 
-- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns. Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
+- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns (the JSON query language behind `--query`). Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
 
 ## Services
 
-- [[aws/s3|S3]]: object storage. Buckets, keys, consistency model, default privacy.
+- [[aws/s3|S3, the Simple Storage Service]]: object storage. Buckets, keys, read-after-write consistency, default privacy.
 - [[aws/iam|IAM]]: identities, roles, policy evaluation, cross-account trust.
-- [[aws/rds|RDS]]: managed relational databases. Snapshots, encryption, multi-AZ.
-- [[aws/cloudfront|CloudFront]]: CDN. Distributions, alternate domain names, edge defaults.
+- [[aws/rds|RDS]] (Relational Database Service): managed relational databases. Snapshots, encryption, multi-AZ (replication across two Availability Zones for failover).
+- [[aws/cloudfront|CloudFront]]: content delivery network (CDN). Distributions, alternate domain names, edge (point-of-presence) defaults.
 - [[aws/amplify|Amplify Hosting]]: managed frontend hosting. Apps, branches, deployments, custom domains.
 - [[aws/kms|KMS]]: encryption keys. Customer-managed vs AWS-managed, key policies, cross-account grants.
 - [[aws/lambda|Lambda]]: functions, versions, aliases. (Seed.)

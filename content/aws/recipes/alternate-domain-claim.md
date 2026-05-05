@@ -162,5 +162,5 @@ If you can't or won't manage your own cert, the only remaining option is **time*
 ## Operational notes
 
 - Custom certs in Amplify do not auto-renew through Amplify; ACM renews them automatically as long as the verification CNAME stays in DNS. Don't delete the verification record after issuance.
-- A wildcard cert covers exactly one level (`*.example.com` covers `app.example.com` but not `api.app.example.com`). For nested levels, request additional SANs.
+- A wildcard cert covers exactly one level (`*.example.com` covers `app.example.com` but not `api.app.example.com`). For nested levels, request additional SANs (Subject Alternative Names, the X.509 extension that lets one cert cover multiple hostnames).
 - The ghost-claim store also affects non-Amplify CloudFront usage (custom distributions, S3 hosting). The same ACM bypass applies.

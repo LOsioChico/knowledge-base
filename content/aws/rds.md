@@ -18,19 +18,19 @@ source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html
 ---
 
-> Amazon RDS is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group. Day-to-day commands live in the [[aws/cli/rds-cheatsheet|RDS CLI cheatsheet]].
+> Amazon RDS (Relational Database Service) is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group (the bundle of engine configuration like `max_connections`, `shared_buffers`). Day-to-day commands live in the [[aws/cli/rds-cheatsheet|RDS CLI cheatsheet]].
 
 ## Mental model
 
 An **RDS instance** is one engine (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, or Aurora-flavored Postgres/MySQL) running on one EC2-class host that AWS manages for you. You connect to it like any other database: `host:port` + credentials. RDS handles backups, minor-version upgrades, host replacement on hardware failure, and (when configured) cross-AZ failover.
 
-The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent point-in-time copies of the storage volume, are encrypted with the same [[aws/kms|KMS]] key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class.
+The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent (taken without quiescing the engine, equivalent to recovering from a sudden power-off) point-in-time copies of the storage volume, are encrypted with the same [[aws/kms|KMS]] key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class.
 
 ## What RDS gives you for free
 
 - **Automated backups** (daily snapshot + transaction log shipping) with point-in-time restore inside the configured retention window (1–35 days). Default is 7 days; set it to the regulatory minimum, not the AWS default.
 - **Multi-AZ** with a synchronous standby in another Availability Zone for production workloads. Failover is automatic on host loss; ~60–120s of unavailability ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html)). The standby is invisible to your application: same endpoint, same DNS.
-- **Read replicas** (async logical replication for engines that support it). Same Region or cross-Region. Replicas can be promoted to standalone primaries for blue/green migrations.
+- **Read replicas** (async logical replication for engines that support it). Same Region or cross-Region. Replicas can be promoted to standalone primaries for blue/green migrations (run the new version alongside the old, then cut traffic over).
 - **Encryption at rest** when you enable it at create time, backed by a KMS key. **You cannot enable encryption on an existing unencrypted instance**; the only path is snapshot → copy with a CMK → restore.
 
 ## Snapshots are the migration primitive
@@ -57,7 +57,7 @@ For any new RDS instance, the boring-but-correct defaults are:
 - Deletion protection on (turn off only when you actually mean to delete).
 - Encryption on, customer-managed KMS key (gives you the option to migrate later without the re-encrypt step).
 - Automatic minor-version upgrades on; pick a maintenance window when traffic is lowest.
-- Performance Insights on (free tier covers 7 days of metrics; saves you the next debugging session).
+- Performance Insights on (the built-in database load + top-SQL dashboard; free tier covers 7 days of metrics, saves you the next debugging session).
 
 ## See also
 

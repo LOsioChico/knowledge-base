@@ -52,7 +52,7 @@ Uses two named CLI profiles, `account-a` (source) and `account-b` (target). Repl
 
 ### Pre-flight: confirm which account each profile points at
 
-Mixing up profiles is the most expensive mistake here ([`aws sts get-caller-identity`](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) returns the caller account/ARN/UserId for the active credentials):
+Mixing up profiles is the most expensive mistake here ([`aws sts get-caller-identity`](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) returns the caller account/ARN (Amazon Resource Name) /UserId for the active credentials):
 
 ```bash
 aws sts get-caller-identity --profile account-a --output json

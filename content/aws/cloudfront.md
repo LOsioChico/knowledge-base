@@ -51,7 +51,7 @@ The collision matters because in practice the source distribution is often unrea
 
 ## When to use CloudFront vs. something else
 
-- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical single-page app, SPA, setup), serving API responses at the edge, custom domain + TLS in front of an ALB, geo-restricted distribution.
+- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical single-page app, SPA, setup), serving API responses at the edge, custom domain + TLS in front of an ALB (Application Load Balancer), geo-restricted distribution.
 - **Don't use CloudFront** as a load balancer: it's an edge proxy, not a balancer. Put an ALB in front of your origins; put CloudFront in front of the ALB if you also need edge serving.
 - **Don't use CloudFront** for low-latency dynamic API responses with tight key constraints: each forwarded header/cookie/query-string fragments the lookup.
 

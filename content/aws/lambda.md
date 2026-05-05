@@ -16,7 +16,7 @@ source:
   - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
 ---
 
-> AWS Lambda is the "give me a function, I'll run it on demand" compute primitive: you ship code + a handler name + a runtime, AWS provisions and tears down execution environments to match incoming requests, and you pay per invocation + GB-second.
+> AWS Lambda is the "give me a function, I'll run it on demand" compute primitive: you ship code + a handler name + a runtime, AWS provisions and tears down execution environments to match incoming requests, and you pay per invocation + GB-second (gigabytes of memory × seconds of execution time).
 
 ## Mental model
 
@@ -28,7 +28,7 @@ The pieces:
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
 | **Function**                 | The named unit. Has a runtime, a handler, code (zip or container image), env vars.                                                                                                         |
 | **Execution role**           | [[aws/iam                                                                                                                                                                                  | IAM]] role the function runs as. This is what calls to other AWS services use. |
-| **Triggers / event sources** | What invokes the function (API Gateway, SQS, S3 event, EventBridge, Function URL, direct invoke).                                                                                          |
+| **Triggers / event sources** | What invokes the function (API Gateway, SQS, S3 event, EventBridge (managed event bus), Function URL, direct invoke).                                                                      |
 | **Versions + aliases**       | Versions are immutable snapshots of the function; aliases are re-pointable names. Use aliases (`prod`, `staging`) in triggers so you can flip traffic without touching the trigger itself. |
 
 ## Pending notes
@@ -36,8 +36,8 @@ The pieces:
 This area is a placeholder. Recipes I plan to write when I next touch Lambda:
 
 - Cross-account Lambda migration: package, recreate function, repoint event sources, swap aliases for zero-downtime cutover.
-- Region-pinned `AccessDenied`: when `aws lambda list-functions --region <r>` fails on one Region but works on another, what to check first (SCP boundary, account-level deny, expired SSO session).
-- Cold-start triage: what `Init Duration` in CloudWatch Logs actually measures and which knobs (provisioned concurrency, SnapStart, smaller deployment package) move it.
+- Region-pinned `AccessDenied`: when `aws lambda list-functions --region <r>` fails on one Region but works on another, what to check first (a service control policy boundary, an account-level deny, an expired IAM Identity Center / SSO session).
+- Cold-start triage: what `Init Duration` in CloudWatch Logs actually measures and which knobs (provisioned concurrency, SnapStart (Lambda's init-snapshot feature for faster cold starts), smaller deployment package) move it.
 
 ## See also
 

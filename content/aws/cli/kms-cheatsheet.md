@@ -10,6 +10,7 @@ related:
   - "[[aws/iam]]"
   - "[[aws/rds]]"
   - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/account-migrations]]"
 ---
 
 > Key creation, aliasing, policy edits, and deletion. Most [[aws/kms|KMS]] work is read-only inspection plus the occasional cross-account policy edit; you rarely call `encrypt`/`decrypt` directly because services do it for you.

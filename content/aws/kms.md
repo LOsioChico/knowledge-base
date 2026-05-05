@@ -22,11 +22,11 @@ source:
   - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
 ---
 
-> AWS Key Management Service is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds|RDS]], EBS, and Secrets Manager call KMS on your behalf to encrypt + decrypt data keys.
+> AWS Key Management Service is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds|RDS]], EBS (Elastic Block Store), and Secrets Manager call KMS on your behalf to encrypt + decrypt data keys.
 
 ## Mental model
 
-A **KMS key** (formerly "CMK", customer master key) is a logical container for cryptographic material that never leaves AWS-managed HSMs unencrypted. You don't get the raw key bytes; you ask KMS to encrypt or decrypt small payloads (≤4 KB) on your behalf, or to generate a **data key** that you use locally for envelope encryption.
+A **KMS key** (formerly "CMK", customer master key) is a logical container for cryptographic material that never leaves AWS-managed HSMs (hardware security modules) unencrypted. You don't get the raw key bytes; you ask KMS to encrypt or decrypt small payloads (≤4 KB) on your behalf, or to generate a **data key** that you use locally for envelope encryption.
 
 Three flavors of key, all addressed the same way:
 
@@ -50,7 +50,7 @@ For account B to use a CMK owned by account A ([source](https://docs.aws.amazon.
 2. **Account B's IAM principal** (the user or role doing the actual call) has an IAM policy granting the same actions on the specific key ARN.
 3. **Both** are required. Granting only the key policy fails with `AccessDenied` on the consumer side; granting only the IAM policy fails with `KMSAccessDeniedException` on the KMS side. The error messages are nearly identical, which is why this is a recurring footgun.
 
-The end-to-end shape of this pattern shows up most often in the [[aws/recipes/cross-account-snapshot|RDS cross-account snapshot recipe]]; the same key-policy + IAM-policy pairing applies to S3 with SSE-KMS (see [[aws/recipes/cross-account-bucket-migration|cross-account bucket migration]]), Secrets Manager, and any other KMS consumer.
+The end-to-end shape of this pattern shows up most often in the [[aws/recipes/cross-account-snapshot|RDS cross-account snapshot recipe]]; the same key-policy + IAM-policy pairing applies to S3 with SSE-KMS (server-side encryption using a KMS-managed key, see [[aws/recipes/cross-account-bucket-migration|cross-account bucket migration]]), Secrets Manager, and any other KMS consumer.
 
 > [!warning] Default-key encryption locks you in
 > Every "encryption: enabled" toggle that doesn't ask you to pick a key (RDS instance, EBS volume, S3 bucket default encryption) silently uses the AWS-managed key for that service. You can't share, re-key, or migrate the result cross-account. For any resource you might ever move, create a customer-managed key first and pick it explicitly at create time. Switching to a CMK afterwards requires copy + restore.

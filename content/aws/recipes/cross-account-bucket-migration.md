@@ -77,7 +77,7 @@ aws s3api put-bucket-encryption \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
-If the source used SSE with a customer-managed [[aws/kms|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
+If the source used server-side encryption (SSE) with a customer-managed [[aws/kms|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
 
 ### 3. Grant account B read on the source bucket
 
@@ -117,7 +117,7 @@ aws s3 sync \
   s3://<DST_BUCKET>
 ```
 
-`aws s3 sync` performs server-side copies for objects not present at the destination (or with a different size/mtime), and skips matching objects. For very large buckets, run it from EC2 in the destination region to avoid client-side bandwidth being the bottleneck. Re-run the same command at cutover to catch up any objects written since the first run.
+`aws s3 sync` performs server-side copies for objects not present at the destination (or with a different size or `mtime`, the last-modified timestamp), and skips matching objects. For very large buckets, run it from EC2 in the destination region to avoid client-side bandwidth being the bottleneck. Re-run the same command at cutover to catch up any objects written since the first run.
 
 ### 5. Verify
 

@@ -20,9 +20,9 @@ source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
 ---
 
-> Pattern for partial [[aws/account-migrations|AWS account migrations]]: leave a service in the old account and let new-account compute reach it via STS AssumeRole with an external ID and a tightly-scoped permission policy.
+> Pattern for partial [[aws/account-migrations|AWS account migrations]]: leave a service in the old account and let new-account compute reach it via STS (Security Token Service) `AssumeRole` with an external ID and a tightly-scoped permission policy.
 
-When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account [[aws/iam|IAM]] role. Most useful during partial migrations where the new account doesn't yet have production access for SES, Bedrock, or any service with a regional approval flow.
+When workloads must move from account A to account B but one service can't be migrated immediately (sandbox, vendor approval, regulatory lock-in), leave that service in account A and let account B's compute reach it via a cross-account [[aws/iam|IAM]] role. Most useful during partial migrations where the new account doesn't yet have production access for SES (Simple Email Service), Bedrock (managed foundation-model API), or any service with a regional approval flow.
 
 ## Shape
 
@@ -74,7 +74,7 @@ Trust policy: allow account B's root principal (or a specific role) to assume. S
 ```
 
 > [!warning] Always set an external ID
-> [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured [[aws/lambda|Lambda]], a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
+> [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured [[aws/lambda|Lambda]], a different team) could assume your role just by knowing its ARN (Amazon Resource Name). Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
 
 Permission policy: only the actions on the specific resource you need. Save as `permission-policy.json`:
 
@@ -218,7 +218,7 @@ Read the first `AccessDenied` carefully: it names the exact ARN that was checked
 ## When NOT to use this pattern
 
 - **Both accounts under your control and the service has no migration blocker**: just migrate the service. Each cross-account hop adds latency, a credential-refresh failure mode, and an audit step.
-- **You'd need to refresh credentials more often than once an hour**: for high-throughput callers, the `AssumeRole` overhead and refresh complexity dominate; consider IAM Identity Center or a longer-lived federated mechanism.
+- **You'd need to refresh credentials more often than once an hour**: for high-throughput callers, the `AssumeRole` overhead and refresh complexity dominate; consider IAM Identity Center (the AWS-managed single sign-on portal, formerly AWS SSO) or a longer-lived federated mechanism.
 - **The downstream service supports resource policies** (S3, SQS, SNS, KMS): you can often grant cross-account access on the resource itself without an intermediate role, which is simpler.
 
 ## Cleanup checklist after the original migration completes

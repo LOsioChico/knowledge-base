@@ -48,7 +48,7 @@ The zip path is what makes Amplify migrations reproducible: every step is a CLI 
 
 ## Custom domains
 
-Amplify owns the ACM certificate, the CloudFront distribution, the alias claim, and the Route53 records (if your domain is in Route53). When you call `create-domain-association`, Amplify provisions an ACM cert in `us-east-1`, attaches it to the underlying CloudFront distribution, and sets the alias.
+Amplify owns the ACM certificate, the CloudFront distribution, the alias claim, and the Route53 (AWS's managed DNS service) records (if your domain is in Route53). When you call `create-domain-association`, Amplify provisions an ACM cert in `us-east-1`, attaches it to the underlying CloudFront distribution, and sets the alias.
 
 > [!warning] Domain associations leak CloudFront alias claims
 > Deleting an Amplify app does not always release the underlying CloudFront alternate-domain-name claim. The next attempt to attach the same hostname (in any account) can fail with `CNAMEAlreadyExists` even though there's no visible distribution holding it. The bypass is the [[aws/recipes/alternate-domain-claim|alternate-domain ghost claims]] recipe.
