@@ -65,9 +65,21 @@ Empirically unblocks the case where retries against the same prefix keep failing
 
    See [Requesting a public certificate](https://docs.aws.amazon.com/acm/latest/userguide/gs-acm-request-public.html).
 
-2. **Add the DNS verification CNAME** returned by `acm describe-certificate` to your DNS provider. ACM polls every minute or so; certs typically issue in under five minutes once the record is live.
+2. **Add the DNS verification CNAME** to your DNS provider. Extract it with [`aws acm describe-certificate`](https://docs.aws.amazon.com/cli/latest/reference/acm/describe-certificate.html):
 
-3. **Wait for `Status: ISSUED`** before proceeding.
+   ```bash
+   aws acm describe-certificate \
+     --certificate-arn <CERT_ARN> \
+     --query 'Certificate.DomainValidationOptions[].ResourceRecord' --output table
+   ```
+
+   ACM polls every minute or so; certs typically issue in under five minutes once the record is live.
+
+3. **Wait for `Status: ISSUED`** before proceeding:
+
+   ```bash
+   aws acm wait certificate-validated --certificate-arn <CERT_ARN>
+   ```
 
 4. **Tell the distribution to use the custom certificate.** For Amplify:
 

@@ -19,25 +19,29 @@ When workloads must move from account A to account B but one service can't be mi
 
 ## Shape
 
-```text
-account B (new)                      account A (old, partially retained)
-┌────────────────┐                   ┌──────────────────────────┐
-│  Lambda /      │   sts:AssumeRole  │  IAM role with           │
-│  ECS task      │ ────────────────▶ │  ses:SendEmail (or       │
-│  (exec role)   │   temp creds      │  whatever service)       │
-│                │ ◀──────────────── │                          │
-│  Service       │   API call        │  SES / S3 / DynamoDB     │
-│  client        │ ────────────────▶ │  identity in account A   │
-└────────────────┘                   └──────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant B as Account B (new)<br/>Lambda / ECS task
+    participant STS as STS (account A)
+    participant Role as IAM role in account A<br/>(ses:SendEmail, ...)
+    participant Svc as Service in account A<br/>(SES / S3 / DynamoDB)
+
+    B->>STS: sts:AssumeRole (+ ExternalId)
+    STS-->>B: temporary credentials
+    B->>Role: API call with temp creds
+    Role->>Svc: invoke (SendEmail, GetObject, ...)
+    Svc-->>B: response
 ```
 
 Per the [IAM cross-account role tutorial](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), the trust direction is **the role lives in the account that owns the resource**, and the principal in the trust policy is the account (or specific role) that needs access.
 
 ## Recipe
 
+Uses two named CLI profiles, `account-a` (resource owner) and `account-b` (caller).
+
 ### 1. In account A, create the role
 
-Trust policy: allow account B's root principal (or a specific role) to assume.
+Trust policy: allow account B's root principal (or a specific role) to assume. Save as `trust-policy.json`:
 
 ```json
 {
@@ -58,7 +62,7 @@ Trust policy: allow account B's root principal (or a specific role) to assume.
 > [!warning] Always set an external ID
 > [The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured Lambda, a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy.
 
-Permission policy: only the actions on the specific resource you need.
+Permission policy: only the actions on the specific resource you need. Save as `permission-policy.json`:
 
 ```json
 {
@@ -76,9 +80,24 @@ Permission policy: only the actions on the specific resource you need.
 }
 ```
 
+Create the role and attach the inline policy ([`aws iam create-role`](https://docs.aws.amazon.com/cli/latest/reference/iam/create-role.html), [`aws iam put-role-policy`](https://docs.aws.amazon.com/cli/latest/reference/iam/put-role-policy.html)):
+
+```bash
+aws iam create-role \
+  --profile account-a \
+  --role-name CrossAccountServiceRole \
+  --assume-role-policy-document file://trust-policy.json
+
+aws iam put-role-policy \
+  --profile account-a \
+  --role-name CrossAccountServiceRole \
+  --policy-name SesSendOnly \
+  --policy-document file://permission-policy.json
+```
+
 ### 2. In account B, grant `sts:AssumeRole`
 
-Add to the Lambda (or ECS task) execution role:
+Add to the Lambda (or ECS task) execution role. Save as `assume-policy.json`:
 
 ```json
 {
@@ -92,6 +111,26 @@ Add to the Lambda (or ECS task) execution role:
   ]
 }
 ```
+
+```bash
+aws iam put-role-policy \
+  --profile account-b \
+  --role-name MyLambdaExecutionRole \
+  --policy-name AssumeCrossAccountSes \
+  --policy-document file://assume-policy.json
+```
+
+Quick sanity check from a workstation in account B before deploying code:
+
+```bash
+aws sts assume-role \
+  --profile account-b \
+  --role-arn arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole \
+  --role-session-name smoke-test \
+  --external-id your-external-id
+```
+
+A successful response with `Credentials` proves the trust + permission chain works before app code runs.
 
 ### 3. In application code, assume the role at startup
 
