@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "path": "content/aws/recipes/cross-account-role-pattern.md",
+      "sig": "72f426ef3d882815611cf0547cc4597c165b2dce",
+      "rule": "source-verification",
+      "reason": "Verified at IAM/UserGuide/confused-deputy.html: the confused-deputy doc directly supports the 'without ExternalId, account B can be tricked into assuming the role' framing. Auditor's suggested fix asks for an additional sts:AssumeRole permissions citation, which is unnecessary — the warning is about ExternalId, not about granting AssumeRole.",
+      "date": "2026-05-04",
+      "originalLine": "[The `ExternalId` condition](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html) prevents the [confused-deputy problem](https://docs.aws.amazon.com/IAM/latest/UserGuide/confused-deputy.html): without it, anyone in account B (a misconfigured [[aws/lambda|Lambda]], a different team) could assume your role just by knowing its ARN. Set a unique value per integration, store it as configuration in account B, and require it in the trust policy."
+    },
+    {
       "path": "content/nestjs/fundamentals/middleware.md",
       "sig": "6e3726e3bd97c64e77b7b90ffa93dd91d6d079ff",
       "rule": "source-verification",

@@ -37,12 +37,13 @@ Defaults to know:
 
 ## Alternate domain names are globally unique
 
-A given hostname (e.g. `app.example.com`) can be attached as an alias to **only one CloudFront distribution at a time, across all AWS accounts** ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions)). To "take" an alias from another distribution, you either:
+A given hostname (e.g. `app.example.com`) can be attached as an alias to **only one CloudFront distribution at a time, across all AWS accounts** ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions)). The same source explicitly says you cannot add the alias to a second distribution "even if your AWS account owns the other distribution": there is no ACM-cert override for an exact-match duplicate. To "take" an alias from another distribution, you have to either:
 
 1. Use `update-distribution` on the source side to remove the alias (only works if you control both accounts), or
-2. Present an ACM certificate that proves you own the domain: CloudFront will then let your new distribution claim the alias even if the source distribution still has it. This is the documented "ownership protection" path.
+2. Disable the source distribution and contact AWS Support to release the alias ([documented move flow](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html)), or
+3. Use a **wildcard** override: `*.example.com` on your distribution and a non-wildcard `www.example.com` on the source distribution overlap rather than collide, and CloudFront routes to the more specific match ([same source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions)). This only works if your traffic can live behind a wildcard.
 
-The bypass matters because in practice the source distribution is often unreachable: deleted, in someone else's account, or hidden behind Amplify's managed flow. The full triage is in [[aws/recipes/alternate-domain-claim|alternate-domain ghost claims]].
+The collision matters because in practice the source distribution is often unreachable: deleted, in someone else's account, or hidden behind Amplify's managed flow. The full triage is in [[aws/recipes/alternate-domain-claim|alternate-domain ghost claims]].
 
 > [!warning] Amplify hides the CloudFront distribution
 > Amplify Hosting provisions and manages a CloudFront distribution under the covers. You won't see it in `cloudfront list-distributions` from the same account; you talk to it through `aws amplify` commands. When migrating an Amplify app between accounts, you're really migrating "Amplify's domain association" plus the underlying CloudFront alias: see [[aws/recipes/cross-account-app-migration|cross-account Amplify app migration]].

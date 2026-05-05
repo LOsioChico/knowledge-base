@@ -56,7 +56,7 @@ Amplify owns the ACM certificate, the CloudFront distribution, the alias claim, 
 
 - **Use Amplify Hosting** for: SPA frontends with a build step, Next.js SSR (the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
 - **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, [[aws/lambda|Lambda]]@Edge): use S3 + CloudFront directly.
-- **Don't use Amplify Hosting** for backend code: it's a frontend host. Backends go to [[aws/lambda|Lambda]], ECS, or App Runner.
+- **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services. Amplify Hosting itself ships full-stack and Amplify Gen 2 lets you co-deploy data/auth/storage from the same project ([source](https://docs.aws.amazon.com/amplify/latest/userguide/deploy-backend.html)); when those managed primitives don't fit (long-running workers, custom containers, non-Node runtimes), provision compute on [[aws/lambda|Lambda]], ECS, or App Runner instead.
 
 ## See also
 

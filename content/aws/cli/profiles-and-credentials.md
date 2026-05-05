@@ -64,7 +64,7 @@ aws configure get region --profile pentica
 ```
 
 > [!warning] `aws configure list-profiles` is CLI v2 only
-> CLI v1 (1.x) does not implement the subcommand. If it errors out, read `~/.aws/credentials` and `~/.aws/config` directly, or upgrade to v2.
+> The subcommand is documented under v2 ([source](https://docs.aws.amazon.com/cli/latest/reference/configure/list-profiles.html)) and absent from the v1 `configure` reference ([source](https://docs.aws.amazon.com/cli/v1/reference/configure/)). If it errors out, read `~/.aws/credentials` and `~/.aws/config` directly, or upgrade to v2.
 
 ## Confirm which account a profile points at
 

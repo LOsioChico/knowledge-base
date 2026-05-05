@@ -114,7 +114,7 @@ Empirically unblocks the case where retries against the same prefix keep failing
      --query 'Certificate.DomainValidationOptions[].ResourceRecord' --output table
    ```
 
-   ACM polls every minute or so; certs typically issue in under five minutes once the record is live.
+   ACM polls every minute or so; certs typically issue in under five minutes once the record is live. AWS documents the upper bound as up to 30 minutes for the certificate status to move to `ISSUED` ([source](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#dns-validation)).
 
 3. **Wait for `Status: ISSUED`** before proceeding:
 
@@ -157,7 +157,7 @@ Empirically unblocks the case where retries against the same prefix keep failing
 
 ## Recovery without a custom cert
 
-If you can't or won't manage your own cert, the only remaining option is **time**. Stop all retries. Wait at least 2-4 hours, often longer. Then attempt the original prefix once. If it still fails, open an AWS Support case to clear the stale alternate-domain claims (Basic support is free, response is typically next business day).
+If you can't or won't manage your own cert, the only remaining option is **time**. Stop all retries. Wait at least 2-4 hours, often longer. Then attempt the original prefix once. If it still fails, the AWS-documented escalation path is to disable the lingering source distribution and contact AWS Support to release the alias ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html#alternate-domain-names-move-contact-support)). Basic Support is free, response is typically next business day.
 
 ## Operational notes
 
