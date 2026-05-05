@@ -7,7 +7,7 @@ status: evergreen
 related:
   - "[[aws/iam/index]]"
   - "[[aws/rds/cross-account-snapshot]]"
-  - "[[aws/s3/cross-account-bucket-migration]]"
+  - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/migrations/index]]"
 source:

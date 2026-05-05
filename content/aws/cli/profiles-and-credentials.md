@@ -11,6 +11,7 @@ source:
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/query-and-output]]"
+  - "[[aws/cli/s3]]"
   - "[[aws/iam/cross-account-role-pattern]]"
 ---
 

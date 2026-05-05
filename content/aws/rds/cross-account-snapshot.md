@@ -12,7 +12,7 @@ related:
   - "[[aws/rds/index]]"
   - "[[aws/iam/cross-account-role-pattern]]"
   - "[[aws/kms/index]]"
-  - "[[aws/s3/cross-account-bucket-migration]]"
+  - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/migrations/index]]"
 ---
 

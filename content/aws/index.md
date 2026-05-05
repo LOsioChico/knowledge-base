@@ -7,31 +7,36 @@ status: evergreen
 related:
   - "[[index]]"
   - "[[aws/cli/index]]"
+  - "[[aws/recipes/index]]"
   - "[[aws/iam/index]]"
   - "[[aws/rds/index]]"
   - "[[aws/cloudfront/index]]"
   - "[[aws/amplify/index]]"
-  - "[[aws/s3/index]]"
+  - "[[aws/s3]]"
   - "[[aws/kms/index]]"
   - "[[aws/lambda/index]]"
   - "[[aws/migrations/index]]"
 ---
 
-Map of content for AWS. Organized by service so each note lives next to the API/CLI surface it documents; cross-cutting workflows (account migrations spanning many services) live under [[aws/migrations/index|migrations]].
+> Map of content for AWS. Service notes (`aws/<service>.md` once converted) explain what each service is, how it works, and when to use it; CLI cheatsheets for the same services live under [[aws/cli/index|aws/cli]]; cross-cutting recipes live under [[aws/recipes/index|aws/recipes]]. Folders that still hold an `index.md` are pre-restructure leftovers and will collapse into the same shape as files land.
 
 ## Foundations
 
-- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns I reach for.
+- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns I reach for. Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
 
 ## Services
 
+- [[aws/s3|S3]]: object storage. Buckets, keys, consistency model, default privacy.
 - [[aws/iam/index|IAM]]: identities, roles, cross-account trust, permission diagnosis.
 - [[aws/rds/index|RDS]]: relational databases, snapshots, cross-account moves.
 - [[aws/cloudfront/index|CloudFront]]: distributions, alternate domain names, ACM wiring.
 - [[aws/amplify/index|Amplify Hosting]]: app, branch, deployment, domain associations.
-- [[aws/s3/index|S3]]: buckets, cross-account copies, bucket policies.
 - [[aws/kms/index|KMS]]: customer-managed keys, key policies, cross-account grants.
 - [[aws/lambda/index|Lambda]]: functions, deployments, region pinning.
+
+## Recipes
+
+- [[aws/recipes/index|AWS recipes]]: end-to-end procedures that touch more than one service or don't fit cleanly inside a single service note.
 
 ## Cross-cutting workflows
 

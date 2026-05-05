@@ -10,7 +10,7 @@ related:
   - "[[aws/iam/cross-account-role-pattern]]"
   - "[[aws/cloudfront/alternate-domain-claim]]"
   - "[[aws/amplify/cross-account-app-migration]]"
-  - "[[aws/s3/cross-account-bucket-migration]]"
+  - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/kms/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
 ---
@@ -31,14 +31,14 @@ related:
 
 ## Per-service moves
 
-| Service    | Recipe                                      | What it covers                                                                                  |
-| ---------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| RDS        | [[aws/rds/cross-account-snapshot]]          | Encrypted snapshot share via re-encrypt-with-CMK + restore in target account.                   |
-| S3         | [[aws/s3/cross-account-bucket-migration]]   | Recreate bucket config + cross-account `s3 sync`.                                               |
-| Amplify    | [[aws/amplify/cross-account-app-migration]] | `create-app` → branch → manual zip deployment → domain-association move.                        |
-| CloudFront | [[aws/cloudfront/alternate-domain-claim]]   | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.               |
-| IAM        | [[aws/iam/cross-account-role-pattern]]      | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account". |
-| KMS        | [[aws/kms/index]]                           | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, Secrets Manager.          |
+| Service    | Recipe                                         | What it covers                                                                                  |
+| ---------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| RDS        | [[aws/rds/cross-account-snapshot]]             | Encrypted snapshot share via re-encrypt-with-CMK + restore in target account.                   |
+| S3         | [[aws/recipes/cross-account-bucket-migration]] | Recreate bucket config + cross-account `s3 sync`.                                               |
+| Amplify    | [[aws/amplify/cross-account-app-migration]]    | `create-app` → branch → manual zip deployment → domain-association move.                        |
+| CloudFront | [[aws/cloudfront/alternate-domain-claim]]      | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.               |
+| IAM        | [[aws/iam/cross-account-role-pattern]]         | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account". |
+| KMS        | [[aws/kms/index]]                              | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, Secrets Manager.          |
 
 ## Recommended order
 

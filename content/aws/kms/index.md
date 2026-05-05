@@ -7,7 +7,7 @@ status: evergreen
 related:
   - "[[aws/index]]"
   - "[[aws/rds/cross-account-snapshot]]"
-  - "[[aws/s3/cross-account-bucket-migration]]"
+  - "[[aws/recipes/cross-account-bucket-migration]]"
 ---
 
 Notes on AWS Key Management Service: customer-managed keys (CMKs), key policies, aliases, and the cross-account grants you need when one account encrypts and another decrypts.

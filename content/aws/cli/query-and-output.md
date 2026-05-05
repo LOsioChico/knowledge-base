@@ -11,6 +11,7 @@ source:
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
+  - "[[aws/cli/s3]]"
 ---
 
 > Use `--query` (JMESPath) to project just the fields you want and `--output table|json|text` to pick a shape your script or eyeballs can read.
