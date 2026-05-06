@@ -42,6 +42,8 @@ related:
   - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]
   - [[aws/recipes/alternate-domain-claim|Alternate-domain ghost claims]]
   - [[aws/recipes/cross-account-app-migration|Cross-account Amplify app migration]]
+  - [[aws/recipes/ec2-snapshot-all-instances|EC2 in-account AMI snapshot of every instance]]
+  - [[aws/recipes/ec2-ami-cross-account-copy|EC2 cross-account AMI copy]]
 
 ## Cross-cutting workflows
 

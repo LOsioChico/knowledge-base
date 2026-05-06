@@ -60,7 +60,33 @@ aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
   --output table
 ```
 
-Capture the `AMI` and `Snap` IDs. The `Enc` column tells you whether the [[aws/kms|KMS]] step in section 4 applies.
+Capture the `AMI` and `Snap` IDs. The `Enc` column drives the decision in the next step.
+
+### 1b. Decide whether the [[aws/kms|KMS]] step applies
+
+For each snapshot, fetch its encryption key:
+
+```bash
+aws ec2 describe-snapshots --profile source --region SOURCE_REGION \
+  --snapshot-ids SNAPSHOT_ID \
+  --query 'Snapshots[].[SnapshotId,Encrypted,KmsKeyId]' --output table
+```
+
+Three outcomes, three paths:
+
+| `Encrypted` | `KmsKeyId`                                               | What to do                                                                                                                                     |
+| ----------- | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `False`     | (none)                                                   | **Skip section 4.** Run sections 2, 3, 5+ as-is.                                                                                               |
+| `True`      | ARN ends in a UUID and resolves to `KeyManager=CUSTOMER` | **Do section 4** (share the CMK).                                                                                                              |
+| `True`      | ARN of `alias/aws/ebs` or any `KeyManager=AWS` key       | **Section 4 will fail.** Re-encrypt the snapshot under a CMK first (see the `aws/ebs` callout in section 4), then share the re-encrypted copy. |
+
+Confirm `KeyManager` when in doubt:
+
+```bash
+aws kms describe-key --profile source --region SOURCE_REGION \
+  --key-id KMS_KEY_ID \
+  --query 'KeyMetadata.[KeyId,KeyManager,Description]' --output table
+```
 
 ### 2. Share the AMI itself (launch permission)
 
