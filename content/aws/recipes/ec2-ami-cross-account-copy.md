@@ -159,15 +159,35 @@ aws ec2 describe-images --profile dest --region DEST_REGION --image-ids $NEW_AMI
 
 The `OwnerId` should now equal `DEST_ACCOUNT_ID` and the snapshot ID should be a NEW one owned by the destination account, not the original source snapshot.
 
-### 7. Re-tag the copy
+### 7. Re-tag the copy (AMI **and** its snapshot)
 
-[Per the copy considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html), tags attached by other AWS accounts are NOT carried over. Apply the destination account's own tags after the copy:
+[Per the copy considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html), tags attached by other AWS accounts are NOT carried over. AMI tags also do NOT propagate to the underlying EBS snapshot: AMI and snapshot are separate resources with separate tag sets, so untagged snapshots show up as opaque IDs in the console. Tag both.
 
 ```bash
+# Resolve the new snapshot ID from the copied AMI
+NEW_SNAP=$(aws ec2 describe-images --profile dest --region DEST_REGION \
+  --image-ids $NEW_AMI \
+  --query 'Images[0].BlockDeviceMappings[0].Ebs.SnapshotId' --output text)
+
+# Tag the AMI
 aws ec2 create-tags --profile dest --region DEST_REGION \
   --resources $NEW_AMI \
-  --tags Key=SourceAccount,Value=SOURCE_ACCOUNT_ID Key=SourceAMI,Value=AMI_ID Key=Purpose,Value=migration-archive
+  --tags Key=Name,Value="copied-SOURCE_NAME" \
+         Key=SourceAccount,Value=SOURCE_ACCOUNT_ID \
+         Key=SourceAMI,Value=AMI_ID \
+         Key=Purpose,Value=migration-archive
+
+# Tag the snapshot with the matching identifiers
+aws ec2 create-tags --profile dest --region DEST_REGION \
+  --resources $NEW_SNAP \
+  --tags Key=Name,Value="copied-SOURCE_NAME-snap" \
+         Key=SourceAccount,Value=SOURCE_ACCOUNT_ID \
+         Key=SourceAMI,Value=AMI_ID \
+         Key=SourceSnapshot,Value=SNAPSHOT_ID \
+         Key=Purpose,Value=migration-archive
 ```
+
+If the AMI has multiple block-device mappings (data volumes), repeat the snapshot-tag step for every entry in `BlockDeviceMappings[].Ebs.SnapshotId`.
 
 ### 8. (Optional) revoke the source-side share
 
