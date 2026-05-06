@@ -14,6 +14,7 @@ related:
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
+  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-role-pattern]]"

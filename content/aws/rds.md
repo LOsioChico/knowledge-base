@@ -12,6 +12,7 @@ related:
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
+  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
   - "[[aws/kms]]"
   - "[[aws/account-migrations]]"
 source:

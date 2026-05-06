@@ -11,6 +11,7 @@ related:
   - "[[aws/rds]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
 source:
   - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html
   - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/deregister-ami.html
