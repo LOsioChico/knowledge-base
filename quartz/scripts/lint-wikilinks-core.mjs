@@ -55,6 +55,7 @@ const VALID_TAGS = new Set([
   "tech/sns",
   "tech/vpc",
   "tech/ecs",
+  "tech/effect-ts",
   "lifecycle",
   "events",
   "cqrs",
@@ -591,7 +592,7 @@ function validateLinkResolution(result, notes) {
 }
 
 function buildConcepts(notes) {
-  const GENERIC_BASENAMES = new Set(["cli", "api", "faq", "tldr"])
+  const GENERIC_BASENAMES = new Set(["cli", "api", "faq", "tldr", "quickstart"])
   return notes
     .filter((note) => !isIndexNote(note))
     .map((note) => {
@@ -604,7 +605,8 @@ function buildConcepts(notes) {
         seen.add(key)
         terms.push(normalized)
       }
-      add(note.title)
+      const titleTerm = String(note.title ?? "").trim()
+      if (!GENERIC_BASENAMES.has(titleTerm.toLowerCase())) add(titleTerm)
       for (const alias of note.aliases) add(alias)
       const baseTerm = note.baseName.replace(/-/g, " ")
       if (!GENERIC_BASENAMES.has(baseTerm.toLowerCase())) add(baseTerm)
