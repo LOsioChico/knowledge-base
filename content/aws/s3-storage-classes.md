@@ -46,7 +46,7 @@ All durability is "11 nines" (`99.999999999%`) except Reduced Redundancy. Number
 
 ### Standard
 
-The default. If you're uploading data you actually plan to read, use this and stop thinking about it. Cost optimization comes from lifecycle rules that _transition_ aged objects to a cheaper class later, not from picking the cheap class up front.
+The default. If you're uploading data you actually plan to read, use this and stop thinking about it. Cost optimization comes from [[aws/recipes/s3-lifecycle-rules|lifecycle rules]] that _transition_ aged objects to a cheaper class later, not from picking the cheap class up front.
 
 ### Intelligent-Tiering
 
