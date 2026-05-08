@@ -27,6 +27,7 @@ related:
 ## Services
 
 - [[aws/s3|S3, the Simple Storage Service]]: object storage. Buckets, keys, read-after-write consistency, default privacy.
+  - [[aws/s3-storage-classes|S3 storage classes]]: Standard, Intelligent-Tiering, IA, Glacier, Express One Zone: cost/latency/AZ tradeoffs.
 - [[aws/iam|IAM]]: identities, roles, policy evaluation, cross-account trust.
 - [[aws/rds|RDS]] (Relational Database Service): managed relational databases. Snapshots, encryption, multi-AZ (replication across two Availability Zones for failover).
 - [[aws/cloudfront|CloudFront]]: content delivery network (CDN). Distributions, alternate domain names, edge (point-of-presence) defaults.
@@ -44,6 +45,10 @@ related:
   - [[aws/recipes/cross-account-app-migration|Cross-account Amplify app migration]]
   - [[aws/recipes/ec2-snapshot-all-instances|EC2 in-account AMI snapshot of every instance]]
   - [[aws/recipes/ec2-ami-cross-account-copy|EC2 cross-account AMI copy]]
+  - [[aws/recipes/s3-presigned-urls|S3 presigned URLs]]
+  - [[aws/recipes/s3-lifecycle-rules|S3 lifecycle rules]]
+  - [[aws/recipes/s3-event-notifications|S3 event notifications]]
+  - [[aws/recipes/s3-static-website|S3 static website hosting]]
 
 ## Cross-cutting workflows
 

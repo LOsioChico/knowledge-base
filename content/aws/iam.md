@@ -16,6 +16,7 @@ related:
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/recipes/cross-account-bucket-migration]]"
   - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/recipes/s3-presigned-urls]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html

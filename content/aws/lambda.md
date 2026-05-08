@@ -11,6 +11,8 @@ related:
   - "[[aws/amplify]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3]]"
+  - "[[aws/recipes/s3-event-notifications]]"
+  - "[[aws/recipes/s3-presigned-urls]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/account-migrations]]"
 source:

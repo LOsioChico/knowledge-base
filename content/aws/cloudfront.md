@@ -11,6 +11,8 @@ related:
   - "[[aws/recipes/cross-account-app-migration]]"
   - "[[aws/amplify]]"
   - "[[aws/s3]]"
+  - "[[aws/recipes/s3-static-website]]"
+  - "[[aws/recipes/s3-presigned-urls]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html
