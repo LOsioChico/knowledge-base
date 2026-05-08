@@ -11,6 +11,7 @@ related:
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/kms/index]]"
   - "[[aws/lambda/index]]"
+  - "[[aws/ecs/index]]"
   - "[[aws/s3/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-role-pattern]]"

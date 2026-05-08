@@ -14,6 +14,8 @@ related:
   - "[[aws/s3/event-notifications]]"
   - "[[aws/s3/presigned-urls]]"
   - "[[aws/secrets-manager]]"
+  - "[[aws/sqs/index]]"
+  - "[[aws/sns/index]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html

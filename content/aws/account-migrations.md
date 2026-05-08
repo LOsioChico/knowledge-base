@@ -22,6 +22,8 @@ related:
   - "[[aws/cloudfront/index]]"
   - "[[aws/iam/index]]"
   - "[[aws/lambda/index]]"
+  - "[[aws/ec2/index]]"
+  - "[[aws/ecs/index]]"
   - "[[aws/kms/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/cli/profiles-and-credentials]]"
@@ -52,7 +54,7 @@ related:
 | [[aws/amplify/index\|Amplify]]       | [[aws/recipes/cross-account-app-migration]]                                             | `create-app` → branch → manual zip deployment → domain-association move.                                                      |
 | [[aws/cloudfront/index\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]                                                  | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                             |
 | [[aws/iam/index\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]                                              | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                               |
-| EC2                                  | [[aws/recipes/ec2-snapshot-all-instances]] + [[aws/recipes/ec2-ami-cross-account-copy]] | One AMI per running/stopped instance, share + `copy-image` so the target account owns an independent AMI.                     |
+| [[aws/ec2/index\|EC2]]               | [[aws/recipes/ec2-snapshot-all-instances]] + [[aws/recipes/ec2-ami-cross-account-copy]] | One AMI per running/stopped instance, share + `copy-image` so the target account owns an independent AMI.                     |
 | [[aws/kms/index\|KMS]]               | [[aws/kms/index]]                                                                       | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].               |
 
 ## Recommended order
@@ -60,7 +62,7 @@ related:
 1. **CLI + identities**: profiles, `sts get-caller-identity` on both sides.
 2. **IAM [[aws/recipes/cross-account-role-pattern|cross-account roles]]**: set them up early so the new account can talk to anything that's staying behind.
 3. **Data services first** (RDS, S3): they take the longest to copy and have the largest rollback windows.
-4. **Compute next** ([[aws/lambda/index|Lambda]], ECS): once the data is in place.
+4. **Compute next** ([[aws/lambda/index|Lambda]], [[aws/ecs/index|ECS]]): once the data is in place.
 5. **Frontend + DNS last** (Amplify, CloudFront, Route53): flipping the domain is the user-visible cutover. Don't do this before the data and compute behind it are validated.
 6. **Cleanup**: revoke cross-account grants, delete the source resources after a comfortable rollback window.
 

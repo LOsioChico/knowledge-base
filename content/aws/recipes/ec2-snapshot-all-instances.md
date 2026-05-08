@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[aws/index]]"
   - "[[aws/recipes/index]]"
+  - "[[aws/ec2/index]]"
   - "[[aws/kms/index]]"
   - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"

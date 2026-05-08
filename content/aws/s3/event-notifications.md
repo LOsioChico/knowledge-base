@@ -8,6 +8,8 @@ related:
   - "[[aws/s3/index]]"
   - "[[aws/s3/storage-classes]]"
   - "[[aws/lambda/index]]"
+  - "[[aws/sqs/index]]"
+  - "[[aws/sns/index]]"
   - "[[aws/recipes/index]]"
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html

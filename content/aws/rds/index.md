@@ -14,6 +14,7 @@ related:
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
   - "[[aws/kms/index]]"
+  - "[[aws/vpc/index]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html

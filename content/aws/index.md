@@ -15,6 +15,12 @@ related:
   - "[[aws/s3/index]]"
   - "[[aws/kms/index]]"
   - "[[aws/lambda/index]]"
+  - "[[aws/ec2/index]]"
+  - "[[aws/dynamodb/index]]"
+  - "[[aws/sqs/index]]"
+  - "[[aws/sns/index]]"
+  - "[[aws/vpc/index]]"
+  - "[[aws/ecs/index]]"
   - "[[aws/account-migrations]]"
 ---
 
@@ -33,6 +39,12 @@ related:
 - [[aws/amplify/index|Amplify Hosting]]: managed frontend hosting. Apps, branches, deployments, custom domains.
 - [[aws/kms/index|KMS]]: encryption keys. Customer-managed vs AWS-managed, key policies, cross-account grants.
 - [[aws/lambda/index|Lambda]]: functions, versions, aliases. (Seed.)
+- [[aws/ec2/index|EC2]] (Elastic Compute Cloud): virtual machines. Instances, AMIs (Amazon Machine Images), EBS (Elastic Block Store) volumes, security groups. (Seed.)
+- [[aws/vpc/index|VPC]] (Virtual Private Cloud): private network. Subnets, route tables, security groups, NAT (Network Address Translation) gateways. (Seed.)
+- [[aws/dynamodb/index|DynamoDB]]: managed key-value + document database. Partition keys, GSIs (global secondary indexes), streams. (Seed.)
+- [[aws/sqs/index|SQS]] (Simple Queue Service): managed message queue. Standard vs FIFO, visibility timeout, DLQs (dead-letter queues). (Seed.)
+- [[aws/sns/index|SNS]] (Simple Notification Service): managed pub/sub. Topics, fan-out, filter policies. (Seed.)
+- [[aws/ecs/index|ECS and Fargate]]: container orchestration. Tasks, services, Fargate (serverless) vs EC2 launch type. (Seed.)
 
 ## Recipes
 

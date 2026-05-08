@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[aws/index]]"
   - "[[aws/recipes/index]]"
+  - "[[aws/ec2/index]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/kms/index]]"
