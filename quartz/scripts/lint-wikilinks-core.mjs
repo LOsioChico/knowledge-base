@@ -47,6 +47,8 @@ const VALID_TAGS = new Set([
   "tech/lambda",
   "tech/route53",
   "tech/sts",
+  "tech/ec2",
+  "tech/secrets-manager",
   "lifecycle",
   "events",
   "cqrs",
