@@ -5,10 +5,10 @@ tags: [type/concept, tech/aws, tech/s3]
 area: aws
 status: evergreen
 related:
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
   - "[[aws/index]]"
-  - "[[aws/recipes/s3-lifecycle-rules]]"
-  - "[[aws/recipes/s3-event-notifications]]"
+  - "[[aws/s3/lifecycle-rules]]"
+  - "[[aws/s3/event-notifications]]"
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html
   - https://aws.amazon.com/s3/pricing/
@@ -46,7 +46,7 @@ All durability is "11 nines" (`99.999999999%`) except Reduced Redundancy. Number
 
 ### Standard
 
-The default. If you're uploading data you actually plan to read, use this and stop thinking about it. Cost optimization comes from [[aws/recipes/s3-lifecycle-rules|lifecycle rules]] that _transition_ aged objects to a cheaper class later, not from picking the cheap class up front.
+The default. If you're uploading data you actually plan to read, use this and stop thinking about it. Cost optimization comes from [[aws/s3/lifecycle-rules|lifecycle rules]] that _transition_ aged objects to a cheaper class later, not from picking the cheap class up front.
 
 ### Intelligent-Tiering
 
@@ -94,6 +94,6 @@ Three places it gets decided:
 
 ## See also
 
-- [[aws/s3|S3]] (the parent concept note).
+- [[aws/s3/index|S3]] (the parent concept note).
 - [Comparing the Amazon S3 storage classes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-compare) (official table).
 - [Amazon S3 pricing](https://aws.amazon.com/s3/pricing/) (per-class per-region rates).

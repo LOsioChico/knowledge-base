@@ -7,7 +7,7 @@ status: evergreen
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html
 related:
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
   - "[[aws/iam]]"
   - "[[aws/cli/s3]]"
   - "[[aws/recipes/index]]"

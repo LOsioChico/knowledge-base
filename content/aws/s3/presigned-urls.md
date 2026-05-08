@@ -5,7 +5,7 @@ tags: [type/recipe, tech/aws, tech/s3]
 area: aws
 status: evergreen
 related:
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
   - "[[aws/iam]]"
   - "[[aws/cloudfront]]"
   - "[[aws/lambda]]"
@@ -144,7 +144,7 @@ That denies any presigned request whose signature is older than 600,000 ms (10 m
 
 ## See also
 
-- [[aws/s3|S3]] (parent concept).
+- [[aws/s3/index|S3]] (parent concept).
 - [[aws/iam|IAM]] (the permissions side of the story).
 - [Sharing objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html) (official walkthrough).
 - [Uploading objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html) (PUT-side details).

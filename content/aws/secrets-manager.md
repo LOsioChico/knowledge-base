@@ -10,7 +10,7 @@ related:
   - "[[aws/kms]]"
   - "[[aws/lambda]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
-  - "[[aws/recipes/s3-presigned-urls]]"
+  - "[[aws/s3/presigned-urls]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html

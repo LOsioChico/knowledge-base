@@ -11,12 +11,12 @@ related:
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/kms]]"
   - "[[aws/lambda]]"
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/recipes/cross-account-snapshot]]"
-  - "[[aws/recipes/s3-presigned-urls]]"
+  - "[[aws/s3/presigned-urls]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html
@@ -27,7 +27,7 @@ source:
 
 ## Mental model
 
-Every AWS API call is signed by a **principal** (an IAM user, an IAM role session, or the account root) and evaluated against a stack of policies before the target service ever sees it. A few services ([[aws/s3|Amazon S3]], AWS STS: Security Token Service) accept anonymous requests as a documented exception ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html)); for everything else, IAM answers exactly two questions on each call: "who is the caller?" (authentication via signed request) and "is this caller allowed to perform this action on this resource right now?" (authorization via [policy evaluation](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
+Every AWS API call is signed by a **principal** (an IAM user, an IAM role session, or the account root) and evaluated against a stack of policies before the target service ever sees it. A few services ([[aws/s3/index|Amazon S3]], AWS STS: Security Token Service) accept anonymous requests as a documented exception ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html)); for everything else, IAM answers exactly two questions on each call: "who is the caller?" (authentication via signed request) and "is this caller allowed to perform this action on this resource right now?" (authorization via [policy evaluation](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
 
 Principals you'll touch directly come in three shapes (the JSON `Principal` element [recognizes more](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_elements_principal.html#Principal_specifying): role sessions, federated users, AWS service principals, and `"*"` for any principal):
 

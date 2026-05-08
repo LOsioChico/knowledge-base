@@ -15,11 +15,11 @@ related:
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
 unrelated:
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
 source:
   - https://docs.aws.amazon.com/kms/latest/developerguide/overview.html
   - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
@@ -53,7 +53,7 @@ For account B to use a CMK owned by account A ([source](https://docs.aws.amazon.
 2. **Account B's IAM principal** (the user or role doing the actual call) has an IAM policy granting the same actions on the specific key ARN.
 3. **Both** are required. Granting only the key policy fails with `AccessDenied` on the consumer side; granting only the IAM policy fails with `KMSAccessDeniedException` on the KMS side. The error messages are nearly identical, which is why this is a recurring footgun.
 
-The end-to-end shape of this pattern shows up most often in the [[aws/recipes/cross-account-snapshot|RDS cross-account snapshot recipe]]; the same key-policy + IAM-policy pairing applies to S3 with SSE-KMS (server-side encryption using a KMS-managed key, see [[aws/recipes/cross-account-bucket-migration|cross-account bucket migration]]), Secrets Manager, and any other KMS consumer.
+The end-to-end shape of this pattern shows up most often in the [[aws/recipes/cross-account-snapshot|RDS cross-account snapshot recipe]]; the same key-policy + IAM-policy pairing applies to S3 with SSE-KMS (server-side encryption using a KMS-managed key, see [[aws/s3/cross-account-migration|cross-account bucket migration]]), Secrets Manager, and any other KMS consumer.
 
 > [!warning] Default-key encryption locks you in
 > Every "encryption: enabled" toggle that doesn't ask you to pick a key (RDS instance, EBS volume, S3 bucket default encryption) silently uses the AWS-managed key for that service. You can't share, re-key, or migrate the result cross-account. For any resource you might ever move, create a customer-managed key first and pick it explicitly at create time. Switching to a CMK afterwards requires copy + restore.
@@ -66,5 +66,5 @@ Key IDs are unmemorable UUIDs. **Aliases** are short, friendly names you assign 
 
 - [[aws/cli/kms-cheatsheet|KMS CLI cheatsheet]]: create, alias, key-policy, schedule-deletion.
 - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]: the canonical KMS cross-account recipe.
-- [[aws/recipes/cross-account-bucket-migration|Cross-account bucket migration]]: same pattern applied to S3 SSE-KMS.
+- [[aws/s3/cross-account-migration|Cross-account bucket migration]]: same pattern applied to S3 SSE-KMS.
 - [AWS KMS developer guide](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (official).

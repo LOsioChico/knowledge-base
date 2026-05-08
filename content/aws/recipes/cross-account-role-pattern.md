@@ -11,7 +11,7 @@ related:
   - "[[aws/lambda]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-snapshot]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/cli/iam-cheatsheet]]"
   - "[[aws/account-migrations]]"

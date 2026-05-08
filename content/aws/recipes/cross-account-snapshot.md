@@ -14,7 +14,7 @@ related:
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/kms]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/cli/kms-cheatsheet]]"
   - "[[aws/cli/rds-cheatsheet]]"
   - "[[aws/account-migrations]]"

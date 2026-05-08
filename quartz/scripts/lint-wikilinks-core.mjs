@@ -9,6 +9,7 @@ import { unified } from "unified"
 export const DEFAULT_INDEXED_FOLDERS = [
   { area: "nestjs", folder: "recipes" },
   { area: "aws", folder: "recipes" },
+  { area: "aws", folder: "s3" },
 ]
 
 const SIMILARITY_THRESHOLD = 0.2

@@ -10,7 +10,7 @@ related:
   - "[[aws/cli/kms-cheatsheet]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/recipes/cross-account-snapshot]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
   - "[[aws/kms]]"

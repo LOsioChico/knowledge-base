@@ -5,7 +5,7 @@ tags: [type/recipe, tech/aws, tech/s3]
 area: aws
 status: evergreen
 related:
-  - "[[aws/s3]]"
+  - "[[aws/s3/index]]"
   - "[[aws/cloudfront]]"
   - "[[aws/amplify]]"
   - "[[aws/recipes/index]]"
@@ -117,7 +117,7 @@ Same as normal S3: storage + request costs + egress. There is no extra fee for e
 
 ## See also
 
-- [[aws/s3|S3]] (parent concept).
+- [[aws/s3/index|S3]] (parent concept).
 - [[aws/cloudfront|CloudFront]] (the HTTPS + CDN front-end).
 - [[aws/amplify|Amplify Hosting]] (the recommended one-step alternative).
 - [Tutorial: configuring a static website using a custom domain registered with Route 53](https://docs.aws.amazon.com/AmazonS3/latest/userguide/website-hosting-custom-domain-walkthrough.html) (official end-to-end walkthrough).

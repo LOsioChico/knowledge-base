@@ -1,7 +1,7 @@
 ---
 title: S3
 aliases: [aws s3, simple storage service, amazon s3]
-tags: [type/concept, tech/aws, tech/s3]
+tags: [type/moc, tech/aws, tech/s3]
 area: aws
 status: evergreen
 related:
@@ -10,13 +10,13 @@ related:
   - "[[aws/iam]]"
   - "[[aws/cloudfront]]"
   - "[[aws/lambda]]"
-  - "[[aws/recipes/cross-account-bucket-migration]]"
+  - "[[aws/s3/cross-account-migration]]"
   - "[[aws/account-migrations]]"
-  - "[[aws/s3-storage-classes]]"
-  - "[[aws/recipes/s3-presigned-urls]]"
-  - "[[aws/recipes/s3-lifecycle-rules]]"
-  - "[[aws/recipes/s3-event-notifications]]"
-  - "[[aws/recipes/s3-static-website]]"
+  - "[[aws/s3/storage-classes]]"
+  - "[[aws/s3/presigned-urls]]"
+  - "[[aws/s3/lifecycle-rules]]"
+  - "[[aws/s3/event-notifications]]"
+  - "[[aws/s3/static-website]]"
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html
@@ -39,9 +39,9 @@ source:
 
 ## When to use S3 vs. something else
 
-- **Use S3** for: client-uploaded blobs, build artifacts, database backups, static website assets (front it with [[aws/cloudfront|CloudFront]]), data-lake parquet/json, log archives, machine-learning training data.
+- **Use S3** for: client-uploaded blobs, build artifacts, database backups, [[aws/s3/static-website|static website]] assets (front it with [[aws/cloudfront|CloudFront]]), data-lake parquet/json, log archives, machine-learning training data.
 - **Don't use S3 as a database.** No secondary indexes, no transactional updates across objects, list operations are O(prefix-scan). For metadata-heavy lookups, store the metadata in DynamoDB or PostgreSQL and keep the bytes in S3.
-- **Don't use S3 as a queue.** Object events fire via [[aws/recipes/s3-event-notifications|S3 Event Notifications]] into SNS, SQS, or [[aws/lambda|Lambda]], but S3 itself has no ordering or replay primitives.
+- **Don't use S3 as a queue.** Object events fire via [[aws/s3/event-notifications|S3 Event Notifications]] into SNS, SQS, or [[aws/lambda|Lambda]], but S3 itself has no ordering or replay primitives.
 
 ## Buckets and objects
 
@@ -83,7 +83,7 @@ Once `my-bucket` exists in account A's `us-east-1`, no other account can claim t
 S3 also offers an opt-in **account regional namespace** for general-purpose buckets: names follow the shape `<prefix>-<AccountId>-<Region>-an` and are reserved to your account, so no cross-account squatting is possible there. Pass `x-amz-bucket-namespace: account-regional` to `CreateBucket`. Useful for templating identical bucket names across Regions ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/gpbucketnamespaces.html#account-regional-gp-buckets)).
 
 > [!warning] Bucket name + Region are immutable
-> You cannot rename a bucket and you cannot change its Region after creation. If you picked the wrong Region, the only fix is: create a new bucket in the right Region and `aws s3 sync` everything across. See [[aws/recipes/cross-account-bucket-migration|cross-account bucket migration]] for the same shape applied across accounts.
+> You cannot rename a bucket and you cannot change its Region after creation. If you picked the wrong Region, the only fix is: create a new bucket in the right Region and `aws s3 sync` everything across. See [[aws/s3/cross-account-migration|cross-account bucket migration]] for the same shape applied across accounts.
 
 ## What S3 actually guarantees
 
@@ -123,7 +123,7 @@ S3 also exposes a **Block Public Access** toggle at both the account and the buc
 
 S3 has no flat fee. The bill is the sum of six independent components ([source](https://aws.amazon.com/s3/pricing/)):
 
-1. **Storage.** Per GB-month, varies by [[aws/s3-storage-classes|storage class]]. Standard is the most expensive per GB; Glacier Deep Archive is the cheapest by a wide margin (over an order of magnitude less per GB-month) but trades that for retrieval delays measured in hours.
+1. **Storage.** Per GB-month, varies by [[aws/s3/storage-classes|storage class]]. Standard is the most expensive per GB; Glacier Deep Archive is the cheapest by a wide margin (over an order of magnitude less per GB-month) but trades that for retrieval delays measured in hours.
 2. **Requests and data retrieval.** Per-1,000-requests for PUT/COPY/POST/LIST and per-10,000-requests for GET/SELECT. Infrequent-Access and Glacier classes also charge a per-GB **retrieval fee** on top of the request fee: that's the part that surprises people who pick IA for "cheap storage" and then read the data nightly.
 3. **Data transfer.** Egress out of AWS to the internet is billed per GB. Egress to other AWS Regions is billed too. Ingress is free. Transfer between S3 and an EC2 instance in the same Region is free.
 4. **Management and analytics.** S3 Storage Lens (org-wide storage metrics dashboard), Inventory (scheduled CSV/Parquet listing of objects), Batch Operations (managed bulk-action jobs), and Object Tagging each have their own per-object or per-feature fee. Off by default; only billed when enabled.
@@ -134,6 +134,11 @@ The two cost traps most teams hit: (1) **versioning without a lifecycle rule** (
 
 ## See also
 
+- [[aws/s3/storage-classes|S3 storage classes]]: per-class cost / latency / availability trade-offs (Standard, Intelligent-Tiering, IA, Glacier).
+- [[aws/s3/lifecycle-rules|S3 lifecycle rules]]: per-bucket JSON rules to age objects through cheaper classes and clean up failed uploads.
+- [[aws/s3/event-notifications|S3 event notifications]]: trigger SNS / SQS / [[aws/lambda|Lambda]] / EventBridge from object lifecycle events.
+- [[aws/s3/presigned-urls|S3 presigned URLs]]: time-limited URLs for browser-direct download or upload without making the bucket public.
+- [[aws/s3/static-website|S3 static website hosting]]: serve a bucket as a public site, optionally fronted by [[aws/cloudfront|CloudFront]] for HTTPS.
+- [[aws/s3/cross-account-migration|Cross-account bucket migration]]: end-to-end recipe for moving a bucket between AWS accounts.
 - [[aws/cli/s3|S3 CLI cheatsheet]]: the `aws s3` and `aws s3api` commands I reach for when inspecting or moving buckets.
-- [[aws/recipes/cross-account-bucket-migration|Cross-account bucket migration]]: end-to-end recipe for moving a bucket between AWS accounts.
 - [Amazon S3 user guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (official).

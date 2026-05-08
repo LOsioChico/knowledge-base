@@ -1,12 +1,12 @@
 ---
 title: S3 event notifications
 aliases: [s3 events, s3 object created event, s3 lambda trigger, s3 sqs notification]
-tags: [type/recipe, tech/aws, tech/s3]
+tags: [type/concept, tech/aws, tech/s3]
 area: aws
 status: evergreen
 related:
-  - "[[aws/s3]]"
-  - "[[aws/s3-storage-classes]]"
+  - "[[aws/s3/index]]"
+  - "[[aws/s3/storage-classes]]"
   - "[[aws/lambda]]"
   - "[[aws/recipes/index]]"
 source:
@@ -18,7 +18,7 @@ source:
 
 ## What can trigger a notification
 
-S3 publishes events for ten kinds of object lifecycle activity, including auto-tiering driven by [[aws/s3-storage-classes|Intelligent-Tiering]] ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
+S3 publishes events for ten kinds of object lifecycle activity, including auto-tiering driven by [[aws/s3/storage-classes|Intelligent-Tiering]] ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
 
 | Event family              | Wildcard                   | Concrete events                                                                                             |
 | ------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
@@ -126,7 +126,7 @@ Trade-off: per-event cost is slightly higher and you lose the per-rule key filte
 
 ## See also
 
-- [[aws/s3|S3]] (parent concept).
+- [[aws/s3/index|S3]] (parent concept).
 - [[aws/lambda|Lambda]] (most common destination).
 - [Using AWS Lambda with Amazon S3](https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) (full Lambda+S3 walkthrough).
 - [Enabling Amazon EventBridge for S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html) (the toggle and event schema).

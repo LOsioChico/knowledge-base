@@ -12,7 +12,7 @@ related:
   - "[[aws/lambda]]"
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/cli/cloudfront-cheatsheet]]"
-  - "[[aws/recipes/s3-static-website]]"
+  - "[[aws/s3/static-website]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/amplify/latest/userguide/welcome.html
