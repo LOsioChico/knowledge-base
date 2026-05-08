@@ -22,7 +22,23 @@ source:
 
 > Amazon RDS (Relational Database Service) is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group (the bundle of engine configuration like `max_connections`, `shared_buffers`).
 
-This area is a placeholder. Day-to-day commands live in [[aws/rds/cli|RDS CLI cheatsheet]]; the cross-account migration sits at [[aws/rds/cross-account-snapshot|cross-account snapshot]].
+## TL;DR
+
+- **DB instance = one engine on one host** (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, or Aurora-flavored Postgres/MySQL). You connect over `host:port`.
+- **DB snapshot = the backup primitive.** Crash-consistent point-in-time copy of the storage volume; encrypted with the same [[aws/kms/index|KMS]] key as the source. Migrations are snapshot dances.
+- **Multi-AZ** is sync standby in another Availability Zone for production failover (~60-120s); **read replicas** are async (and promotable to standalone primaries).
+- **Encryption is a create-time decision.** You can't enable it on an existing unencrypted instance: the only path is snapshot → copy under a CMK → restore.
+- **Operational defaults to set on day one**: Multi-AZ on for user-facing workloads, deletion protection on, customer-managed KMS key (so you can migrate later), Performance Insights on.
+
+## When to use
+
+- **Use RDS** for: any production relational database where you don't want to babysit the host, backups, or failover.
+- **Use Aurora (also under RDS)** when you need the cluster-storage architecture, faster failover, or read replicas with sub-second lag.
+- **Don't use RDS** for: throwaway dev databases (run Postgres in a container) or workloads that need filesystem-level access (run on [[aws/ec2/index|EC2]]).
+
+## Mental model
+
+The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent (taken without quiescing the engine, equivalent to recovering from a sudden power-off) point-in-time copies of the storage volume, are encrypted with the same KMS key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class. Almost every "move this database somewhere" workflow is a snapshot dance: cross-Region copy, cross-account share, restore-into-new-shape, major-version upgrade test.
 
 ## Pending notes
 

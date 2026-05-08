@@ -26,7 +26,27 @@ source:
 
 > AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds/index|RDS]], EBS (Elastic Block Store), and [[aws/secrets-manager|Secrets Manager]] call KMS on your behalf to encrypt + decrypt data keys.
 
-This area is a placeholder. Day-to-day commands live in [[aws/kms/cli|KMS CLI cheatsheet]]; the canonical cross-account pattern shows up in [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]].
+## TL;DR
+
+- **A KMS key is a logical container** for cryptographic material that never leaves AWS-managed HSMs (hardware security modules) unencrypted. You don't get raw key bytes.
+- **Three key flavors**: customer-managed (you own the policy, can share cross-account), AWS-managed (`alias/aws/<service>`, AWS owns the policy, locked to one account), AWS-owned (invisible, shared across customers).
+- **Key policies are the primary authority.** Even an [[aws/iam/index|IAM]] admin in your account cannot use a key unless the key policy allows it (directly or via the canonical `Principal: { AWS: "arn:aws:iam::ACCOUNT:root" }` "delegate to IAM" statement).
+- **Aliases (`alias/<name>`) are the stable name**; key IDs are implementation detail. Reference keys by alias in app config.
+- **Default-key encryption locks you in.** Anything encrypted with `alias/aws/<service>` cannot be shared cross-account; use a customer-managed key from day one for anything you might ever move.
+
+## When to use
+
+- Reach for KMS implicitly through the encryption toggle on every service that supports encryption-at-rest. Reach for it explicitly when: you need cross-account sharing of encrypted resources, you want key-rotation control, or you need to call `Encrypt`/`Decrypt` directly for application-level secrets.
+
+## Mental model
+
+| Key kind                                | Who creates it                                                | Who controls the policy                      | Cross-account use?                              |
+| --------------------------------------- | ------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------- |
+| **Customer-managed**                    | You                                                           | You (full control of key policy)             | Yes                                             |
+| **AWS-managed** (`alias/aws/<service>`) | AWS, on demand when a service first needs one in your account | AWS (you can read the policy, can't edit it) | **No**: the policy is locked. This is the trap. |
+| **AWS-owned**                           | AWS (shared across many customers)                            | AWS                                          | No (and invisible to you)                       |
+
+Cross-account use needs **both** sides to agree: a statement in account A's key policy allowing the relevant actions for `Principal: { AWS: "arn:aws:iam::ACCOUNT_B:root" }`, AND an IAM policy on account B's principal granting the same actions on the key ARN. Granting only one side fails with near-identical `AccessDenied` messages, which is why this is a recurring footgun.
 
 ## Pending notes
 

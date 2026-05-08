@@ -20,14 +20,43 @@ source:
 
 > AWS Amplify Hosting is the "git push to deploy a frontend" managed service: you connect a repo (or upload a zip), Amplify builds it, ships it to an internally-managed [[aws/cloudfront/index|CloudFront]] distribution, and serves it under a default `*.amplifyapp.com` hostname or a custom domain. The whole thing is one CLI surface (`aws amplify`) wrapping app, branch, deployment, and domain primitives.
 
-This area is a placeholder. Day-to-day commands live in [[aws/amplify/cli|Amplify CLI cheatsheet]]; the cross-account move is at [[aws/amplify/cross-account-migration|cross-account Amplify app migration]].
+## TL;DR
+
+- **Four primitives**: App (project) → Branch (per-environment config) → Deployment / Job (one build) → Domain association (custom hostnames).
+- **Two ways to ship**: git-connected (auto-build on push) or manual zip (`create-deployment` returns a presigned URL, you `curl --upload-file` then `start-deployment`).
+- **Hosting underneath is CloudFront** + ACM in `us-east-1` + Route53 records (if your domain is in Route53). Amplify owns and hides all three.
+- **Custom domain = `create-domain-association`**: provisions ACM cert, attaches it, sets the alias.
+- **Amplify Gen 2** is the code-first successor to the original Amplify CLI; it co-deploys data/auth/storage from the same project.
+
+## When to use
+
+- **Use Amplify Hosting** for: SPA frontends with a build step, Next.js SSR (the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
+- **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, Lambda@Edge): use S3 + CloudFront directly.
+- **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services: provision compute on [[aws/lambda/index|Lambda]], ECS, or App Runner instead.
+
+## Mental model
+
+```
+App (one per project)
+└── Branch (one per git branch you want deployed: main, staging, etc.)
+    └── Deployment / Job (one per build, manual zip upload, or git push)
+        └── Domain association (custom hostnames + which branch each subdomain maps to)
+```
+
+| Primitive              | What it is                                                                                                                  |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| **App**                | Top-level container. Has a name, a platform (`WEB`, `WEB_COMPUTE` for SSR), build settings, env vars, custom rewrite rules. |
+| **Branch**             | Per-environment config: which git branch to track (or no git, for zip-only), which env vars, which stage.                   |
+| **Deployment / Job**   | One build. `JobType` is `RELEASE` (git push), `RETRY`, `MANUAL` (zip upload), or `WEB_HOOK`.                                |
+| **Domain association** | Custom hostnames mapped to branches (`app.example.com` → `main`, `staging.example.com` → `staging`).                        |
+
+Underneath, Amplify provisions a CloudFront distribution that you don't see in `cloudfront list-distributions`. You manage it through `aws amplify` instead.
 
 ## Pending notes
 
-- App / Branch / Deployment / Domain primitives.
 - Git-connected vs manual zip deployment; when each is appropriate.
 - Domain associations leak CloudFront alias claims: tie-in to [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost claims]].
-- Amplify Gen 2 (the code-first successor to the original Amplify CLI) for full-stack deployments.
+- Amplify Gen 2 for full-stack deployments.
 
 ## See also
 

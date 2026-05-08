@@ -25,7 +25,25 @@ source:
 
 > AWS Identity and Access Management (IAM) is the authn + authz layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
 
-This area is a placeholder. Triage commands live in [[aws/iam/cli|IAM CLI cheatsheet]]; the canonical cross-account pattern is [[aws/recipes/cross-account-role-pattern|cross-account assume-role]].
+## TL;DR
+
+- **Every API call is signed by a principal** (user, role session, or root) and evaluated against a stack of policies. Default is deny.
+- **Identity-based policies** attach to a user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). An action is allowed only if at least one allows AND no policy denies.
+- **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy that allows account B's principals; B calls AssumeRole, gets short-lived credentials.
+- **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center.
+- **SCPs / RCPs / permission boundaries are intersections** with the identity policy: they subtract, never add.
+
+## When to use
+
+- IAM is non-optional: it gates every other service. The relevant question is which **principal kind** to use (root → only the locked-down account-root tasks; IAM user → avoid for new workloads; role → default for everything that runs code or federates a human).
+
+## Mental model
+
+| Principal kind | Long-lived credentials?                          | Use for                                                                                                                                                 |
+| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Root user**  | Yes (account password + access keys)             | Only the handful of tasks that require root. Then never again.                                                                                          |
+| **IAM user**   | Yes (password, access keys)                      | Avoid for new workloads. Real humans should federate via IAM Identity Center (formerly AWS SSO).                                                        |
+| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda/index\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account is `sts:AssumeRole`. |
 
 ## Pending notes
 

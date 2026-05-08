@@ -39,6 +39,21 @@ Rules:
 - File names: kebab-case, descriptive nouns (`request-lifecycle.md`, not `req-lc.md`).
 - No orphans. A note that nothing links to is a bug.
 
+## AWS service indexes (slim shape)
+
+In the `content/aws/` area, **only `aws/s3/index.md` is a deeply-developed concept note**. Every other service's `index.md` follows a slim shape that fits on roughly one screen:
+
+1. Tagline (single `>` blockquote, mandatory).
+2. `## TL;DR` — 4-6 bullets naming the service's primitives, defaults, pricing model.
+3. `## When to use` — 2-4 bullets for "use it for X" / "don't use it for Y".
+4. `## Mental model` — OPTIONAL. Include only when the service has a non-obvious primitive shape worth a small table or one-paragraph diagram (Lambda's function/role/triggers/aliases; RDS's instance vs snapshot; IAM's principal taxonomy; KMS's three key flavors + key-policy primacy; CloudFront's distribution/origin/behavior/alias model; Amplify's App→Branch→Deployment→Domain hierarchy). Skip for services where TL;DR already conveys the model (DynamoDB, SQS, SNS, ECS, VPC, EC2 at this depth).
+5. `## Pending notes` — bullet list of recipes/topics planned for sibling notes.
+6. `## See also` — CLI cheatsheet + recipes + official docs link.
+
+Status stays `seed` until the user explicitly graduates a service to S3-style depth.
+
+The non-negotiable line is **depth**: slim indexes never grow into long prose sections, "How it works" deep dives, "Operational defaults" lists, or gotcha callouts. Those belong in sibling notes (`aws/<service>/<topic>.md`) so the index stays scannable. When asked to "expand" a service, write a sibling note — do not grow the index. Mirror `aws/dynamodb/index.md` (no Mental model) or `aws/lambda/index.md` (with Mental model) for new stubs; pick the closer analog.
+
 ## Frontmatter schema (required)
 
 Every `.md` under `content/` MUST start with:

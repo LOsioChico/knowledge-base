@@ -20,11 +20,31 @@ source:
 
 > Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify/index|Amplify]] app), attach a domain and a certificate, and CloudFront holds the response in edge locations and serves it from the nearest one.
 
-This area is a placeholder. Day-to-day commands live in [[aws/cloudfront/cli|CloudFront CLI cheatsheet]]; the alias-collision recipe is at [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost claims]].
+## TL;DR
+
+- **Distribution = the CDN endpoint.** One distribution, one or more origins, one or more behaviors (path-pattern routing rules), one or more aliases.
+- **Aliases (CNAMEs) are globally unique** across all AWS accounts. The same hostname can live on only one distribution at a time; collisions need eviction or a wildcard override.
+- **Default 24h TTL** plus a lookup key that defaults to just the path. Forwarded headers/cookies/query-strings each fragment the lookup, so adding `Authorization` to the key turns the CDN into a free origin proxy by accident.
+- **ACM certificate must live in `us-east-1`** if you use any custom alias (regardless of where the origin lives).
+- **Amplify hides its CloudFront distribution.** You won't see it in `cloudfront list-distributions`; you talk to it through `aws amplify`.
+
+## When to use
+
+- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical SPA setup), TLS + custom domain in front of an ALB, edge serving of API responses, geo-restricted distribution.
+- **Don't use CloudFront** as a load balancer (it's an edge proxy, not a balancer; put an ALB underneath if you also need balancing).
+- **Don't use CloudFront** for low-latency dynamic API responses with tight key constraints: each forwarded header/cookie/query-string fragments the lookup.
+
+## Mental model
+
+A **distribution** is the unit of "I have a CDN endpoint". Each distribution carries:
+
+- **One or more origins**: the actual source of the bytes (S3, ALB, custom HTTPS, Amplify-managed origin).
+- **A default behavior plus optional path-pattern behaviors**: what to keep at the edge, for how long, what headers/cookies/query-strings to forward, which origin to use.
+- **Aliases (alternate domain names)**: the hostnames the distribution responds to. Plus the auto-generated `dXXX.cloudfront.net` hostname that always works.
+- **An ACM certificate in `us-east-1`**: required for any non-default alias.
 
 ## Pending notes
 
-- Distribution + origin + behavior + alias model; ACM certificate must live in `us-east-1`.
 - Default 24h TTL and the lookup-key trap (forwarded headers/cookies/query-strings fragment the lookup).
 - Alternate domain names are globally unique across all AWS accounts; the eviction options.
 - Amplify hides its CloudFront distribution; you talk to it through `aws amplify` instead.
