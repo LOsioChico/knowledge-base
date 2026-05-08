@@ -80,14 +80,10 @@ Three problems Effect solves that plain TypeScript + `Promise` does not:
 `Promise<T>` rejects with `unknown` (or `any`, depending on your tsconfig). The compiler will not tell you which `await` could throw what. `Effect<A, E, R>` puts the failure type in `E`, so:
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class NetworkError {
-  readonly _tag = "NetworkError";
-}
-class ParseError {
-  readonly _tag = "ParseError";
-}
+class NetworkError extends Data.TaggedError("NetworkError")<{}> {}
+class ParseError extends Data.TaggedError("ParseError")<{}> {}
 
 declare const fetchUser: () => Effect.Effect<{ id: string }, NetworkError | ParseError>;
 

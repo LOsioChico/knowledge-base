@@ -10,6 +10,7 @@ related:
   - "[[effect-ts/what-is-effect]]"
 source:
   - https://effect.website/docs/error-management/expected-errors/
+  - https://effect.website/docs/error-management/unexpected-errors/
   - https://effect.website/docs/getting-started/creating-effects/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
 ---
@@ -26,48 +27,55 @@ That's it: typed errors are part of the core `effect` package. Examples below as
 
 ## 1. Declare a tagged error
 
-The `_tag` field is the discriminator the error-handling combinators rely on. Two common patterns:
+`Data.TaggedError` is the canonical declaration form ([expected-errors docs](https://effect.website/docs/error-management/expected-errors/)): it adds the `_tag` field, the constructor, and structural equality in one line.
 
 ```typescript
-// Pattern A: plain class with a literal _tag.
-class NotFoundError {
-  readonly _tag = "NotFoundError";
-  constructor(readonly id: string) {}
-}
+import { Data } from "effect";
 
-// Pattern B: extend Error so stack traces still work.
-class NetworkError extends Error {
-  readonly _tag = "NetworkError";
-  constructor(
-    message: string,
-    readonly cause?: unknown,
-  ) {
-    super(message);
-  }
-}
+// Empty payload.
+class HttpError extends Data.TaggedError("HttpError")<{}> {}
+
+// Typed payload — the constructor is generated for you.
+class NotFoundError extends Data.TaggedError("NotFoundError")<{
+  readonly id: string;
+}> {}
+
+// Wrap an underlying cause when the failure originates from a thrown value.
+class ParseError extends Data.TaggedError("ParseError")<{
+  readonly cause: unknown;
+}> {}
+
+const e = new NotFoundError({ id: "u_42" });
+console.log(e._tag, e.id);
+// Output: NotFoundError u_42
 ```
 
-Use Pattern A for pure domain errors (no stack-trace value), Pattern B when the error wraps something thrown (HTTP failure, parser blowup) and you want the original stack.
-
-> [!info]- `Data.TaggedError` shorthand
-> Effect ships `Data.TaggedError("Tag")<{ field: type }>` as a one-liner that defines the class, the `_tag`, the constructor, and equality semantics. Mentioned here so you recognize it in the docs; covered in detail in a future Schema/Data note.
+> [!info]- Plain class as an alternative
+> If you can't import `Data` (older Effect snippets, custom error hierarchies that already extend a project base class), a plain class with a literal `_tag` works the same for `catchTag` discrimination:
+>
+> ```typescript
+> class HttpError {
+>   readonly _tag = "HttpError";
+> }
+> ```
+>
+> Extend the built-in `Error` if you want a JS stack trace alongside the `_tag`. Either form is recognized by `Effect.catchTag`; `Data.TaggedError` is preferred because the docs lead with it and it gives you constructor + equality for free.
 
 ## 2. Lift fallible code into an `Effect`
 
 Synchronous code that might throw → `Effect.try`:
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class ParseError {
-  readonly _tag = "ParseError";
-  constructor(readonly cause: unknown) {}
-}
+class ParseError extends Data.TaggedError("ParseError")<{
+  readonly cause: unknown;
+}> {}
 
 const parseJson = (input: string) =>
   Effect.try({
     try: () => JSON.parse(input) as unknown,
-    catch: (cause) => new ParseError(cause),
+    catch: (cause) => new ParseError({ cause }),
   });
 // parseJson :: (input: string) => Effect<unknown, ParseError, never>
 
@@ -86,36 +94,31 @@ try {
 Async code (a `Promise`) → `Effect.tryPromise` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/)):
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class NetworkError {
-  readonly _tag = "NetworkError";
-  constructor(readonly cause: unknown) {}
-}
+class NetworkError extends Data.TaggedError("NetworkError")<{
+  readonly cause: unknown;
+}> {}
 
 const fetchTodo = (id: number) =>
   Effect.tryPromise({
     try: () => fetch(`https://jsonplaceholder.typicode.com/todos/${id}`),
-    catch: (cause) => new NetworkError(cause),
+    catch: (cause) => new NetworkError({ cause }),
   });
 // fetchTodo :: (id: number) => Effect<Response, NetworkError, never>
 ```
 
-The `catch` callback is **optional but strongly recommended**: with it, you map whatever the underlying code threw into a typed error of your choice. Without it, Effect lifts the failure into the built-in `UnknownException` and the resulting `E` is `UnknownException` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise) state: "If you don't provide a catch function, the error is caught and the effect fails with an UnknownException"). For anything you want to discriminate later with `catchTag`, supply `catch` so the `E` carries a tag.
+The `catch` callback is **optional**. With it, you map whatever the underlying code threw into a typed error you control. Without it, Effect lifts the failure into the built-in `UnknownException` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise) state: "If you don't provide a catch function, the error is caught and the effect fails with an UnknownException"). Use the object form whenever you want the failure to carry a `_tag` you can later discriminate with `catchTag`.
 
 ## 3. Compose effects; the error channel widens
 
 Inside `Effect.gen`, `yield*` an effect to use its result. The compiler unions every error type yielded into the gen block's `E`:
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class ParseError {
-  readonly _tag = "ParseError";
-}
-class NetworkError {
-  readonly _tag = "NetworkError";
-}
+class ParseError extends Data.TaggedError("ParseError")<{}> {}
+class NetworkError extends Data.TaggedError("NetworkError")<{}> {}
 
 declare const fetchTodo: (id: number) => Effect.Effect<Response, NetworkError>;
 declare const parseJson: (input: string) => Effect.Effect<unknown, ParseError>;
@@ -142,14 +145,10 @@ You did not annotate `getTodo`'s return type: the compiler inferred the union. A
 `Effect.catchTag` ([source signature](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890)) takes a `_tag` literal, a handler that runs when the matching tag fires, and **removes that tag from the residual `E`**:
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class HttpError {
-  readonly _tag = "HttpError";
-}
-class ValidationError {
-  readonly _tag = "ValidationError";
-}
+class HttpError extends Data.TaggedError("HttpError")<{}> {}
+class ValidationError extends Data.TaggedError("ValidationError")<{}> {}
 
 declare const program: Effect.Effect<string, HttpError | ValidationError>;
 
@@ -172,7 +171,8 @@ const fullyHandled = program.pipe(
 );
 // fullyHandled :: Effect<string, never, never>
 // runSync / runPromise will not reject for any *expected* error.
-// Defects (unrecoverable bugs, throws not lifted into E) are still thrown; see §5.
+// Defects (unrecoverable bugs, anything that escapes into Effect.die)
+// still kill the fiber; see §5.
 ```
 
 ## 5. Recover from anything with `catchAll`
@@ -190,23 +190,18 @@ const safe = program.pipe(
 // safe :: Effect<string, never, never>
 ```
 
-Note from the docs: "This function only handles recoverable errors." Defects (bugs, throws not lifted into `E`) are NOT caught by `catchAll`; they live in a separate "defect" channel handled by `Effect.catchAllCause` / `Effect.catchAllDefect`. For now, treat `catchAll` as the "I've handled every expected failure" combinator.
+Note from the docs: "This function only handles recoverable errors." **Defects** are unexpected failures: bugs, things you'd consider unrecoverable. They live in a separate channel and `catchAll` will not touch them. You produce one explicitly with [`Effect.die`](https://effect.website/docs/error-management/unexpected-errors/), and you handle them with `Effect.catchAllCause` / `Effect.catchAllDefect`. For now, treat `catchAll` as the "I've handled every expected failure" combinator.
 
 ## 6. Putting it together
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class NotFoundError {
-  readonly _tag = "NotFoundError";
-  constructor(readonly id: string) {}
-}
-class NetworkError {
-  readonly _tag = "NetworkError";
-}
-class ParseError {
-  readonly _tag = "ParseError";
-}
+class NotFoundError extends Data.TaggedError("NotFoundError")<{
+  readonly id: string;
+}> {}
+class NetworkError extends Data.TaggedError("NetworkError")<{}> {}
+class ParseError extends Data.TaggedError("ParseError")<{}> {}
 
 declare const fetchUser: (
   id: string,
@@ -235,7 +230,7 @@ console.log(await Effect.runPromise(getDisplayName("u_42")));
 > Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` wrapping your error. Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly.
 
 > [!warning] Omit the `catch` callback and you get `UnknownException`, not a tagged error
-> `Effect.try` and `Effect.tryPromise` accept `catch` as **optional**. Without it, failures land in the error channel as the built-in `UnknownException` ([docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise)): the call still type-checks, but the resulting `E` carries no `_tag` you defined, so `Effect.catchTag("YourTag", ...)` cannot narrow it. Supply `catch` whenever you want the failure to be discriminable downstream.
+> `Effect.try` and `Effect.tryPromise` accept `catch` as **optional**. Without it, failures land in the error channel as the built-in `UnknownException` ([docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise)): the call still type-checks, but the resulting `E` carries no `_tag` you defined, so `Effect.catchTag("YourTag", ...)` cannot narrow it. Use the object form (`{ try, catch }`) when you want the failure to be discriminable downstream.
 
 > [!warning] `_tag` collisions silently merge error cases
 > `Effect.catchTag("X", ...)` matches any error whose `_tag === "X"`. If two unrelated error classes both use `_tag = "Error"`, the handler fires for both and the `Exclude` removes both from the residual `E`. Pick distinct, namespaced tags (`"User.NotFound"`, `"Db.Timeout"`) once your taxonomy grows.

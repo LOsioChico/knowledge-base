@@ -117,16 +117,16 @@ console.log("returned:", result);
 Real programs fail. The whole point of Effect is that failures show up in the type signature. Wrap a fallible operation with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
 
-class ParseError extends Error {
-  readonly _tag = "ParseError";
-}
+class ParseError extends Data.TaggedError("ParseError")<{
+  readonly message: string;
+}> {}
 
 const parseJson = (input: string) =>
   Effect.try({
     try: () => JSON.parse(input) as unknown,
-    catch: (cause) => new ParseError(`invalid JSON: ${String(cause)}`),
+    catch: (cause) => new ParseError({ message: `invalid JSON: ${String(cause)}` }),
   });
 // parseJson :: (input: string) => Effect<unknown, ParseError, never>
 
