@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[nestjs/index]]"
   - "[[aws/index]]"
+  - "[[effect-ts/index]]"
   - "[[inbox]]"
 ---
 
@@ -16,6 +17,7 @@ Welcome to my personal knowledge base. Patterns, gotchas, and notes I keep comin
 
 - [[nestjs/index|NestJS]]: fundamentals, patterns, data, auth, testing, observability
 - [[aws/index|AWS]]: cross-account migration patterns and gotchas
+- [[effect-ts/index|Effect-TS]]: [[effect-ts/typed-errors|typed errors]], lazy effect descriptions, the runtime model
 
 ## Meta
 

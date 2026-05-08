@@ -117,7 +117,7 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 ### `tech/*` (specific technology)
 
-- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/nest-cli`, `tech/typeorm`, `tech/postgres`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved), `tech/aws`, `tech/aws-cli`, `tech/cloudfront`, `tech/amplify`, `tech/rds`, `tech/iam`, `tech/acm`, `tech/s3`, `tech/ec2`, `tech/lambda`, `tech/secrets-manager`, `tech/kms`, `tech/sts`, `tech/route53`, `tech/dynamodb`, `tech/sqs`, `tech/sns`, `tech/vpc`, `tech/ecs`
+- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/nest-cli`, `tech/typeorm`, `tech/postgres`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved), `tech/aws`, `tech/aws-cli`, `tech/cloudfront`, `tech/amplify`, `tech/rds`, `tech/iam`, `tech/acm`, `tech/s3`, `tech/ec2`, `tech/lambda`, `tech/secrets-manager`, `tech/kms`, `tech/sts`, `tech/route53`, `tech/dynamodb`, `tech/sqs`, `tech/sns`, `tech/vpc`, `tech/ecs`, `tech/effect-ts`
 
 ### Cross-cutting concepts (no namespace, used sparingly)
 
