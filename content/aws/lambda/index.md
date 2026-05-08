@@ -11,6 +11,7 @@ related:
   - "[[aws/amplify/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3/index]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/s3/event-notifications]]"
   - "[[aws/s3/presigned-urls]]"
   - "[[aws/secrets-manager]]"

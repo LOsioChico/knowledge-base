@@ -6,6 +6,7 @@ area: aws
 status: evergreen
 related:
   - "[[aws/s3/index]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/index]]"
   - "[[aws/s3/lifecycle-rules]]"
   - "[[aws/s3/event-notifications]]"

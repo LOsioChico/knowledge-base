@@ -7,6 +7,7 @@ status: evergreen
 related:
   - "[[aws/index]]"
   - "[[aws/s3/cli]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/iam/index]]"
   - "[[aws/cloudfront/index]]"
   - "[[aws/lambda/index]]"

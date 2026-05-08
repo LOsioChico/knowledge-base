@@ -9,6 +9,7 @@ related:
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/cli/query-and-output]]"
   - "[[aws/s3/index]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/s3/cross-account-migration]]"
 source:
 ---

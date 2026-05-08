@@ -54,6 +54,19 @@ Status stays `seed` until the user explicitly graduates a service to S3-style de
 
 The non-negotiable line is **depth**: slim indexes never grow into long prose sections, "How it works" deep dives, "Operational defaults" lists, or gotcha callouts. Those belong in sibling notes (`aws/<service>/<topic>.md`) so the index stays scannable. When asked to "expand" a service, write a sibling note — do not grow the index. Mirror `aws/dynamodb/index.md` (no Mental model) or `aws/lambda/index.md` (with Mental model) for new stubs; pick the closer analog.
 
+### Quickstart (recommended sibling)
+
+Each service folder SHOULD have a `aws/<service>/quickstart.md` recipe: a hands-on walkthrough that takes a beginner from "I have AWS credentials" to "the service is doing something for me" in ~10 minutes. Mirror `aws/s3/quickstart.md`. Shape:
+
+1. Tagline.
+2. `## Before you start` — prereqs (CLI profile, Region) + a 3-4 line shell-export block defining the variables every later command reuses (`AWS_PROFILE`, `REGION`, `ACCOUNT_ID`, plus the per-service identifier).
+3. Numbered steps: **create the primitive with safe defaults** → **use it once** (upload / invoke / publish) → **inspect** → **share or wire up** (presigned URL, public function URL, etc.) → **clean up**.
+4. `## Where to go next` — wikilinks to the deeper sibling notes (lifecycle, storage classes, event notifications, etc.).
+5. `## See also` — concept index + official docs.
+
+Status: `evergreen` once written. Skip the quickstart for services where there is no meaningful single-thread "do this to make it work" path (e.g. IAM is a cross-cutting layer, not a primitive you stand up in 10 minutes); for those, leave only the slim index.
+
+
 ## Frontmatter schema (required)
 
 Every `.md` under `content/` MUST start with:

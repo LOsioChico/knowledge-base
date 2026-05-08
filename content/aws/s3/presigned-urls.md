@@ -6,6 +6,7 @@ area: aws
 status: evergreen
 related:
   - "[[aws/s3/index]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/iam/index]]"
   - "[[aws/cloudfront/index]]"
   - "[[aws/lambda/index]]"

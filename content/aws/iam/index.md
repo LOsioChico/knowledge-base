@@ -14,6 +14,7 @@ related:
   - "[[aws/lambda/index]]"
   - "[[aws/ecs/index]]"
   - "[[aws/s3/index]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/rds/cross-account-snapshot]]"

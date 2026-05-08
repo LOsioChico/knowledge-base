@@ -12,6 +12,7 @@ related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/query-and-output]]"
   - "[[aws/s3/cli]]"
+  - "[[aws/s3/quickstart]]"
   - "[[aws/iam/cli]]"
   - "[[aws/rds/cli]]"
   - "[[aws/iam/index]]"
