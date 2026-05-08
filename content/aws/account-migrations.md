@@ -9,12 +9,12 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
-  - "[[aws/recipes/alternate-domain-claim]]"
-  - "[[aws/recipes/cross-account-app-migration]]"
-  - "[[aws/recipes/ec2-snapshot-all-instances]]"
-  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
+  - "[[aws/cloudfront/alternate-domain-claim]]"
+  - "[[aws/amplify/cross-account-migration]]"
+  - "[[aws/ec2/snapshot-all-instances]]"
+  - "[[aws/ec2/ami-cross-account-copy]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/rds/index]]"
   - "[[aws/s3/index]]"
@@ -47,15 +47,15 @@ related:
 
 ## Per-service moves
 
-| Service                              | Recipe                                                                                  | What it covers                                                                                                                |
-| ------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [[aws/rds/index\|RDS]]               | [[aws/recipes/cross-account-snapshot]]                                                  | Encrypted snapshot share via re-encrypt with a customer-managed [[aws/kms/index\|KMS]] key (CMK) + restore in target account. |
-| [[aws/s3/index\|S3]]                 | [[aws/s3/cross-account-migration]]                                                      | Recreate bucket config + cross-account `s3 sync`.                                                                             |
-| [[aws/amplify/index\|Amplify]]       | [[aws/recipes/cross-account-app-migration]]                                             | `create-app` → branch → manual zip deployment → domain-association move.                                                      |
-| [[aws/cloudfront/index\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]                                                  | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                             |
-| [[aws/iam/index\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]                                              | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                               |
-| [[aws/ec2/index\|EC2]]               | [[aws/recipes/ec2-snapshot-all-instances]] + [[aws/recipes/ec2-ami-cross-account-copy]] | One AMI per running/stopped instance, share + `copy-image` so the target account owns an independent AMI.                     |
-| [[aws/kms/index\|KMS]]               | [[aws/kms/index]]                                                                       | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].               |
+| Service                              | Recipe                                                                  | What it covers                                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [[aws/rds/index\|RDS]]               | [[aws/rds/cross-account-snapshot]]                                      | Encrypted snapshot share via re-encrypt with a customer-managed [[aws/kms/index\|KMS]] key (CMK) + restore in target account. |
+| [[aws/s3/index\|S3]]                 | [[aws/s3/cross-account-migration]]                                      | Recreate bucket config + cross-account `s3 sync`.                                                                             |
+| [[aws/amplify/index\|Amplify]]       | [[aws/amplify/cross-account-migration]]                                 | `create-app` → branch → manual zip deployment → domain-association move.                                                      |
+| [[aws/cloudfront/index\|CloudFront]] | [[aws/cloudfront/alternate-domain-claim]]                               | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                             |
+| [[aws/iam/index\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]                              | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                               |
+| [[aws/ec2/index\|EC2]]               | [[aws/ec2/snapshot-all-instances]] + [[aws/ec2/ami-cross-account-copy]] | One AMI per running/stopped instance, share + `copy-image` so the target account owns an independent AMI.                     |
+| [[aws/kms/index\|KMS]]               | [[aws/kms/index]]                                                       | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].               |
 
 ## Recommended order
 
@@ -68,8 +68,8 @@ related:
 
 ## Failure modes worth knowing about up front
 
-- **Encrypted snapshots can't be shared with the default service KMS key.** [[aws/recipes/cross-account-snapshot|Recipe]] handles the re-encrypt step.
-- **CloudFront alternate-domain claims linger after distribution deletion.** [[aws/recipes/alternate-domain-claim|Bypass with your own ACM cert]].
+- **Encrypted snapshots can't be shared with the default service KMS key.** [[aws/rds/cross-account-snapshot|Recipe]] handles the re-encrypt step.
+- **CloudFront alternate-domain claims linger after distribution deletion.** [[aws/cloudfront/alternate-domain-claim|Bypass with your own ACM cert]].
 - **Cross-account KMS needs BOTH the owning-account key policy AND an IAM policy on the consumer principal** (the IAM user or role making the `Decrypt`/`Encrypt` call). Granting only one and wondering why it fails is universal.
 - **`sts:AssumeRole` without `ExternalId` in the trust policy** is a confused-deputy attack (a third party tricking your role into acting on their behalf) waiting to happen. [[aws/recipes/cross-account-role-pattern|Always set one]].
 - **Wrong `--profile` on a write command.** Run `aws sts get-caller-identity` first, every time.

@@ -8,8 +8,8 @@ related:
   - "[[aws/index]]"
   - "[[aws/recipes/index]]"
   - "[[aws/ec2/index]]"
-  - "[[aws/recipes/ec2-snapshot-all-instances]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/ec2/snapshot-all-instances]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/kms/index]]"
   - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
@@ -23,11 +23,11 @@ source:
   - https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-image.html
 ---
 
-> Move an [[aws/recipes/ec2-snapshot-all-instances|EC2 AMI]] from a source AWS account into a destination account so the destination owns an independent copy. The trap: granting launch permission alone lets the destination _boot_ from the AMI but does NOT let it _copy_ the AMI; a separate snapshot share is required for that.
+> Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] from a source AWS account into a destination account so the destination owns an independent copy. The trap: granting launch permission alone lets the destination _boot_ from the AMI but does NOT let it _copy_ the AMI; a separate snapshot share is required for that.
 
 ## When to use this
 
-- You took AMI backups in account A (e.g. with [[aws/recipes/ec2-snapshot-all-instances|snapshot every EC2 instance]]) and want them owned by account B for an [[aws/account-migrations|account migration]] or DR archive.
+- You took AMI backups in account A (e.g. with [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]]) and want them owned by account B for an [[aws/account-migrations|account migration]] or DR archive.
 - You want the AMI to survive even if account A is closed or the source AMI is deregistered. After `copy-image` finishes, the destination AMI and its snapshots are fully independent.
 
 If you only need the destination to launch instances (no ownership transfer), stop after the share step and skip the copy.
@@ -131,7 +131,7 @@ aws ec2 describe-snapshots --profile dest --region SOURCE_REGION \
 
 ### 4. (Encrypted volumes only) share the [[aws/kms/index|KMS]] key
 
-If the source snapshot is encrypted with a customer-managed [[aws/kms/index|KMS]] key (CMK), grant the destination account `kms:Decrypt`, `kms:DescribeKey`, `kms:CreateGrant` on it via the key policy. Same key-policy edit pattern as [[aws/recipes/cross-account-snapshot|cross-account snapshot sharing]] for [[aws/rds/index|RDS]] (sections "Grant account B use of the key" and "Grant a re-encrypt key in account-b").
+If the source snapshot is encrypted with a customer-managed [[aws/kms/index|KMS]] key (CMK), grant the destination account `kms:Decrypt`, `kms:DescribeKey`, `kms:CreateGrant` on it via the key policy. Same key-policy edit pattern as [[aws/rds/cross-account-snapshot|cross-account snapshot sharing]] for [[aws/rds/index|RDS]] (sections "Grant account B use of the key" and "Grant a re-encrypt key in account-b").
 
 Snapshots encrypted with the default `aws/ebs` AWS-managed key **cannot be shared**: `modify-snapshot-attribute` will fail. The fix is to first re-encrypt under a CMK with [`copy-snapshot --kms-key-id`](https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-snapshot.html), share that copy instead, then proceed.
 
@@ -207,7 +207,7 @@ Revoking the share does not affect the destination's already-completed copy.
 
 ## Cleanup later
 
-The destination account now owns two storage costs per AMI: the AMI's snapshot blocks. To delete cleanly, use the same deregister + delete-snapshot sequence as in [[aws/recipes/ec2-snapshot-all-instances|snapshot every EC2 instance]]. The source account's original AMI and snapshot are independent and can be deregistered/deleted on their own schedule.
+The destination account now owns two storage costs per AMI: the AMI's snapshot blocks. To delete cleanly, use the same deregister + delete-snapshot sequence as in [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]]. The source account's original AMI and snapshot are independent and can be deregistered/deleted on their own schedule.
 
 ## Cost notes
 

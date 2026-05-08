@@ -8,7 +8,7 @@ related:
   - "[[aws/cli/index]]"
   - "[[aws/cloudfront/cli]]"
   - "[[aws/amplify/index]]"
-  - "[[aws/recipes/cross-account-app-migration]]"
+  - "[[aws/amplify/cross-account-migration]]"
 ---
 
 > The four [[aws/amplify/index|Amplify Hosting]] primitive lifecycles (app, branch, deployment, domain) plus the inspection commands I use during a build failure or a domain-association move.
@@ -90,4 +90,4 @@ aws amplify create-webhook --app-id <APP_ID> --branch-name main
 
 - The `WEB_COMPUTE` platform is required for Next.js SSR. `WEB` is static-only; if you set `WEB` on an SSR app, builds succeed but routes 404 at runtime.
 - `start-deployment` is async. Poll `get-job` until `status` is `SUCCEED`/`FAILED`.
-- For cross-account moves, the full sequence (with the domain-association handoff) is in [[aws/recipes/cross-account-app-migration|cross-account Amplify app migration]].
+- For cross-account moves, the full sequence (with the domain-association handoff) is in [[aws/amplify/cross-account-migration|cross-account Amplify app migration]].

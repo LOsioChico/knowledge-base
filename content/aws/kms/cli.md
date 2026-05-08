@@ -9,8 +9,10 @@ related:
   - "[[aws/kms/index]]"
   - "[[aws/iam/index]]"
   - "[[aws/rds/index]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/account-migrations]]"
+unrelated:
+  - "[[aws/rds/cli]]"
 ---
 
 > Key creation, aliasing, policy edits, and deletion. Most [[aws/kms/index|KMS]] work is read-only inspection plus the occasional cross-account policy edit; you rarely call `encrypt`/`decrypt` directly because services do it for you.
@@ -76,4 +78,4 @@ aws kms enable-key  --key-id <KEY_ID>
 ## Tips
 
 - Always reference keys by **alias** in application config; aliases are re-pointable, key IDs are not.
-- For cross-account use, the key-policy edit on the owner side AND the [[aws/iam/index|IAM]]-policy edit on the consumer side are both required. Full walkthrough on the [[aws/rds/index|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]].
+- For cross-account use, the key-policy edit on the owner side AND the [[aws/iam/index|IAM]]-policy edit on the consumer side are both required. Full walkthrough on the [[aws/rds/index|RDS]] side: [[aws/rds/cross-account-snapshot|cross-account snapshot]].

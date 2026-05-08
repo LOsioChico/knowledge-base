@@ -9,10 +9,10 @@ related:
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/rds/index]]"
   - "[[aws/kms/index]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/account-migrations]]"
 unrelated:
-  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
+  - "[[aws/ec2/ami-cross-account-copy]]"
 ---
 
 > Read + snapshot + restore commands for [[aws/rds/index|RDS]]. The snapshot family is the entire surface area for migrations and backup audits; the rest is just inventory.
@@ -76,5 +76,5 @@ aws rds wait db-instance-deleted    --db-instance-identifier <id>
 ## Tips
 
 - Snapshot operations are async. Always `wait` between create-snapshot, copy-snapshot, and restore in scripts; otherwise the next call fails with a `InvalidDBSnapshotState` error.
-- For cross-account moves, the full sequence (with the [[aws/kms/index|KMS]] step) is in [[aws/recipes/cross-account-snapshot|cross-account RDS snapshot]].
+- For cross-account moves, the full sequence (with the [[aws/kms/index|KMS]] step) is in [[aws/rds/cross-account-snapshot|cross-account RDS snapshot]].
 - Replace `--profile` with the right account on every write command. See [[aws/cli/profiles-and-credentials|profiles and credentials]] for the assume-role-via-config setup.

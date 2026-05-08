@@ -18,8 +18,8 @@ related:
   - "[[aws/kms/cli]]"
   - "[[aws/rds/cli]]"
   - "[[aws/account-migrations]]"
-  - "[[aws/recipes/ec2-snapshot-all-instances]]"
-  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
+  - "[[aws/ec2/snapshot-all-instances]]"
+  - "[[aws/ec2/ami-cross-account-copy]]"
 unrelated:
   - "[[aws/secrets-manager]]"
 ---

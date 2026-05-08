@@ -14,7 +14,7 @@ related:
   - "[[aws/cloudfront/index]]"
   - "[[aws/amplify/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/recipes/cross-account-app-migration]]"
+  - "[[aws/amplify/cross-account-migration]]"
   - "[[aws/cloudfront/cli]]"
   - "[[aws/account-migrations]]"
 source:

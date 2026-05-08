@@ -11,7 +11,7 @@ related:
   - "[[aws/amplify/index]]"
   - "[[aws/cloudfront/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/recipes/alternate-domain-claim]]"
+  - "[[aws/cloudfront/alternate-domain-claim]]"
   - "[[aws/amplify/cli]]"
   - "[[aws/account-migrations]]"
 ---
@@ -156,7 +156,7 @@ The default Amplify URL `https://main.<NEW_APP_ID>.amplifyapp.com` is live as so
 
 ### 6. Move the custom domain
 
-This is where the [[aws/recipes/alternate-domain-claim|alternate-domain ghost-claim]] gotcha hits. Read that note before deleting anything in account A.
+This is where the [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost-claim]] gotcha hits. Read that note before deleting anything in account A.
 
 ```bash
 # Inspect the source association first; capture the subdomain prefixes you'll need to recreate

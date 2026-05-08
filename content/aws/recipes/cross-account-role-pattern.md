@@ -10,7 +10,7 @@ related:
   - "[[aws/secrets-manager]]"
   - "[[aws/lambda/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/iam/cli]]"

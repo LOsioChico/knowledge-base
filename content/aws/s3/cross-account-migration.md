@@ -12,7 +12,7 @@ related:
   - "[[aws/s3/cli]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
-  - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/kms/index]]"
   - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
@@ -77,7 +77,7 @@ aws s3api put-bucket-encryption \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
-If the source used server-side encryption (SSE) with a customer-managed [[aws/kms/index|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds/index|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
+If the source used server-side encryption (SSE) with a customer-managed [[aws/kms/index|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds/index|RDS]] side: [[aws/rds/cross-account-snapshot|cross-account snapshot]]).
 
 ### 3. Grant account B read on the source bucket
 
@@ -106,7 +106,7 @@ aws s3api put-bucket-policy \
   --policy file://src-bucket-grant.json
 ```
 
-If the source bucket is SSE-KMS-encrypted, also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/recipes/cross-account-snapshot|RDS recipe]] step 2).
+If the source bucket is SSE-KMS-encrypted, also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/rds/cross-account-snapshot|RDS recipe]] step 2).
 
 ### 4. Sync the data
 

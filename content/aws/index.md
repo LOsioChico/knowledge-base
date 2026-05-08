@@ -48,13 +48,7 @@ related:
 
 ## Recipes
 
-- [[aws/recipes/index|AWS recipes]]: end-to-end procedures that touch more than one service or don't fit cleanly inside a single service note.
-  - [[aws/recipes/cross-account-role-pattern|Cross-account IAM role pattern]]
-  - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]
-  - [[aws/recipes/alternate-domain-claim|Alternate-domain ghost claims]]
-  - [[aws/recipes/cross-account-app-migration|Cross-account Amplify app migration]]
-  - [[aws/recipes/ec2-snapshot-all-instances|EC2 in-account AMI snapshot of every instance]]
-  - [[aws/recipes/ec2-ami-cross-account-copy|EC2 cross-account AMI copy]]
+- [[aws/recipes/index|AWS recipes]]: cross-cutting procedures (currently the [[aws/recipes/cross-account-role-pattern|cross-account IAM role pattern]]). Per-service recipes live in their service folder (e.g. [[aws/s3/cross-account-migration|S3 cross-account migration]], [[aws/rds/cross-account-snapshot|RDS snapshot]], [[aws/ec2/snapshot-all-instances|EC2 AMI snapshot]]).
 
 ## Cross-cutting workflows
 
