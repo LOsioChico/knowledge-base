@@ -26,6 +26,7 @@ related:
   - "[[aws/secrets-manager]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/kms/cli]]"
+  - "[[aws/rds/cli]]"
 ---
 
 > When you move a workload from one AWS account to another, the same handful of service-level moves come up every time. This index is the cross-cutting playbook that points at each per-service recipe.
@@ -44,14 +45,15 @@ related:
 
 ## Per-service moves
 
-| Service                              | Recipe                                      | What it covers                                                                                                                |
-| ------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| [[aws/rds/index\|RDS]]               | [[aws/recipes/cross-account-snapshot]]      | Encrypted snapshot share via re-encrypt with a customer-managed [[aws/kms/index\|KMS]] key (CMK) + restore in target account. |
-| [[aws/s3/index\|S3]]                 | [[aws/s3/cross-account-migration]]          | Recreate bucket config + cross-account `s3 sync`.                                                                             |
-| [[aws/amplify/index\|Amplify]]       | [[aws/recipes/cross-account-app-migration]] | `create-app` → branch → manual zip deployment → domain-association move.                                                      |
-| [[aws/cloudfront/index\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]      | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                             |
-| [[aws/iam/index\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]  | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                               |
-| [[aws/kms/index\|KMS]]               | [[aws/kms/index]]                           | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].               |
+| Service                              | Recipe                                                                                  | What it covers                                                                                                                |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| [[aws/rds/index\|RDS]]               | [[aws/recipes/cross-account-snapshot]]                                                  | Encrypted snapshot share via re-encrypt with a customer-managed [[aws/kms/index\|KMS]] key (CMK) + restore in target account. |
+| [[aws/s3/index\|S3]]                 | [[aws/s3/cross-account-migration]]                                                      | Recreate bucket config + cross-account `s3 sync`.                                                                             |
+| [[aws/amplify/index\|Amplify]]       | [[aws/recipes/cross-account-app-migration]]                                             | `create-app` → branch → manual zip deployment → domain-association move.                                                      |
+| [[aws/cloudfront/index\|CloudFront]] | [[aws/recipes/alternate-domain-claim]]                                                  | The ghost-claim gotcha that bites every Amplify domain move; ACM-cert workaround.                                             |
+| [[aws/iam/index\|IAM]]               | [[aws/recipes/cross-account-role-pattern]]                                              | Trust policy + ExternalId + scoped permissions for "new account assumes a role in old account".                               |
+| EC2                                  | [[aws/recipes/ec2-snapshot-all-instances]] + [[aws/recipes/ec2-ami-cross-account-copy]] | One AMI per running/stopped instance, share + `copy-image` so the target account owns an independent AMI.                     |
+| [[aws/kms/index\|KMS]]               | [[aws/kms/index]]                                                                       | Key-policy + IAM-policy pattern that underlies cross-account RDS, S3, [[aws/secrets-manager\|Secrets Manager]].               |
 
 ## Recommended order
 

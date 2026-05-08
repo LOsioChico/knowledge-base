@@ -10,6 +10,9 @@ related:
   - "[[aws/rds/index]]"
   - "[[aws/kms/index]]"
   - "[[aws/recipes/cross-account-snapshot]]"
+  - "[[aws/account-migrations]]"
+unrelated:
+  - "[[aws/recipes/ec2-ami-cross-account-copy]]"
 ---
 
 > Read + snapshot + restore commands for [[aws/rds/index|RDS]]. The snapshot family is the entire surface area for migrations and backup audits; the rest is just inventory.
