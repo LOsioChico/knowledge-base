@@ -6,11 +6,11 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/iam-cheatsheet]]"
-  - "[[aws/cli/kms-cheatsheet]]"
+  - "[[aws/iam/cli]]"
+  - "[[aws/kms/cli]]"
   - "[[aws/cli/profiles-and-credentials]]"
-  - "[[aws/kms]]"
-  - "[[aws/lambda]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/s3/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
@@ -35,14 +35,14 @@ Principals you'll touch directly come in three shapes (the JSON `Principal` elem
 | -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Root user**  | Yes (account password + access keys)             | Only the [tasks that require root credentials](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_root-user.html#root-user-tasks) (account close, billing settings, a handful of others). Then never again. |
 | **IAM user**   | Yes (password, access keys)                      | Avoid for new workloads. Real humans should federate via IAM Identity Center (the AWS-managed single sign-on, SSO, service, formerly AWS SSO).                                                               |
-| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account access is `sts:AssumeRole`.                                                     |
+| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda/index\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account access is `sts:AssumeRole`.                                               |
 
 ## Policies
 
 Permissions live on **policies**, JSON documents that grant or deny actions on resources. Two flavors:
 
 - **Identity-based policies** attach to a user, group, or role and say "this principal can do X on Y".
-- **Resource-based policies** attach to a resource (S3 bucket, [[aws/kms|KMS]] key, SNS topic, IAM role trust policy) and say "these principals can do X on me". This is what makes cross-account access possible without first creating a user in the other account.
+- **Resource-based policies** attach to a resource (S3 bucket, [[aws/kms/index|KMS]] key, SNS topic, IAM role trust policy) and say "these principals can do X on me". This is what makes cross-account access possible without first creating a user in the other account.
 
 Evaluation rule of thumb: an action is allowed only if **at least one** policy explicitly allows it AND **no** policy explicitly denies it. Default is deny. Service Control Policies (SCPs, org-level), Resource Control Policies (RCPs, org-level), and permission boundaries are evaluated as **intersections** with the identity policy: for an Organizations member account, an action must be allowed by all of them ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The mental model "they subtract, never add" is correct in effect because intersection cannot expand the allow set.
 
@@ -65,10 +65,10 @@ Most "why does this fail with `AccessDenied`?" questions resolve by asking, in o
 4. **Is there an explicit deny somewhere up the chain?** Service control policies (SCPs), resource control policies (RCPs), permission boundaries, and session policies all subtract.
 5. **Simulate.** `iam simulate-principal-policy` evaluates the same chain AWS does and tells you which statement decided the call.
 
-The exact commands are in the [[aws/cli/iam-cheatsheet|IAM CLI cheatsheet]].
+The exact commands are in the [[aws/iam/cli|IAM CLI cheatsheet]].
 
 ## See also
 
-- [[aws/cli/iam-cheatsheet|IAM CLI cheatsheet]]: the read-only commands I reach for when triaging an `AccessDenied`.
+- [[aws/iam/cli|IAM CLI cheatsheet]]: the read-only commands I reach for when triaging an `AccessDenied`.
 - [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]]: trust policy + ExternalId + scoped permissions.
 - [IAM user guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html) (official).

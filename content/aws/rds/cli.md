@@ -7,12 +7,12 @@ status: evergreen
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
-  - "[[aws/rds]]"
-  - "[[aws/kms]]"
+  - "[[aws/rds/index]]"
+  - "[[aws/kms/index]]"
   - "[[aws/recipes/cross-account-snapshot]]"
 ---
 
-> Read + snapshot + restore commands for [[aws/rds|RDS]]. The snapshot family is the entire surface area for migrations and backup audits; the rest is just inventory.
+> Read + snapshot + restore commands for [[aws/rds/index|RDS]]. The snapshot family is the entire surface area for migrations and backup audits; the rest is just inventory.
 
 ## Inventory + state
 
@@ -73,5 +73,5 @@ aws rds wait db-instance-deleted    --db-instance-identifier <id>
 ## Tips
 
 - Snapshot operations are async. Always `wait` between create-snapshot, copy-snapshot, and restore in scripts; otherwise the next call fails with a `InvalidDBSnapshotState` error.
-- For cross-account moves, the full sequence (with the [[aws/kms|KMS]] step) is in [[aws/recipes/cross-account-snapshot|cross-account RDS snapshot]].
+- For cross-account moves, the full sequence (with the [[aws/kms/index|KMS]] step) is in [[aws/recipes/cross-account-snapshot|cross-account RDS snapshot]].
 - Replace `--profile` with the right account on every write command. See [[aws/cli/profiles-and-credentials|profiles and credentials]] for the assume-role-via-config setup.

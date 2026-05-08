@@ -6,10 +6,10 @@ area: aws
 status: seed
 related:
   - "[[aws/cli/index]]"
-  - "[[aws/lambda]]"
+  - "[[aws/lambda/index]]"
 ---
 
-> Function lifecycle, invoke, and the inspection commands that come up first during a triage. Seed cheatsheet: expand as [[aws/lambda|Lambda]] recipes land.
+> Function lifecycle, invoke, and the inspection commands that come up first during a triage. Seed cheatsheet: expand as [[aws/lambda/index|Lambda]] recipes land.
 
 ## Inventory
 

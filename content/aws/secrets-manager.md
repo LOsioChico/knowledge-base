@@ -6,9 +6,9 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/iam]]"
-  - "[[aws/kms]]"
-  - "[[aws/lambda]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3/presigned-urls]]"
   - "[[aws/account-migrations]]"
@@ -18,7 +18,7 @@ source:
   - https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html
 ---
 
-> AWS Secrets Manager stores small named blobs (database credentials, API tokens, OAuth client secrets) encrypted under a [[aws/kms|KMS]] key, and exposes them through `GetSecretValue` so applications never have to ship a credential in environment variables or config files.
+> AWS Secrets Manager stores small named blobs (database credentials, API tokens, OAuth client secrets) encrypted under a [[aws/kms/index|KMS]] key, and exposes them through `GetSecretValue` so applications never have to ship a credential in environment variables or config files.
 
 ## Mental model
 
@@ -26,7 +26,7 @@ A **secret** is a name + a versioned value (string or binary, ≤64 KB) + a KMS 
 
 Two pieces of access control:
 
-- **[[aws/iam|IAM]] identity policy** on the caller (user/role) granting `secretsmanager:GetSecretValue` on the secret's ARN.
+- **[[aws/iam/index|IAM]] identity policy** on the caller (user/role) granting `secretsmanager:GetSecretValue` on the secret's ARN.
 - **Resource policy** attached to the secret itself (optional; required for cross-account).
 
 Plus a third gate: the **KMS key policy** on the encryption key. Reading a secret means decrypting it, which means the caller also needs `kms:Decrypt` on the underlying key.
@@ -83,7 +83,7 @@ To let a role in account B read a secret owned by account A, all three of these 
 Missing any one fails closed with `AccessDeniedException` from whichever layer caught it; the messages don't always make it obvious which layer rejected, which is why "I checked the IAM policy" is not enough debugging on its own.
 
 > [!warning] Cross-account requires a customer-managed KMS key
-> The default `aws/secretsmanager` AWS-managed key cannot be used cross-account ([source](https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples_cross.html)). If you accept the default at create time, the secret is locked into its owning account; the only fix is to re-encrypt the secret under a customer-managed key, which means creating a new secret (you cannot rewrap an existing one without going through the value). Same lock-in pattern as [[aws/kms#Cross-account use needs both sides to agree|other KMS-encrypted resources]].
+> The default `aws/secretsmanager` AWS-managed key cannot be used cross-account ([source](https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access_examples_cross.html)). If you accept the default at create time, the secret is locked into its owning account; the only fix is to re-encrypt the secret under a customer-managed key, which means creating a new secret (you cannot rewrap an existing one without going through the value). Same lock-in pattern as [[aws/kms/index#Cross-account use needs both sides to agree|other KMS-encrypted resources]].
 
 Not every Secrets Manager API supports cross-account calls. The full list is enumerated under "Cross-account permission is effective only for the following operations" in the official cross-account guide; the common ones (`GetSecretValue`, `DescribeSecret`, `PutSecretValue`, `RotateSecret`, `TagResource`) are covered, while account-management actions (`CreateSecret`, `ListSecrets`) are not.
 
@@ -101,15 +101,15 @@ When the underlying system requires the credentials to actually be the same (a s
 
 For any new secret:
 
-- **Pick a customer-managed KMS key explicitly** at create time, even for single-account use. The cost is one extra KMS key (~$1/month). The value is the option to share cross-account later without the re-encrypt dance ([[aws/kms|same lesson as KMS]]).
+- **Pick a customer-managed KMS key explicitly** at create time, even for single-account use. The cost is one extra KMS key (~$1/month). The value is the option to share cross-account later without the re-encrypt dance ([[aws/kms/index|same lesson as KMS]]).
 - **Name with a hierarchical prefix** (`<env>/<system>/<role>`, e.g. `prod/orders-db/admin`). IAM policies grant on the prefix wildcard; rotation doesn't break consumers; multi-team accounts stay readable.
 - **Always use `<name>-*` in IAM policies**, never the exact ARN with suffix.
 - **Tag with `Owner` and `Environment`** so cost allocation and access reviews work without renaming.
-- **Enable rotation only when there's a tested rotation [[aws/lambda|Lambda]] for the credential type**. Half-configured rotation that fails silently is worse than no rotation.
+- **Enable rotation only when there's a tested rotation [[aws/lambda/index|Lambda]] for the credential type**. Half-configured rotation that fails silently is worse than no rotation.
 
 ## See also
 
-- [[aws/kms|KMS]]: Secrets Manager always encrypts under a KMS key; the cross-account dance is mostly a KMS dance.
-- [[aws/iam|IAM]]: identity-policy half of every secret-access decision.
+- [[aws/kms/index|KMS]]: Secrets Manager always encrypts under a KMS key; the cross-account dance is mostly a KMS dance.
+- [[aws/iam/index|IAM]]: identity-policy half of every secret-access decision.
 - [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]]: alternative when you don't want the secret to leave its owning account at all.
 - [AWS Secrets Manager user guide](https://docs.aws.amazon.com/secretsmanager/latest/userguide/intro.html) (official).

@@ -7,14 +7,14 @@ status: evergreen
 related:
   - "[[aws/s3/index]]"
   - "[[aws/s3/storage-classes]]"
-  - "[[aws/lambda]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/recipes/index]]"
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html
 ---
 
-> S3 event notifications fire a message to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge (Amazon's managed event-routing bus) whenever a configured event happens to an object (created, removed, restored, tagged, replicated, etc.). It's how you turn a passive bucket into the front of an event-driven pipeline.
+> S3 event notifications fire a message to SNS, SQS, [[aws/lambda/index|Lambda]], or EventBridge (Amazon's managed event-routing bus) whenever a configured event happens to an object (created, removed, restored, tagged, replicated, etc.). It's how you turn a passive bucket into the front of an event-driven pipeline.
 
 ## What can trigger a notification
 
@@ -127,6 +127,6 @@ Trade-off: per-event cost is slightly higher and you lose the per-rule key filte
 ## See also
 
 - [[aws/s3/index|S3]] (parent concept).
-- [[aws/lambda|Lambda]] (most common destination).
+- [[aws/lambda/index|Lambda]] (most common destination).
 - [Using AWS Lambda with Amazon S3](https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) (full Lambda+S3 walkthrough).
 - [Enabling Amazon EventBridge for S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html) (the toggle and event schema).

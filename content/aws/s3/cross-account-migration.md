@@ -8,17 +8,17 @@ source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html
 related:
   - "[[aws/s3/index]]"
-  - "[[aws/iam]]"
-  - "[[aws/cli/s3]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/s3/cli]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/recipes/cross-account-snapshot]]"
-  - "[[aws/kms]]"
-  - "[[aws/rds]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
 ---
 
-> Move an S3 bucket between AWS accounts by inspecting the source bucket's configuration, recreating it in the target account, granting cross-account read on the source via [[aws/iam|IAM]] + bucket policy, and using `aws s3 sync` (server-side copies) to replicate the contents.
+> Move an S3 bucket between AWS accounts by inspecting the source bucket's configuration, recreating it in the target account, granting cross-account read on the source via [[aws/iam/index|IAM]] + bucket policy, and using `aws s3 sync` (server-side copies) to replicate the contents.
 
 ## Trade-off vs. cross-account replication
 
@@ -77,7 +77,7 @@ aws s3api put-bucket-encryption \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
-If the source used server-side encryption (SSE) with a customer-managed [[aws/kms|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
+If the source used server-side encryption (SSE) with a customer-managed [[aws/kms/index|KMS]] key (CMK), replicate the CMK in account B (or share the source CMK to account B, same pattern used on the [[aws/rds/index|RDS]] side: [[aws/recipes/cross-account-snapshot|cross-account snapshot]]).
 
 ### 3. Grant account B read on the source bucket
 

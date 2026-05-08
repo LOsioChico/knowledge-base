@@ -7,11 +7,11 @@ status: evergreen
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
-  - "[[aws/iam]]"
+  - "[[aws/iam/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
 ---
 
-> Read-only [[aws/iam|IAM]] commands I reach for when chasing an unexpected `AccessDenied`. Most permission diagnostics start with "who is the caller?" and "what policies attach?" before doing anything destructive.
+> Read-only [[aws/iam/index|IAM]] commands I reach for when chasing an unexpected `AccessDenied`. Most permission diagnostics start with "who is the caller?" and "what policies attach?" before doing anything destructive.
 
 ## Identity
 

@@ -11,12 +11,12 @@ source:
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/query-and-output]]"
-  - "[[aws/cli/s3]]"
-  - "[[aws/cli/iam-cheatsheet]]"
-  - "[[aws/cli/rds-cheatsheet]]"
-  - "[[aws/iam]]"
-  - "[[aws/kms]]"
-  - "[[aws/rds]]"
+  - "[[aws/s3/cli]]"
+  - "[[aws/iam/cli]]"
+  - "[[aws/rds/cli]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
 ---
@@ -82,7 +82,7 @@ aws sts get-caller-identity --profile pentica --output json
 aws sts get-caller-identity --profile we4labs --query Arn --output text
 ```
 
-Run this for every profile you're about to use, every time you start a new shell session, before any [[aws/kms|KMS]], [[aws/iam|IAM]], or [[aws/rds|RDS]] write.
+Run this for every profile you're about to use, every time you start a new shell session, before any [[aws/kms/index|KMS]], [[aws/iam/index|IAM]], or [[aws/rds/index|RDS]] write.
 
 ## Common patterns
 

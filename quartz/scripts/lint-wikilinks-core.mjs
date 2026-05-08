@@ -586,6 +586,7 @@ function validateLinkResolution(result, notes) {
 }
 
 function buildConcepts(notes) {
+  const GENERIC_BASENAMES = new Set(["cli", "api", "faq", "tldr"])
   return notes
     .filter((note) => !isIndexNote(note))
     .map((note) => {
@@ -600,7 +601,8 @@ function buildConcepts(notes) {
       }
       add(note.title)
       for (const alias of note.aliases) add(alias)
-      add(note.baseName.replace(/-/g, " "))
+      const baseTerm = note.baseName.replace(/-/g, " ")
+      if (!GENERIC_BASENAMES.has(baseTerm.toLowerCase())) add(baseTerm)
       terms.sort((a, b) => b.length - a.length)
       return { slug: note.slug, terms }
     })

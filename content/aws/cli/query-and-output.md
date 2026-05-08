@@ -11,7 +11,7 @@ source:
 related:
   - "[[aws/cli/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
-  - "[[aws/cli/s3]]"
+  - "[[aws/s3/cli]]"
 ---
 
 > Use `--query` (JMESPath, the JSON query language the AWS CLI ships with) to project just the fields you want and `--output table|json|text` to pick a shape your script or eyeballs can read.

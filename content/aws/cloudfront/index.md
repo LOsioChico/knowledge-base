@@ -6,10 +6,10 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/cloudfront-cheatsheet]]"
+  - "[[aws/cloudfront/cli]]"
   - "[[aws/recipes/alternate-domain-claim]]"
   - "[[aws/recipes/cross-account-app-migration]]"
-  - "[[aws/amplify]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/s3/index]]"
   - "[[aws/s3/static-website]]"
   - "[[aws/s3/presigned-urls]]"
@@ -19,7 +19,7 @@ source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html
 ---
 
-> Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify|Amplify]] app), attach a domain and a certificate, and CloudFront caches and serves the response from the nearest edge location.
+> Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify/index|Amplify]] app), attach a domain and a certificate, and CloudFront caches and serves the response from the nearest edge location.
 
 ## Mental model
 
@@ -59,7 +59,7 @@ The collision matters because in practice the source distribution is often unrea
 
 ## See also
 
-- [[aws/cli/cloudfront-cheatsheet|CloudFront CLI cheatsheet]]: distribution lookup, invalidation, alias inspection.
+- [[aws/cloudfront/cli|CloudFront CLI cheatsheet]]: distribution lookup, invalidation, alias inspection.
 - [[aws/recipes/alternate-domain-claim|Alternate-domain ghost claims]]: how to evict a stuck alias.
-- [[aws/amplify|Amplify Hosting]]: the managed CloudFront-under-the-hood story.
+- [[aws/amplify/index|Amplify Hosting]]: the managed CloudFront-under-the-hood story.
 - [Amazon CloudFront developer guide](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html) (official).

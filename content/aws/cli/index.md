@@ -8,16 +8,16 @@ related:
   - "[[aws/index]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/cli/query-and-output]]"
-  - "[[aws/cli/s3]]"
-  - "[[aws/cli/iam-cheatsheet]]"
-  - "[[aws/cli/rds-cheatsheet]]"
-  - "[[aws/cli/cloudfront-cheatsheet]]"
-  - "[[aws/cli/amplify-cheatsheet]]"
-  - "[[aws/cli/kms-cheatsheet]]"
-  - "[[aws/cli/lambda-cheatsheet]]"
+  - "[[aws/s3/cli]]"
+  - "[[aws/iam/cli]]"
+  - "[[aws/rds/cli]]"
+  - "[[aws/cloudfront/cli]]"
+  - "[[aws/amplify/cli]]"
+  - "[[aws/kms/cli]]"
+  - "[[aws/lambda/cli]]"
 ---
 
-> Notes on the AWS CLI itself: how I configure it, drive multiple accounts from one shell, and shape its output into something a pipeline can read. Per-service command cheatsheets live alongside as `aws/cli/<service>.md`.
+> Notes on the AWS CLI itself: how I configure it, drive multiple accounts from one shell, and shape its output into something a pipeline can read. Per-service command cheatsheets live next to each service note as `aws/<service>/cli.md`.
 
 ## CLI fundamentals
 
@@ -26,10 +26,10 @@ related:
 
 ## Per-service cheatsheets
 
-- [[aws/cli/s3|S3]]: `aws s3` and `aws s3api` for inventory, configuration, and bulk copies.
-- [[aws/iam|IAM]] / [[aws/cli/iam-cheatsheet|cheatsheet]]: read-only diagnostics for `AccessDenied` triage.
-- [[aws/rds|RDS]] / [[aws/cli/rds-cheatsheet|cheatsheet]]: snapshot lifecycle, restore, instance state.
-- [[aws/cloudfront|CloudFront]] / [[aws/cli/cloudfront-cheatsheet|cheatsheet]]: distribution lookup, invalidation, alias inspection.
-- [[aws/amplify|Amplify Hosting]] / [[aws/cli/amplify-cheatsheet|cheatsheet]]: app, branch, deployment, and domain commands.
-- [[aws/kms|KMS]] / [[aws/cli/kms-cheatsheet|cheatsheet]]: create, alias, key-policy, schedule-deletion.
-- [[aws/lambda|Lambda]] / [[aws/cli/lambda-cheatsheet|cheatsheet]]: function lifecycle and invocation.
+- [[aws/s3/cli|S3]]: `aws s3` and `aws s3api` for inventory, configuration, and bulk copies.
+- [[aws/iam/index|IAM]] / [[aws/iam/cli|cheatsheet]]: read-only diagnostics for `AccessDenied` triage.
+- [[aws/rds/index|RDS]] / [[aws/rds/cli|cheatsheet]]: snapshot lifecycle, restore, instance state.
+- [[aws/cloudfront/index|CloudFront]] / [[aws/cloudfront/cli|cheatsheet]]: distribution lookup, invalidation, alias inspection.
+- [[aws/amplify/index|Amplify Hosting]] / [[aws/amplify/cli|cheatsheet]]: app, branch, deployment, and domain commands.
+- [[aws/kms/index|KMS]] / [[aws/kms/cli|cheatsheet]]: create, alias, key-policy, schedule-deletion.
+- [[aws/lambda/index|Lambda]] / [[aws/lambda/cli|cheatsheet]]: function lifecycle and invocation.

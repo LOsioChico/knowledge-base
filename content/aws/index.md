@@ -8,31 +8,31 @@ related:
   - "[[index]]"
   - "[[aws/cli/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/iam]]"
-  - "[[aws/rds]]"
-  - "[[aws/cloudfront]]"
-  - "[[aws/amplify]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/rds/index]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/s3/index]]"
-  - "[[aws/kms]]"
-  - "[[aws/lambda]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/account-migrations]]"
 ---
 
-> Map of content for AWS. Each service has a concept note at `aws/<service>.md` ("what is it, how does it work, when to use it"); the matching CLI cheatsheet lives at [[aws/cli/index|aws/cli/<service>.md]]; cross-cutting recipes that touch more than one service or don't fit cleanly inside one live under [[aws/recipes/index|aws/recipes]].
+> Map of content for AWS. Each service lives in its own folder `aws/<service>/`: `index.md` is the concept note ("what is it, how does it work, when to use it"), `cli.md` is the CLI cheatsheet, and any service-specific deep-dives or recipes sit alongside. Cross-cutting recipes that touch more than one service live under [[aws/recipes/index|aws/recipes]]; CLI fundamentals (profiles, output shaping) live under [[aws/cli/index|aws/cli]].
 
 ## Foundations
 
-- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns (the JSON query language behind `--query`). Per-service cheatsheets live alongside (e.g. [[aws/cli/s3|S3 CLI cheatsheet]]).
+- [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns (the JSON query language behind `--query`). Per-service cheatsheets live alongside (e.g. [[aws/s3/cli|S3 CLI cheatsheet]]).
 
 ## Services
 
 - [[aws/s3/index|S3, the Simple Storage Service]]: object storage. Buckets, keys, read-after-write consistency, default privacy. The S3 area has its own [[aws/s3/index|sub-folder]] with [[aws/s3/storage-classes|storage classes]], [[aws/s3/lifecycle-rules|lifecycle rules]], [[aws/s3/event-notifications|event notifications]], [[aws/s3/presigned-urls|presigned URLs]], [[aws/s3/static-website|static website hosting]], and [[aws/s3/cross-account-migration|cross-account migration]].
-- [[aws/iam|IAM]]: identities, roles, policy evaluation, cross-account trust.
-- [[aws/rds|RDS]] (Relational Database Service): managed relational databases. Snapshots, encryption, multi-AZ (replication across two Availability Zones for failover).
-- [[aws/cloudfront|CloudFront]]: content delivery network (CDN). Distributions, alternate domain names, edge (point-of-presence) defaults.
-- [[aws/amplify|Amplify Hosting]]: managed frontend hosting. Apps, branches, deployments, custom domains.
-- [[aws/kms|KMS]]: encryption keys. Customer-managed vs AWS-managed, key policies, cross-account grants.
-- [[aws/lambda|Lambda]]: functions, versions, aliases. (Seed.)
+- [[aws/iam/index|IAM]]: identities, roles, policy evaluation, cross-account trust.
+- [[aws/rds/index|RDS]] (Relational Database Service): managed relational databases. Snapshots, encryption, multi-AZ (replication across two Availability Zones for failover).
+- [[aws/cloudfront/index|CloudFront]]: content delivery network (CDN). Distributions, alternate domain names, edge (point-of-presence) defaults.
+- [[aws/amplify/index|Amplify Hosting]]: managed frontend hosting. Apps, branches, deployments, custom domains.
+- [[aws/kms/index|KMS]]: encryption keys. Customer-managed vs AWS-managed, key policies, cross-account grants.
+- [[aws/lambda/index|Lambda]]: functions, versions, aliases. (Seed.)
 
 ## Recipes
 

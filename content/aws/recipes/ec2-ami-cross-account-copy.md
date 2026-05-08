@@ -9,9 +9,11 @@ related:
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/cross-account-snapshot]]"
-  - "[[aws/kms]]"
-  - "[[aws/rds]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
+unrelated:
+  - "[[aws/s3/cross-account-migration]]"
 source:
   - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html
   - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html
@@ -62,7 +64,7 @@ aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
 
 Capture the `AMI` and `Snap` IDs. The `Enc` column drives the decision in the next step.
 
-### 1b. Decide whether the [[aws/kms|KMS]] step applies
+### 1b. Decide whether the [[aws/kms/index|KMS]] step applies
 
 For each snapshot, fetch its encryption key:
 
@@ -126,9 +128,9 @@ aws ec2 describe-snapshots --profile dest --region SOURCE_REGION \
   --query 'Snapshots[].[SnapshotId,OwnerId,VolumeSize,State]' --output table
 ```
 
-### 4. (Encrypted volumes only) share the [[aws/kms|KMS]] key
+### 4. (Encrypted volumes only) share the [[aws/kms/index|KMS]] key
 
-If the source snapshot is encrypted with a customer-managed [[aws/kms|KMS]] key (CMK), grant the destination account `kms:Decrypt`, `kms:DescribeKey`, `kms:CreateGrant` on it via the key policy. Same key-policy edit pattern as [[aws/recipes/cross-account-snapshot|cross-account snapshot sharing]] for [[aws/rds|RDS]] (sections "Grant account B use of the key" and "Grant a re-encrypt key in account-b").
+If the source snapshot is encrypted with a customer-managed [[aws/kms/index|KMS]] key (CMK), grant the destination account `kms:Decrypt`, `kms:DescribeKey`, `kms:CreateGrant` on it via the key policy. Same key-policy edit pattern as [[aws/recipes/cross-account-snapshot|cross-account snapshot sharing]] for [[aws/rds/index|RDS]] (sections "Grant account B use of the key" and "Grant a re-encrypt key in account-b").
 
 Snapshots encrypted with the default `aws/ebs` AWS-managed key **cannot be shared**: `modify-snapshot-attribute` will fail. The fix is to first re-encrypt under a CMK with [`copy-snapshot --kms-key-id`](https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-snapshot.html), share that copy instead, then proceed.
 

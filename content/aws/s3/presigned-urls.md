@@ -6,9 +6,9 @@ area: aws
 status: evergreen
 related:
   - "[[aws/s3/index]]"
-  - "[[aws/iam]]"
-  - "[[aws/cloudfront]]"
-  - "[[aws/lambda]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/index]]"
 source:
@@ -22,9 +22,9 @@ source:
 
 - **You want a browser to download a private object** without making the bucket public. The link expires; the bucket stays locked.
 - **You want a browser to upload directly to S3** without proxying bytes through your backend. Your server signs a `PUT` URL; the client PUTs straight to S3.
-- **You want to share a file with someone outside your AWS org** for a few hours / days without provisioning [[aws/iam|IAM]] for them.
+- **You want to share a file with someone outside your AWS org** for a few hours / days without provisioning [[aws/iam/index|IAM]] for them.
 
-If the use case is "always-public [[aws/cloudfront|CDN]] content", front the bucket with CloudFront and skip presigned URLs entirely.
+If the use case is "always-public [[aws/cloudfront/index|CDN]] content", front the bucket with CloudFront and skip presigned URLs entirely.
 
 ## Generate one with the CLI
 
@@ -91,7 +91,7 @@ This is the part that surprises everyone:
 The rule: **a presigned URL dies the moment its underlying credentials die, regardless of `--expires-in`** ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrl-Expiration)).
 
 > [!warning]- "My URL expired in 1 hour even though I set 7 days"
-> You almost certainly signed it from inside [[aws/lambda|Lambda]], ECS, or EC2. Those use temporary STS credentials that rotate on the order of minutes to hours. To get a true 7-day URL, sign from an environment with **long-lived IAM user credentials** (a CI runner with stored keys, a local script with `~/.aws/credentials`). For server applications that need 7-day links, the usual workaround is to provision a dedicated IAM user _just for signing_, store its keys in [[aws/secrets-manager|Secrets Manager]], and use those, never the runtime role.
+> You almost certainly signed it from inside [[aws/lambda/index|Lambda]], ECS, or EC2. Those use temporary STS credentials that rotate on the order of minutes to hours. To get a true 7-day URL, sign from an environment with **long-lived IAM user credentials** (a CI runner with stored keys, a local script with `~/.aws/credentials`). For server applications that need 7-day links, the usual workaround is to provision a dedicated IAM user _just for signing_, store its keys in [[aws/secrets-manager|Secrets Manager]], and use those, never the runtime role.
 
 ## What permissions the signer needs
 
@@ -145,6 +145,6 @@ That denies any presigned request whose signature is older than 600,000 ms (10 m
 ## See also
 
 - [[aws/s3/index|S3]] (parent concept).
-- [[aws/iam|IAM]] (the permissions side of the story).
+- [[aws/iam/index|IAM]] (the permissions side of the story).
 - [Sharing objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html) (official walkthrough).
 - [Uploading objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/PresignedUrlUploadObject.html) (PUT-side details).

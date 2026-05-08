@@ -6,13 +6,13 @@ area: aws
 status: evergreen
 related:
   - "[[aws/cli/index]]"
-  - "[[aws/cli/amplify-cheatsheet]]"
-  - "[[aws/cloudfront]]"
-  - "[[aws/amplify]]"
+  - "[[aws/amplify/cli]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/recipes/alternate-domain-claim]]"
 ---
 
-> Distribution discovery, invalidation, and alias inspection. Most [[aws/cloudfront|CloudFront]] work is "find which distribution serves this hostname" followed by either an invalidation or a config update.
+> Distribution discovery, invalidation, and alias inspection. Most [[aws/cloudfront/index|CloudFront]] work is "find which distribution serves this hostname" followed by either an invalidation or a config update.
 
 ## Find a distribution
 
@@ -69,5 +69,5 @@ If `--if-match` doesn't match the current ETag, the update is rejected: refetch 
 
 ## Tips
 
-- For [[aws/amplify|Amplify]]-managed distributions you mostly work through `aws amplify` (see [[aws/cli/amplify-cheatsheet|Amplify CLI cheatsheet]]); the underlying CloudFront distribution doesn't appear in `list-distributions` from your account.
+- For [[aws/amplify/index|Amplify]]-managed distributions you mostly work through `aws amplify` (see [[aws/amplify/cli|Amplify CLI cheatsheet]]); the underlying CloudFront distribution doesn't appear in `list-distributions` from your account.
 - Alias conflicts across accounts are the #1 reason a domain move fails. Triage path is in [[aws/recipes/alternate-domain-claim|alternate-domain ghost claims]].

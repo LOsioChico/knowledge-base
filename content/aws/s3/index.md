@@ -6,10 +6,10 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/s3]]"
-  - "[[aws/iam]]"
-  - "[[aws/cloudfront]]"
-  - "[[aws/lambda]]"
+  - "[[aws/s3/cli]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/lambda/index]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/account-migrations]]"
   - "[[aws/s3/storage-classes]]"
@@ -34,14 +34,14 @@ source:
 
 - **Object storage, not a filesystem.** A bucket holds objects keyed by a string; `/` in the key is convention, not a folder.
 - **Pick a Region once.** Buckets are regional and the bytes never leave it without an explicit copy or replicate. Name + Region are immutable.
-- **Private by default.** Grant access through [[aws/iam|IAM]], bucket policies, or Access Points; leave Block Public Access on.
+- **Private by default.** Grant access through [[aws/iam/index|IAM]], bucket policies, or Access Points; leave Block Public Access on.
 - **Strong read-after-write everywhere.** A successful PUT is visible to the next GET or LIST. No torn reads. No cross-key transactions.
 
 ## When to use S3 vs. something else
 
-- **Use S3** for: client-uploaded blobs, build artifacts, database backups, [[aws/s3/static-website|static website]] assets (front it with [[aws/cloudfront|CloudFront]]), data-lake parquet/json, log archives, machine-learning training data.
+- **Use S3** for: client-uploaded blobs, build artifacts, database backups, [[aws/s3/static-website|static website]] assets (front it with [[aws/cloudfront/index|CloudFront]]), data-lake parquet/json, log archives, machine-learning training data.
 - **Don't use S3 as a database.** No secondary indexes, no transactional updates across objects, list operations are O(prefix-scan). For metadata-heavy lookups, store the metadata in DynamoDB or PostgreSQL and keep the bytes in S3.
-- **Don't use S3 as a queue.** Object events fire via [[aws/s3/event-notifications|S3 Event Notifications]] into SNS, SQS, or [[aws/lambda|Lambda]], but S3 itself has no ordering or replay primitives.
+- **Don't use S3 as a queue.** Object events fire via [[aws/s3/event-notifications|S3 Event Notifications]] into SNS, SQS, or [[aws/lambda/index|Lambda]], but S3 itself has no ordering or replay primitives.
 
 ## Buckets and objects
 
@@ -110,14 +110,14 @@ Once a bucket has been versioning-enabled, it can never go back to unversioned. 
 
 Buckets and the objects in them are **private by default**. Access requires an explicit grant via one of:
 
-| Mechanism                           | When to reach for it                                                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| [[aws/iam\|IAM]] identity policy    | Same-account principals (users, roles, services in your account).                                                  |
-| Bucket policy                       | Resource-based grants, especially cross-account or "anyone in this VPC".                                           |
-| S3 Access Points                    | Per-application named endpoints with their own policies; scales better than one bucket policy that everyone edits. |
-| ACLs (access control lists, legacy) | Avoid. Default S3 Object Ownership disables ACLs entirely; keep it that way.                                       |
+| Mechanism                              | When to reach for it                                                                                               |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| [[aws/iam/index\|IAM]] identity policy | Same-account principals (users, roles, services in your account).                                                  |
+| Bucket policy                          | Resource-based grants, especially cross-account or "anyone in this VPC".                                           |
+| S3 Access Points                       | Per-application named endpoints with their own policies; scales better than one bucket policy that everyone edits. |
+| ACLs (access control lists, legacy)    | Avoid. Default S3 Object Ownership disables ACLs entirely; keep it that way.                                       |
 
-S3 also exposes a **Block Public Access** toggle at both the account and the bucket level, which short-circuits any bucket policy or ACL that AWS evaluates as granting public access ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html#access-control-block-public-access-policy-status); the documented "meaning of public" covers `Principal: *` plus broader patterns like wildcarded condition keys). Leave all four flags on unless you're deliberately serving a public website (and even then, prefer fronting it with [[aws/cloudfront|CloudFront]] + an origin access control instead of opening the bucket).
+S3 also exposes a **Block Public Access** toggle at both the account and the bucket level, which short-circuits any bucket policy or ACL that AWS evaluates as granting public access ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html#access-control-block-public-access-policy-status); the documented "meaning of public" covers `Principal: *` plus broader patterns like wildcarded condition keys). Leave all four flags on unless you're deliberately serving a public website (and even then, prefer fronting it with [[aws/cloudfront/index|CloudFront]] + an origin access control instead of opening the bucket).
 
 ## What you actually pay for
 
@@ -130,15 +130,15 @@ S3 has no flat fee. The bill is the sum of six independent components ([source](
 5. **Replication.** Cross-Region Replication (CRR) and Same-Region Replication (SRR) bill the inter-Region transfer plus per-object replication PUTs. S3 Replication Time Control (RTC) adds a per-GB fee on top in exchange for a 15-minute replication service-level agreement (SLA) ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-time-control.html)).
 6. **S3 Object Lambda and S3 Select.** Per-request fees for transforming or filtering data on the read path.
 
-The two cost traps most teams hit: (1) **versioning without a lifecycle rule** (every overwrite doubles your bill, see the warning above), and (2) **picking IA or Glacier for data you actually access often** (retrieval fees outweigh the storage savings). Front static-asset traffic with [[aws/cloudfront|CloudFront]] to cut egress.
+The two cost traps most teams hit: (1) **versioning without a lifecycle rule** (every overwrite doubles your bill, see the warning above), and (2) **picking IA or Glacier for data you actually access often** (retrieval fees outweigh the storage savings). Front static-asset traffic with [[aws/cloudfront/index|CloudFront]] to cut egress.
 
 ## See also
 
 - [[aws/s3/storage-classes|S3 storage classes]]: per-class cost / latency / availability trade-offs (Standard, Intelligent-Tiering, IA, Glacier).
 - [[aws/s3/lifecycle-rules|S3 lifecycle rules]]: per-bucket JSON rules to age objects through cheaper classes and clean up failed uploads.
-- [[aws/s3/event-notifications|S3 event notifications]]: trigger SNS / SQS / [[aws/lambda|Lambda]] / EventBridge from object lifecycle events.
+- [[aws/s3/event-notifications|S3 event notifications]]: trigger SNS / SQS / [[aws/lambda/index|Lambda]] / EventBridge from object lifecycle events.
 - [[aws/s3/presigned-urls|S3 presigned URLs]]: time-limited URLs for browser-direct download or upload without making the bucket public.
-- [[aws/s3/static-website|S3 static website hosting]]: serve a bucket as a public site, optionally fronted by [[aws/cloudfront|CloudFront]] for HTTPS.
+- [[aws/s3/static-website|S3 static website hosting]]: serve a bucket as a public site, optionally fronted by [[aws/cloudfront/index|CloudFront]] for HTTPS.
 - [[aws/s3/cross-account-migration|Cross-account bucket migration]]: end-to-end recipe for moving a bucket between AWS accounts.
-- [[aws/cli/s3|S3 CLI cheatsheet]]: the `aws s3` and `aws s3api` commands I reach for when inspecting or moving buckets.
+- [[aws/s3/cli|S3 CLI cheatsheet]]: the `aws s3` and `aws s3api` commands I reach for when inspecting or moving buckets.
 - [Amazon S3 user guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (official).

@@ -6,11 +6,11 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/kms-cheatsheet]]"
+  - "[[aws/kms/cli]]"
   - "[[aws/cli/profiles-and-credentials]]"
-  - "[[aws/cli/rds-cheatsheet]]"
-  - "[[aws/iam]]"
-  - "[[aws/rds]]"
+  - "[[aws/rds/cli]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/rds/index]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
@@ -25,7 +25,7 @@ source:
   - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
 ---
 
-> AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds|RDS]], EBS (Elastic Block Store), and [[aws/secrets-manager|Secrets Manager]] call KMS on your behalf to encrypt + decrypt data keys.
+> AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds/index|RDS]], EBS (Elastic Block Store), and [[aws/secrets-manager|Secrets Manager]] call KMS on your behalf to encrypt + decrypt data keys.
 
 ## Mental model
 
@@ -43,7 +43,7 @@ The difference matters most for snapshots and shared encrypted resources: an AWS
 
 ## Key policies are different
 
-Most AWS services treat [[aws/iam|IAM]] as the access-control layer. KMS does not. A KMS **key policy** is the resource-based policy on the key itself, and it is **the primary authority**: even an IAM admin in your account cannot use a key unless the key policy allows it (directly or via the canonical "delegate to IAM" statement that includes `Principal: {AWS: "arn:aws:iam::ACCOUNT:root"}` plus the `kms:*` action). When in doubt, the key policy is what you read first.
+Most AWS services treat [[aws/iam/index|IAM]] as the access-control layer. KMS does not. A KMS **key policy** is the resource-based policy on the key itself, and it is **the primary authority**: even an IAM admin in your account cannot use a key unless the key policy allows it (directly or via the canonical "delegate to IAM" statement that includes `Principal: {AWS: "arn:aws:iam::ACCOUNT:root"}` plus the `kms:*` action). When in doubt, the key policy is what you read first.
 
 ## Cross-account use needs both sides to agree
 
@@ -64,7 +64,7 @@ Key IDs are unmemorable UUIDs. **Aliases** are short, friendly names you assign 
 
 ## See also
 
-- [[aws/cli/kms-cheatsheet|KMS CLI cheatsheet]]: create, alias, key-policy, schedule-deletion.
+- [[aws/kms/cli|KMS CLI cheatsheet]]: create, alias, key-policy, schedule-deletion.
 - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]: the canonical KMS cross-account recipe.
 - [[aws/s3/cross-account-migration|Cross-account bucket migration]]: same pattern applied to S3 SSE-KMS.
 - [AWS KMS developer guide](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (official).

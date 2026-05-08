@@ -6,9 +6,9 @@ area: aws
 status: seed
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/lambda-cheatsheet]]"
-  - "[[aws/iam]]"
-  - "[[aws/amplify]]"
+  - "[[aws/lambda/cli]]"
+  - "[[aws/iam/index]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3/index]]"
   - "[[aws/s3/event-notifications]]"
@@ -30,7 +30,7 @@ The pieces:
 | Piece                        | What it controls                                                                                                                                                                           |
 | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Function**                 | The named unit. Has a runtime, a handler, code (zip or container image), env vars.                                                                                                         |
-| **Execution role**           | [[aws/iam\|IAM]] role the function runs as. This is what calls to other AWS services use.                                                                                                  |
+| **Execution role**           | [[aws/iam/index\|IAM]] role the function runs as. This is what calls to other AWS services use.                                                                                            |
 | **Triggers / event sources** | What invokes the function (API Gateway, SQS, S3 event, EventBridge (managed event bus), Function URL, direct invoke).                                                                      |
 | **Versions + aliases**       | Versions are immutable snapshots of the function; aliases are re-pointable names. Use aliases (`prod`, `staging`) in triggers so you can flip traffic without touching the trigger itself. |
 
@@ -44,5 +44,5 @@ This area is a placeholder. Recipes I plan to write when I next touch Lambda:
 
 ## See also
 
-- [[aws/cli/lambda-cheatsheet|Lambda CLI cheatsheet]]: function lifecycle and invocation commands.
+- [[aws/lambda/cli|Lambda CLI cheatsheet]]: function lifecycle and invocation commands.
 - [AWS Lambda developer guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html) (official).

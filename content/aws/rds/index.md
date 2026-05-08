@@ -6,27 +6,27 @@ area: aws
 status: evergreen
 related:
   - "[[aws/index]]"
-  - "[[aws/cli/rds-cheatsheet]]"
-  - "[[aws/cli/kms-cheatsheet]]"
+  - "[[aws/rds/cli]]"
+  - "[[aws/kms/cli]]"
   - "[[aws/cli/profiles-and-credentials]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
-  - "[[aws/kms]]"
+  - "[[aws/kms/index]]"
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.MultiAZSingleStandby.html
 ---
 
-> Amazon RDS (Relational Database Service) is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group (the bundle of engine configuration like `max_connections`, `shared_buffers`). Day-to-day commands live in the [[aws/cli/rds-cheatsheet|RDS CLI cheatsheet]].
+> Amazon RDS (Relational Database Service) is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group (the bundle of engine configuration like `max_connections`, `shared_buffers`). Day-to-day commands live in the [[aws/rds/cli|RDS CLI cheatsheet]].
 
 ## Mental model
 
 An **RDS instance** is one engine (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, or Aurora-flavored Postgres/MySQL) running on one EC2-class host that AWS manages for you. You connect to it like any other database: `host:port` + credentials. RDS handles backups, minor-version upgrades, host replacement on hardware failure, and (when configured) cross-AZ failover.
 
-The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent (taken without quiescing the engine, equivalent to recovering from a sudden power-off) point-in-time copies of the storage volume, are encrypted with the same [[aws/kms|KMS]] key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class.
+The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent (taken without quiescing the engine, equivalent to recovering from a sudden power-off) point-in-time copies of the storage volume, are encrypted with the same [[aws/kms/index|KMS]] key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class.
 
 ## What RDS gives you for free
 
@@ -63,7 +63,7 @@ For any new RDS instance, the boring-but-correct defaults are:
 
 ## See also
 
-- [[aws/cli/rds-cheatsheet|RDS CLI cheatsheet]]: snapshot lifecycle, restore, instance state.
+- [[aws/rds/cli|RDS CLI cheatsheet]]: snapshot lifecycle, restore, instance state.
 - [[aws/recipes/cross-account-snapshot|Cross-account RDS snapshot]]: the encrypted-snapshot dance for moving a database between accounts.
-- [[aws/kms|KMS]]: the key policies that gate encrypted-snapshot sharing.
+- [[aws/kms/index|KMS]]: the key policies that gate encrypted-snapshot sharing.
 - [Amazon RDS user guide](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html) (official).

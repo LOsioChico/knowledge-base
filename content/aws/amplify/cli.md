@@ -6,12 +6,12 @@ area: aws
 status: evergreen
 related:
   - "[[aws/cli/index]]"
-  - "[[aws/cli/cloudfront-cheatsheet]]"
-  - "[[aws/amplify]]"
+  - "[[aws/cloudfront/cli]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/recipes/cross-account-app-migration]]"
 ---
 
-> The four [[aws/amplify|Amplify Hosting]] primitive lifecycles (app, branch, deployment, domain) plus the inspection commands I use during a build failure or a domain-association move.
+> The four [[aws/amplify/index|Amplify Hosting]] primitive lifecycles (app, branch, deployment, domain) plus the inspection commands I use during a build failure or a domain-association move.
 
 ## App + branch lifecycle
 

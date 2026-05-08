@@ -6,21 +6,21 @@ area: aws
 status: evergreen
 related:
   - "[[aws/s3/index]]"
-  - "[[aws/cloudfront]]"
-  - "[[aws/amplify]]"
+  - "[[aws/cloudfront/index]]"
+  - "[[aws/amplify/index]]"
   - "[[aws/recipes/index]]"
 source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html
 ---
 
-> S3 can serve a bucket's objects as a public website at a Region-specific URL. It's the cheapest way to host an HTML/CSS/JS site, but the bare S3 endpoint is HTTP-only: for HTTPS or a custom domain, front it with [[aws/cloudfront|CloudFront]] or use [[aws/amplify|Amplify Hosting]].
+> S3 can serve a bucket's objects as a public website at a Region-specific URL. It's the cheapest way to host an HTML/CSS/JS site, but the bare S3 endpoint is HTTP-only: for HTTPS or a custom domain, front it with [[aws/cloudfront/index|CloudFront]] or use [[aws/amplify/index|Amplify Hosting]].
 
 ## When to reach for it
 
 - **Use bare S3 website hosting** for ephemeral, internal, or test sites where HTTPS doesn't matter and you control the URL contract (you'll be linking the `s3-website` URL directly).
 - **Use S3 + CloudFront + ACM** for any production-facing static site: gives you HTTPS (via an ACM (AWS Certificate Manager) cert), a custom domain, and edge delivery (the response is served from a CloudFront point-of-presence near the user, not from the bucket's Region).
-- **Use [[aws/amplify|Amplify Hosting]]** when you want all of the above without managing CloudFront yourself. It's AWS's official recommendation for new static sites ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
+- **Use [[aws/amplify/index|Amplify Hosting]]** when you want all of the above without managing CloudFront yourself. It's AWS's official recommendation for new static sites ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
 
 ## Enable hosting on a bucket
 
@@ -100,7 +100,7 @@ For the apex (`example.com`), CNAMEs aren't allowed by DNS spec: use Route 53 (A
 ## Index and error documents
 
 - `index-document` (e.g., `index.html`) is served when the request hits a "directory" path (`/`, `/blog/`). S3 also serves it for paths that resolve to a prefix.
-- `error-document` (e.g., `404.html`) is served on any 4xx response. Single-page apps (SPAs) typically point this at `index.html` so the client-side router handles unknown paths: works, but the HTTP response status is still `404`, which can confuse search-engine optimization (SEO) crawlers and analytics. If you front the bucket with [[aws/cloudfront|CloudFront]], its _custom error responses_ feature can rewrite the status to `200` on the way out.
+- `error-document` (e.g., `404.html`) is served on any 4xx response. Single-page apps (SPAs) typically point this at `index.html` so the client-side router handles unknown paths: works, but the HTTP response status is still `404`, which can confuse search-engine optimization (SEO) crawlers and analytics. If you front the bucket with [[aws/cloudfront/index|CloudFront]], its _custom error responses_ feature can rewrite the status to `200` on the way out.
 
 ## Page-level redirects
 
@@ -118,6 +118,6 @@ Same as normal S3: storage + request costs + egress. There is no extra fee for e
 ## See also
 
 - [[aws/s3/index|S3]] (parent concept).
-- [[aws/cloudfront|CloudFront]] (the HTTPS + CDN front-end).
-- [[aws/amplify|Amplify Hosting]] (the recommended one-step alternative).
+- [[aws/cloudfront/index|CloudFront]] (the HTTPS + CDN front-end).
+- [[aws/amplify/index|Amplify Hosting]] (the recommended one-step alternative).
 - [Tutorial: configuring a static website using a custom domain registered with Route 53](https://docs.aws.amazon.com/AmazonS3/latest/userguide/website-hosting-custom-domain-walkthrough.html) (official end-to-end walkthrough).

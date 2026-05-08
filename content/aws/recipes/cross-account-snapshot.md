@@ -9,20 +9,22 @@ source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html#USER_ShareSnapshot.Encrypted
   - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
 related:
-  - "[[aws/rds]]"
-  - "[[aws/iam]]"
+  - "[[aws/rds/index]]"
+  - "[[aws/iam/index]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
-  - "[[aws/kms]]"
+  - "[[aws/kms/index]]"
   - "[[aws/s3/cross-account-migration]]"
-  - "[[aws/cli/kms-cheatsheet]]"
-  - "[[aws/cli/rds-cheatsheet]]"
+  - "[[aws/kms/cli]]"
+  - "[[aws/rds/cli]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/ec2-snapshot-all-instances]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
+unrelated:
+  - "[[aws/secrets-manager]]"
 ---
 
-> Move an encrypted [[aws/rds|RDS]] database between AWS accounts by sharing a snapshot: the trap is that the default service [[aws/kms|KMS]] key cannot be shared, so a re-encrypt copy step is required first.
+> Move an encrypted [[aws/rds/index|RDS]] database between AWS accounts by sharing a snapshot: the trap is that the default service [[aws/kms/index|KMS]] key cannot be shared, so a re-encrypt copy step is required first.
 
 Move an encrypted RDS database from account A to account B by sharing a snapshot. The naive "share snapshot" workflow fails when the snapshot is encrypted with the default AWS-managed KMS key: that key cannot be shared cross-account.
 
@@ -107,7 +109,7 @@ The `Account` field MUST equal `ACCOUNT_A_ID` / `ACCOUNT_B_ID` respectively. If 
      --policy file://cmk-policy.json
    ```
 
-   See [Modifying KMS key policies for external accounts](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html). Cross-account KMS access requires **both** the owning-account key policy above **and** an [[aws/iam|IAM]] policy in account B that grants the same actions to whichever principal will copy the snapshot (KMS docs: "Neither the key policy nor the IAM policy alone is sufficient: you must change both").
+   See [Modifying KMS key policies for external accounts](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html). Cross-account KMS access requires **both** the owning-account key policy above **and** an [[aws/iam/index|IAM]] policy in account B that grants the same actions to whichever principal will copy the snapshot (KMS docs: "Neither the key policy nor the IAM policy alone is sufficient: you must change both").
 
    Optionally tag the key with a human-readable alias so future operators don't have to copy-paste UUIDs ([`aws kms create-alias`](https://docs.aws.amazon.com/cli/latest/reference/kms/create-alias.html)):
 

@@ -7,8 +7,8 @@ status: evergreen
 related:
   - "[[aws/index]]"
   - "[[aws/recipes/index]]"
-  - "[[aws/kms]]"
-  - "[[aws/rds]]"
+  - "[[aws/kms/index]]"
+  - "[[aws/rds/index]]"
   - "[[aws/account-migrations]]"
   - "[[aws/recipes/cross-account-snapshot]]"
   - "[[aws/recipes/ec2-ami-cross-account-copy]]"
@@ -31,7 +31,7 @@ source:
 For "save state of every instance, restore at any moment", use AMIs. The recipe below is the AMI path.
 
 > [!warning] `--no-reboot` and file-system consistency
-> By default, `create-image` powers the instance down before snapshotting so volumes are quiesced. Passing `--no-reboot` (or unchecking _Reboot instance_ in the console) skips that step: there is no downtime, but AWS [explicitly does not guarantee file-system integrity](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html) of the resulting image. Stateless app servers usually tolerate this; for databases either stop the instance first OR rely on the database's own backup mechanism (e.g. [[aws/rds|RDS]] snapshot, `pg_basebackup`).
+> By default, `create-image` powers the instance down before snapshotting so volumes are quiesced. Passing `--no-reboot` (or unchecking _Reboot instance_ in the console) skips that step: there is no downtime, but AWS [explicitly does not guarantee file-system integrity](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html) of the resulting image. Stateless app servers usually tolerate this; for databases either stop the instance first OR rely on the database's own backup mechanism (e.g. [[aws/rds/index|RDS]] snapshot, `pg_basebackup`).
 
 ## Recipe
 
@@ -103,7 +103,7 @@ aws ec2 run-instances \
 The new instance is a fresh resource with a new ID, private/public IP, and ENIs. Elastic IP associations, target-group registrations, and Route53 A records do NOT come back automatically; reattach them.
 
 > [!info] Encrypted volumes
-> If any source volume was encrypted with a [[aws/kms|KMS]] key, the AMI's snapshots stay encrypted with that same key. The launching account/role needs `kms:Decrypt` on the key to start instances from the AMI; for cross-account restore, see [[aws/recipes/cross-account-snapshot|cross-account snapshot]].
+> If any source volume was encrypted with a [[aws/kms/index|KMS]] key, the AMI's snapshots stay encrypted with that same key. The launching account/role needs `kms:Decrypt` on the key to start instances from the AMI; for cross-account restore, see [[aws/recipes/cross-account-snapshot|cross-account snapshot]].
 
 ## Cleanup
 

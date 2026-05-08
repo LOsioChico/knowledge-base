@@ -8,15 +8,15 @@ source:
   - https://docs.aws.amazon.com/cli/latest/reference/amplify/create-deployment.html
   - https://docs.aws.amazon.com/cli/latest/reference/amplify/start-deployment.html
 related:
-  - "[[aws/amplify]]"
-  - "[[aws/cloudfront]]"
+  - "[[aws/amplify/index]]"
+  - "[[aws/cloudfront/index]]"
   - "[[aws/recipes/index]]"
   - "[[aws/recipes/alternate-domain-claim]]"
-  - "[[aws/cli/amplify-cheatsheet]]"
+  - "[[aws/amplify/cli]]"
   - "[[aws/account-migrations]]"
 ---
 
-> Recreate an [[aws/amplify|Amplify Hosting]] app in a new AWS account by `create-app` → `create-branch` → manual zip deployment via `create-deployment` + `start-deployment`, then move the custom domain. The custom-rules JSON, build env vars, and domain association are all CLI-driven so the move is reproducible.
+> Recreate an [[aws/amplify/index|Amplify Hosting]] app in a new AWS account by `create-app` → `create-branch` → manual zip deployment via `create-deployment` + `start-deployment`, then move the custom domain. The custom-rules JSON, build env vars, and domain association are all CLI-driven so the move is reproducible.
 
 ## When to use this recipe
 
@@ -218,7 +218,7 @@ Expected progression: `PENDING_VERIFICATION` → `IN_PROGRESS` / `UPDATING` → 
 
 ### 8. Cut traffic over
 
-Update the production CNAME(s) at your DNS provider to point at the new app's [[aws/cloudfront|CloudFront]] target (`d<RANDOM>.cloudfront.net`, visible in `get-domain-association` output). Verify with `dig` and a fresh browser before deleting the source app.
+Update the production CNAME(s) at your DNS provider to point at the new app's [[aws/cloudfront/index|CloudFront]] target (`d<RANDOM>.cloudfront.net`, visible in `get-domain-association` output). Verify with `dig` and a fresh browser before deleting the source app.
 
 ## Cleanup
 
