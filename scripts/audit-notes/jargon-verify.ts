@@ -34,6 +34,46 @@ interface JargonVerifyArgs {
   log: (msg: string) => void;
 }
 
+// Headings whose bodies are link/topic enumerations, not prose claims.
+// Jargon flags inside these sections are noise: "OpenAPI", "NestJS", "fibers"
+// here are titles of planned notes or pointers, not undefined terms in prose.
+const SKIP_SECTION_HEADINGS: readonly string[] = [
+  "pending notes",
+  "see also",
+  "further reading",
+  "related",
+  "references",
+];
+
+// Returns 1-based line numbers that fall inside any skip-zone section.
+// A section starts at its `## Heading` line and runs until the next
+// `## ` heading at the same depth or EOF. Frontmatter is excluded from
+// section detection.
+function findSkipLines(noteText: string): Set<number> {
+  const lines: string[] = noteText.split("\n");
+  const skip: Set<number> = new Set();
+  let inSkipSection: boolean = false;
+  let inFrontmatter: boolean = lines[0] === "---";
+  for (let i: number = 0; i < lines.length; i++) {
+    const line: string = lines[i] ?? "";
+    if (inFrontmatter) {
+      if (i > 0 && line === "---") inFrontmatter = false;
+      continue;
+    }
+    const heading: RegExpExecArray | null = /^##\s+(.+?)\s*$/.exec(line);
+    if (heading !== null) {
+      const text: string = heading[1]!.toLowerCase().trim();
+      inSkipSection = SKIP_SECTION_HEADINGS.some(
+        (h: string): boolean => text === h || text.startsWith(`${h}:`),
+      );
+      // Heading line itself is fine to evaluate — skip only its body.
+      continue;
+    }
+    if (inSkipSection) skip.add(i + 1);
+  }
+  return skip;
+}
+
 // Cap concurrent LLM sessions in line with source-verify (4). Each call is
 // one note; runtime is dominated by token generation.
 const JARGON_CONCURRENCY: number = 4;
@@ -105,7 +145,9 @@ export async function runJargonVerifyPass(
       }
       const totalLines: number = noteText.split("\n").length;
       const lines: string[] = noteText.split("\n");
+      const skipLines: Set<number> = findSkipLines(noteText);
       const out: FlatFinding[] = [];
+      let droppedSkipZone: number = 0;
       for (const f of parsed.findings ?? []) {
         if (f.line < 1 || f.line > totalLines) continue;
         // Ground the quote: must appear on the cited line. Drops the most
@@ -117,6 +159,12 @@ export async function runJargonVerifyPass(
           );
           continue;
         }
+        // Skip zone: pending-notes / see-also / etc. are link or topic lists,
+        // not prose claims. Jargon flags here are FPs by construction.
+        if (skipLines.has(f.line)) {
+          droppedSkipZone++;
+          continue;
+        }
         const tail: string =
           f.suggestion !== undefined ? ` Suggested: ${f.suggestion}` : "";
         out.push({
@@ -126,6 +174,11 @@ export async function runJargonVerifyPass(
           message: `Assumed-knowledge jargon (${f.kind}): "${f.quote}". ${f.rationale}${tail}`,
           evidence: f.quote.slice(0, 120),
         });
+      }
+      if (droppedSkipZone > 0) {
+        log(
+          `[jargon-verify] ${target}: dropped ${droppedSkipZone} finding(s) in skip-zone sections`,
+        );
       }
       log(
         `[jargon-verify] ${target}: ${parsed.findings?.length ?? 0} raw, ${out.length} after grounding`,
