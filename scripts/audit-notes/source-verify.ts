@@ -92,6 +92,57 @@ function rewriteForFetch(url: string): string[] {
   return [url];
 }
 
+// Strip URL fragments and trailing punctuation, then dedupe by canonical form.
+// Two URLs that differ only by `#anchor` or `?query` point at the same source
+// document; the verifier prompt only carries one extract per document anyway.
+function canonicalUrl(url: string): string {
+  return url
+    .replace(/[)>,.;:!?'"]+$/g, "")
+    .replace(/#.*$/, "")
+    .replace(/\?.*$/, "")
+    .replace(/\/$/, "");
+}
+
+function dedupeByCanonical(urls: readonly string[]): string[] {
+  const seen: Set<string> = new Set();
+  const out: string[] = [];
+  for (const u of urls) {
+    const key: string = canonicalUrl(u);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(u);
+  }
+  return out;
+}
+
+// Extract every primary-source-looking URL in the note body (post-frontmatter).
+// Captures both markdown-link form `[text](https://...)` and bare URLs in prose.
+// Skips URLs in fenced code blocks (snippet placeholders, not citations) and
+// internal localhost/example.com hosts.
+export function extractInlineUrls(noteText: string): string[] {
+  let body: string;
+  if (noteText.startsWith("---\n")) {
+    const closeIdx: number = noteText.indexOf("\n---", 4);
+    body = closeIdx === -1 ? noteText : noteText.slice(closeIdx + 4);
+  } else {
+    body = noteText;
+  }
+  // Strip fenced code blocks so URLs inside snippets don't leak in as sources.
+  const stripped: string = body.replace(/```[\s\S]*?```/g, " ");
+  const urls: string[] = [];
+  const re: RegExp = /https?:\/\/[^\s)>\]"']+/g;
+  let match: RegExpExecArray | null;
+  while ((match = re.exec(stripped)) !== null) {
+    const raw: string = match[0]!;
+    const url: string = raw.replace(/[)>,.;:!?'"]+$/g, "");
+    // Skip non-source hosts.
+    if (/^https?:\/\/(localhost|127\.|example\.com|0\.0\.0\.0)/i.test(url))
+      continue;
+    urls.push(url);
+  }
+  return dedupeByCanonical(urls);
+}
+
 export function extractSourceUrls(noteText: string): string[] {
   if (!noteText.startsWith("---\n")) return [];
   const closeIdx: number = noteText.indexOf("\n---", 4);
@@ -293,7 +344,7 @@ function buildVerifierPrompt(
       .join("\n"),
     "---",
     "",
-    "CITED SOURCES (extracted plain text from `source:` URLs in the note's frontmatter):",
+    "CITED SOURCES (extracted plain text from URLs cited by the note: frontmatter `source:` AND inline links in the body):",
     sourceBlocks.length > 0 ? sourceBlocks : "(none)",
     "",
     "Output a single JSON object matching the skill's `Report` schema. JSON only — no prose, no Markdown, no fenced block.",
@@ -349,12 +400,17 @@ export async function runSourceVerifyPass(
         return [];
       }
       const noteText: string = readFileSync(abs, "utf8");
-      const urls: string[] = extractSourceUrls(noteText);
+      const fmUrls: string[] = extractSourceUrls(noteText);
+      const inlineUrls: string[] = extractInlineUrls(noteText);
+      const urls: string[] = dedupeByCanonical([...fmUrls, ...inlineUrls]);
       if (urls.length === 0) {
-        log(`[source-verify] skip (no source: URLs): ${target}`);
+        log(`[source-verify] skip (no source URLs): ${target}`);
         return [];
       }
-      log(`[source-verify] ${target}: ${urls.length} source URL(s)`);
+      const inlineOnly: number = urls.length - fmUrls.length;
+      log(
+        `[source-verify] ${target}: ${urls.length} source URL(s) (frontmatter=${fmUrls.length}, inline-only=${inlineOnly})`,
+      );
 
       const sources: FetchedSource[] = await fetchSources(urls, repoRoot);
       const fetched: number = sources.filter(
