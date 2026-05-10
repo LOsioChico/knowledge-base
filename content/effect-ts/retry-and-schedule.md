@@ -193,7 +193,7 @@ The result's success type becomes a union of both success types (the original `A
 > The schedule is unbounded. Always combine it with `Schedule.recurs(n)` via `Schedule.intersect`, or add a `times`/`until` option, or use `Schedule.upTo` to bound by total elapsed time. Forgetting this turns a transient outage into an infinite loop.
 
 > [!info]- Why `intersect` and not `compose`
-> `Schedule.compose(a, b)` chains `b` after `a` finishes; that's not what you want for "cap exponential at 5 retries". `intersect` runs both side-by-side and stops as soon as either one stops, which is the bounding semantics ([schedule combinators docs](https://effect.website/docs/scheduling/schedule-combinators/#intersect)).
+> `Schedule.compose(a, b)` feeds `a`'s output as `b`'s input and picks the **shorter** of the two delays at each step ([source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts#L513-L533)); that's not what you want for "cap exponential at 5 retries" either. `intersect` runs both side-by-side and stops as soon as either one stops, which is the bounding semantics ([schedule combinators docs](https://effect.website/docs/scheduling/schedule-combinators/#intersect)). If you genuinely want "run schedule `a` to completion, then `b`", reach for `Schedule.andThen` instead.
 
 > [!warning] Don't retry non-idempotent effects blindly
 > `Effect.retry` re-runs the effect end-to-end. If the effect mutates external state (POST without an idempotency key, sends an email, charges a card), retrying replays the mutation. Either make the effect idempotent (server-side dedup key) or split it: retry the read, don't retry the write.
