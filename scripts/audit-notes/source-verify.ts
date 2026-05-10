@@ -16,6 +16,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { FlatFinding } from "./types.js";
+import { readVotingConfig, runWithVoting } from "./voting.js";
 
 const TTL_MS: number = 30 * 24 * 60 * 60 * 1000;
 const MAX_SOURCE_CHARS: number = 40_000;
@@ -389,6 +390,7 @@ export async function runSourceVerifyPass(
   args: SourceVerifyArgs,
 ): Promise<FlatFinding[]> {
   const { repoRoot, targets, runAgent, extractJson, log } = args;
+  const voteCfg = readVotingConfig();
 
   const perFile: FlatFinding[][] = await pMap(
     targets,
@@ -424,46 +426,80 @@ export async function runSourceVerifyPass(
         if (s.error !== undefined) log(`  - ${s.url}: ${s.error}`);
       }
 
-      const prompt: string = buildVerifierPrompt(target, noteText, sources);
-      const text: string = await runAgent(prompt, `source-verify:${target}`);
-      let parsed: VerifierReport;
-      try {
-        parsed = JSON.parse(extractJson(text)) as VerifierReport;
-      } catch (err) {
-        log(
-          `[source-verify] failed to parse response for ${target}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-        return [];
-      }
       const totalLines: number = noteText.split("\n").length;
-      const out: FlatFinding[] = [];
-      for (const f of parsed.findings ?? []) {
-        if (f.line < 1 || f.line > totalLines) continue;
-        const prefix: string =
-          f.status === "contradicted"
-            ? "Contradicts cited sources"
-            : f.status === "unsourced-but-plausible"
-              ? "Plausible but unsourced"
-              : "Not supported by cited sources";
-        const tail: string =
-          f.status === "unsourced-but-plausible" &&
-          f.suggestedSourceUrl !== undefined
-            ? ` Suggested source: ${f.suggestedSourceUrl}`
-            : "";
-        out.push({
-          rule: "source-verification",
-          path: target,
-          line: f.line,
-          message: `${prefix}: ${f.claim}. ${f.explanation}${tail}`,
-          ...(f.evidence !== undefined
-            ? { evidence: f.evidence.slice(0, 120) }
-            : {}),
-        });
-      }
-      log(
-        `[source-verify] ${target}: ${parsed.findings?.length ?? 0} finding(s)`,
-      );
-      return out;
+      const prompt: string = buildVerifierPrompt(target, noteText, sources);
+
+      const runOnce = async (sampleIdx: number): Promise<FlatFinding[]> => {
+        const label: string =
+          voteCfg.n > 1
+            ? `source-verify:${target}#${sampleIdx + 1}`
+            : `source-verify:${target}`;
+        const text: string = await runAgent(prompt, label);
+        let parsed: VerifierReport;
+        try {
+          parsed = JSON.parse(extractJson(text)) as VerifierReport;
+        } catch (err) {
+          log(
+            `[source-verify] failed to parse response for ${target} (sample ${sampleIdx + 1}): ${err instanceof Error ? err.message : String(err)}`,
+          );
+          return [];
+        }
+        const out: FlatFinding[] = [];
+        for (const f of parsed.findings ?? []) {
+          if (f.line < 1 || f.line > totalLines) continue;
+          const prefix: string =
+            f.status === "contradicted"
+              ? "Contradicts cited sources"
+              : f.status === "unsourced-but-plausible"
+                ? "Plausible but unsourced"
+                : "Not supported by cited sources";
+          const tail: string =
+            f.status === "unsourced-but-plausible" &&
+            f.suggestedSourceUrl !== undefined
+              ? ` Suggested source: ${f.suggestedSourceUrl}`
+              : "";
+          out.push({
+            rule: "source-verification",
+            path: target,
+            line: f.line,
+            message: `${prefix}: ${f.claim}. ${f.explanation}${tail}`,
+            ...(f.evidence !== undefined
+              ? { evidence: f.evidence.slice(0, 120) }
+              : {}),
+          });
+        }
+        log(
+          `[source-verify] ${target} sample ${sampleIdx + 1}: ${parsed.findings?.length ?? 0} finding(s)`,
+        );
+        return out;
+      };
+
+      // Signature: line + status prefix + first ~60 normalized chars of the
+      // claim. Claim wording drifts more than jargon quotes, so we normalize
+      // (lowercase, collapse non-alnum) before truncating to keep the same
+      // claim across resamples in one bucket. Status prefix prevents
+      // "contradicted" and "unsourced-but-plausible" findings on the same line
+      // from colliding.
+      const sigOf = (f: FlatFinding): string => {
+        const prefixMatch: RegExpExecArray | null =
+          /^(Contradicts cited sources|Plausible but unsourced|Not supported by cited sources):/.exec(
+            f.message,
+          );
+        const status: string =
+          prefixMatch !== null ? prefixMatch[1]! : "unknown";
+        const claim: string = f.message
+          .replace(
+            /^(Contradicts cited sources|Plausible but unsourced|Not supported by cited sources):\s*/,
+            "",
+          )
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, " ")
+          .trim()
+          .slice(0, 60);
+        return `${f.path}|${f.rule}|${f.line}|${status}|${claim}`;
+      };
+
+      return runWithVoting(voteCfg, runOnce, sigOf, log, target);
     },
   );
 

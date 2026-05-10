@@ -13,6 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { FlatFinding } from "./types.js";
+import { readVotingConfig, runWithVoting } from "./voting.js";
 
 interface JargonFinding {
   line: number;
@@ -120,6 +121,7 @@ export async function runJargonVerifyPass(
   args: JargonVerifyArgs,
 ): Promise<FlatFinding[]> {
   const { repoRoot, targets, runAgent, extractJson, log } = args;
+  const voteCfg = readVotingConfig();
 
   const perFile: FlatFinding[][] = await pMap(
     targets,
@@ -131,59 +133,73 @@ export async function runJargonVerifyPass(
         return [];
       }
       const noteText: string = readFileSync(abs, "utf8");
-
-      const prompt: string = buildJargonPrompt(target, noteText);
-      const text: string = await runAgent(prompt, `jargon-verify:${target}`);
-      let parsed: JargonReport;
-      try {
-        parsed = JSON.parse(extractJson(text)) as JargonReport;
-      } catch (err) {
-        log(
-          `[jargon-verify] failed to parse response for ${target}: ${err instanceof Error ? err.message : String(err)}`,
-        );
-        return [];
-      }
       const totalLines: number = noteText.split("\n").length;
       const lines: string[] = noteText.split("\n");
       const skipLines: Set<number> = findSkipLines(noteText);
-      const out: FlatFinding[] = [];
-      let droppedSkipZone: number = 0;
-      for (const f of parsed.findings ?? []) {
-        if (f.line < 1 || f.line > totalLines) continue;
-        // Ground the quote: must appear on the cited line. Drops the most
-        // common LLM failure (paraphrased quote, off-by-one line).
-        const lineText: string = lines[f.line - 1] ?? "";
-        if (!lineText.includes(f.quote)) {
+      const prompt: string = buildJargonPrompt(target, noteText);
+
+      const runOnce = async (sampleIdx: number): Promise<FlatFinding[]> => {
+        const label: string =
+          voteCfg.n > 1
+            ? `jargon-verify:${target}#${sampleIdx + 1}`
+            : `jargon-verify:${target}`;
+        const text: string = await runAgent(prompt, label);
+        let parsed: JargonReport;
+        try {
+          parsed = JSON.parse(extractJson(text)) as JargonReport;
+        } catch (err) {
           log(
-            `[jargon-verify] dropped (quote not on line) ${target}:${f.line} "${f.quote.slice(0, 40)}"`,
+            `[jargon-verify] failed to parse response for ${target} (sample ${sampleIdx + 1}): ${err instanceof Error ? err.message : String(err)}`,
           );
-          continue;
+          return [];
         }
-        // Skip zone: pending-notes / see-also / etc. are link or topic lists,
-        // not prose claims. Jargon flags here are FPs by construction.
-        if (skipLines.has(f.line)) {
-          droppedSkipZone++;
-          continue;
+        const out: FlatFinding[] = [];
+        let droppedSkipZone: number = 0;
+        for (const f of parsed.findings ?? []) {
+          if (f.line < 1 || f.line > totalLines) continue;
+          // Ground the quote: must appear on the cited line. Drops the most
+          // common LLM failure (paraphrased quote, off-by-one line).
+          const lineText: string = lines[f.line - 1] ?? "";
+          if (!lineText.includes(f.quote)) {
+            log(
+              `[jargon-verify] dropped (quote not on line) ${target}:${f.line} "${f.quote.slice(0, 40)}"`,
+            );
+            continue;
+          }
+          // Skip zone: pending-notes / see-also / etc. are link or topic
+          // lists, not prose claims. Jargon flags here are FPs by construction.
+          if (skipLines.has(f.line)) {
+            droppedSkipZone++;
+            continue;
+          }
+          const tail: string =
+            f.suggestion !== undefined ? ` Suggested: ${f.suggestion}` : "";
+          out.push({
+            rule: "style-jargon",
+            path: target,
+            line: f.line,
+            message: `Assumed-knowledge jargon (${f.kind}): "${f.quote}". ${f.rationale}${tail}`,
+            evidence: f.quote.slice(0, 120),
+          });
         }
-        const tail: string =
-          f.suggestion !== undefined ? ` Suggested: ${f.suggestion}` : "";
-        out.push({
-          rule: "style-jargon",
-          path: target,
-          line: f.line,
-          message: `Assumed-knowledge jargon (${f.kind}): "${f.quote}". ${f.rationale}${tail}`,
-          evidence: f.quote.slice(0, 120),
-        });
-      }
-      if (droppedSkipZone > 0) {
+        if (droppedSkipZone > 0) {
+          log(
+            `[jargon-verify] ${target} sample ${sampleIdx + 1}: dropped ${droppedSkipZone} finding(s) in skip-zone sections`,
+          );
+        }
         log(
-          `[jargon-verify] ${target}: dropped ${droppedSkipZone} finding(s) in skip-zone sections`,
+          `[jargon-verify] ${target} sample ${sampleIdx + 1}: ${parsed.findings?.length ?? 0} raw, ${out.length} after grounding`,
         );
-      }
-      log(
-        `[jargon-verify] ${target}: ${parsed.findings?.length ?? 0} raw, ${out.length} after grounding`,
-      );
-      return out;
+        return out;
+      };
+
+      // Signature: line + quote is stable across resamples (the LLM extracts
+      // the same undefined token even when surrounding rationale wording
+      // drifts). Path+rule pin the bucket to this file's jargon channel.
+      const sigOf = (f: FlatFinding): string =>
+        `${f.path}|${f.rule}|${f.line}|${f.evidence ?? ""}`;
+
+      return runWithVoting(voteCfg, runOnce, sigOf, log, target);
     },
   );
 
