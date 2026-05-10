@@ -89,7 +89,7 @@ A `Layer<ROut, E, RIn>` is a recipe for **constructing** services of type `ROut`
 | Constructor                                                                                        | Use when                                                                           | RIn                                         |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------- |
 | [`Layer.succeed`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L772) | The implementation is a static value, no construction effects.                     | `never`                                     |
-| [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289)  | Construction is itself an effect (reads other services, runs IO).                  | inferred from the construction effect's `R` |
+| [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289)  | Construction is itself an effect (reads other services, runs I/O).                 | inferred from the construction effect's `R` |
 | [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727)  | The service holds a resource that needs cleanup (DB pool, file handle, websocket). | inferred, with `Scope` excluded             |
 
 ```typescript
@@ -218,7 +218,7 @@ Two escape hatches when you need a fresh instance:
 >
 > The error message names the unsatisfied requirement. Read the `R` channel in the type to see exactly what's missing.
 
-> [!warning]- `Effect.Service` is `@experimental`
+> [!info]- `Effect.Service` is `@experimental`
 > Per the [source comment](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13582), the API "might be up for breaking changes". Pin the `effect` version if you adopt it widely; check release notes when upgrading. `Context.Tag` + `Layer` is the stable foundation if you want zero risk.
 
 > [!warning]- Constructing a layer inside a function defeats memoization

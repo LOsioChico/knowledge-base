@@ -935,6 +935,14 @@
       "reason": "body-parser is universal Express vocabulary in a NestJS validation recipe audience.",
       "date": "2026-05-09",
       "originalLine": "| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO (plain old JavaScript object: a literal `{}`, not a class instance) from `body-parser` (no coercion: `transformPrimitive` skips bodies)                                                                                                                                                         |"
+    },
+    {
+      "path": "content/effect-ts/layers-and-di.md",
+      "sig": "8349307b06f59f906b6f7b7b1e5899d44b1f22f1",
+      "rule": "callout-placement",
+      "reason": "Memoization section's second escape hatch and the Common gotchas callout intentionally restate the same pattern: the gotchas section is the scan-first index for footguns. Both are short, the gotcha is collapsed, and duplication is the point of the gotchas section.",
+      "date": "2026-05-09",
+      "originalLine": "> [!warning]- Constructing a layer inside a function defeats memoization"
     }
   ]
 }
