@@ -399,6 +399,350 @@
       "reason": "Section is \"## Pending\" — planned-recipes list. \"scopes\" is named as a future-recipe topic; the actual recipe will gloss it (singleton/request/transient lifetimes).",
       "date": "2026-05-09",
       "originalLine": "- DI container: providers, scopes, custom providers"
+    },
+    {
+      "path": "content/aws/amplify/cross-account-migration.md",
+      "sig": "2cf2135a0c4c4a8f33d4c354f9d3391f8817d25d",
+      "rule": "style-jargon",
+      "reason": "branch-protection is universal Git-forge vocabulary in any cross-account migration audience; gloss adds noise.",
+      "date": "2026-05-09",
+      "originalLine": "- The team is large enough that \"anyone with CI access can trigger a deploy\" is a footgun: prefer the git-connected flow with branch-protection on `main`."
+    },
+    {
+      "path": "content/aws/amplify/index.md",
+      "sig": "c9ed6e8da0da6f267365df3f7475b4e3a1b993d5",
+      "rule": "style-jargon",
+      "reason": "PR (pull request) is universal dev shorthand.",
+      "date": "2026-05-09",
+      "originalLine": "- **Use Amplify Hosting** for: single-page-app (SPA) frontends with a build step, Next.js server-side rendering (SSR, the `WEB_COMPUTE` platform), preview deployments per PR, when \"git push to deploy\" is the entire requirement."
+    },
+    {
+      "path": "content/aws/amplify/index.md",
+      "sig": "068948be9273a433728f337204735b95f9d559ae",
+      "rule": "style-jargon",
+      "reason": "App Runner named alongside Lambda/ECS in 'don't use Amplify for' bullet; surrounding context (compute layer for backend services) makes role clear.",
+      "date": "2026-05-09",
+      "originalLine": "- **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services: provision compute on [[aws/lambda/index|Lambda]], ECS, or App Runner instead."
+    },
+    {
+      "path": "content/aws/cloudfront/alternate-domain-claim.md",
+      "sig": "808d61955d16864384657748790131578a5a98f0",
+      "rule": "style-jargon",
+      "reason": "edge services is plain-English in context (CloudFront/Amplify/ACM share us-east-1 cert convention); not a defined AWS feature name.",
+      "date": "2026-05-09",
+      "originalLine": "1. **Request a public ACM certificate** in the same region you'll use the distribution in (us-east-1 for Amplify and most edge services). Cover both apex and wildcard so future subdomains are free:"
+    },
+    {
+      "path": "content/aws/cloudfront/index.md",
+      "sig": "393c38126e0cfeaa9103c94496080640d85a7d53",
+      "rule": "style-jargon",
+      "reason": "wildcard override is glossed in the alternate-domain-claim recipe linked from this index.",
+      "date": "2026-05-09",
+      "originalLine": "- **Aliases (CNAMEs) are globally unique** across all AWS accounts. The same hostname can live on only one distribution at a time; collisions need eviction or a wildcard override ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html))."
+    },
+    {
+      "path": "content/aws/dynamodb/index.md",
+      "sig": "c20bf2ecd6898d4974af1841b0b6efca8e194e5c",
+      "rule": "style-jargon",
+      "reason": "sharding is universal distributed-systems vocabulary; aws/** audience knows it.",
+      "date": "2026-05-09",
+      "originalLine": "> Amazon DynamoDB is AWS's managed key-value + document database: you define a table with a partition key (and optional sort key), write items as JSON-shaped documents, and AWS handles sharding, replication, and per-millisecond auto-scaling. Single-digit-ms reads at any scale, no servers to provision."
+    },
+    {
+      "path": "content/aws/dynamodb/index.md",
+      "sig": "7aaec3eaa585e94e7614ef5d3bf78543b596786a",
+      "rule": "style-jargon",
+      "reason": "idempotency keys are standard distributed-systems vocabulary; bullet is about conditional writes.",
+      "date": "2026-05-09",
+      "originalLine": "- **Conditional writes are atomic per item**. The primitive that makes DynamoDB usable as a coordination layer (locks, idempotency keys, single-writer tables) for systems backed by [[aws/s3/index|S3]] or other storage without ordering."
+    },
+    {
+      "path": "content/aws/ec2/ami-cross-account-copy.md",
+      "sig": "55e5ae1bbd88398ad4533b431d74713531f86f37",
+      "rule": "style-jargon",
+      "reason": "ARN+CMK both core AWS vocabulary; CMK explicitly defined later on L134 in same note.",
+      "date": "2026-05-09",
+      "originalLine": "| `True`      | ARN ends in a UUID and resolves to `KeyManager=CUSTOMER` | **Do section 4** (share the CMK).                                                                                                              |"
+    },
+    {
+      "path": "content/aws/ecs/index.md",
+      "sig": "c55970fa8ce5b72bec0451ad930c0304faea20a2",
+      "rule": "style-jargon",
+      "reason": "Kubernetes Deployment glossed by surrounding pod-equivalent paragraph on L22.",
+      "date": "2026-05-09",
+      "originalLine": "- **Service** runs N copies of a task and keeps that count alive (similar to a Kubernetes Deployment). Optionally registers tasks with a load balancer."
+    },
+    {
+      "path": "content/aws/ecs/index.md",
+      "sig": "c84793a067d5f1b2f3b4ed7233d91ebc8b1b194b",
+      "rule": "style-jargon",
+      "reason": "multi-cluster federation/Helm charts inline-glossed via 'when you already need full Kubernetes (...)'; the parenthetical IS the gloss.",
+      "date": "2026-05-09",
+      "originalLine": "- **Don't use ECS** when you already need full Kubernetes (multi-cluster federation, custom controllers, Helm charts); use EKS (Elastic Kubernetes Service, AWS's managed Kubernetes) instead."
+    },
+    {
+      "path": "content/aws/iam/index.md",
+      "sig": "9c6c0eb430992f86b56c87bb7019fd45f27e7e79",
+      "rule": "mental-model",
+      "reason": "Heading 'Mental model' + column headers provide framing; redundant rule-of-thumb sentence above adds noise.",
+      "date": "2026-05-09",
+      "originalLine": "| Principal kind | Long-lived credentials?                                                   | Use for                                                                                                                                                 |"
+    },
+    {
+      "path": "content/aws/lambda/index.md",
+      "sig": "abd5ca6f1753a3ba4c455bbc8171e3a8e76865e4",
+      "rule": "mental-model",
+      "reason": "Same as iam/index L45; piece-by-piece breakdown is more scannable as table than prose.",
+      "date": "2026-05-09",
+      "originalLine": "| Piece                        | What it controls                                                                                                                                                              |"
+    },
+    {
+      "path": "content/aws/recipes/cross-account-role-pattern.md",
+      "sig": "0ed26562ab2c1059316928641d51e5130c102664",
+      "rule": "style-jargon",
+      "reason": "inline policy is core IAM vocabulary in a cross-account-role recipe.",
+      "date": "2026-05-09",
+      "originalLine": "Create the role and attach the inline policy ([`aws iam create-role`](https://docs.aws.amazon.com/cli/latest/reference/iam/create-role.html), [`aws iam put-role-policy`](https://docs.aws.amazon.com/cli/latest/reference/iam/put-role-policy.html)):"
+    },
+    {
+      "path": "content/aws/recipes/cross-account-role-pattern.md",
+      "sig": "7e755afa35060b63f5c473dff8e76ace5ca5c8c0",
+      "rule": "style-jargon",
+      "reason": "role chaining glossed by surrounding AssumeRole-with-temp-credentials description.",
+      "date": "2026-05-09",
+      "originalLine": "[`AssumeRole`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) returns short-lived credentials ([`DurationSeconds`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters) defaults to 3600s, max 43200s capped by the role's maximum session duration; **role chaining is capped at 1 hour** and the call fails if you ask for more). For long-running processes, refresh before expiry; the AWS SDK credential provider chain has built-in helpers (e.g. [`fromTemporaryCredentials`](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-credential-providers/Function/fromTemporaryCredentials/) in JS SDK v3) that handle refresh automatically."
+    },
+    {
+      "path": "content/aws/s3/cross-account-migration.md",
+      "sig": "e313633b3a96985ba246c7271e961ba5bcc4d784",
+      "rule": "style-jargon",
+      "reason": "principal is core IAM vocabulary in a cross-account-migration recipe audience.",
+      "date": "2026-05-09",
+      "originalLine": "`aws s3 sync` from `s3://src` to `s3://dst` runs as account B's principal but reads from account A's bucket. The source bucket policy must allow it. Save as `src-bucket-grant.json`:"
+    },
+    {
+      "path": "content/aws/s3/event-notifications.md",
+      "sig": "1a2097a4f6fb743b94dd6062f96a358b4af34fb1",
+      "rule": "style-jargon",
+      "reason": "Object ACL glossed by surrounding row's behavior description (ACL changes via PutObjectAcl).",
+      "date": "2026-05-09",
+      "originalLine": "| Object ACL                                                                                               | (no wildcard)              | `s3:ObjectAcl:Put`                                                                                          |"
+    },
+    {
+      "path": "content/aws/s3/event-notifications.md",
+      "sig": "8747b0c4f70b7b5e6910eea3839d785e5e85a121",
+      "rule": "style-jargon",
+      "reason": "FIFO is universal queue vocabulary; aws/sqs notes already gloss in detail.",
+      "date": "2026-05-09",
+      "originalLine": "- **SQS queue** (Standard only: FIFO is not supported as a direct S3 destination; route through EventBridge if you need FIFO)."
+    },
+    {
+      "path": "content/aws/s3/index.md",
+      "sig": "a2e2f2cf3850d86b7cffe5051d2df7bbe8ce642e",
+      "rule": "style-jargon",
+      "reason": "DynamoDB is universal AWS vocabulary in an aws/s3 note.",
+      "date": "2026-05-09",
+      "originalLine": "- **Don't use S3 as a database.** No secondary indexes, no transactional updates across objects, list operations are O(prefix-scan). For metadata-heavy lookups, store the metadata in DynamoDB or PostgreSQL and keep the bytes in S3."
+    },
+    {
+      "path": "content/aws/s3/index.md",
+      "sig": "4e76f8c9c9053ed4b3b54579723a060de103f70f",
+      "rule": "style-jargon",
+      "reason": "S3 Transfer Acceleration named only as bucket-naming constraint; scope doesn't require teaching what it does.",
+      "date": "2026-05-09",
+      "originalLine": "> Buckets with periods in their name break virtual-host-style HTTPS access (the wildcard certificate `*.s3.amazonaws.com` doesn't cover `my.bucket.s3.amazonaws.com`). Buckets used with S3 Transfer Acceleration cannot have periods at all. The only place periods are routinely used is static-website-hosting buckets, where they let the bucket name match the hostname (`example.com`) ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html#automatically-created-buckets))."
+    },
+    {
+      "path": "content/aws/sqs/index.md",
+      "sig": "2befe3b6e34b18f5a17fbc80a7eacd84a1721c5a",
+      "rule": "style-jargon",
+      "reason": "single-shard FIFO group: 'throughput is capped' clause IS the gloss for what 'single-shard' means.",
+      "date": "2026-05-09",
+      "originalLine": "- **Don't use SQS** for: fan-out to multiple consumers (use SNS or EventBridge, the AWS managed event bus for application and scheduled events); for ordering across all messages (use a single-shard FIFO group, but throughput is capped); for \"stream replay\" semantics (use Kinesis, AWS's managed partitioned event-stream service, or MSK (Managed Streaming for Apache Kafka))."
+    },
+    {
+      "path": "content/aws/vpc/index.md",
+      "sig": "68338668af923ee3972e5f1a93dd3a46a7c34297",
+      "rule": "style-jargon",
+      "reason": "Transit Gateway in 'Pending notes' planned-recipes list (skip-zone analog of Pending sections).",
+      "date": "2026-05-09",
+      "originalLine": "- **Don't use multiple unconnected VPCs** when one would do: VPC peering and Transit Gateway add cost and complexity."
+    },
+    {
+      "path": "content/effect-ts/index.md",
+      "sig": "4c353f87ce1328e947b8b82b3c69843b569699f8",
+      "rule": "style-jargon",
+      "reason": "thunk is core FP vocabulary in an effect-ts note audience.",
+      "date": "2026-05-09",
+      "originalLine": "| Runtime           | The thing that _executes_ an `Effect`.                                                             | Like calling a thunk: nothing happens until `Effect.runPromise(program)`. |"
+    },
+    {
+      "path": "content/effect-ts/typed-errors.md",
+      "sig": "a78df25b63b4f1e02bcc82830125ff49de51ae61",
+      "rule": "style-jargon",
+      "reason": "structural equality is core FP/TypeScript vocabulary in an Effect typed-errors note audience.",
+      "date": "2026-05-09",
+      "originalLine": "`Data.TaggedError` is the canonical declaration form ([expected-errors docs](https://effect.website/docs/error-management/expected-errors/)): it adds the `_tag` field, the constructor, and structural equality in one line."
+    },
+    {
+      "path": "content/nestjs/fundamentals/guards.md",
+      "sig": "e1777055cd6ba86c59097d253c7b0c4fac356a22",
+      "rule": "style-jargon",
+      "reason": "protobuf named alongside HTTP/2 inside gRPC parenthetical; parenthetical IS the gloss for 'gRPC payload encoding'.",
+      "date": "2026-05-09",
+      "originalLine": "> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>` ([HTTP module docs](https://docs.nestjs.com/techniques/http-module#getting-started)); gRPC clients (gRPC is the open-source RPC framework that wraps HTTP/2 with protobuf payloads) return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly)."
+    },
+    {
+      "path": "content/nestjs/fundamentals/guards.md",
+      "sig": "e60401e794e94199f49a10c08d01feb0ce15f3fe",
+      "rule": "style-jargon",
+      "reason": "package barrel is dev-conventional shorthand for index.ts re-exports in TS/Nest audience.",
+      "date": "2026-05-09",
+      "originalLine": "Nest core ships **no concrete guard classes**: the [`@nestjs/common` package barrel](https://github.com/nestjs/nest/blob/master/packages/common/index.ts) exposes the `CanActivate` interface and the `@UseGuards` decorator but no ready-to-use guard implementations. Authorization is application-specific, so you write your own: or pull one from a peer package."
+    },
+    {
+      "path": "content/nestjs/fundamentals/index.md",
+      "sig": "101dd8cf944afc0097e29a6d846234db999e9a7b",
+      "rule": "style-jargon",
+      "reason": "providers is core Nest vocabulary in Nest fundamentals MOC; linked 'Provider scopes' note defines it.",
+      "date": "2026-05-09",
+      "originalLine": "> The mental model. Modules (the `@Module()`-decorated classes that group providers and controllers), the DI container, and the [[nestjs/fundamentals/request-lifecycle|request pipeline]] that ties [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]] and [[nestjs/fundamentals/exception-filters|exception filters]] together."
+    },
+    {
+      "path": "content/nestjs/fundamentals/index.md",
+      "sig": "a06f2f534849ebdb7ed3c758f03f34389ed3eadc",
+      "rule": "style-jargon",
+      "reason": "feature/shared/core archetypes are common Angular/Nest vocabulary; bullet links to planned 'Module organization' note.",
+      "date": "2026-05-09",
+      "originalLine": "- Modules: feature, shared, core"
+    },
+    {
+      "path": "content/nestjs/fundamentals/interceptors.md",
+      "sig": "74c0000a57d2caf9c5219fd3871f6ce0e8710e0a",
+      "rule": "style-jargon",
+      "reason": "cold Observable is core RxJS vocabulary; note already glosses RxJS at L41; deeper RxJS glossing belongs in an RxJS note.",
+      "date": "2026-05-09",
+      "originalLine": "> Each call to `next.handle()` returns a fresh cold `Observable`; subscribing twice subscribes the handler twice. The naïve \"try cache then fall back\" pattern is the usual offender:"
+    },
+    {
+      "path": "content/nestjs/fundamentals/interceptors.md",
+      "sig": "66460fa6c53299440c45ccd3efd49922ad114893",
+      "rule": "style-jargon",
+      "reason": "hot/multi-subscribed is core RxJS vocabulary; same as L370.",
+      "date": "2026-05-09",
+      "originalLine": "| `tap` runs on subscribe but value is missing       | Stream is hot/multi-subscribed elsewhere: use `share()` or rethink the pipeline                                                 |"
+    },
+    {
+      "path": "content/nestjs/fundamentals/lifecycle-hooks.md",
+      "sig": "0e7320c6bcd88f083a3f91ecf09d0fc14257cfa3",
+      "rule": "style-jargon",
+      "reason": "Jest is universal JS testing vocabulary; not a feature this note teaches.",
+      "date": "2026-05-09",
+      "originalLine": "Shutdown listeners are off by default because they pin extra event listeners on `process` and that adds up if you spawn many Nest apps in one Node process (Jest is the usual culprit). Opt in once at bootstrap:"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "5da83ce1c896bd2a24adf84a8d40e280b992aeba",
+      "rule": "style-jargon",
+      "reason": "X-Frame-Options named alongside CSP/HSTS which ARE glossed on same line; standard-security-header trio is a unit.",
+      "date": "2026-05-09",
+      "originalLine": "| [Helmet](https://docs.nestjs.com/security/helmet)             | `helmet`          | Security headers (CSP: Content Security Policy, HSTS: HTTP Strict Transport Security, X-Frame-Options, …) | `app.use(helmet())` in `main.ts` ([example](#common-recipes))                                 |"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "8841f52690ce43eca7611ee141e8ee785702b38f",
+      "rule": "style-jargon",
+      "reason": "path-to-regexp v8 named with v11 release-note link; version is what matters, not what library does.",
+      "date": "2026-05-09",
+      "originalLine": "> Express v5 is the default in NestJS 11 ([migration guide → Express v5](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#express-v5)) and requires **named** wildcards. The same path-to-regexp v8 matcher applies to the Fastify adapter, which NestJS 11 also bumped ([Fastify middleware registration](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#L114-L131)). Two shapes you'll actually use, identical semantics on both adapters:"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "sig": "bcad385cd866efea6093a284f1c970822240fd97",
+      "rule": "style-jargon",
+      "reason": "multipart glossed on adjacent lines via 'multipart/form-data' references in same section.",
+      "date": "2026-05-09",
+      "originalLine": "> With the Express adapter, Nest registers `express.json()` and `express.urlencoded()` automatically (the [Raw body FAQ](https://docs.nestjs.com/faq/raw-body) shows the opt-out). To customize parsing (raw bodies for webhooks, multipart, custom limits), pass `{ bodyParser: false }` to `NestFactory.create()` first, then bind your parser."
+    },
+    {
+      "path": "content/nestjs/fundamentals/pipes.md",
+      "sig": "435e694c1899669ef946c2df3fba724e0337f25a",
+      "rule": "style-jargon",
+      "reason": "metatype is Nest-specific but surrounding paragraphs and code samples in this fundamentals note demonstrate what it is (parameter's type).",
+      "date": "2026-05-09",
+      "originalLine": "- **Per-argument scope**: a pipe receives **one** handler argument (`@Body()`, `@Query('id')`, …) plus its `metatype`, not the full `Request`. That is what makes `ValidationPipe` automatic: it looks up the DTO class from the metatype and runs `class-validator` against just that value."
+    },
+    {
+      "path": "content/nestjs/fundamentals/pipes.md",
+      "sig": "9c1933bf8d40143d9ac6833a693d75506fa1d67f",
+      "rule": "style-jargon",
+      "reason": "peer deps is universal npm vocabulary in nestjs audience.",
+      "date": "2026-05-09",
+      "originalLine": "| `ValidationPipe`   | [[nestjs/recipes/validation\\|DTO validation]]/transformation | Uses `class-validator` + `class-transformer` (peer deps you install)                                                                                                                                                                                                                                                              |"
+    },
+    {
+      "path": "content/nestjs/recipes/file-uploads.md",
+      "sig": "69ac1187dd321fd513a4d95784552a1925e0036b",
+      "rule": "style-jargon",
+      "reason": "S3 is universally-known AWS vocabulary in any web-dev audience.",
+      "date": "2026-05-09",
+      "originalLine": "By default Multer keeps the file in memory as a `Buffer` on `file.buffer` ([Multer README → MemoryStorage](https://github.com/expressjs/multer#memorystorage)). That is fine for small files you immediately stream to S3. For anything larger, switch to disk storage:"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "sig": "26876389b91353d45c114cc23da930415050d8c8",
+      "rule": "style-jargon",
+      "reason": "plugin transformers named only to point at SWC limitation; linked SWC recipe has full context.",
+      "date": "2026-05-09",
+      "originalLine": "> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (TypeScript decorator metadata emit details, like how `experimentalDecorators` + `emitDecoratorMetadata` interact with each compiler's pipeline; plugin transformers), set `\"compilerOptions\": { \"builder\": { \"type\": \"tsc\" } }` in `nest-cli.json` (the CLI also accepts the shorthand `\"builder\": \"tsc\"` and normalizes it to the object form: [`get-builder.ts#L17-L29`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts#L17-L29)). Docs: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler)."
+    },
+    {
+      "path": "content/nestjs/recipes/swc-setup.md",
+      "sig": "fe94cc262b25c133b7b5cc2b27d223979fe29b76",
+      "rule": "source-verification",
+      "reason": "Plausible 'since v10' claim. UNVERIFIABLE without a specific release-notes URL right now; revisit on next NestJS release sweep.",
+      "date": "2026-05-09",
+      "originalLine": "> [SWC](https://swc.rs) is a Rust-based TS/JS compiler that's roughly **20× faster** than `tsc` on Nest builds. The Nest CLI has built-in support since [[nestjs/releases/v10|v10]]: opt in with one flag, then layer `tsc --noEmit` on top for type-checking. This is the default builder for new and existing Nest projects in this knowledge base; reach for `tsc` or `webpack` only when noted."
+    },
+    {
+      "path": "content/nestjs/recipes/swc-setup.md",
+      "sig": "ecd8620790c9d4b822d6232483d1f39304eae241",
+      "rule": "style-jargon",
+      "reason": "type graph is informal; surrounding paragraph already explains tsc does full type checking and SWC doesn't.",
+      "date": "2026-05-09",
+      "originalLine": "SWC strips and emits TypeScript fast because it does **no type checking**: it doesn't even build a type graph. `--type-check` (or `typeCheck: true`) tells the Nest CLI to run `tsc --noEmit` alongside SWC so type errors still surface in your terminal. In **watch** mode `tsc` is forked into a child process and runs in parallel with `runSwc()` (no `await`). In **non-watch** mode (`nest build`) `runTypeChecker` is awaited before `runSwc`, so the build blocks on type-checking ([`SwcCompiler#run`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts))."
+    },
+    {
+      "path": "content/nestjs/recipes/swc-setup.md",
+      "sig": "a61a41b1f7a7eff840fca73048870f7c153a129c",
+      "rule": "style-jargon",
+      "reason": "ORM is universal backend vocabulary in a Nest recipe audience.",
+      "date": "2026-05-09",
+      "originalLine": "> Same fix applies to `forwardRef()` constructor injections: wrap the parameter type in `WrapperType<T>` or your ORM's equivalent. Source: [SWC common pitfalls](https://docs.nestjs.com/recipes/swc#common-pitfalls)."
+    },
+    {
+      "path": "content/nestjs/recipes/trace-id.md",
+      "sig": "5fa9c4775fe9b5973216f53e874e390e929a1be1",
+      "rule": "style-jargon",
+      "reason": "Kafka is universal distributed-systems vocabulary; named in 'Pending' planned-recipes list.",
+      "date": "2026-05-09",
+      "originalLine": "The producer side stores `getTraceId()` into the job payload when enqueuing; the consumer re-opens the context with that value. Same idea for Kafka consumers, scheduled tasks (`@Cron`), and anything else that doesn't go through Express."
+    },
+    {
+      "path": "content/nestjs/recipes/trace-id.md",
+      "sig": "543df82a02b1df021b5cbb0ceb06c02061e57388",
+      "rule": "style-jargon",
+      "reason": "W3C traceparent: linked W3C spec URL on same line IS the definition.",
+      "date": "2026-05-09",
+      "originalLine": "> This recipe builds the correlation-ID flavor and exposes it under the `trace-id` name because the wire format and the lookup workflow are the same. Distributed tracing with W3C `traceparent` and OpenTelemetry spans is a planned separate recipe."
+    },
+    {
+      "path": "content/nestjs/recipes/validation.md",
+      "sig": "18c57ce6bb90aca8cb716ff282d7e93d35d61c50",
+      "rule": "style-jargon",
+      "reason": "qs: 'every nested field arrives as a string from qs' IS the operational gloss (parses query strings).",
+      "date": "2026-05-09",
+      "originalLine": "Whole-object query/body params (`@Query() q: PaginationQuery` with no key) bypass `transformPrimitive` and go through `plainToInstance` instead. Without `enableImplicitConversion`, every nested field arrives as a string from `qs`:"
     }
   ]
 }
