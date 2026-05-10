@@ -21,6 +21,7 @@ related:
   - "[[aws/sns/index]]"
   - "[[aws/vpc/index]]"
   - "[[aws/ecs/index]]"
+  - "[[aws/lambda-vs-ec2]]"
   - "[[aws/account-migrations]]"
 ---
 
@@ -64,6 +65,10 @@ After that, jump to whichever service the task needs; the per-service indexes ar
 ## Cross-cutting workflows
 
 - [[aws/account-migrations|Account migrations]]: end-to-end migration playbook that stitches the per-service recipes (RDS, IAM, S3, Amplify, CloudFront, KMS) into a single ordered narrative.
+
+## Decision guides
+
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: which compute primitive fits which workload shape, with a decision matrix and a concrete pricing-crossover example.
 
 ## When to read this area
 

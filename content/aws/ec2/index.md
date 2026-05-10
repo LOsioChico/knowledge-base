@@ -6,6 +6,7 @@ area: aws
 status: seed
 related:
   - "[[aws/index]]"
+  - "[[aws/lambda-vs-ec2]]"
   - "[[aws/vpc/index]]"
   - "[[aws/ecs/index]]"
   - "[[aws/ec2/snapshot-all-instances]]"

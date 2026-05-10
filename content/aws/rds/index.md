@@ -6,6 +6,7 @@ area: aws
 status: seed
 related:
   - "[[aws/index]]"
+  - "[[aws/lambda-vs-ec2]]"
   - "[[aws/rds/cli]]"
   - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/kms/cli]]"

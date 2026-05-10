@@ -10,6 +10,7 @@ related:
   - "[[aws/iam/index]]"
   - "[[aws/cloudfront/index]]"
   - "[[aws/lambda/index]]"
+  - "[[aws/lambda-vs-ec2]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/recipes/index]]"
 source:
