@@ -26,6 +26,17 @@ related:
 
 > Map of content for AWS. Each service lives in its own folder `aws/<service>/`: `index.md` is the concept note ("what is it, how does it work, when to use it"), `cli.md` is the CLI cheatsheet, and any service-specific deep-dives or recipes sit alongside. Cross-cutting recipes that touch more than one service live under [[aws/recipes/index|aws/recipes]]; CLI fundamentals (profiles, output shaping) live under [[aws/cli/index|aws/cli]].
 
+## Start here
+
+If you're new to AWS, read in this order:
+
+1. [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`/`--output`. Required before any per-service walkthrough.
+2. [[aws/iam/index|IAM]]: identities, policies, role-based access. Every other service depends on IAM.
+3. [[aws/s3/quickstart|S3 quickstart]]: 10-minute hands-on with the simplest stateful primitive (object storage).
+4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]]: the trust-policy + ExternalId pattern that recurs across services.
+
+After that, jump to whichever service the task needs; the per-service indexes are scannable in any order.
+
 ## Foundations
 
 - [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`, `--output`, JMESPath patterns (the JSON query language behind `--query`). Per-service cheatsheets live alongside (e.g. [[aws/s3/cli|S3 CLI cheatsheet]]).
