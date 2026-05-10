@@ -10,7 +10,7 @@ related:
   - "[[nestjs/fundamentals/lifecycle-hooks]]"
 ---
 
-> The mental model. Modules, the DI container, and the [[nestjs/fundamentals/request-lifecycle|request pipeline]] that ties [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]] and [[nestjs/fundamentals/exception-filters|exception filters]] together.
+> The mental model. Modules (the `@Module()`-decorated classes that group providers and controllers), the DI container, and the [[nestjs/fundamentals/request-lifecycle|request pipeline]] that ties [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]] and [[nestjs/fundamentals/exception-filters|exception filters]] together.
 
 ## Available
 

@@ -111,7 +111,7 @@ No string tokens, no module-resolution magic, no "service not registered" runtim
 
 ### 3. Structured concurrency and resource safety
 
-Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
+Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (Effect's lightweight in-process concurrency unit, like a goroutine or green thread) that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
 
 ## Ecosystem snapshot
 
@@ -121,7 +121,7 @@ The core ships as the single `effect` npm package. Adjacent packages live under 
 - `@effect/cli`: typed CLI args, subcommands, prompts.
 - `@effect/sql` (+ adapters: `pg`, `mysql2`, `sqlite-node`, `clickhouse`, `drizzle`, `kysely`, …): typed SQL with connection pools and migrations.
 - `@effect/ai`: typed wrappers around OpenAI / Anthropic with retry, streaming, tool-calling.
-- `@effect/workflow`: durable, resumable workflows à la Temporal, in-process.
+- `@effect/workflow`: durable, resumable workflows à la Temporal (the open-source workflow engine that pioneered checkpoint-based resumable execution), in-process.
 - `@effect/rpc`, `@effect/cluster`, `@effect/opentelemetry`, `@effect/vitest`, `@effect/printer`, `@effect/typeclass`, `@effect/experimental`.
 
 `Schema` (validators, encoders, decoders, OpenAPI generation) is exported from the core `effect` package itself; the standalone `@effect/schema` package is **not** in the current `packages/` directory and should be treated as legacy unless re-verified.

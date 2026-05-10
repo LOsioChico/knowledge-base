@@ -26,7 +26,7 @@ source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html
 ---
 
-> AWS Identity and Access Management (IAM) is the authn + authz layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
+> AWS Identity and Access Management (IAM) is the authentication and authorization (authn + authz) layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
 
 ## TL;DR
 
@@ -34,7 +34,7 @@ source:
 - **Identity-based policies** attach to a user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). Same-account: an action is allowed if at least one of identity or resource policies allows AND none denies. Cross-account: the principal needs BOTH an identity-based allow AND a resource-based allow ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_resource-based)).
 - **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy that allows account B's principals; B calls AssumeRole, gets short-lived credentials.
 - **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center.
-- **SCPs / RCPs / permission boundaries are intersections** with the identity policy: they subtract, never add ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
+- **SCPs (Service Control Policies, AWS Organizations-wide guardrails) / RCPs (Resource Control Policies, the resource-side equivalent) / permission boundaries are intersections** with the identity policy: they subtract, never add ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
 
 ## When to use
 
@@ -42,11 +42,11 @@ source:
 
 ## Mental model
 
-| Principal kind | Long-lived credentials?                          | Use for                                                                                                                                                 |
-| -------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Root user**  | Yes (account password + access keys)             | Only the handful of tasks that require root. Then never again.                                                                                          |
-| **IAM user**   | Yes (password, access keys)                      | Avoid for new workloads. Real humans should federate via IAM Identity Center (formerly AWS SSO).                                                        |
-| **IAM role**   | No (assumed; STS issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda/index\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account is `sts:AssumeRole`. |
+| Principal kind | Long-lived credentials?                                                   | Use for                                                                                                                                                 |
+| -------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Root user**  | Yes (account password + access keys)                                      | Only the handful of tasks that require root. Then never again.                                                                                          |
+| **IAM user**   | Yes (password, access keys)                                               | Avoid for new workloads. Real humans should federate via IAM Identity Center (formerly AWS SSO).                                                        |
+| **IAM role**   | No (assumed; STS (Security Token Service) issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda/index\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account is `sts:AssumeRole`. |
 
 ## Pending notes
 

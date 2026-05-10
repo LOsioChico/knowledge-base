@@ -23,18 +23,18 @@ source:
 
 S3 publishes events for ten kinds of object lifecycle activity, including auto-tiering driven by [[aws/s3/storage-classes|Intelligent-Tiering]] ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
 
-| Event family              | Wildcard                   | Concrete events                                                                                             |
-| ------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Object created            | `s3:ObjectCreated:*`       | `Put`, `Post`, `Copy`, `CompleteMultipartUpload`                                                            |
-| Object removed            | `s3:ObjectRemoved:*`       | `Delete`, `DeleteMarkerCreated`                                                                             |
-| Object restored (Glacier) | `s3:ObjectRestore:*`       | `Post` (initiated), `Completed`, `Delete` (restored copy expired)                                           |
-| Replication               | `s3:Replication:*`         | `OperationFailedReplication`, `OperationMissedThreshold`, `OperationReplicatedAfterThreshold`, `NotTracked` |
-| Lifecycle expiration      | `s3:LifecycleExpiration:*` | `Delete`, `DeleteMarkerCreated`                                                                             |
-| Lifecycle transition      | (no wildcard)              | `s3:LifecycleTransition`                                                                                    |
-| Intelligent-Tiering       | (no wildcard)              | `s3:IntelligentTiering`                                                                                     |
-| Object tagging            | `s3:ObjectTagging:*`       | `Put`, `Delete`                                                                                             |
-| Object ACL                | (no wildcard)              | `s3:ObjectAcl:Put`                                                                                          |
-| RRS object lost           | (no wildcard)              | `s3:ReducedRedundancyLostObject` (RRS = the legacy Reduced Redundancy Storage class)                        |
+| Event family                                                                                             | Wildcard                   | Concrete events                                                                                             |
+| -------------------------------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Object created                                                                                           | `s3:ObjectCreated:*`       | `Put`, `Post`, `Copy`, `CompleteMultipartUpload`                                                            |
+| Object removed                                                                                           | `s3:ObjectRemoved:*`       | `Delete`, `DeleteMarkerCreated`                                                                             |
+| Object restored (Glacier: the cold-storage class whose objects must be restored before they can be read) | `s3:ObjectRestore:*`       | `Post` (initiated), `Completed`, `Delete` (restored copy expired)                                           |
+| Replication                                                                                              | `s3:Replication:*`         | `OperationFailedReplication`, `OperationMissedThreshold`, `OperationReplicatedAfterThreshold`, `NotTracked` |
+| Lifecycle expiration                                                                                     | `s3:LifecycleExpiration:*` | `Delete`, `DeleteMarkerCreated`                                                                             |
+| Lifecycle transition                                                                                     | (no wildcard)              | `s3:LifecycleTransition`                                                                                    |
+| Intelligent-Tiering                                                                                      | (no wildcard)              | `s3:IntelligentTiering`                                                                                     |
+| Object tagging                                                                                           | `s3:ObjectTagging:*`       | `Put`, `Delete`                                                                                             |
+| Object ACL                                                                                               | (no wildcard)              | `s3:ObjectAcl:Put`                                                                                          |
+| RRS object lost                                                                                          | (no wildcard)              | `s3:ReducedRedundancyLostObject` (RRS = the legacy Reduced Redundancy Storage class)                        |
 
 `ObjectRemoved:*` notifications **do not fire for lifecycle deletes**: that's what `LifecycleExpiration:*` is for. Easy to miss.
 

@@ -82,7 +82,7 @@ If `list-distributions` shows a distribution you control still holds the alias, 
 
 Per the [CloudFront alternate-domain-name restrictions](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions), "You cannot add an alternate domain name to a CloudFront distribution if the same alternate domain name already exists in another CloudFront distribution, even if your AWS account owns the other distribution." Adding requires a TLS certificate that covers the alias, which proves authorization to add the name, but it does not by itself remove the duplicate-name restriction.
 
-The documented way to take a name from another distribution is to **move it** with [`update-domain-association`](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html) (or the wildcard-move trick when the source is in another account). If you have access to both distributions and can disable the source, that is the canonical path and you should prefer it over the workaround below.
+The documented way to take a name from another distribution is to **move it** with [`update-domain-association`](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html) (or the wildcard-move trick: adding a wildcard cert that covers the alias to a distribution you own, which CloudFront accepts as proof of ownership: when the source is in another account). If you have access to both distributions and can disable the source, that is the canonical path and you should prefer it over the workaround below.
 
 ## Workaround when the documented path is blocked
 

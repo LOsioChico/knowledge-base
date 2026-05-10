@@ -25,13 +25,13 @@ source:
 
 - **Distribution = the CDN endpoint.** One distribution, one or more origins, one or more behaviors (path-pattern routing rules), one or more aliases.
 - **Aliases (CNAMEs) are globally unique** across all AWS accounts. The same hostname can live on only one distribution at a time; collisions need eviction or a wildcard override ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)).
-- **Default 24h TTL** plus a lookup key that defaults to just the path. Forwarded headers/cookies/query-strings each fragment the lookup, so adding `Authorization` to the key turns the CDN into a free origin proxy by accident.
+- **Default 24h TTL (time-to-live, the cached-object expiry)** plus a lookup key that defaults to just the path. Forwarded headers/cookies/query-strings each fragment the lookup, so adding `Authorization` to the key turns the CDN into a free origin proxy by accident.
 - **ACM certificate must live in `us-east-1`** if you use any custom alias (regardless of where the origin lives).
 - **Amplify hides its CloudFront distribution.** You won't see it in `cloudfront list-distributions`; you talk to it through `aws amplify`.
 
 ## When to use
 
-- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical SPA setup), TLS + custom domain in front of an ALB, edge serving of API responses, geo-restricted distribution.
+- **Use CloudFront** for: static asset hosting (S3 + CloudFront is the canonical single-page-app (SPA) setup), TLS + custom domain in front of an ALB (Application Load Balancer), edge serving of API responses, geo-restricted distribution.
 - **Don't use CloudFront** as a load balancer (it's an edge proxy, not a balancer; put an ALB underneath if you also need balancing).
 - **Don't use CloudFront** for low-latency dynamic API responses with tight key constraints: each forwarded header/cookie/query-string fragments the lookup.
 

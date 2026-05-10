@@ -357,7 +357,7 @@ The `getAllAndOverride` order `[handler, class]` means a method-level `@Public()
 
 ## When to reach for it
 
-- API server with stateless clients (SPA, mobile, server-to-server).
+- API server with stateless clients (single-page app (SPA), mobile, server-to-server).
 - Most or all endpoints need auth: pair with the global-guard + `@Public()` pattern.
 - Multi-strategy auth where one of the strategies is JWT (`@UseGuards(AuthGuard(['jwt', 'apikey']))`).
 

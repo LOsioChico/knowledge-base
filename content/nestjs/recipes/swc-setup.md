@@ -168,7 +168,7 @@ export default defineConfig({
 });
 ```
 
-E2E config is the same with an `include` filter:
+End-to-end (E2E) config is the same with an `include` filter:
 
 ```typescript
 // vitest.config.e2e.ts

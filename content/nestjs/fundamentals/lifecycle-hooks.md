@@ -128,7 +128,7 @@ After `enableShutdownHooks()`, receiving a signal triggers the terminate sequenc
 > Hooks never fire on `Scope.REQUEST` providers. Request-scoped instances are created per request and garbage-collected after the response, so they're outside the application lifecycle. Move startup/teardown logic to a default-scoped provider that the request-scoped one depends on.
 
 > [!warning] Windows has no `SIGTERM`
-> Windows kills processes unconditionally via Task Manager: there's no signal to intercept. `SIGINT` (Ctrl+C) and `SIGBREAK` work. For container/k8s deploys this is a non-issue (Linux), but local-dev on Windows can mask broken shutdown logic that production would expose.
+> Windows kills processes unconditionally via Task Manager: there's no signal to intercept. `SIGINT` (Ctrl+C) and `SIGBREAK` work. For container/Kubernetes (k8s) deploys this is a non-issue (Linux), but local-dev on Windows can mask broken shutdown logic that production would expose.
 
 > [!warning] `enableShutdownHooks()` adds process listeners
 > Each call attaches handlers for `SIGTERM`, `SIGINT`, etc. Calling `NestFactory.create` repeatedly (parallel tests, multi-tenant runners) without disposing the previous app emits Node's `MaxListenersExceededWarning`. Either cap to one app per process, or `await app.close()` between iterations.

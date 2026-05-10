@@ -25,7 +25,7 @@ source:
 - **AMI = the boot disk template**. Same AMI in another Region requires [`copy-image`](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html); same AMI in another account requires sharing both the image and its underlying snapshots ([[aws/ec2/ami-cross-account-copy|cross-account AMI copy]]).
 - **Backups are AMIs, not snapshots**. An AMI captures the root volume + boot config + every attached EBS volume so the machine is redeployable from one ID. Recipe: [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]].
 - **Networking lives in the VPC**. Security groups gate traffic; key pairs gate SSH; an [Elastic IP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html) keeps the public address sticky across stop/start (otherwise the public IP changes).
-- **Pricing is per-second** for most instance families, with Reserved/Spot pricing for sustained or interruptible workloads.
+- **Pricing is per-second** for most instance families, with Reserved (a 1- or 3-year capacity commitment in exchange for a steep discount) and Spot (deeply-discounted unused-capacity instances that AWS can reclaim with two minutes' notice) pricing for sustained or interruptible workloads.
 
 ## When to use
 

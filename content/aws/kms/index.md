@@ -46,7 +46,7 @@ source:
 | **AWS-managed** (`alias/aws/<service>`) | AWS, on demand when a service first needs one in your account | AWS (you can read the policy, can't edit it) | **No**: the policy is locked. This is the trap. |
 | **AWS-owned**                           | AWS (shared across many customers)                            | AWS                                          | No (and invisible to you)                       |
 
-Cross-account use needs **both** sides to agree: a statement in account A's key policy allowing the relevant actions for `Principal: { AWS: "arn:aws:iam::ACCOUNT_B:root" }`, AND an IAM policy on account B's principal granting the same actions on the key ARN. Granting only one side fails with near-identical `AccessDenied` messages, which is why this is a recurring footgun.
+Cross-account use needs **both** sides to agree: a statement in account A's key policy allowing the relevant actions for `Principal: { AWS: "arn:aws:iam::ACCOUNT_B:root" }`, AND an IAM policy on account B's principal granting the same actions on the key ARN (Amazon Resource Name, the `arn:aws:...` identifier that uniquely names every AWS resource). Granting only one side fails with near-identical `AccessDenied` messages, which is why this is a recurring footgun.
 
 ## Pending notes
 

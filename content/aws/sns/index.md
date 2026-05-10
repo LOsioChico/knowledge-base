@@ -28,8 +28,8 @@ source:
 ## When to use
 
 - **Use SNS** for: fan-out to multiple consumers, mobile push notifications, email alerts, simple webhooks-out-of-AWS.
-- **Use SNS + SQS together** for fan-out where each consumer needs its own buffered queue with retry + DLQ semantics. SNS delivers a copy to each queue; each queue can be processed independently.
-- **Don't use SNS** for: ordered event streams (use Kinesis), large payload delivery (256 KB message size limit), or replay on Standard topics. FIFO topics ship optional [message archiving and replay](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html) (up to 365 days); Standard topics have no built-in replay.
+- **Use SNS + SQS together** for fan-out where each consumer needs its own buffered queue with retry + DLQ (dead-letter queue, where failed messages land after exhausted retries) semantics. SNS delivers a copy to each queue; each queue can be processed independently.
+- **Don't use SNS** for: ordered event streams (use Kinesis, AWS's managed streaming service for replayable, partitioned event logs), large payload delivery (256 KB message size limit), or replay on Standard topics. FIFO topics ship optional [message archiving and replay](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html) (up to 365 days); Standard topics have no built-in replay.
 
 ## Pending notes
 

@@ -26,7 +26,7 @@ source:
 ## When to use
 
 - **Use SQS** for: decoupling producers from consumers, smoothing traffic spikes, retry buffers, [[aws/s3/event-notifications|S3 event notifications]] that don't need every consumer to see every event.
-- **Don't use SQS** for: fan-out to multiple consumers (use SNS or EventBridge); for ordering across all messages (use a single-shard FIFO group, but throughput is capped); for "stream replay" semantics (use Kinesis or MSK (Managed Streaming for Apache Kafka)).
+- **Don't use SQS** for: fan-out to multiple consumers (use SNS or EventBridge, the AWS managed event bus for application and scheduled events); for ordering across all messages (use a single-shard FIFO group, but throughput is capped); for "stream replay" semantics (use Kinesis, AWS's managed partitioned event-stream service, or MSK (Managed Streaming for Apache Kafka)).
 
 ## Pending notes
 

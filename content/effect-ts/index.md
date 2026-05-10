@@ -14,7 +14,7 @@ source:
   - https://github.com/Effect-TS/effect
 ---
 
-> Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency. Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
+> Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency (a model where every spawned task has a well-defined parent and is cancelled with it). Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
 
 ## TL;DR
 
@@ -26,7 +26,7 @@ source:
 
 ## When to use
 
-- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams + backpressure), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), LLM agents (`@effect/ai`).
+- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams + backpressure: automatic flow control where slow consumers slow producers), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), large-language-model (LLM) agents (`@effect/ai`).
 - **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based composition.
 - **Adoption signal**: as of 2026-05-08 the npm registry's last-week download API reports `effect` at 12,942,715 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,032,499 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
 

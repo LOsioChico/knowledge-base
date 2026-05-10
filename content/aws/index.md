@@ -32,7 +32,7 @@ related:
 
 ## Services
 
-- [[aws/s3/index|S3, the Simple Storage Service]]: object storage. Buckets, keys, read-after-write consistency, default privacy. Start with the [[aws/s3/quickstart|S3 quickstart]] for a 10-minute hands-on walkthrough; then dive into [[aws/s3/storage-classes|storage classes]], [[aws/s3/lifecycle-rules|lifecycle rules]], [[aws/s3/event-notifications|event notifications]], [[aws/s3/presigned-urls|presigned URLs]], [[aws/s3/static-website|static website hosting]], [[aws/s3/cross-account-migration|cross-account migration]], or the [[aws/s3/cli|S3 CLI cheatsheet]].
+- [[aws/s3/index|S3, the Simple Storage Service]]: object storage. Buckets, keys, read-after-write consistency (a fresh `PUT` is immediately visible to subsequent `GET`s), default privacy. Start with the [[aws/s3/quickstart|S3 quickstart]] for a 10-minute hands-on walkthrough; then dive into [[aws/s3/storage-classes|storage classes]], [[aws/s3/lifecycle-rules|lifecycle rules]], [[aws/s3/event-notifications|event notifications]], [[aws/s3/presigned-urls|presigned URLs]], [[aws/s3/static-website|static website hosting]], [[aws/s3/cross-account-migration|cross-account migration]], or the [[aws/s3/cli|S3 CLI cheatsheet]].
 - [[aws/iam/index|IAM]]: identities, roles, policy evaluation, cross-account trust.
 - [[aws/rds/index|RDS]] (Relational Database Service): managed relational databases. Snapshots, encryption, multi-AZ (replication across two Availability Zones for failover).
 - [[aws/cloudfront/index|CloudFront]]: content delivery network (CDN). Distributions, alternate domain names, edge (point-of-presence) defaults.
@@ -42,7 +42,7 @@ related:
 - [[aws/ec2/index|EC2]] (Elastic Compute Cloud): virtual machines. Instances, AMIs (Amazon Machine Images), EBS (Elastic Block Store) volumes, security groups. (Seed.)
 - [[aws/vpc/index|VPC]] (Virtual Private Cloud): private network. Subnets, route tables, security groups, NAT (Network Address Translation) gateways. (Seed.)
 - [[aws/dynamodb/index|DynamoDB]]: managed key-value + document database. Partition keys, GSIs (global secondary indexes), streams. (Seed.)
-- [[aws/sqs/index|SQS]] (Simple Queue Service): managed message queue. Standard vs FIFO, visibility timeout, DLQs (dead-letter queues). (Seed.)
+- [[aws/sqs/index|SQS]] (Simple Queue Service): managed message queue. Standard vs FIFO (first-in-first-out, the strict-ordering queue type), visibility timeout, DLQs (dead-letter queues). (Seed.)
 - [[aws/sns/index|SNS]] (Simple Notification Service): managed pub/sub. Topics, fan-out, filter policies. (Seed.)
 - [[aws/ecs/index|ECS and Fargate]]: container orchestration. Tasks, services, Fargate (serverless) vs EC2 launch type. (Seed.)
 

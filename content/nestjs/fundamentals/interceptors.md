@@ -38,7 +38,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/lib/utils/project-utils.ts
 ---
 
-> Wrap the route handler with logic that runs **before and after** it. A single AOP "around" advice: built on RxJS, so the response stream is fair game.
+> Wrap the route handler with logic that runs **before and after** it. A single aspect-oriented-programming (AOP) "around" advice (the AOP idiom for code that runs before AND after a wrapped call): built on RxJS, so the response stream is fair game.
 
 ## Signature
 
@@ -175,7 +175,7 @@ Reading route metadata works exactly like in a guard: inject `Reflector`, call `
 > Response body: `{ "id": 1, "email": "a@b.c" }`; `password` is stripped. Full coverage in [[nestjs/recipes/serialization|the serialization recipe]] (groups, `@Expose`, `@Transform`, `excludeAll`).
 
 > [!warning] `ClassSerializerInterceptor` only acts on **class instances**
-> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`). Returning a plain object (`return { id, email, password }`) bypasses it silently: `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dep.
+> Nest's [`ClassSerializerInterceptor`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts) delegates to `class-transformer`'s `classToPlain` (the legacy alias of `instanceToPlain`). Returning a plain object (`return { id, email, password }`) bypasses it silently: `@Exclude()` decorators do nothing. Always return `new UserEntity({...})` (or array of instances) when you want serialization to fire. Requires the `class-transformer` peer dependency (an npm install contract where the consumer app, not Nest, must install the package).
 
 ## Binding
 

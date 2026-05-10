@@ -64,7 +64,7 @@ Both target "I'll read this maybe once a month for the next year+" data: backups
 
 The 30-day minimum duration is also strict: delete on day 5 and you still pay 30 days. The 128 KB minimum billable size means a 1 KB object costs the same as a 128 KB object.
 
-**Standard-IA vs One Zone-IA**: One Zone-IA stores in a single AZ, costs ~20% less, and is **not resilient to AZ loss**. AWS's recommendation: use Standard-IA for primary copies, One Zone-IA only for re-creatable data (Cross-Region Replication (CRR) replicas, secondary thumbnails) or for [data-residency / Local Zone use cases](https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-data-residency.html).
+**Standard-IA vs One Zone-IA**: One Zone-IA stores in a single AZ, costs ~20% less, and is **not resilient to AZ loss**. AWS's recommendation: use Standard-IA for primary copies, One Zone-IA only for re-creatable data (Cross-Region Replication (CRR) replicas, secondary thumbnails) or for [data-residency / Local Zone (an AWS extension that places compute and storage in a metro area outside the parent Region) use cases](https://docs.aws.amazon.com/AmazonS3/latest/userguide/directory-bucket-data-residency.html).
 
 ### Glacier classes
 
@@ -79,7 +79,7 @@ Three flavors, in order of "how patient are you":
 
 ### Express One Zone
 
-Single-digit-millisecond latency, single AZ, request costs ~50% lower than Standard. Pairs with **directory buckets** (a different bucket type, not general-purpose). Use for latency-sensitive workloads in one AZ: ML training data co-located with GPU instances, real-time analytics, etc. Lose the AZ, lose the data.
+Single-digit-millisecond latency, single AZ, request costs ~50% lower than Standard. Pairs with **directory buckets** (a different bucket type, not general-purpose). Use for latency-sensitive workloads in one AZ: machine-learning (ML) training data co-located with GPU instances, real-time analytics, etc. Lose the AZ, lose the data.
 
 ### Reduced Redundancy
 

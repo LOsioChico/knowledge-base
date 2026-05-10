@@ -19,7 +19,7 @@ source:
   - https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html
 ---
 
-> First-bucket walkthrough: create a bucket with safe defaults, upload an object, share it with a presigned URL, and clean everything up. The 10-minute path from "I have AWS credentials" to "S3 is doing something for me", with no console clicks.
+> First-bucket walkthrough: create a bucket with safe defaults, upload an object, share it with a presigned URL (a time-limited HTTPS link that lets the holder access one specific object without AWS credentials), and clean everything up. The 10-minute path from "I have AWS credentials" to "S3 is doing something for me", with no console clicks.
 
 ## Before you start
 
@@ -116,7 +116,7 @@ Anyone with the link can `curl` it during the next 3600 seconds; after that the 
 
 ## 5. Clean up
 
-You pay storage by the GB-month, so leftover quickstart buckets are cheap but not free. Tear it down before moving on:
+You pay storage by the GB-month (one gigabyte stored for one calendar month, AWS's standard storage-billing unit), so leftover quickstart buckets are cheap but not free. Tear it down before moving on:
 
 ```bash
 # Delete every object AND every noncurrent version (versioning is on, so plain rm leaves history behind)

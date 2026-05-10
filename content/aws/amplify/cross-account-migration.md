@@ -214,7 +214,7 @@ aws amplify get-domain-association \
   --output json
 ```
 
-Expected progression: `PENDING_VERIFICATION` → `IN_PROGRESS` / `UPDATING` → `AVAILABLE`. The `dns:subDomains[0].dnsRecord` field is the CNAME you must add at your DNS provider; once it propagates and the cert validates, the association flips to `AVAILABLE`.
+Expected progression: `PENDING_VERIFICATION` → `IN_PROGRESS` / `UPDATING` → `AVAILABLE`. The `dns:subDomains[0].dnsRecord` field is the CNAME (Canonical Name, the DNS record type that aliases one hostname to another) you must add at your DNS provider; once it propagates and the cert validates, the association flips to `AVAILABLE`.
 
 ### 8. Cut traffic over
 

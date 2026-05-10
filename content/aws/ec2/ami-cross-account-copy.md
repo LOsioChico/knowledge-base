@@ -27,7 +27,7 @@ source:
 
 ## When to use this
 
-- You took AMI backups in account A (e.g. with [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]]) and want them owned by account B for an [[aws/account-migrations|account migration]] or DR archive.
+- You took AMI backups in account A (e.g. with [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]]) and want them owned by account B for an [[aws/account-migrations|account migration]] or DR (disaster-recovery) archive.
 - You want the AMI to survive even if account A is closed or the source AMI is deregistered. After `copy-image` finishes, the destination AMI and its snapshots are fully independent.
 
 If you only need the destination to launch instances (no ownership transfer), stop after the share step and skip the copy.
@@ -37,7 +37,7 @@ If you only need the destination to launch instances (no ownership transfer), st
 Per the [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html):
 
 - Sharing the AMI (`modify-image-attribute --launch-permission`) lets the destination account run `RunInstances` directly from the source AMI; AWS handles the snapshot read internally.
-- But "If users in another account want to copy a shared AMI, you must grant them read permissions for the storage that backs the AMI." That means each underlying EBS snapshot also needs `modify-snapshot-attribute --create-volume-permission` for the destination account.
+- But "If users in another account want to copy a shared AMI, you must grant them read permissions for the storage that backs the AMI." That means each underlying EBS (Elastic Block Store, EC2's persistent block-volume service) snapshot also needs `modify-snapshot-attribute --create-volume-permission` for the destination account.
 
 Symptom of forgetting the snapshot share: `aws ec2 copy-image` returns `InvalidSnapshot.NotFound` or `AuthFailure` when run from the destination side.
 
@@ -213,7 +213,7 @@ The destination account now owns two storage costs per AMI: the AMI's snapshot b
 
 - The cross-account copy itself is free (best-effort completion); only the destination's new EBS snapshot storage costs money.
 - The destination snapshot is a FULL copy of the source data: the destination account's first AMI from a given source pays full snapshot storage, not incremental against the source.
-- Time-based copies (15 min to 48 h SLA) cost extra; omit [`--snapshot-copy-completion-duration-minutes`](https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-image.html) for the free best-effort path.
+- Time-based copies (15 min to 48 h SLA: service-level agreement, the AWS-promised completion window) cost extra; omit [`--snapshot-copy-completion-duration-minutes`](https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-image.html) for the free best-effort path.
 
 ## Anti-pattern: skipping the copy step
 

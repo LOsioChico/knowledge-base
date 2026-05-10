@@ -12,11 +12,11 @@ source:
   - https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html
 ---
 
-> Amazon VPC (Virtual Private Cloud) is your private slice of the AWS network: an isolated IPv4/IPv6 address space, carved into **subnets** per Availability Zone, with route tables, security groups, and gateways that decide what can reach in or out. Every regional resource ([[aws/ec2/index|EC2]], [[aws/rds/index|RDS]], Lambda-in-VPC, ECS task) lives in one.
+> Amazon VPC (Virtual Private Cloud) is your private slice of the AWS network: an isolated IPv4/IPv6 address space, carved into **subnets** per Availability Zone, with route tables, security groups, and gateways that decide what can reach in or out. Every regional resource ([[aws/ec2/index|EC2]], [[aws/rds/index|RDS]], [[aws/lambda/index|Lambda]] running inside a VPC, ECS task) lives in one.
 
 ## TL;DR
 
-- **CIDR block at creation, immutable shape**. Pick the IP range up front (e.g. `10.0.0.0/16`); you can add secondary CIDRs later but cannot shrink the primary.
+- **CIDR block (Classless Inter-Domain Routing notation, the `address/prefix-length` form like `10.0.0.0/16` that names an IP range) at creation, immutable shape**. Pick the IP range up front (e.g. `10.0.0.0/16`); you can add secondary CIDRs later but cannot shrink the primary.
 - **Subnet = AZ + CIDR slice**. **Public subnet** has a route to an Internet Gateway; **private subnet** does not (egress goes through a NAT Gateway, which costs ~$0.045/hour + per-GB).
 - **Security group = stateful firewall** at the instance level. **Network ACL = stateless** at the subnet level. SGs are the workhorse; NACLs are for blanket subnet-wide rules.
 - **VPC endpoints** let resources in private subnets reach AWS services (S3, DynamoDB, SQS, etc.) without going through the internet: saves NAT cost and bandwidth.

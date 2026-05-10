@@ -47,11 +47,11 @@ source:
 
 - Single application, single deploy: stick with standard mode.
 - Multi-language repo (Nest API + Go service + Rust worker): use `nx`, `turborepo`, or `pnpm` workspaces. Nest CLI only knows about Nest projects.
-- You need fine-grained task graphs, remote build artifact reuse, or affected-only test runs: that's `nx`/`turborepo` territory.
+- You need fine-grained task graphs, remote build artifact reuse, or affected-only test runs (rerun only the tests whose source files or dependencies changed): that's `nx`/`turborepo` territory.
 
 ## Setup
 
-Nothing extra. The Nest CLI ships with the monorepo schematics. Install globally:
+Nothing extra. The Nest CLI ships with the monorepo schematics (Angular's term for file-level code generators that scaffold or update files). Install globally:
 
 ```bash
 npm i -g @nestjs/cli@latest
@@ -416,7 +416,7 @@ Cons:
 > The original project keeps its name (e.g., `my-app`) in `nest-cli.json`'s `"root"`, the `"projects"` map, every `tsconfig.app.json` path, and any npm scripts you've added. If you rename it, search the repo for the old name and update every match. The CLI does not provide a rename command.
 
 > [!info]- Webpack is the default compiler in monorepos
-> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (decorators metadata emit nuances, plugin transformers), set `"compilerOptions": { "builder": { "type": "tsc" } }` in `nest-cli.json` (the CLI also accepts the shorthand `"builder": "tsc"` and normalizes it to the object form: [`get-builder.ts#L17-L29`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts#L17-L29)). Docs: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
+> A standard-mode project compiles with `tsc`; the same code in monorepo mode compiles with webpack by default. Behaviorally identical for most code, but if you rely on `tsc`-only features (TypeScript decorator metadata emit details, like how `experimentalDecorators` + `emitDecoratorMetadata` interact with each compiler's pipeline; plugin transformers), set `"compilerOptions": { "builder": { "type": "tsc" } }` in `nest-cli.json` (the CLI also accepts the shorthand `"builder": "tsc"` and normalizes it to the object form: [`get-builder.ts#L17-L29`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts#L17-L29)). Docs: [Specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler).
 
 > [!info]- The library prefix is global per workspace
 > The first `nest g library` prompt picks the prefix (`@app` by default). Subsequent libraries inherit it. Mixing prefixes is possible but means hand-editing `tsconfig.json` paths: and reviewers reading `@platform/auth` next to `@app/billing` will rightly ask why. Pick one and stick with it.

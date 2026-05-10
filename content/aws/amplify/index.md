@@ -24,14 +24,14 @@ source:
 
 - **Four primitives**: App (project) → Branch (per-environment config) → Deployment / Job (one build) → Domain association (custom hostnames).
 - **Two ways to ship**: git-connected (auto-build on push) or manual zip (`create-deployment` returns a presigned URL, you `curl --upload-file` then `start-deployment`).
-- **Hosting underneath is CloudFront** + ACM in `us-east-1` + Route53 records (if your domain is in Route53). Amplify owns and hides all three.
+- **Hosting underneath is CloudFront** + ACM in `us-east-1` + Route 53 records (AWS's managed DNS, if your domain is in Route 53). Amplify owns and hides all three.
 - **Custom domain = `create-domain-association`**: provisions ACM cert, attaches it, sets the alias.
 - **Amplify Gen 2** is the code-first successor to the original Amplify CLI; it co-deploys data/auth/storage from the same project.
 
 ## When to use
 
-- **Use Amplify Hosting** for: SPA frontends with a build step, Next.js SSR (the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
-- **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, Lambda@Edge): use S3 + CloudFront directly.
+- **Use Amplify Hosting** for: single-page-app (SPA) frontends with a build step, Next.js server-side rendering (SSR, the `WEB_COMPUTE` platform), preview deployments per PR, when "git push to deploy" is the entire requirement.
+- **Don't use Amplify Hosting** when you want explicit control over the CloudFront distribution (custom CDN behaviors, multiple origins, Lambda@Edge functions that run at CloudFront edge locations); use S3 + CloudFront directly.
 - **Don't use Amplify Hosting** as your only compute layer for arbitrary backend services: provision compute on [[aws/lambda/index|Lambda]], ECS, or App Runner instead.
 
 ## Mental model

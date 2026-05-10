@@ -83,7 +83,7 @@ This is the part that surprises everyone:
 
 | Signer credential type                            | Effective max expiry                                                                                    |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| IAM user access key (long-lived)                  | 7 days (`604800`s) with SigV4                                                                           |
+| IAM user access key (long-lived)                  | 7 days (`604800`s) with SigV4 (AWS Signature Version 4, the request-signing scheme S3 uses)             |
 | IAM role assumed via STS (Security Token Service) | The role session's remaining lifetime (default 1 hour, max 12 hours)                                    |
 | EC2 instance profile                              | The credentials handed out by the EC2 instance metadata service (IMDS), which rotate within a few hours |
 | ECS task role                                     | The task credentials' rotation window (typically 1-6 hours)                                             |

@@ -54,7 +54,7 @@ export class AuthGuard implements CanActivate {
 - `false` → Nest throws `ForbiddenException` (`403 Forbidden`).
 - A thrown exception → caught by [[nestjs/fundamentals/exception-filters|exception filters]], same as anywhere else.
 
-It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
+It can return synchronously, as a `Promise`, or as an RxJS (Reactive Extensions for JavaScript, the streams library Nest uses internally) `Observable`.
 
 > [!example]- Return shapes: one example each
 > The same contract ("give me something that resolves to a boolean") is expressed three ways so guards stay idiomatic regardless of how the decision is computed. Nest awaits whichever shape you return before deciding to proceed or throw `ForbiddenException`.
@@ -97,7 +97,7 @@ It can return synchronously, as a `Promise`, or as an RxJS `Observable`.
 > }
 > ```
 >
-> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>` ([HTTP module docs](https://docs.nestjs.com/techniques/http-module#getting-started)); gRPC clients return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly).
+> **`Observable<boolean>`**: the source is already a stream. `HttpService` returns `Observable<AxiosResponse>` ([HTTP module docs](https://docs.nestjs.com/techniques/http-module#getting-started)); gRPC clients (gRPC is the open-source RPC framework that wraps HTTP/2 with protobuf payloads) return Observables; an RxJS-based remote lookup. Return the stream directly instead of bridging with `firstValueFrom`. Nest awaits the Observable's last value: [`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L55) calls `pickResult(result)` for any non-boolean return, and [`pickResult`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L57-L62) uses `lastValueFrom(result)` to coerce Observables (and returns Promises directly).
 >
 > ```typescript
 > import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
@@ -451,7 +451,7 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles);
 
 ## When to reach for it
 
-- Role, permission, or ACL checks.
+- Role, permission, or access-control-list (ACL) checks.
 - Ownership checks ("can this user touch this resource?").
 - Feature flags that should hard-block a route.
 - Anything that must short-circuit the request **before** [[nestjs/recipes/validation|validation]], transformation, or DB work.

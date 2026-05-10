@@ -19,7 +19,7 @@ source:
 - **Access patterns drive design**. You query by key (or by GSI = global secondary index). There are no joins, no ad-hoc `WHERE`, no `LIKE`. Model the queries you'll run, not the entities.
 - **Two capacity modes**. **On-demand** (pay per request, no planning) vs **provisioned** (cheaper at sustained throughput, requires capacity planning + auto-scaling) ([source](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html)).
 - **Conditional writes are atomic per item**. The primitive that makes DynamoDB usable as a coordination layer (locks, idempotency keys, single-writer tables) for systems backed by [[aws/s3/index|S3]] or other storage without ordering.
-- **Streams + TTL** are first-class: change-data-capture into [[aws/lambda/index|Lambda]]; per-item expiration without a sweeper job.
+- **Streams + TTL (time-to-live, the per-item expiry timestamp)** are first-class: change-data-capture into [[aws/lambda/index|Lambda]]; per-item expiration without a sweeper job.
 
 ## When to use
 

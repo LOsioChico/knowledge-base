@@ -118,7 +118,7 @@ export class HealthController {
 }
 ```
 
-Skips throttling for the entire controller. Useful for health checks, readiness probes, and webhook receivers that legitimately burst.
+Skips throttling for the entire controller. Useful for health checks, readiness probes (the Kubernetes-style "is this pod ready to receive traffic?" probe), and webhook receivers that legitimately burst.
 
 ## Multiple named throttlers
 
@@ -245,7 +245,7 @@ export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
 Then bind `ThrottlerBehindProxyGuard` instead of `ThrottlerGuard` in the `APP_GUARD` provider.
 
 > [!warning]- Misconfiguring `trust proxy` is a real footgun
-> Set `trust proxy` to `true` blindly and any client can spoof `X-Forwarded-For` to bypass throttling. Use the narrowest setting that matches your deployment: `'loopback'` (proxy on same host), a CIDR like `'10.0.0.0/8'`, or an exact integer hop count. The same caveat applies to anything else that reads `req.ip`, not just throttling. See [Express docs](https://expressjs.com/en/guide/behind-proxies.html).
+> Set `trust proxy` to `true` blindly and any client can spoof `X-Forwarded-For` to bypass throttling. Use the narrowest setting that matches your deployment: `'loopback'` (proxy on same host), a CIDR (Classless Inter-Domain Routing notation, the `address/prefix-length` form like `10.0.0.0/8` that names an IP range) like `'10.0.0.0/8'`, or an exact integer hop count. The same caveat applies to anything else that reads `req.ip`, not just throttling. See [Express docs](https://expressjs.com/en/guide/behind-proxies.html).
 
 ## Custom tracker (per-user, per-API-key)
 

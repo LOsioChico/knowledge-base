@@ -24,10 +24,10 @@ source:
 
 ## When to use AMI vs raw EBS snapshot
 
-| Primitive                         | Captures                                                               | Restore unit                               | Use when                                     |
-| --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------- |
-| AMI (`create-image`)              | Root volume + all attached EBS + boot config (kernel, ENA flags, arch) | Launch a new instance with `run-instances` | You want to redeploy the _machine_ later     |
-| EBS snapshot (`create-snapshots`) | Only the EBS volumes attached to the instance                          | Create volumes you attach to an instance   | You only care about the _data_, not the boot |
+| Primitive                         | Captures                                                                                         | Restore unit                               | Use when                                     |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------------- |
+| AMI (`create-image`)              | Root volume + all attached EBS + boot config (kernel, ENA (Elastic Network Adapter) flags, arch) | Launch a new instance with `run-instances` | You want to redeploy the _machine_ later     |
+| EBS snapshot (`create-snapshots`) | Only the EBS volumes attached to the instance                                                    | Create volumes you attach to an instance   | You only care about the _data_, not the boot |
 
 For "save state of every instance, restore at any moment", use AMIs. The recipe below is the AMI path.
 
@@ -101,7 +101,7 @@ aws ec2 run-instances \
   --key-name your-key
 ```
 
-The new instance is a fresh resource with a new ID, private/public IP, and ENIs. Elastic IP associations, target-group registrations, and Route53 A records do NOT come back automatically; reattach them.
+The new instance is a fresh resource with a new ID, private/public IP, and ENIs (elastic network interfaces: the virtual NICs attached to the instance). Elastic IP associations, target-group registrations (the load-balancer pool the instance belongs to), and Route 53 A records do NOT come back automatically; reattach them.
 
 > [!info] Encrypted volumes
 > If any source volume was encrypted with a [[aws/kms/index|KMS]] key, the AMI's snapshots stay encrypted with that same key. The launching account/role needs `kms:Decrypt` on the key to start instances from the AMI; for cross-account restore, see [[aws/rds/cross-account-snapshot|cross-account snapshot]].
@@ -141,4 +141,4 @@ aws ec2 describe-images --owners self \
 
 ## When to graduate to AWS Backup
 
-This recipe is the right primitive for ad-hoc, "before-I-touch-anything" backups. For recurring policy (daily snapshots, retention windows, lifecycle to cold storage, cross-region or cross-account copy), use **AWS Backup** with an EC2 backup plan instead: same underlying snapshots, but pruning and retention are managed for you. AWS Backup-managed AMIs cannot be deregistered through EC2; you delete the recovery point in the backup vault instead.
+This recipe is the right primitive for ad-hoc, "before-I-touch-anything" backups. For recurring policy (daily snapshots, retention windows, lifecycle to cold storage, cross-region or cross-account copy), use **AWS Backup** with an EC2 backup plan instead: same underlying snapshots, but pruning and retention are managed for you. AWS Backup-managed AMIs cannot be deregistered through EC2; you delete the recovery point (AWS Backup's name for one stored snapshot) in the backup vault instead.

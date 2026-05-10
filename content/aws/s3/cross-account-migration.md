@@ -106,7 +106,7 @@ aws s3api put-bucket-policy \
   --policy file://src-bucket-grant.json
 ```
 
-If the source bucket is SSE-KMS-encrypted, also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/rds/cross-account-snapshot|RDS recipe]] step 2).
+If the source bucket is SSE-KMS-encrypted (server-side encryption with a KMS-managed key), also grant account B `kms:Decrypt` on the source CMK (same key-policy edit as the [[aws/rds/cross-account-snapshot|RDS recipe]] step 2).
 
 ### 4. Sync the data
 

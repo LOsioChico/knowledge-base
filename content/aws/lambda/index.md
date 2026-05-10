@@ -30,14 +30,14 @@ source:
 
 - **Function = deployment unit**: code + dependencies + config (memory, timeout, env vars), shipped as a zip or container image.
 - **Execution role** is the [[aws/iam/index|IAM]] role the function runs as: every AWS API call from your handler uses these credentials.
-- **Triggers** invoke the function: API Gateway, SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge (managed event bus for application and scheduled events), Function URL (built-in HTTPS endpoint on the function), direct invoke. Each trigger is its own resource with its own permission grant.
+- **Triggers** invoke the function: API Gateway (the managed REST/HTTP/WebSocket API front door), SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge (managed event bus for application and scheduled events), Function URL (built-in HTTPS endpoint on the function), direct invoke. Each trigger is its own resource with its own permission grant.
 - **Versions are immutable; aliases are re-pointable.** Wire triggers to aliases (`prod`, `staging`) so you can flip traffic without touching the trigger.
 - **Pricing** is per invocation + GB-second. CPU scales linearly with the `MemorySize` setting (more memory = more CPU) ([source](https://aws.amazon.com/lambda/pricing/)).
 
 ## When to use
 
 - **Use Lambda** for: event-driven glue, scheduled jobs, webhooks, S3-trigger-style processing, anything that benefits from scale-to-zero.
-- **Don't use Lambda** for: a single non-durable invocation that exceeds 15 minutes (the per-invocation cap), latency-critical paths where cold starts hurt, or anything that needs persistent local state. For multi-step workflows that must run longer, use [durable Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html), which checkpoint progress and can run up to one year.
+- **Don't use Lambda** for: a single non-durable invocation that exceeds 15 minutes (the per-invocation cap), latency-critical paths where cold starts (the extra latency on the first invoke after the runtime container is recreated) hurt, or anything that needs persistent local state. For multi-step workflows that must run longer, use [durable Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html), which checkpoint progress and can run up to one year.
 
 ## Mental model
 

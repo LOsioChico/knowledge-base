@@ -227,7 +227,7 @@ console.log(await Effect.runPromise(getDisplayName("u_42")));
 ## Common gotchas
 
 > [!warning] `Effect.runSync` rethrows; it does NOT silently absorb errors
-> Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` wrapping your error. Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly.
+> Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` (Effect's runtime wrapper around any uncaught fiber-level failure). Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly.
 
 > [!warning] Omit the `catch` callback and you get `UnknownException`, not a tagged error
 > `Effect.try` and `Effect.tryPromise` accept `catch` as **optional**. Without it, failures land in the error channel as the built-in `UnknownException` ([docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise)): the call still type-checks, but the resulting `E` carries no `_tag` you defined, so `Effect.catchTag("YourTag", ...)` cannot narrow it. Use the object form (`{ try, catch }`) when you want the failure to be discriminable downstream.

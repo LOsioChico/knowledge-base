@@ -19,7 +19,7 @@ source:
 
 ## TL;DR
 
-- **Task definition = pod-equivalent**. JSON spec listing containers, ports, env vars, [[aws/iam/index|IAM]] role, CPU/memory. Versioned: each revision is immutable.
+- **Task definition = pod-equivalent** (the Kubernetes pod is the smallest deployable unit: one or more containers scheduled together). JSON spec listing containers, ports, env vars, [[aws/iam/index|IAM]] role, CPU/memory. Versioned: each revision is immutable.
 - **Service** runs N copies of a task and keeps that count alive (similar to a Kubernetes Deployment). Optionally registers tasks with a load balancer.
 - **Two launch types**. **Fargate**: pay per task vCPU/memory-second, no nodes to manage. **EC2**: cheaper at scale but you patch and right-size the cluster nodes.
 - **Networking via [[aws/vpc/index|VPC]]**. `awsvpc` mode gives each task its own ENI (Elastic Network Interface) with its own security group; required for Fargate ([source](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking-awsvpc.html)).
@@ -29,8 +29,8 @@ source:
 
 - **Use Fargate** for: most container workloads where the per-task cost is acceptable. Zero node management.
 - **Use ECS on EC2** for: large fleets where Fargate's premium dominates, GPU workloads, or anything needing instance-level customization.
-- **Don't use ECS** when you already need full Kubernetes (multi-cluster federation, custom controllers, Helm-heavy ecosystem): use EKS instead.
-- **Don't use ECS** for ad-hoc compute that scales to zero (use [[aws/lambda/index|Lambda]] or App Runner).
+- **Don't use ECS** when you already need full Kubernetes (multi-cluster federation, custom controllers, Helm charts); use EKS (Elastic Kubernetes Service, AWS's managed Kubernetes) instead.
+- **Don't use ECS** for ad-hoc compute that scales to zero (use [[aws/lambda/index|Lambda]], or App Runner, the AWS service that runs a container from a git push or image URI without you provisioning anything).
 
 ## Pending notes
 

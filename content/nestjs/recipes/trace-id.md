@@ -342,7 +342,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 
 - Single-process monolith with low traffic and a single log stream: `[ip:port]` already gives enough context.
 - You're already using OpenTelemetry: prefer the OTel `traceparent` header and span IDs. They subsume request IDs and add propagation across more transports.
-- Per-request DB transactions or per-request cached values: use `Scope.REQUEST` providers or a transactional outbox. `AsyncLocalStorage` is for **observability** context, not business state.
+- Per-request DB transactions or per-request cached values: use `Scope.REQUEST` providers or a transactional outbox (the integration pattern where outbound messages are written to the same DB transaction as the state change, then a separate process publishes them). `AsyncLocalStorage` is for **observability** context, not business state.
 
 > [!info]- Correlation ID vs trace ID
 > Think of a **correlation ID** as a sticker: you slap the same value on every log line for one request, then grep by it. Flat list of logs.
@@ -365,7 +365,7 @@ The producer side stores `getTraceId()` into the job payload when enqueuing; the
 > Request-scoped providers don't run in [Passport strategies](https://docs.nestjs.com/recipes/passport#request-scoped-strategies) (the docs spell out the workaround) and they recreate the entire DI subtree per request, which the [Injection scopes → Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance) docs flag as a measurable latency hit ("slow down your average response time"; capped at ~5% in well-designed apps). The motivation for `AsyncLocalStorage` is precisely to fix the cases where `Scope.REQUEST` fails or costs too much.
 
 > [!info]- Generate IDs with `crypto.randomUUID()`, not `Math.random()`
-> [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) emits an [RFC 9562 v4 UUID](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.4) backed by a CSPRNG, so the same value is safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
+> [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions) emits an [RFC 9562 v4 UUID](https://www.rfc-editor.org/rfc/rfc9562.html#section-5.4) backed by a CSPRNG (cryptographically-secure pseudo-random number generator), so the same value is safe to reuse later as a deduplication key, idempotency token, or rate-limit bucket. `Math.random()` works for log correlation but locks you out of those upgrades.
 
 > [!info]- Old C++ bindings can drop the async context
 > Most actively-maintained libraries propagate context cleanly because Node's [async_hooks](https://nodejs.org/api/async_hooks.html) integrates at the platform level. Older callback-style libraries that schedule work from native bindings without registering an [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may not. Symptom: `getTraceId()` returns `undefined` deep inside a third-party callback. Fix: wrap the entry point in `new AsyncResource('your-name').runInAsyncScope(...)`. Rare on libraries you're likely to use today.

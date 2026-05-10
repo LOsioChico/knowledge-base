@@ -19,6 +19,6 @@ Map of content for authentication and authorization in NestJS. Auth in Nest is b
 ## Planned
 
 - Guards vs [[nestjs/fundamentals/middleware|middleware]]: when to use each.
-- Role and permission checks (RBAC, CBAC).
+- Role and permission checks (RBAC: role-based access control, CBAC: claims-based access control).
 - Refresh tokens and rotation.
 - Session-based auth (when JWT is the wrong tool).

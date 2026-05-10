@@ -13,7 +13,7 @@ related:
 
 ## Cross-cutting recipes
 
-- [[aws/recipes/cross-account-role-pattern|Cross-account IAM role pattern]]: trust-policy + permissions-policy shape that lets one account assume a role in another. Underlies every other cross-account recipe.
+- [[aws/recipes/cross-account-role-pattern|Cross-account IAM role pattern]]: trust-policy (names who may assume the role) + permissions-policy (names what the role may do) shape that lets one account assume a role in another. Underlies every other cross-account recipe.
 
 ## Per-service recipes (live in their service folder)
 
