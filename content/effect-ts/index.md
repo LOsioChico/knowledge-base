@@ -67,7 +67,13 @@ After that, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for 
 - Schema basics (`Schema.Struct`, encoders/decoders, OpenAPI hookup).
 - Streams (`Effect.Stream`) for backpressured data flow.
 - Concurrency primitives (fibers, queues, semaphores, structured cancellation).
-- `@effect/platform` HTTP server vs NestJS for backend APIs.
+- `Ref` for shared mutable state across fibers.
+- Outbound request-rate cap recipe (`Effect.sleep` + `Schedule` for spacing requests, beyond `forEach` concurrency caps).
+- Logging and tracing (`Effect.log`, `Effect.withLogSpan`, `@effect/opentelemetry`).
+- Durability boundary recipe: Effect is in-process. Crash recovery requires external durable infrastructure (queue with at-least-once redelivery + idempotent handlers, or a workflow engine). Document the boundary so readers don't assume `Effect.retry` survives reboots.
+- `@effect/workflow` for durable execution: Temporal-style checkpointing so workflows resume after a worker dies. Verify API surface against the package's README before drafting.
+- `@effect/cluster` for distributed coordination: sharded actor-style entities across machines. Verify scope and stability before drafting (early-stage package).
+- Cron and scheduled work: in-process `Effect.repeat` vs external schedulers (k8s CronJob, EventBridge, Temporal cron) triggering fresh Effect processes. Cover the "what survives a reboot" tradeoff explicitly.
 
 ## See also
 
