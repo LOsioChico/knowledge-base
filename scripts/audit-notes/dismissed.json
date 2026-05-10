@@ -1079,6 +1079,14 @@
       "reason": "Open warning is correct severity: the trap is reading \"Durable Functions\" as a drop-in fix for the 15-minute timeout when it actually requires opting into a different runtime contract (explicit checkpoints, idempotent ops). That misread IS a footgun, not an advisory comparison.",
       "date": "2026-05-10",
       "originalLine": "> [!warning] Durable Functions raise the ceiling but change the programming model"
+    },
+    {
+      "path": "content/aws/ecs/index.md",
+      "sig": "1d24052577f510202268f8e023f81174bdb2bf01",
+      "rule": "source-verification",
+      "reason": "Verified at https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html: cross-account pulls require both a repository policy AND an IAM policy granting ecr:GetAuthorizationToken (the GetAuthorizationToken clause is on the same cited page). Auditor pattern-matched the same-account either/or rule.",
+      "date": "2026-05-10",
+      "originalLine": "- **Image registry is ECR (Elastic Container Registry)** by default. Cross-account pull requires both an IAM policy on the puller and a repository policy on the registry ([source](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html))."
     }
   ]
 }
