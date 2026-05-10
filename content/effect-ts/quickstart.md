@@ -14,7 +14,6 @@ source:
   - https://effect.website/docs/getting-started/creating-effects/
   - https://effect.website/docs/getting-started/running-effects/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
-  - https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json
 ---
 
 > Install `effect`, write a tiny program, run it three different ways, then handle a typed error. The 10-minute path from "I've heard of Effect" to "I have a working `Effect<A, E, R>` in front of me".
@@ -24,7 +23,7 @@ source:
 You need:
 
 - **TypeScript 5.4 or newer** ([install docs](https://effect.website/docs/getting-started/installation/#manual-installation)).
-- A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package [declares no `engines` field](https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json), so any modern version works; pick whatever your project already uses).
+- A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package declares no `engines` field, so any modern version works; pick whatever your project already uses).
 - A new project. The fastest setup with Node + tsx:
 
   ```bash
@@ -44,19 +43,20 @@ Create `src/hello.ts`:
 ```typescript
 import { Effect } from "effect";
 
-// Effect.sync wraps a synchronous side effect into an Effect.
+// Effect.sync wraps a synchronous side effect into an Effect<void, never, never>.
 // The function inside is NOT run yet — `program` is just a description.
 const log = (message: string) =>
   Effect.sync(() => {
     console.log(message);
   });
 
-//        ┌─── Effect<void, never, never>
-//        ▼
 const program = log("Hello, Effect!");
 ```
 
-Read the inferred type as: succeeds with `void`, can't fail (`never` in the error channel), needs no dependencies (`never` in the requirements channel). And **`program` is a value, not a side effect**: importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
+Two things to internalize from this snippet:
+
+1. **`program` is a value, not a side effect.** Importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
+2. **The type is `Effect<void, never, never>`**: succeeds with `void`, can't fail (`never` in the error channel), needs no dependencies (`never` in the requirements channel).
 
 ## 2. Run it
 
@@ -87,7 +87,7 @@ Run it: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 
 ## 3. Compose with `Effect.gen`
 
-Effect's idiomatic composition is the generator DSL (domain-specific language): `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
+Effect's idiomatic composition is the generator DSL: `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
 
 ```typescript
 import { Effect } from "effect";
@@ -98,8 +98,6 @@ const log = (message: string) =>
     console.log(message);
   });
 
-//        ┌─── Effect<number, never, never>
-//        ▼
 const program = Effect.gen(function* () {
   const greeting = yield* greet("Effect");
   yield* log(greeting);
@@ -113,7 +111,7 @@ console.log("returned:", result);
 // returned: 14
 ```
 
-The generator's `return` value becomes the success type; the compiler tracks this without annotations.
+`program` is now `Effect<number, never, never>`: the generator's `return` value becomes the success type. The compiler tracks this without annotations.
 
 ## 4. Add a typed error
 
@@ -126,24 +124,22 @@ class ParseError extends Data.TaggedError("ParseError")<{
   readonly message: string;
 }> {}
 
-//        ┌─── (input: string) => Effect<unknown, ParseError, never>
-//        ▼
 const parseJson = (input: string) =>
   Effect.try({
     try: () => JSON.parse(input) as unknown,
     catch: (cause) => new ParseError({ message: `invalid JSON: ${String(cause)}` }),
   });
+// parseJson :: (input: string) => Effect<unknown, ParseError, never>
 
 const program = Effect.gen(function* () {
   const value = yield* parseJson('{"ok":true}');
   return value;
 });
 
-//      ┌─── Effect<unknown, never, never>   (E channel is `never`: error handled)
-//      ▼
 const main = program.pipe(
   Effect.catchTag("ParseError", (e) => Effect.succeed({ recovered: e.message })),
 );
+// main :: Effect<unknown, never, never>  // E channel is now `never` — error handled.
 
 console.log(Effect.runSync(main));
 // Output: { ok: true }
@@ -157,7 +153,6 @@ See [[effect-ts/typed-errors|Typed errors]] for the full pattern: multiple error
 
 - [[effect-ts/what-is-effect|What is Effect]]: the mental model behind `Effect<A, E, R>`, the runtime, and why laziness matters.
 - [[effect-ts/typed-errors|Typed errors]]: tag your errors, narrow the E channel, recover with `catchTag` / `catchAll`.
-- [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; declare services, build layers, narrow R to `never`.
 - [Effect "Getting Started" docs](https://effect.website/docs/getting-started/introduction/) (official): the next pages cover building pipelines, control flow, and the `Schema` module.
 
 ## See also

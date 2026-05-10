@@ -46,8 +46,6 @@ Per the same docs, `Effect` values are "lazily executed... it doesn't run immedi
 import { Effect } from "effect";
 
 // Building this value does NOT log anything yet.
-//        ┌─── Effect<number, never, never>
-//        ▼
 const program = Effect.sync(() => {
   console.log("side effect");
   return 42;
@@ -105,17 +103,16 @@ declare const program: Effect.Effect<User, NotFound, UserRepo>;
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo
 
-//        ┌─── Effect<User, NotFound, never>
-//        ▼
 const provided = program.pipe(Effect.provide(UserRepoLive));
+// provided :: Effect<User, NotFound, never>
 Effect.runSync(provided); // ✅
 ```
 
-No string tokens, no module-resolution magic, no "service not registered" runtime crashes. The same compiler that catches typos catches missing dependencies. See [[effect-ts/layers-and-di|Layers and dependency injection]] for `Context.Tag`, `Effect.Service`, and `Layer.provide` in detail.
+No string tokens, no module-resolution magic, no "service not registered" runtime crashes. The same compiler that catches typos catches missing dependencies.
 
 ### 3. Structured concurrency and resource safety
 
-Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (Effect's lightweight in-process concurrency unit, like a goroutine or green thread) that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
+Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
 
 ## Ecosystem snapshot
 
@@ -125,7 +122,7 @@ The core ships as the single `effect` npm package. Adjacent packages live under 
 - `@effect/cli`: typed CLI args, subcommands, prompts.
 - `@effect/sql` (+ adapters: `pg`, `mysql2`, `sqlite-node`, `clickhouse`, `drizzle`, `kysely`, …): typed SQL with connection pools and migrations.
 - `@effect/ai`: typed wrappers around OpenAI / Anthropic with retry, streaming, tool-calling.
-- `@effect/workflow`: durable, resumable workflows à la Temporal (the open-source workflow engine that pioneered checkpoint-based resumable execution), in-process.
+- `@effect/workflow`: durable, resumable workflows à la Temporal, in-process.
 - `@effect/rpc`, `@effect/cluster`, `@effect/opentelemetry`, `@effect/vitest`, `@effect/printer`, `@effect/typeclass`, `@effect/experimental`.
 
 `Schema` (validators, encoders, decoders, OpenAPI generation) is exported from the core `effect` package itself; the standalone `@effect/schema` package is **not** in the current `packages/` directory and should be treated as legacy unless re-verified.
@@ -138,6 +135,5 @@ Per the [`fp-ts` README](https://github.com/gcanti/fp-ts), "fp-ts is officially 
 
 - [[effect-ts/quickstart|Quickstart]]: install and run your first effect.
 - [[effect-ts/typed-errors|Typed errors]]: the `E` channel in practice.
-- [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice.
 - [Effect type page](https://effect.website/docs/getting-started/the-effect-type/) (official).
 - [Running effects page](https://effect.website/docs/getting-started/running-effects/) (official).

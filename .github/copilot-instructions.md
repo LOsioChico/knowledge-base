@@ -352,7 +352,6 @@ Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is
 3. **Show class fields and constructors that the example references.** If the body uses `this.store`, the field must be declared. If `this.config` is accessed, the constructor must inject it.
 4. **No undefined references.** If a symbol appears (`UpdateCatDTO`, `AuditInterceptor`, `Guard1`), either it was defined earlier on the page, comes from an import, or has an inline comment pointing to where it's defined.
 5. **Single-line illustrative fragments are OK** only when the surrounding prose makes the context unambiguous (e.g., showing one decorator usage right after the full class). When in doubt, write the full snippet.
-6. **Annotate inferred types with the ASCII pointer pattern** for typed APIs whose signature carries the lesson (`Effect<A, E, R>`, RxJS operators, generic builders). Place a two-line comment ABOVE the binding: line 1 is `//        ┌─── <Type>` and line 2 is `//        ▼`, then the `const`/`function` it points down to. This is the Twoslash-style Effect docs convention; it makes the type visible to a scan-mode reader who skips prose. Use it instead of a trailing `// foo :: <Type>` prose-comment whenever the type is the point. Forbidden: em-dashes inside the type-pointer comment (use `:` or parentheses for sub-clauses); ASCII drift across notes (always `┌───`/`▼`, not alternative box-drawing variants).
 
 When editing an existing snippet, audit the imports too — adding a new symbol means adding its import.
 

@@ -73,13 +73,12 @@ class ParseError extends Data.TaggedError("ParseError")<{
   readonly cause: unknown;
 }> {}
 
-//        ┌─── (input: string) => Effect<unknown, ParseError, never>
-//        ▼
 const parseJson = (input: string) =>
   Effect.try({
     try: () => JSON.parse(input) as unknown,
     catch: (cause) => new ParseError({ cause }),
   });
+// parseJson :: (input: string) => Effect<unknown, ParseError, never>
 
 console.log(Effect.runSync(parseJson('{"ok":true}')));
 // Output: { ok: true }
@@ -102,13 +101,12 @@ class NetworkError extends Data.TaggedError("NetworkError")<{
   readonly cause: unknown;
 }> {}
 
-//        ┌─── (id: number) => Effect<Response, NetworkError, never>
-//        ▼
 const fetchTodo = (id: number) =>
   Effect.tryPromise({
     try: () => fetch(`https://jsonplaceholder.typicode.com/todos/${id}`),
     catch: (cause) => new NetworkError({ cause }),
   });
+// fetchTodo :: (id: number) => Effect<Response, NetworkError, never>
 ```
 
 The `catch` callback is **optional**. With it, you map whatever the underlying code threw into a typed error you control. Without it, Effect lifts the failure into the built-in `UnknownException` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise) state: "If you don't provide a catch function, the error is caught and the effect fails with an UnknownException"). Use the object form whenever you want the failure to carry a `_tag` you can later discriminate with `catchTag`.
@@ -126,8 +124,6 @@ class NetworkError extends Data.TaggedError("NetworkError")<{}> {}
 declare const fetchTodo: (id: number) => Effect.Effect<Response, NetworkError>;
 declare const parseJson: (input: string) => Effect.Effect<unknown, ParseError>;
 
-//        ┌─── (id: number) => Effect<unknown, NetworkError | ParseError, never>
-//        ▼              E is the union of every error that can occur.
 const getTodo = (id: number) =>
   Effect.gen(function* () {
     const response = yield* fetchTodo(id);
@@ -138,6 +134,9 @@ const getTodo = (id: number) =>
     const json = yield* parseJson(body);
     return json;
   });
+// getTodo :: (id: number) => Effect<unknown, NetworkError | ParseError, never>
+//                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+//                            E is the union of every error that can occur.
 ```
 
 You did not annotate `getTodo`'s return type: the compiler inferred the union. Add a new failure mode anywhere in the chain and the type updates; forget to handle it downstream and it's a compile error.
@@ -154,11 +153,12 @@ class ValidationError extends Data.TaggedError("ValidationError")<{}> {}
 
 declare const program: Effect.Effect<string, HttpError | ValidationError>;
 
-//        ┌─── Effect<string, ValidationError, never>
-//        ▼          HttpError handled; ValidationError still possible.
 const recovered = program.pipe(
   Effect.catchTag("HttpError", (_e) => Effect.succeed("fallback after HttpError")),
 );
+// recovered :: Effect<string, ValidationError, never>
+//                              ^^^^^^^^^^^^^^^
+//             HttpError has been removed; ValidationError is still possible.
 ```
 
 The signature uses `Exclude<E, { _tag: K[number] }>` for the residual error type ([source L3882-L3890](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3882-L3890)): that's how the compiler narrows.
@@ -166,12 +166,11 @@ The signature uses `Exclude<E, { _tag: K[number] }>` for the residual error type
 Handle every tag and `E` becomes `never`:
 
 ```typescript
-//          ┌─── Effect<string, never, never>
-//          ▼
 const fullyHandled = program.pipe(
   Effect.catchTag("HttpError", () => Effect.succeed("fallback (http)")),
   Effect.catchTag("ValidationError", () => Effect.succeed("fallback (validation)")),
 );
+// fullyHandled :: Effect<string, never, never>
 // runSync / runPromise will not reject for any *expected* error.
 // Defects (unrecoverable bugs, anything that escapes into Effect.die)
 // still kill the fiber; see §5.
@@ -186,11 +185,10 @@ import { Effect } from "effect";
 
 declare const program: Effect.Effect<string, HttpError | ValidationError>;
 
-//      ┌─── Effect<string, never, never>
-//      ▼
 const safe = program.pipe(
   Effect.catchAll((error) => Effect.succeed(`recovered from ${error._tag}`)),
 );
+// safe :: Effect<string, never, never>
 ```
 
 Note from the docs: "This function only handles recoverable errors." **Defects** are unexpected failures: bugs, things you'd consider unrecoverable. They live in a separate channel and `catchAll` will not touch them. You produce one explicitly with [`Effect.die`](https://effect.website/docs/error-management/unexpected-errors/), and you handle them with `Effect.catchAllCause` / `Effect.catchAllDefect`. For now, treat `catchAll` as the "I've handled every expected failure" combinator.
@@ -210,8 +208,6 @@ declare const fetchUser: (
   id: string,
 ) => Effect.Effect<{ id: string; name: string }, NotFoundError | NetworkError | ParseError>;
 
-//        ┌─── (id: string) => Effect<string, never, never>
-//        ▼          Every failure mode handled; the runner cannot reject.
 const getDisplayName = (id: string) =>
   fetchUser(id).pipe(
     Effect.map((user) => user.name),
@@ -221,6 +217,8 @@ const getDisplayName = (id: string) =>
       ParseError: () => Effect.succeed("<bad response>"),
     }),
   );
+// getDisplayName :: (id: string) => Effect<string, never, never>
+// Every failure mode handled; the runner cannot reject.
 
 console.log(await Effect.runPromise(getDisplayName("u_42")));
 ```
@@ -230,7 +228,7 @@ console.log(await Effect.runPromise(getDisplayName("u_42")));
 ## Common gotchas
 
 > [!warning] `Effect.runSync` rethrows; it does NOT silently absorb errors
-> Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` (Effect's runtime wrapper around any uncaught fiber-level failure). Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly.
+> Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` wrapping your error. Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly.
 
 > [!warning] Omit the `catch` callback and you get `UnknownException`, not a tagged error
 > `Effect.try` and `Effect.tryPromise` accept `catch` as **optional**. Without it, failures land in the error channel as the built-in `UnknownException` ([docs](https://effect.website/docs/getting-started/creating-effects/#tryPromise)): the call still type-checks, but the resulting `E` carries no `_tag` you defined, so `Effect.catchTag("YourTag", ...)` cannot narrow it. Use the object form (`{ try, catch }`) when you want the failure to be discriminable downstream.
