@@ -21,7 +21,7 @@ source:
 
 - **Task definition = pod-equivalent** (the Kubernetes pod is the smallest deployable unit: one or more containers scheduled together). JSON spec listing containers, ports, env vars, [[aws/iam/index|IAM]] role, CPU/memory. Versioned: each revision is immutable.
 - **Service** runs N copies of a task and keeps that count alive (similar to a Kubernetes Deployment). Optionally registers tasks with a load balancer.
-- **Two launch types**. **Fargate**: pay per task vCPU/memory-second, no nodes to manage. **EC2**: cheaper at scale but you patch and right-size the cluster nodes.
+- **Two launch types**. **Fargate**: pay per task vCPU (virtual CPU)/memory-second, no nodes to manage. **EC2**: cheaper at scale but you patch and right-size the cluster nodes.
 - **Networking via [[aws/vpc/index|VPC]]**. `awsvpc` mode gives each task its own ENI (Elastic Network Interface) with its own security group; required for Fargate ([source](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking-awsvpc.html)).
 - **Image registry is ECR (Elastic Container Registry)** by default. Cross-account pull requires both an IAM policy on the puller and a repository policy on the registry ([source](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html)).
 

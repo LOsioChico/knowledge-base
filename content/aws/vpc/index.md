@@ -17,7 +17,7 @@ source:
 ## TL;DR
 
 - **CIDR block (Classless Inter-Domain Routing notation, the `address/prefix-length` form like `10.0.0.0/16` that names an IP range) at creation, immutable shape**. Pick the IP range up front (e.g. `10.0.0.0/16`); you can add secondary CIDRs later but cannot shrink the primary.
-- **Subnet = AZ + CIDR slice**. **Public subnet** has a route to an Internet Gateway; **private subnet** does not (egress goes through a NAT Gateway, which costs ~$0.045/hour + per-GB).
+- **Subnet = AZ + CIDR slice**. **Public subnet** has a route to an Internet Gateway; **private subnet** does not (egress goes through a NAT (Network Address Translation) Gateway, which costs ~$0.045/hour + per-GB).
 - **Security group = stateful firewall** at the instance level. **Network ACL = stateless** at the subnet level. SGs are the workhorse; NACLs are for blanket subnet-wide rules.
 - **VPC endpoints** let resources in private subnets reach AWS services (S3, DynamoDB, SQS, etc.) without going through the internet: saves NAT cost and bandwidth.
 - **Default VPC** in every Region works out of the box but is too permissive for production. Build your own.

@@ -45,7 +45,7 @@ source:
 | Principal kind | Long-lived credentials?                                                   | Use for                                                                                                                                                 |
 | -------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Root user**  | Yes (account password + access keys)                                      | Only the handful of tasks that require root. Then never again.                                                                                          |
-| **IAM user**   | Yes (password, access keys)                                               | Avoid for new workloads. Real humans should federate via IAM Identity Center (formerly AWS SSO).                                                        |
+| **IAM user**   | Yes (password, access keys)                                               | Avoid for new workloads. Real humans should federate via IAM Identity Center (formerly AWS Single Sign-On (SSO)).                                       |
 | **IAM role**   | No (assumed; STS (Security Token Service) issues short-lived credentials) | Default choice. EC2/ECS/[[aws/lambda/index\|Lambda]] use instance/task/execution roles; humans assume roles via SSO; cross-account is `sts:AssumeRole`. |
 
 ## Pending notes

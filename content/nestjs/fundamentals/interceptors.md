@@ -38,7 +38,7 @@ source:
   - https://github.com/nestjs/nest-cli/blob/master/lib/utils/project-utils.ts
 ---
 
-> Wrap the route handler with logic that runs **before and after** it. A single aspect-oriented-programming (AOP) "around" advice (the AOP idiom for code that runs before AND after a wrapped call): built on RxJS, so the response stream is fair game.
+> Wrap the route handler with logic that runs **before and after** it. A single aspect-oriented-programming (AOP) "around" advice (the AOP idiom for code that runs before AND after a wrapped call): built on RxJS (Reactive Extensions for JavaScript, the streams library Nest uses for response transforms), so the response stream is fair game.
 
 ## Signature
 

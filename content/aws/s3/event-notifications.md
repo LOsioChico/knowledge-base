@@ -97,7 +97,7 @@ That's it. No tag filtering, no size filtering, no content-type filtering. If yo
 
 - **At-least-once.** S3 retries on destination failure. Your handler must be idempotent.
 - **Not ordered.** Two near-simultaneous PUTs to the same key can arrive in either order. Don't infer "the latest one" from delivery order: read the object's `versionId` or `LastModified` from the event payload.
-- **Typically delivered in seconds**, but the docs explicitly say "can sometimes take a minute or longer" ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications)). Don't build sub-second SLAs on top.
+- **Typically delivered in seconds**, but the docs explicitly say "can sometimes take a minute or longer" ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications)). Don't build sub-second SLAs (service-level agreements) on top.
 - **Duplicates happen.** Same object event can fire twice on rare retries.
 
 ## The recursion footgun

@@ -133,7 +133,7 @@ aws s3api delete-bucket --bucket "$BUCKET" --region "$REGION"
 
 ## Where to go next
 
-- [[aws/s3/storage-classes|Storage classes]]: pick the right cost/latency tier (Standard, Intelligent-Tiering, IA, Glacier).
+- [[aws/s3/storage-classes|Storage classes]]: pick the right cost/latency tier (Standard, Intelligent-Tiering, Standard-IA (Infrequent Access), Glacier).
 - [[aws/s3/lifecycle-rules|Lifecycle rules]]: age objects through cheaper classes and expire noncurrent versions automatically.
 - [[aws/s3/event-notifications|Event notifications]]: trigger [[aws/lambda/index|Lambda]] / SQS / SNS when objects are created or deleted.
 - [[aws/s3/static-website|Static website hosting]]: serve a bucket as a public site, fronted by [[aws/cloudfront/index|CloudFront]] for HTTPS.

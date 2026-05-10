@@ -37,7 +37,7 @@ source:
 | `Effect<A, E, R>` | Value describing a computation that, when run, either yields `A`, fails with `E`, or asks for `R`. | A typed `Promise` that also tracks errors and dependencies.               |
 | Runtime           | The thing that _executes_ an `Effect`.                                                             | Like calling a thunk: nothing happens until `Effect.runPromise(program)`. |
 | Layers (`R`)      | Typed dependency graph.                                                                            | DI container, but the compiler tells you when a dependency is missing.    |
-| `Effect.gen`      | Generator-based DSL: `yield*` an effect to "await" it.                                             | `async/await` for `Effect`.                                               |
+| `Effect.gen`      | Generator-based DSL (domain-specific language): `yield*` an effect to "await" it.                  | `async/await` for `Effect`.                                               |
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
