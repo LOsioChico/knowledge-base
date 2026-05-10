@@ -22,17 +22,19 @@ related:
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html
+  - https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html
 ---
 
 > AWS Identity and Access Management (IAM) is the authn + authz layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service. Get IAM right and other services have a chance; get it wrong and nothing else matters.
 
 ## TL;DR
 
-- **Every API call is signed by a principal** (user, role session, or root) and evaluated against a stack of policies. Default is deny.
-- **Identity-based policies** attach to a user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). An action is allowed only if at least one allows AND no policy denies.
+- **Every API call is signed by a principal** (user, role session, or root) and evaluated against a stack of policies. Default is deny ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
+- **Identity-based policies** attach to a user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). An action is allowed only if at least one allows AND no policy denies ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)).
 - **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy that allows account B's principals; B calls AssumeRole, gets short-lived credentials.
 - **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center.
-- **SCPs / RCPs / permission boundaries are intersections** with the identity policy: they subtract, never add.
+- **SCPs / RCPs / permission boundaries are intersections** with the identity policy: they subtract, never add ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
 
 ## When to use
 

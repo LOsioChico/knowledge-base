@@ -16,6 +16,7 @@ related:
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html
+  - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html
 ---
 
 > Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify/index|Amplify]] app), attach a domain and a certificate, and CloudFront holds the response in edge locations and serves it from the nearest one.
@@ -23,7 +24,7 @@ source:
 ## TL;DR
 
 - **Distribution = the CDN endpoint.** One distribution, one or more origins, one or more behaviors (path-pattern routing rules), one or more aliases.
-- **Aliases (CNAMEs) are globally unique** across all AWS accounts. The same hostname can live on only one distribution at a time; collisions need eviction or a wildcard override.
+- **Aliases (CNAMEs) are globally unique** across all AWS accounts. The same hostname can live on only one distribution at a time; collisions need eviction or a wildcard override ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)).
 - **Default 24h TTL** plus a lookup key that defaults to just the path. Forwarded headers/cookies/query-strings each fragment the lookup, so adding `Authorization` to the key turns the CDN into a free origin proxy by accident.
 - **ACM certificate must live in `us-east-1`** if you use any custom alias (regardless of where the origin lives).
 - **Amplify hides its CloudFront distribution.** You won't see it in `cloudfront list-distributions`; you talk to it through `aws amplify`.
