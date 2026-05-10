@@ -19,6 +19,7 @@ source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
   - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
+  - https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-credential-providers/Function/fromTemporaryCredentials/
 ---
 
 > Pattern for partial [[aws/account-migrations|AWS account migrations]]: leave a service in the old account and let new-account compute reach it via STS (Security Token Service) `AssumeRole` with an external ID and a tightly-scoped permission policy.
