@@ -335,6 +335,70 @@
       "reason": "Effect inference clearly relies on TypeScript strict mode but no single primary-source page lists this as a hard requirement; advisory left in place; revisit when typed-errors is rewritten.",
       "date": "2026-05-09",
       "originalLine": "That's it: typed errors are part of the core `effect` package. Examples below assume TypeScript 5.4+ with `strict: true` (Effect's type magic depends on strict mode)."
+    },
+    {
+      "path": "content/aws/account-migrations.md",
+      "sig": "f134da31f1b86ea5f5f3ce81d470466b70566bc8",
+      "rule": "style-jargon",
+      "reason": "Section is \"What's NOT in this playbook (yet)\" — semantically a planned-recipes list (skip-zone analog of Pending notes). Each bullet is a future-recipe pointer, not a prose claim being made now.",
+      "date": "2026-05-09",
+      "originalLine": "- API Gateway: export REST API as OpenAPI, recreate in target, repoint custom domain."
+    },
+    {
+      "path": "content/aws/account-migrations.md",
+      "sig": "44e7cacef84d1ffc23430f922ba24d211065b33d",
+      "rule": "style-jargon",
+      "reason": "Section is \"What's NOT in this playbook (yet)\" — planned-recipes list. The cognito-idp create-user-import-job command and parenthetical (passwords are not portable) already gloss the service's function.",
+      "date": "2026-05-09",
+      "originalLine": "- Cognito: user-pool import via `cognito-idp create-user-import-job` (passwords are not portable; users have to reset)."
+    },
+    {
+      "path": "content/aws/account-migrations.md",
+      "sig": "5b898165b248af5da307e41d0ff2ba73c52b339f",
+      "rule": "style-jargon",
+      "reason": "Section is \"What's NOT in this playbook (yet)\" — planned-recipes list pointer. The line itself glosses the purpose: \"versioned aliases for zero-downtime cutover\".",
+      "date": "2026-05-09",
+      "originalLine": "- Lambda function migration with versioned aliases for zero-downtime cutover."
+    },
+    {
+      "path": "content/aws/cloudfront/alternate-domain-claim.md",
+      "sig": "1c2983d3a84a75522d8c1b2bd4f5b4b80bc4994d",
+      "rule": "style-jargon",
+      "reason": "\"ownership record\" is a metaphor for the lingering alternate-domain claim that is the central topic of this note; defined operationally throughout (Root cause section names it the duplicate-name restriction). Table cell context makes the meaning unambiguous.",
+      "date": "2026-05-09",
+      "originalLine": "| Wait a few minutes between retries                                         | The ownership record is measured in hours, not minutes.                                                                     |"
+    },
+    {
+      "path": "content/aws/cloudfront/alternate-domain-claim.md",
+      "sig": "7e12490b98b2dfedfb8ab22e06268034fc76d4a7",
+      "rule": "style-jargon",
+      "reason": "\"ghost-claim store\" is informal shorthand for the alternate-domain-name registry CloudFront maintains, which IS this note's central topic. The Root cause section quotes the AWS docs verbatim about the underlying mechanism. The metaphor is internal to the note, not external jargon.",
+      "date": "2026-05-09",
+      "originalLine": "- The ghost-claim store also affects non-Amplify CloudFront usage (custom distributions, S3 hosting). The same ACM bypass applies."
+    },
+    {
+      "path": "content/nestjs/recipes/index.md",
+      "sig": "99b41926677e0cd9addd0caa22aa9451be7d07f0",
+      "rule": "style-jargon",
+      "reason": "Section is \"## Pending\" — planned-recipes list. The bullet itself glosses W3C traceparent and OpenTelemetry spans as the next-recipe scope, not a current claim.",
+      "date": "2026-05-09",
+      "originalLine": "- Distributed tracing with OpenTelemetry (W3C `traceparent`, spans, exporter setup)"
+    },
+    {
+      "path": "content/nestjs/recipes/index.md",
+      "sig": "d66c5636ad83687bd1c1ab7fcd61e947b2b83410",
+      "rule": "style-jargon",
+      "reason": "Section is \"## Pending\" — planned-recipes list. BullMQ is named as the planned-recipe topic; the recipe itself will gloss it when written.",
+      "date": "2026-05-09",
+      "originalLine": "- Background jobs with BullMQ"
+    },
+    {
+      "path": "content/nestjs/fundamentals/index.md",
+      "sig": "dba3ac4434759d6469163df34d650320851101bd",
+      "rule": "style-jargon",
+      "reason": "Section is \"## Pending\" — planned-recipes list. \"scopes\" is named as a future-recipe topic; the actual recipe will gloss it (singleton/request/transient lifetimes).",
+      "date": "2026-05-09",
+      "originalLine": "- DI container: providers, scopes, custom providers"
     }
   ]
 }
