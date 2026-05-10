@@ -25,7 +25,7 @@ source:
 ## TL;DR
 
 - **DB instance = one engine on one host** (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, or Aurora-flavored Postgres/MySQL). You connect over `host:port`.
-- **DB snapshot = the backup primitive.** Crash-consistent point-in-time copy of the storage volume; encrypted with the same [[aws/kms/index|KMS]] key as the source. Migrations are snapshot dances.
+- **DB snapshot = the backup primitive.** Storage-volume copy; encrypted with the same [[aws/kms/index|KMS]] key as the source. Single-AZ creates briefly suspend I/O; Multi-AZ MariaDB/MySQL/Oracle/PostgreSQL avoid the suspension by snapshotting the standby ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html)). Migrations are snapshot dances.
 - **Multi-AZ** is sync standby in another Availability Zone for production failover (~60-120s); **read replicas** are async (and promotable to standalone primaries).
 - **Encryption is a create-time decision.** You can't enable it on an existing unencrypted instance: the only path is snapshot → copy under a CMK → restore.
 - **Operational defaults to set on day one**: Multi-AZ on for user-facing workloads, deletion protection on, customer-managed KMS key (so you can migrate later), Performance Insights on.
@@ -38,7 +38,7 @@ source:
 
 ## Mental model
 
-The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are crash-consistent (taken without quiescing the engine, equivalent to recovering from a sudden power-off) point-in-time copies of the storage volume, are encrypted with the same KMS key as the source instance, and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class. Almost every "move this database somewhere" workflow is a snapshot dance: cross-Region copy, cross-account share, restore-into-new-shape, major-version upgrade test.
+The unit of "I have a database" is the **DB instance**; the unit of "I have a backup" is the **DB snapshot**. Snapshots are storage-volume copies whose I/O behavior depends on deployment shape: Single-AZ instances see a brief I/O suspension (seconds to minutes) during creation; Multi-AZ MariaDB/MySQL/Oracle/PostgreSQL take the snapshot from the standby with no primary-side suspension; Multi-AZ SQL Server still suspends briefly ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html)). Snapshots are encrypted with the same KMS key as the source instance and can be restored as a new DB instance in any combination of Region/account/parameter-group/instance-class. Almost every "move this database somewhere" workflow is a snapshot dance: cross-Region copy, cross-account share, restore-into-new-shape, major-version upgrade test.
 
 ## Pending notes
 
