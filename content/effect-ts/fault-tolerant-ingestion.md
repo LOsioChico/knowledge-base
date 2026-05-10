@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/composition]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/error-management/retrying/

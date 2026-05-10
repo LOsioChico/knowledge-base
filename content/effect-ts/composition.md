@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
 source:

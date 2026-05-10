@@ -45,8 +45,8 @@ const flaky = Effect.try({
   catch: (e) => e as Error,
 });
 
-//      ┌─── Effect<string, Error, never>
-//      ▼
+//       ┌─── Effect<string, Error, never>
+//       ▼
 const program = Effect.retry(flaky, { times: 3 });
 
 console.log(Effect.runSync(program));
@@ -64,8 +64,8 @@ import { Effect, Schedule } from "effect";
 
 const fetchUser = Effect.fail(new Error("network down"));
 
-//      ┌─── Effect<never, Error, never>
-//      ▼
+//         ┌─── Effect<never, Error, never>
+//         ▼
 const withBackoff = fetchUser.pipe(Effect.retry(Schedule.exponential("10 millis")));
 
 // Effect.runPromise(withBackoff) // would retry forever; see next section to cap it.
@@ -159,8 +159,8 @@ const cached = Effect.succeed({ id: "u_1", name: "Ada (cached)" });
 
 const policy = Schedule.addDelay(Schedule.recurs(2), () => "50 millis");
 
-//      ┌─── Effect<{ id: string; name: string }, never, never>
-//      ▼
+//        ┌─── Effect<{ id: string; name: string }, never, never>
+//        ▼
 const resilient = Effect.retryOrElse(liveFetch, policy, (err, _attempts) =>
   Console.log(`giving up on live: ${err.message}`).pipe(Effect.flatMap(() => cached)),
 );

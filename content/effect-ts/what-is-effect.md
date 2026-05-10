@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/composition]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
@@ -125,8 +126,8 @@ const program = Effect.gen(function* () {
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo
 
-//      ┌─── Effect<{ id: string; name: string }, NotFound, never>
-//      ▼
+//        ┌─── Effect<{ id: string; name: string }, NotFound, never>
+//        ▼
 const provided = program.pipe(Effect.provide(UserRepoLive));
 console.log(Effect.runSync(provided));
 // Output: { id: 'u_1', name: 'Ada' }
@@ -136,7 +137,7 @@ No string tokens, no module-resolution magic, no "service not registered" runtim
 
 ### 3. Structured concurrency and resource safety
 
-Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (lightweight tasks the runtime schedules) that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
+Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (lightweight tasks the runtime schedules) that supervise children, [[effect-ts/scoped-resources|scoped resources]] released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
 
 ## Ecosystem snapshot
 

@@ -10,6 +10,7 @@ related:
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/composition]]"
+  - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/requirements-management/services/
@@ -157,8 +158,8 @@ const DatabaseLive = Layer.scoped(
 [`Effect.provide`](https://effect.website/docs/requirements-management/services/) takes an effect and a layer; it returns an effect with the layer's outputs **removed** from the requirements channel:
 
 ```typescript
-//          ┌─── Effect<void, never, Logger>
-//          ▼
+//               ┌─── Effect<void, never, Logger>
+//               ▼
 declare const program: Effect.Effect<void, never, Logger>;
 
 //          ┌─── Effect<void, never, Config>   (Logger satisfied; Config still needed)
