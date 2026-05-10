@@ -24,11 +24,11 @@ source:
 ```typescript
 import { Effect } from "effect";
 
-declare const fetchUser: (id: string) => Effect.Effect<{ name: string }, Error>;
-declare const sendWelcome: (name: string) => Effect.Effect<void, Error>;
+const fetchUser = (id: string) => Effect.succeed({ name: `user_${id}` });
+const sendWelcome = (name: string) => Effect.sync(() => console.log(`welcome, ${name}`));
 
 // 1. pipe — linear: take an Effect, transform it.
-//      ┌─── Effect<string, Error, never>
+//      ┌─── Effect<string, never, never>
 //      ▼
 const a = fetchUser("u_1").pipe(
   Effect.map((u) => u.name),
@@ -36,7 +36,7 @@ const a = fetchUser("u_1").pipe(
 );
 
 // 2. Effect.gen — control flow: branch, loop, share intermediate names.
-//      ┌─── Effect<void, Error, never>
+//      ┌─── Effect<void, never, never>
 //      ▼
 const b = Effect.gen(function* () {
   const user = yield* fetchUser("u_1");
@@ -45,12 +45,16 @@ const b = Effect.gen(function* () {
 });
 
 // 3. Effect.fn — named callable that auto-creates a tracing span.
-//          ┌─── (id: string) => Effect<void, Error, never>
+//          ┌─── (id: string) => Effect<void, never, never>
 //          ▼
 const onboard = Effect.fn("onboard")(function* (id: string) {
   const user = yield* fetchUser(id);
   yield* sendWelcome(user.name);
 });
+
+Effect.runSync(a);
+Effect.runSync(b);
+Effect.runSync(onboard("u_2"));
 ```
 
 Same problem, three shapes. The rest of this note explains when each is the right shape.
@@ -189,7 +193,7 @@ Effect.runFork(myfunc(100).pipe(Effect.catchAllCause(Effect.logError)));
 (Example reproduced verbatim from [Effect.ts L14512-L14528](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14512-L14528). The three labelled stack frames are the value-add over a plain `Effect.gen` wrapper: a generator inside a regular function loses the call-site frame because the generator is invoked lazily by the runtime.)
 
 > [!info]- `Effect.fnUntraced` for the same shape without spans
-> If you want the call-shape ergonomics of `Effect.fn` without paying for span creation (e.g. inside a hot loop or a library you don't want to leak telemetry from), use [`Effect.fnUntraced`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14765). Same overloads, no auto-span. Stack traces still benefit from the named-callable wrapping.
+> If you want the call-shape ergonomics of `Effect.fn` without paying for span creation (e.g. inside a tight loop that runs every request, or a library you don't want to leak telemetry from), use [`Effect.fnUntraced`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14765). Same overloads, no auto-span. Stack traces still benefit from the named-callable wrapping.
 
 ## Picking one per call site
 
@@ -199,15 +203,14 @@ Effect.runFork(myfunc(100).pipe(Effect.catchAllCause(Effect.logError)));
 | You need `if`/`for`/`while`/early-`return` between effect steps.                                                  | `Effect.gen`                  |
 | You need to name an intermediate value and reuse it across two later steps.                                       | `Effect.gen`                  |
 | You're defining a **named function** that returns an Effect, and you want it to show up as a span in your traces. | `Effect.fn`                   |
-| Same as above, but you don't want the span (hot path, library code).                                              | `Effect.fnUntraced`           |
+| Same as above, but you don't want the span (latency-sensitive call site, library code).                           | `Effect.fnUntraced`           |
 | You want an anonymous (no-name) helper used once.                                                                 | `pipe` or inline `Effect.gen` |
 
 These are not exclusive. A typical service method looks like `Effect.fn("createOrder")(function* (input) { ... pipe(...) ... })`: `fn` for the outer name and span, `gen` for the body's branching, `pipe` for any inline transformation on a single intermediate effect.
 
 ## What `Effect.fn` is not
 
-- **Not a category-theory primitive.** Despite the functional-programming-flavored name, `Effect.fn` is not a typeclass member or a `Functor`/`Monad` operation. It's a constructor that produces a callable returning an `Effect`, nothing more.
-- **Not the same as `(...args) => Effect.gen(...)`.** That works and is fine for one-offs. `Effect.fn` adds the named span, the location-tagged stack frames, and the post-body pipe-style transforms.
+- **Not the same as `(...args) => Effect.gen(...)`.** That works and is fine for one-offs. `Effect.fn` adds a named tracing span (the JSDoc demos exporting it via `@effect/opentelemetry`'s `NodeSdk` ([Effect.ts L14538-L14580](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14538-L14580))) and richer stack traces with the call/definition/raise locations. Behaviorally the body is identical; the wrapper is purely about observability.
 - **Not for runtime entry points.** The runners (`Effect.runSync`, `Effect.runPromise`, `Effect.runFork`) still go at the edge of your program; `Effect.fn` is for the definitions inside.
 
 ## See also

@@ -93,42 +93,48 @@ declare const fetchUser: () => Effect.Effect<{ id: string }, NetworkError | Pars
 // The compiler knows EXACTLY what can fail. No "did I forget a catch?" doubt.
 ```
 
-`Effect.catchTag` then _removes_ a tag from `E`, so after handling `NetworkError` the residual type is `Effect<{ id: string }, ParseError>`. Forgetting a case becomes a compile error. See [[effect-ts/typed-errors|Typed errors]] for the full pattern.
+`Effect.catchTag` then _removes_ a tag from `E`, so after handling `NetworkError` the remaining failure type is `Effect<{ id: string }, ParseError>`. Forgetting a case becomes a compile error. See [[effect-ts/typed-errors|Typed errors]] for the full pattern.
 
 ### 2. Dependency injection in the type signature
 
 The `R` channel carries everything the effect needs from the outside world. When you provide a service via a `Layer`, the `R` shrinks; when every dependency is satisfied, `R` is `never` and the effect is runnable. The compiler refuses to run an effect whose `R` is not `never`:
 
 ```typescript
-import { Context, Effect, Layer } from "effect";
+import { Context, Data, Effect, Layer } from "effect";
+
+class NotFound extends Data.TaggedError("NotFound")<{ readonly id: string }> {}
 
 class UserRepo extends Context.Tag("UserRepo")<
   UserRepo,
-  { readonly find: (id: string) => Effect.Effect<User, NotFound> }
+  { readonly find: (id: string) => Effect.Effect<{ id: string; name: string }, NotFound> }
 >() {}
-declare class User {
-  readonly id: string;
-  readonly name: string;
-}
-declare class NotFound {
-  readonly _tag: "NotFound";
-}
-declare const UserRepoLive: Layer.Layer<UserRepo>;
 
-declare const program: Effect.Effect<User, NotFound, UserRepo>;
+const UserRepoLive = Layer.succeed(UserRepo, {
+  find: (id) =>
+    id === "u_1" ? Effect.succeed({ id, name: "Ada" }) : Effect.fail(new NotFound({ id })),
+});
+
+//        ┌─── Effect<{ id: string; name: string }, NotFound, UserRepo>
+//        ▼
+const program = Effect.gen(function* () {
+  const repo = yield* UserRepo;
+  return yield* repo.find("u_1");
+});
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo
 
 const provided = program.pipe(Effect.provide(UserRepoLive));
-// provided :: Effect<User, NotFound, never>
-Effect.runSync(provided); // ✅
+//      ┌─── Effect<{ id: string; name: string }, NotFound, never>
+//      ▼
+console.log(Effect.runSync(provided));
+// Output: { id: 'u_1', name: 'Ada' }
 ```
 
 No string tokens, no module-resolution magic, no "service not registered" runtime crashes. The same compiler that catches typos catches missing dependencies.
 
 ### 3. Structured concurrency and resource safety
 
-Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
+Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (lightweight tasks the runtime schedules) that supervise children, scoped resources released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
 
 ## Ecosystem snapshot
 
@@ -138,10 +144,10 @@ The core ships as the single `effect` npm package. Adjacent packages live under 
 - `@effect/cli`: typed CLI args, subcommands, prompts.
 - `@effect/sql` (+ adapters: `pg`, `mysql2`, `sqlite-node`, `clickhouse`, `drizzle`, `kysely`, …): typed SQL with connection pools and migrations.
 - `@effect/ai`: typed wrappers around OpenAI / Anthropic with retry, streaming, tool-calling.
-- `@effect/workflow`: durable, resumable workflows à la Temporal, in-process.
+- `@effect/workflow`: durable, resumable workflows similar to Temporal (the durable-workflow engine), in-process.
 - `@effect/rpc`, `@effect/cluster`, `@effect/opentelemetry`, `@effect/vitest`, `@effect/printer`, `@effect/typeclass`, `@effect/experimental`.
 
-`Schema` (validators, encoders, decoders, OpenAPI generation) is exported from the core `effect` package itself; the standalone `@effect/schema` package is **not** in the current `packages/` directory and should be treated as legacy unless re-verified.
+`Schema` (validators, encoders, decoders, OpenAPI schema generation for HTTP APIs) is exported from the core `effect` package itself; the standalone `@effect/schema` package is **not** in the current `packages/` directory and should be treated as legacy unless re-verified.
 
 ## Relationship to fp-ts
 
