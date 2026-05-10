@@ -143,7 +143,7 @@ Per the [`packages/ai` listing](https://github.com/Effect-TS/effect/tree/main/pa
   @effect/vitest                   (test the whole thing)
 ```
 
-The arrows are "typically composed with", not strict npm dependencies: most packages only depend on `effect` and `@effect/platform` directly. The `@effect/workflow` README's example explicitly composes `ClusterWorkflowEngine` from `@effect/cluster` with `PgClient.layer` from `@effect/sql-pg` to get persistence.
+The arrows are "typically composed with", not strict npm dependencies. Most packages declare `effect` and `@effect/platform` as peer dependencies, but several add more (`@effect/cluster` peers on `@effect/rpc`, `@effect/sql`, and `@effect/workflow`; `@effect/ai` peers on `@effect/rpc` and `@effect/experimental`; `@effect/opentelemetry` peers on the OpenTelemetry SDK packages). [[effect-ts/composition|Composition]] is a separate axis from packaging: the `@effect/workflow` README's example explicitly composes `ClusterWorkflowEngine` from `@effect/cluster` with `PgClient.layer` from `@effect/sql-pg` to get persistence.
 
 ## See also
 
