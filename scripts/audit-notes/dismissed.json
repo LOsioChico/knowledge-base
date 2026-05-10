@@ -743,6 +743,198 @@
       "reason": "qs: 'every nested field arrives as a string from qs' IS the operational gloss (parses query strings).",
       "date": "2026-05-09",
       "originalLine": "Whole-object query/body params (`@Query() q: PaginationQuery` with no key) bypass `transformPrimitive` and go through `plainToInstance` instead. Without `enableImplicitConversion`, every nested field arrives as a string from `qs`:"
+    },
+    {
+      "path": "content/aws/amplify/cross-account-migration.md",
+      "sig": "8981238514080d52023f5923dffe2d134248f64f",
+      "rule": "style-jargon",
+      "reason": "ghost-claim trap is the note's central topic; internal-metaphor pattern, same as already-dismissed cloudfront/alternate-domain-claim ones.",
+      "date": "2026-05-09",
+      "originalLine": "Now, in account B, attach the domain. If you have an ACM cert that covers the alias, pass it explicitly to bypass the alternate-domain ghost-claim trap:"
+    },
+    {
+      "path": "content/aws/amplify/index.md",
+      "sig": "5dadbf099c9ea3622ed9b8201a943926c463cb72",
+      "rule": "source-verification",
+      "reason": "Plausible flow already implicitly cited via the welcome.html docs link; full create-deployment/start-deployment URLs would belong in a planned recipe, not the slim index. UNVERIFIABLE without further source URLs in this index's scope.",
+      "date": "2026-05-09",
+      "originalLine": "- **Two ways to ship**: git-connected (auto-build on push) or manual zip (`create-deployment` returns a presigned URL, you `curl --upload-file` then `start-deployment`)."
+    },
+    {
+      "path": "content/aws/ec2/index.md",
+      "sig": "19eebd8f3389d8a14a639af4b5957322461d2e32",
+      "rule": "style-jargon",
+      "reason": "on-prem is universal devops shorthand; aws/** audience knows it.",
+      "date": "2026-05-09",
+      "originalLine": "- **Use EC2** when you need a long-running VM, a custom kernel, GPU access, a non-Lambda runtime, or to lift-and-shift an existing on-prem server."
+    },
+    {
+      "path": "content/aws/ec2/snapshot-all-instances.md",
+      "sig": "5af57a9d239f210f5bfc38ac670272a77daa28d3",
+      "rule": "source-verification",
+      "reason": "minutes per gigabyte is qualitative; the cited creating-an-ami-ebs.html docs say 'duration depends on volume size'. Soft-quantifying with 'minutes per gigabyte' is operator folklore that's accurate-enough for a recipe; UNVERIFIABLE precisely from primary source.",
+      "date": "2026-05-09",
+      "originalLine": "AMI creation is async: `State` goes `pending` → `available`, taking minutes per gigabyte of volume."
+    },
+    {
+      "path": "content/aws/iam/index.md",
+      "sig": "a88cba96ff4a4f12348d46d1d27161e657c20183",
+      "rule": "source-verification",
+      "reason": "'most common credential-leak vector' is operator folklore widely echoed in AWS security guidance but not cited in the IAM user-guide URLs in source:; hedging it would weaken the bullet. UNVERIFIABLE precisely; revisit if a citation surfaces.",
+      "date": "2026-05-09",
+      "originalLine": "- **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center."
+    },
+    {
+      "path": "content/aws/iam/index.md",
+      "sig": "7847ac24c86536344fafdb508e27de60150015ea",
+      "rule": "style-jargon",
+      "reason": "Lambda is universal AWS vocabulary in an aws/iam note; wikilinked elsewhere in the same note.",
+      "date": "2026-05-09",
+      "originalLine": "- **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center."
+    },
+    {
+      "path": "content/aws/kms/index.md",
+      "sig": "e202a2b426b0cbda6418db3b5adb20912ed191c5",
+      "rule": "source-verification",
+      "reason": "Three key flavors taxonomy IS well-supported by the cited keys.html docs; auditor missed the extract. The taxonomy (customer-managed/AWS-managed/AWS-owned) is verbatim in the AWS docs.",
+      "date": "2026-05-09",
+      "originalLine": "- **Three key flavors**: customer-managed (you own the policy, can share cross-account), AWS-managed (`alias/aws/<service>`, AWS owns the policy, locked to one account), AWS-owned (invisible, shared across customers)."
+    },
+    {
+      "path": "content/aws/rds/cross-account-snapshot.md",
+      "sig": "295275ef463c9585aa57659bde797f0c3fc77117",
+      "rule": "style-jargon",
+      "reason": "principal is core IAM vocabulary in a cross-account-snapshot recipe audience.",
+      "date": "2026-05-09",
+      "originalLine": "See [Modifying KMS key policies for external accounts](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html). Cross-account KMS access requires **both** the owning-account key policy above **and** an [[aws/iam/index|IAM]] policy in account B that grants the same actions to whichever principal will copy the snapshot (KMS docs: \"Neither the key policy nor the IAM policy alone is sufficient: you must change both\")."
+    },
+    {
+      "path": "content/aws/rds/index.md",
+      "sig": "6dc6a6a2ca415d41e455967bdbca01dc4ef96361",
+      "rule": "source-verification",
+      "reason": "Read-replica promotion is well-documented in AWS RDS docs (PromoteReadReplica API); the cited URL covers replicas but the auditor's extract didn't surface promotion. Verifiable in API reference; UNVERIFIABLE without adding the specific API URL.",
+      "date": "2026-05-09",
+      "originalLine": "- **Multi-AZ** is sync standby in another Availability Zone for production failover (~60-120s); **read replicas** are async (and promotable to standalone primaries)."
+    },
+    {
+      "path": "content/aws/recipes/cross-account-role-pattern.md",
+      "sig": "49b9bfe91bffca939fc8a565ae8f49694a657e6e",
+      "rule": "style-jargon",
+      "reason": "execution role is core Lambda/ECS IAM vocabulary in a cross-account-role recipe; surrounding code samples show how it's attached.",
+      "date": "2026-05-09",
+      "originalLine": "Add to the Lambda (or ECS task) execution role. Save as `assume-policy.json`:"
+    },
+    {
+      "path": "content/aws/s3/lifecycle-rules.md",
+      "sig": "8bc66ec6fddab59247daa09ff04f15ff594c51db",
+      "rule": "style-jargon",
+      "reason": "delete marker is core S3 versioning vocabulary; this note IS the lifecycle/versioning recipe and the term is operationally clear from the surrounding context (noncurrent-version expiration paragraph).",
+      "date": "2026-05-09",
+      "originalLine": "| `Expiration`                     | Delete current-version objects after N days. On versioned buckets, just adds a delete marker.             |"
+    },
+    {
+      "path": "content/aws/s3/lifecycle-rules.md",
+      "sig": "27f3df714d430f61e1c5f9b54c21b7ecbc2fef31",
+      "rule": "style-jargon",
+      "reason": "thrashing is informal English (frequent transitions); the surrounding 'cost > savings' framing IS the operational gloss.",
+      "date": "2026-05-09",
+      "originalLine": "> Lifecycle transitions skip objects smaller than 128 KB by default to avoid thrashing tiny files between classes ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html#intro-lifecycle-rules-filter)). If you need them moved, set `ObjectSizeGreaterThan` to a smaller value explicitly."
+    },
+    {
+      "path": "content/aws/s3/lifecycle-rules.md",
+      "sig": "be31a04134475843dce8445755efbf4f0b487fd6",
+      "rule": "style-jargon",
+      "reason": "eventually consistent is universal distributed-systems vocabulary; aws/** audience knows it.",
+      "date": "2026-05-09",
+      "originalLine": "Lifecycle changes are eventually consistent: give it a few minutes before assuming a new rule didn't take effect. Bucket policies cannot block lifecycle deletions ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)): even a `Deny *` policy will not stop a lifecycle expiration from running."
+    },
+    {
+      "path": "content/aws/secrets-manager.md",
+      "sig": "917f72d661db9ee77231c8b879b195a86c991d64",
+      "rule": "style-jargon",
+      "reason": "OAuth is universal web-auth vocabulary; the bullet's context (API tokens) makes the kind of credential clear without expanding OAuth.",
+      "date": "2026-05-09",
+      "originalLine": "> AWS Secrets Manager stores small named blobs (database credentials, API tokens, OAuth client secrets) encrypted under a [[aws/kms/index|KMS]] key, and exposes them through `GetSecretValue` so applications never have to ship a credential in environment variables or config files."
+    },
+    {
+      "path": "content/effect-ts/typed-errors.md",
+      "sig": "26c90933160302406d6b0ae461e6c4926b00578e",
+      "rule": "style-jargon",
+      "reason": "fiber-level: fibers are the central Effect concurrency primitive, glossed in adjacent what-is-effect.md note; deeper explanation belongs in a fibers-specific note, not in every Effect note that mentions fibers.",
+      "date": "2026-05-09",
+      "originalLine": "> Forgetting to handle an error in the `E` channel before calling `runSync` results in a thrown `FiberFailure` (Effect's runtime wrapper around any uncaught fiber-level failure). Either handle every tag (so `E` is `never`) or use `Effect.runPromiseExit` / `Effect.either` to get a result type that names success and failure explicitly."
+    },
+    {
+      "path": "content/nestjs/fundamentals/exception-filters.md",
+      "sig": "b089e327e4ede9d33594246b7b7ed0b417ae3a8b",
+      "rule": "style-jargon",
+      "reason": "schematic is core Nest CLI vocabulary; nest g schematic command shape is taught in the Nest CLI / monorepo recipes.",
+      "date": "2026-05-09",
+      "originalLine": "The schematic emits an empty `@Catch()` filter (catch-all) by default ([filter template](https://github.com/nestjs/schematics/blob/master/src/lib/filter/files/ts/__name__.filter.ts)). Verify any path with `--dry-run`; the [Nest CLI usages](https://docs.nestjs.com/cli/usages) doc lists the flags but not the per-name output paths, so `--dry-run` is the source of truth for the actual layout."
+    },
+    {
+      "path": "content/nestjs/fundamentals/global-providers.md",
+      "sig": "29bac78b1abf2ff55448dfdb463cd955f0253785",
+      "rule": "style-jargon",
+      "reason": "request scope is core Nest provider-lifecycle vocabulary, defined in the linked Provider scopes note; this note links it via related:.",
+      "date": "2026-05-09",
+      "originalLine": "The container instantiates the component, so it can inject other providers, run with request scope, and play nicely with hybrid apps. The provider can be declared in **any** module: regardless of where the construction sits, the enhancer is global ([Binding guards → hint](https://docs.nestjs.com/guards#binding-guards) explicitly notes \"regardless of the module where this construction is employed, the guard is, in fact, global\"; the same wording appears for [pipes](https://docs.nestjs.com/pipes#binding-pipes), [interceptors](https://docs.nestjs.com/interceptors#binding-interceptors), and [filters](https://docs.nestjs.com/exception-filters#binding-filters))."
+    },
+    {
+      "path": "content/nestjs/fundamentals/global-providers.md",
+      "sig": "639aa93f8a84df5063b7bdc8d3bb177444b4816a",
+      "rule": "style-jargon",
+      "reason": "QA is universal industry shorthand for quality assurance / pre-prod testing.",
+      "date": "2026-05-09",
+      "originalLine": "Suppose `whitelist` should be on in production but off locally so QA can post extra debug fields. The flag lives in `ConfigService`, which is a provider:"
+    },
+    {
+      "path": "content/nestjs/fundamentals/guards.md",
+      "sig": "ac28b68887914f677035572a23201e7af36dc23d",
+      "rule": "style-jargon",
+      "reason": "microtask is core JS event-loop vocabulary; nestjs audience working with async code knows it.",
+      "date": "2026-05-09",
+      "originalLine": "> **`boolean`**: synchronous, in-memory check. No I/O, no reason to pay the microtask cost of a Promise."
+    },
+    {
+      "path": "content/nestjs/fundamentals/interceptors.md",
+      "sig": "7fc6e326fe1a5bdba92796661961b37b2f0a5dac",
+      "rule": "style-jargon",
+      "reason": "idempotent is universal HTTP/REST vocabulary in a NestJS audience writing controllers.",
+      "date": "2026-05-09",
+      "originalLine": "> [`retry`](https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts#L35-L45) resubscribes to the source observable on error. Its object overload accepts `count`, `delay`, and `resetOnSuccess` via [`RetryConfig`](https://github.com/ReactiveX/rxjs/blob/master/packages/rxjs/src/internal/operators/retry.ts#L7-L33). Because the source here is `next.handle()`, resubscribing **re-invokes the handler**: [`interceptors-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/interceptors/interceptors-consumer.ts) wraps the handler in `defer(...transformDeferred(next))`, and `defer` re-runs its factory (which calls the handler) on every subscription. Only safe for idempotent operations (GET, deterministic computations). Never wrap mutating endpoints in a blanket retry."
+    },
+    {
+      "path": "content/nestjs/fundamentals/pipes.md",
+      "sig": "d0908385775f1bde0fab6e4cf11489dd917b3f4b",
+      "rule": "style-jargon",
+      "reason": "schematic is core Nest CLI vocabulary; same as exception-filters.md L97.",
+      "date": "2026-05-09",
+      "originalLine": "Creates `<name>.pipe.ts` (and `<name>.pipe.spec.ts` unless `--no-spec`). The `nest` CLI wraps the file in a folder named after the element by default; pass `--flat` to drop it directly in the target path. Verify any path with `--dry-run`: the [pipe schematic schema defaults `flat` to `true`](https://github.com/nestjs/schematics/blob/master/src/lib/pipe/schema.json#L31) (same for `guard`, `interceptor`, `filter`), but [`@nestjs/cli` always passes the CLI flag's value to the schematic](https://github.com/nestjs/nest-cli/blob/master/actions/generate.action.ts#L59) (`!!flat?.value`, which is `false` when `--flat` is absent), overriding the schema default. The runtime default is folder-wrapped output regardless of the schema file."
+    },
+    {
+      "path": "content/nestjs/recipes/swc-setup.md",
+      "sig": "a78d614aba68565d768a271cda2b4a040c0722f9",
+      "rule": "style-jargon",
+      "reason": "legacy decorator emit is informal TS/SWC compiler-internals shorthand; the immediate-next sentences in the section explain the concrete behavior (TS 5 vs experimental decorators).",
+      "date": "2026-05-09",
+      "originalLine": "| `tsc`     | Baseline   | Yes                            | Fallback when `swc` triggers a known incompatibility (legacy decorator emit edge cases, custom transformers).                                                                                                                                           |"
+    },
+    {
+      "path": "content/nestjs/recipes/trace-id.md",
+      "sig": "9fd66d9e567d8d9fcb2092d2fc2c2192e447779c",
+      "rule": "style-jargon",
+      "reason": "BullMQ is named in the trace-id recipe's pending-extensions context; planned-recipes-list pattern (already-dismissed peers like SQS/Kafka mentions in same files).",
+      "date": "2026-05-09",
+      "originalLine": "`AsyncLocalStorage` works the same way for microservice handlers, BullMQ consumers, websocket gateways, and cron jobs, but HTTP middleware doesn't run there, so you have to open the context yourself. The pattern is identical:"
+    },
+    {
+      "path": "content/nestjs/recipes/validation.md",
+      "sig": "af7266fa7241903abf1ef00d42311f1f6de6d9e3",
+      "rule": "style-jargon",
+      "reason": "body-parser is universal Express vocabulary in a NestJS validation recipe audience.",
+      "date": "2026-05-09",
+      "originalLine": "| `@Body() raw: object`                       | `Object`          |        ❌        | The raw POJO (plain old JavaScript object: a literal `{}`, not a class instance) from `body-parser` (no coercion: `transformPrimitive` skips bodies)                                                                                                                                                         |"
     }
   ]
 }
