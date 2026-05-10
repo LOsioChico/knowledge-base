@@ -32,6 +32,7 @@ source:
   - https://github.com/mikenicholson/passport-jwt/blob/master/lib/strategy.js
   - https://github.com/nestjs/nest/blob/master/packages/core/services/reflector.service.ts
   - https://docs.nestjs.com/exception-filters
+  - https://github.com/nestjs/passport/blob/master/lib/passport/passport.strategy.ts
 ---
 
 > Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.
@@ -378,7 +379,7 @@ The `getAllAndOverride` order `[handler, class]` means a method-level `@Public()
 > When `JwtAuthGuard` is the global `APP_GUARD`, every route: including `/auth/login`: runs through it. Forgetting `@Public()` on the login handler returns `401 Unauthorized` to every client and you'll think Passport is broken. Add `@Public()` to login, signup, and any health/status endpoints.
 
 > [!info]- The strategy's default name is `'jwt'`, override with the second `PassportStrategy` arg
-> `PassportStrategy(Strategy, 'myjwt')` registers the strategy under the name `'myjwt'` and you'd then use `AuthGuard('myjwt')`. Useful when you have multiple JWT strategies (e.g., user tokens vs service tokens with different secrets).
+> `PassportStrategy(Strategy, 'myjwt')` registers the strategy under the name `'myjwt'` and you'd then use `AuthGuard('myjwt')` ([source](https://github.com/nestjs/passport/blob/master/lib/passport/passport.strategy.ts#L64-L72)). Useful when you have multiple JWT strategies (e.g., user tokens vs service tokens with different secrets).
 
 > [!info]- Stateless JWT cannot be revoked
 > Once issued, a valid JWT works until it expires. There's no server-side "log out". To revoke early, either keep token IDs (`jti`) in a denylist checked in `validate()`, or shorten `expiresIn` and rely on refresh-token rotation. The whole appeal of JWT (stateless verification) bites back here.

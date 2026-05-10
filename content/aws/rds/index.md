@@ -18,6 +18,8 @@ related:
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html
+  - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html
+  - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html
 ---
 
 > Amazon RDS (Relational Database Service) is managed relational databases: AWS owns the host, the OS, the engine binaries, the backups, the patching cadence, and the failover plumbing. You own the schema, the queries, and the parameter group (the bundle of engine configuration like `max_connections`, `shared_buffers`).
@@ -25,7 +27,7 @@ source:
 ## TL;DR
 
 - **DB instance = one engine on one host** (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, or Aurora-flavored Postgres/MySQL). You connect over `host:port`.
-- **DB snapshot = the backup primitive.** Storage-volume copy; encrypted with the same [[aws/kms/index|KMS]] key as the source. Single-AZ creates briefly suspend I/O; Multi-AZ MariaDB/MySQL/Oracle/PostgreSQL avoid the suspension by snapshotting the standby ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html)). Migrations are snapshot dances.
+- **DB snapshot = the backup primitive.** Storage-volume copy; encrypted with the same [[aws/kms/index|KMS]] key as the source ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html#Overview.Encryption.Limitations)). Single-AZ creates briefly suspend I/O; Multi-AZ MariaDB/MySQL/Oracle/PostgreSQL avoid the suspension by snapshotting the standby ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CreateSnapshot.html)). Migrations are snapshot dances.
 - **Multi-AZ** is sync standby in another Availability Zone for production failover (~60-120s); **read replicas** are async (and promotable to standalone primaries).
 - **Encryption is a create-time decision.** You can't enable it on an existing unencrypted instance: the only path is snapshot → copy under a CMK → restore.
 - **Operational defaults to set on day one**: Multi-AZ on for user-facing workloads, deletion protection on, customer-managed KMS key (so you can migrate later), Performance Insights on.

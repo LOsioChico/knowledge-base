@@ -8,6 +8,7 @@ related:
   - "[[aws/index]]"
 source:
   - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.CoreComponents.html
+  - https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html
 ---
 
 > Amazon DynamoDB is AWS's managed key-value + document database: you define a table with a partition key (and optional sort key), write items as JSON-shaped documents, and AWS handles sharding, replication, and per-millisecond auto-scaling. Single-digit-ms reads at any scale, no servers to provision.
@@ -16,7 +17,7 @@ source:
 
 - **Schema = key shape only**. Partition key + optional sort key is the entire schema you commit to; every other attribute is per-item and free-form.
 - **Access patterns drive design**. You query by key (or by GSI = global secondary index). There are no joins, no ad-hoc `WHERE`, no `LIKE`. Model the queries you'll run, not the entities.
-- **Two capacity modes**. **On-demand** (pay per request, no planning) vs **provisioned** (cheaper at sustained throughput, requires capacity planning + auto-scaling).
+- **Two capacity modes**. **On-demand** (pay per request, no planning) vs **provisioned** (cheaper at sustained throughput, requires capacity planning + auto-scaling) ([source](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html)).
 - **Conditional writes are atomic per item**. The primitive that makes DynamoDB usable as a coordination layer (locks, idempotency keys, single-writer tables) for systems backed by [[aws/s3/index|S3]] or other storage without ordering.
 - **Streams + TTL** are first-class: change-data-capture into [[aws/lambda/index|Lambda]]; per-item expiration without a sweeper job.
 
