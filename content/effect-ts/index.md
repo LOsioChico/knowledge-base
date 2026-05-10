@@ -45,6 +45,19 @@ source:
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
+## Start here
+
+If you're new to Effect, read in this order:
+
+1. [[effect-ts/quickstart|Quickstart]]: install, write, and run a tiny effect.
+2. [[effect-ts/what-is-effect|What is Effect]]: the `Effect<A, E, R>` mental model and why laziness matters.
+3. [[effect-ts/composition|Composition]]: when to reach for `pipe`, `Effect.gen`, or `Effect.fn`.
+4. [[effect-ts/typed-errors|Typed errors]]: the `E` channel in practice (`Effect.try`, `catchTag`).
+5. [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice.
+6. [[effect-ts/retry-and-schedule|Retry and Schedule]]: bounded retries, backoff, jitter, fallback.
+
+After that, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for `@effect/*` packages.
+
 ## Pending notes
 
 - Schema basics (`Schema.Struct`, encoders/decoders, OpenAPI hookup).
