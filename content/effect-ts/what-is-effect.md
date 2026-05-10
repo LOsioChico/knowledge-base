@@ -125,9 +125,9 @@ const program = Effect.gen(function* () {
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo
 
-const provided = program.pipe(Effect.provide(UserRepoLive));
 //      ┌─── Effect<{ id: string; name: string }, NotFound, never>
 //      ▼
+const provided = program.pipe(Effect.provide(UserRepoLive));
 console.log(Effect.runSync(provided));
 // Output: { id: 'u_1', name: 'Ada' }
 ```

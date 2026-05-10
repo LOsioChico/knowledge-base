@@ -63,6 +63,8 @@ import { Data, Effect } from "effect";
 class FetchError extends Data.TaggedError("FetchError")<{ readonly cause: unknown }> {}
 class HttpError extends Data.TaggedError("HttpError")<{ readonly status: number }> {}
 
+//      ┌─── Effect<Response, FetchError | HttpError, never>
+//      ▼
 const fetchRaw = (url: string) =>
   Effect.tryPromise({
     try: (signal) => fetch(url, { signal }),
@@ -72,8 +74,6 @@ const fetchRaw = (url: string) =>
       res.ok ? Effect.succeed(res) : Effect.fail(new HttpError({ status: res.status })),
     ),
   );
-//      ┌─── Effect<Response, FetchError | HttpError, never>
-//      ▼
 ```
 
 Two wins from the rewrite:
@@ -98,6 +98,8 @@ type Todo = Schema.Schema.Type<typeof Todo>;
 
 class ParseFailure extends Data.TaggedError("ParseFailure")<{ readonly issues: string }> {}
 
+//      ┌─── Effect<Todo, ParseFailure, never>
+//      ▼
 const parseTodo = (res: Response) =>
   Effect.tryPromise({
     try: () => res.json(),
@@ -109,17 +111,15 @@ const parseTodo = (res: Response) =>
       ),
     ),
   );
-//      ┌─── Effect<Todo, ParseFailure, never>
-//      ▼
 ```
 
 Compose the two for the full per-item fetch:
 
 ```typescript
-const fetchTodo = (id: number) =>
-  fetchRaw(`https://jsonplaceholder.typicode.com/todos/${id}`).pipe(Effect.flatMap(parseTodo));
 //      ┌─── Effect<Todo, FetchError | HttpError | ParseFailure, never>
 //      ▼
+const fetchTodo = (id: number) =>
+  fetchRaw(`https://jsonplaceholder.typicode.com/todos/${id}`).pipe(Effect.flatMap(parseTodo));
 ```
 
 The `E` channel now lists every distinct failure the function can produce. Forgetting to handle one becomes a compile error downstream.
@@ -131,9 +131,9 @@ The `E` channel now lists every distinct failure the function can produce. Forge
 ```typescript
 import { Effect } from "effect";
 
-const fetchTodoBounded = (id: number) => fetchTodo(id).pipe(Effect.timeout("5 seconds"));
 //      ┌─── Effect<Todo, FetchError | HttpError | ParseFailure | TimeoutException, never>
 //      ▼
+const fetchTodoBounded = (id: number) => fetchTodo(id).pipe(Effect.timeout("5 seconds"));
 ```
 
 ## 4. Retry only the transient failures
@@ -148,6 +148,8 @@ const retryPolicy = Schedule.intersect(
   Schedule.recurs(3),
 );
 
+//      ┌─── Effect<Todo, FetchError | HttpError | ParseFailure | TimeoutException, never>
+//      ▼
 const fetchTodoResilient = (id: number) =>
   fetchTodoBounded(id).pipe(
     Effect.retry({
@@ -155,8 +157,6 @@ const fetchTodoResilient = (id: number) =>
       while: (err) => err._tag === "FetchError" || err._tag === "TimeoutException",
     }),
   );
-//      ┌─── Effect<Todo, FetchError | HttpError | ParseFailure | TimeoutException, never>
-//      ▼
 ```
 
 `HttpError` and `ParseFailure` surface immediately on attempt 1; transient errors retry up to 3 extra times with jittered exponential backoff (200ms, ~400ms, ~800ms).
@@ -168,10 +168,10 @@ const fetchTodoResilient = (id: number) =>
 ```typescript
 import { Effect } from "effect";
 
-const ingest = (ids: ReadonlyArray<number>) =>
-  Effect.forEach(ids, fetchTodoResilient, { concurrency: 5 });
 //      ┌─── Effect<ReadonlyArray<Todo>, FetchError | HttpError | ParseFailure | TimeoutException, never>
 //      ▼
+const ingest = (ids: ReadonlyArray<number>) =>
+  Effect.forEach(ids, fetchTodoResilient, { concurrency: 5 });
 
 Effect.runPromise(ingest([1, 2, 3, 4, 5])).then(console.log);
 ```
