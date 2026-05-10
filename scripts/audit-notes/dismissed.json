@@ -311,6 +311,30 @@
       "reason": "Empirical wait time. Prose says 'Wait at least 2-4 hours, often longer.' AWS does not document a duration; this is a field-experience floor. Softening would strip the actionable number.",
       "date": "2026-05-05",
       "originalLine": "If you can't or won't manage your own cert, the only remaining option is **time**. Stop all retries. Wait at least 2-4 hours, often longer. Then attempt the original prefix once. If it still fails, the AWS-documented escalation path is to disable the lingering source distribution and contact AWS Support to release the alias ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html#alternate-domain-names-move-contact-support)). Basic Support is free, response is typically next business day."
+    },
+    {
+      "path": "content/aws/s3/lifecycle-rules.md",
+      "sig": "32b9a458af8fa9ce077606cc44c19f4341400bf9",
+      "rule": "style-hedge",
+      "reason": "Verified at L25: \"depending on access pattern\" is the genuinely correct framing — Glacier savings vary with retrieval frequency, not a softening of a specific number.",
+      "date": "2026-05-09",
+      "originalLine": "2. **Stale data in expensive storage.** Logs uploaded in 2022 don't need millisecond access in 2026; transitioning aged objects to Glacier slashes the per-GB rate (often by an order of magnitude on long-tail data, depending on access pattern). See [[aws/s3/storage-classes|S3 storage classes]] for the per-class trade-offs."
+    },
+    {
+      "path": "content/effect-ts/what-is-effect.md",
+      "sig": "ca97d02fcbcf26180adfdc0385d4557c6aa5c057",
+      "rule": "style-hedge",
+      "reason": "Verified at L80: \"depending on your tsconfig\" is genuinely correct — Promise rejection type is unknown vs any based on useUnknownInCatchVariables, not a softened claim.",
+      "date": "2026-05-09",
+      "originalLine": "`Promise<T>` rejects with `unknown` (or `any`, depending on your tsconfig). The compiler will not tell you which `await` could throw what. `Effect<A, E, R>` puts the failure type in `E`, so:"
+    },
+    {
+      "path": "content/effect-ts/typed-errors.md",
+      "sig": "48652edc455b0a9375cb7eebf4c47cfa1befb4b4",
+      "rule": "source-verification",
+      "reason": "Effect inference clearly relies on TypeScript strict mode but no single primary-source page lists this as a hard requirement; advisory left in place; revisit when typed-errors is rewritten.",
+      "date": "2026-05-09",
+      "originalLine": "That's it: typed errors are part of the core `effect` package. Examples below assume TypeScript 5.4+ with `strict: true` (Effect's type magic depends on strict mode)."
     }
   ]
 }
