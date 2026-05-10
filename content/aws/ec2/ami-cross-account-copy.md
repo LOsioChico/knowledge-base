@@ -213,7 +213,7 @@ The destination account now owns two storage costs per AMI: the AMI's snapshot b
 
 - The cross-account copy itself is free (best-effort completion); only the destination's new EBS snapshot storage costs money.
 - The destination snapshot is a FULL copy of the source data: the destination account's first AMI from a given source pays full snapshot storage, not incremental against the source.
-- Time-based copies (15 min to 48 h SLA) cost extra; omit `--completion-duration-minutes` for the free best-effort path.
+- Time-based copies (15 min to 48 h SLA) cost extra; omit [`--snapshot-copy-completion-duration-minutes`](https://docs.aws.amazon.com/cli/latest/reference/ec2/copy-image.html) for the free best-effort path.
 
 ## Anti-pattern: skipping the copy step
 
