@@ -28,7 +28,7 @@ source:
 
 - **Function = deployment unit**: code + dependencies + config (memory, timeout, env vars), shipped as a zip or container image.
 - **Execution role** is the [[aws/iam/index|IAM]] role the function runs as: every AWS API call from your handler uses these credentials.
-- **Triggers** invoke the function: API Gateway, SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge, Function URL, direct invoke. Each trigger is its own resource with its own permission grant.
+- **Triggers** invoke the function: API Gateway, SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge (managed event bus for application and scheduled events), Function URL (built-in HTTPS endpoint on the function), direct invoke. Each trigger is its own resource with its own permission grant.
 - **Versions are immutable; aliases are re-pointable.** Wire triggers to aliases (`prod`, `staging`) so you can flip traffic without touching the trigger.
 - **Pricing** is per invocation + GB-second. CPU scales linearly with the `MemorySize` setting (more memory = more CPU).
 

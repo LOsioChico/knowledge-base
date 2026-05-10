@@ -24,7 +24,7 @@ source:
   - https://docs.aws.amazon.com/kms/latest/developerguide/overview.html
 ---
 
-> AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds/index|RDS]], EBS (Elastic Block Store), and [[aws/secrets-manager|Secrets Manager]] call KMS on your behalf to encrypt + decrypt data keys.
+> AWS Key Management Service (KMS) is the encryption-key broker used by every other AWS service that does encryption-at-rest: you create a key once, attach a policy that says who can use it, and then services like S3, [[aws/rds/index|RDS]], EBS (Elastic Block Store), and [[aws/secrets-manager|Secrets Manager]] call KMS on your behalf to encrypt + decrypt **data keys** (short-lived symmetric keys KMS mints to wrap your actual data, so the long-lived KMS key only ever protects keys, not bulk data).
 
 ## TL;DR
 
