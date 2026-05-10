@@ -90,7 +90,7 @@ Run it: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 
 ## 3. Compose with `Effect.gen`
 
-Effect's idiomatic [[effect-ts/composition|composition]] is the generator DSL: `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
+Effect's idiomatic [[effect-ts/composition|composition]] is the generator domain-specific language (DSL): `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
 
 ```typescript
 import { Effect } from "effect";
@@ -148,7 +148,7 @@ console.log(Effect.runSync(main));
 // Output: { ok: true }
 ```
 
-The `_tag` field is the discriminator [`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) uses to narrow which error to handle; after `catchTag("ParseError", ...)`, `ParseError` is **removed from the residual error channel** (the return type is `Exclude<E, { _tag: "ParseError" }>`).
+The `_tag` field is the discriminator [`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) uses to narrow which error to handle; after `catchTag("ParseError", ...)`, `ParseError` is **removed from the remaining failure type** (the return type is `Exclude<E, { _tag: "ParseError" }>`).
 
 See [[effect-ts/typed-errors|Typed errors]] for the full pattern: multiple error tags, `tryPromise`, `catchAll`, narrowing with `_tag`.
 

@@ -17,19 +17,19 @@ source:
   - https://github.com/Effect-TS/effect
 ---
 
-> Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency. Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
+> Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency (child fibers cancelled with their parent scope). Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
 
 ## TL;DR
 
 - The core type is [`Effect<Success, Error, Requirements>`](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), abbreviated `A`, `E`, `R`. Errors and dependencies are tracked in the type, not lost in `try/catch` and DI containers.
-- Effect values are **lazy descriptions**, not running code. A runtime (`Effect.runPromise` / `Effect.runSync` / `Effect.runFork`) executes them when you ask.
+- Effect values are **lazy descriptions**, not running code. A runtime ([`Effect.runPromise` / `Effect.runSync` / `Effect.runFork`](https://effect.website/docs/getting-started/running-effects/)) executes them when you ask.
 - Replaces (and absorbs) [`fp-ts`](https://github.com/gcanti/fp-ts): per its README, fp-ts is "officially merging with the Effect-TS ecosystem" and "Effect-TS can be regarded as the successor to fp-ts v2".
 - Single npm package for the core (`effect`); the rest of the ecosystem ships under `@effect/*` (platform, cli, sql, ai, workflow, rpc, cluster, opentelemetry, vitest, …).
 - Latest stable: [`effect@3.21.2`](https://registry.npmjs.org/effect/latest) (verified 2026-05-08).
 
 ## When to use
 
-- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams + backpressure), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), LLM agents (`@effect/ai`).
+- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams with backpressure: producers slow down when consumers lag), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), large-language-model (LLM) agents (`@effect/ai`).
 - **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based [[effect-ts/composition|composition]].
 - **Adoption signal**: for the week of 2026-05-02 to 2026-05-08, the npm registry's last-week download API reports `effect` at 13,403,437 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,550,875 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
 
@@ -40,7 +40,7 @@ source:
 | `Effect<A, E, R>` | Value describing a computation that, when run, either yields `A`, fails with `E`, or asks for `R`. | A typed `Promise` that also tracks errors and dependencies.               |
 | Runtime           | The thing that _executes_ an `Effect`.                                                             | Like calling a thunk: nothing happens until `Effect.runPromise(program)`. |
 | Layers (`R`)      | Typed dependency graph.                                                                            | DI container, but the compiler tells you when a dependency is missing.    |
-| `Effect.gen`      | Generator-based DSL: `yield*` an effect to "await" it.                                             | `async/await` for `Effect`.                                               |
+| `Effect.gen`      | Generator-based domain-specific language (DSL): `yield*` an effect to "await" it.                  | `async/await` for `Effect`.                                               |
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
