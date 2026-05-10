@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/composition]]"
+  - "[[effect-ts/retry-and-schedule]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
@@ -58,6 +59,7 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 - [[effect-ts/composition|Composition: pipe, gen, and fn]]: the three idioms for chaining effects together; when to reach for each.
 - [[effect-ts/typed-errors|Typed errors]]: errors in the type signature, `Effect.try`, `catchTag`.
 - [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; `Context.Tag`, `Effect.Service`, `Layer.provide`.
+- [[effect-ts/retry-and-schedule|Retry and Schedule]]: bounded retries, exponential backoff with jitter, fallback after exhaustion.
 - [[effect-ts/ecosystem-map|Ecosystem map]]: every `@effect/*` package, what it does, when to install it.
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official).
 - [Effect-TS/effect on GitHub](https://github.com/Effect-TS/effect).

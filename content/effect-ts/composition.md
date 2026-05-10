@@ -10,6 +10,7 @@ related:
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
+  - "[[effect-ts/retry-and-schedule]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/building-pipelines/
