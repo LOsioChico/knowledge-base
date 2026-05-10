@@ -16,6 +16,7 @@ source:
   - https://effect.website/docs/getting-started/creating-effects/
   - https://effect.website/docs/getting-started/running-effects/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
+  - https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json
 ---
 
 > Install `effect`, write a tiny program, run it three different ways, then handle a typed error. The 10-minute path from "I've heard of Effect" to "I have a working `Effect<A, E, R>` in front of me".
@@ -25,7 +26,7 @@ source:
 You need:
 
 - **TypeScript 5.4 or newer** ([install docs](https://effect.website/docs/getting-started/installation/#manual-installation)).
-- A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package declares no `engines` field, so any modern version works; pick whatever your project already uses).
+- A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package declares no `engines` field ([package.json](https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json)), so any modern version works; pick whatever your project already uses).
 - A new project. The fastest setup with Node + tsx:
 
   ```bash

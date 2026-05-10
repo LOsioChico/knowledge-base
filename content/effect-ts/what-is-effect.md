@@ -100,7 +100,21 @@ declare const fetchUser: () => Effect.Effect<{ id: string }, NetworkError | Pars
 The `R` channel carries everything the effect needs from the outside world. When you provide a service via a `Layer`, the `R` shrinks; when every dependency is satisfied, `R` is `never` and the effect is runnable. The compiler refuses to run an effect whose `R` is not `never`:
 
 ```typescript
-// Pseudo-code; full layer syntax covered in a future note.
+import { Context, Effect, Layer } from "effect";
+
+class UserRepo extends Context.Tag("UserRepo")<
+  UserRepo,
+  { readonly find: (id: string) => Effect.Effect<User, NotFound> }
+>() {}
+declare class User {
+  readonly id: string;
+  readonly name: string;
+}
+declare class NotFound {
+  readonly _tag: "NotFound";
+}
+declare const UserRepoLive: Layer.Layer<UserRepo>;
+
 declare const program: Effect.Effect<User, NotFound, UserRepo>;
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo

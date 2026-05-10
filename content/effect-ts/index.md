@@ -31,7 +31,7 @@ source:
 
 - **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams + backpressure), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), LLM agents (`@effect/ai`).
 - **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based [[effect-ts/composition|composition]].
-- **Adoption signal**: as of 2026-05-08 the npm registry's last-week download API reports `effect` at 12,942,715 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,032,499 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
+- **Adoption signal**: for the week of 2026-05-02 to 2026-05-08, the npm registry's last-week download API reports `effect` at 13,403,437 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,550,875 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
 
 ## Mental model
 

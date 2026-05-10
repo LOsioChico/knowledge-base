@@ -207,6 +207,35 @@ Two escape hatches when you need a fresh instance:
 - **[`Layer.fresh(layer)`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L397)** : strips memoization for one usage; the layer is built independently each time it appears.
 - **Define the layer inside a function** : calling the function returns a new `Layer` value, defeating reference-equality memoization. The docs warn against this accidentally: "call that function once and re-use the resulting layer" ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)).
 
+```typescript
+import { Context, Effect, Layer } from "effect";
+
+class Counter extends Context.Tag("Counter")<Counter, { readonly id: number }>() {}
+
+let next = 0;
+const CounterLive = Layer.effect(
+  Counter,
+  Effect.sync(() => {
+    next += 1;
+    console.log(`built Counter #${next}`);
+    return { id: next };
+  }),
+);
+
+// Memoized: built once, even though merge references CounterLive twice.
+const Memoized = Layer.merge(CounterLive, CounterLive);
+Effect.runSync(Effect.gen(function* () {}).pipe(Effect.provide(Memoized)));
+// Output:
+// built Counter #1
+
+// Layer.fresh: built independently each time it appears.
+const Fresh = Layer.merge(CounterLive, Layer.fresh(CounterLive));
+Effect.runSync(Effect.gen(function* () {}).pipe(Effect.provide(Fresh)));
+// Output:
+// built Counter #2
+// built Counter #3
+```
+
 > [!warning]- Memoization is per-`Effect.provide`, not global
 > Two separate `Effect.provide(LoggerLive)` calls on two unrelated effects produce two separate `Logger` instances. Memoization shares within one provision graph; the unit of sharing is the call. If you need a single global instance, build the layer once at program entry and reuse the resulting `runtime`.
 
