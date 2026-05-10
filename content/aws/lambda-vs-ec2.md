@@ -124,7 +124,7 @@ The premium vs raw EC2 is real but predictable. For most "I need a backend" work
 
 - **Sustained high throughput** where the per-request Lambda model loses on price (see math below).
 - **Persistent connections at scale**: a single EC2 instance can hold tens of thousands of WebSocket connections; an equivalent Lambda + API Gateway WebSocket API setup costs an order of magnitude more per connection-hour.
-- **GPU, custom kernel, /proc tuning, SR-IOV networking, FPGA**: none available on Lambda or Fargate.
+- **GPU, custom kernel, /proc tuning, SR-IOV (Single-Root I/O Virtualization, the bypass that lets a VM talk to the NIC directly for higher throughput and lower jitter) networking, FPGA**: none available on Lambda or Fargate.
 - **Reserved Instances and Savings Plans** discount sustained usage 30-72% off on-demand for 1- or 3-year commitments. Lambda has no equivalent commitment discount on the per-request side.
 - **Lift-and-shift**: existing on-prem applications port to EC2 unchanged; Lambda demands a rewrite around the handler model.
 
@@ -182,7 +182,7 @@ When you're tempted to default to Lambda, walk these in order:
 > If your function's static initialization (DB client, S3 client) fails because the execution role lacks a permission, the Init phase fails, the environment is reset, and the next invocation runs Init again ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#runtimes-lifecycle-init-errors)). Reads as "intermittent latency spikes" in monitoring; root cause is missing IAM.
 
 > [!info]- Lambda + VPC adds an ENI cost, not just latency
-> Putting a function in a VPC (to reach private RDS, for example) attaches a Hyperplane ENI to the execution environment. Cold starts are no longer dramatically slower than non-VPC since the 2019 networking redesign, but each VPC consumes ENI quota (default 500/VPC, shared with EFS) ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Worth knowing before mass-deploying VPC-attached functions.
+> Putting a function in a VPC (to reach private RDS, for example) attaches a Hyperplane ENI (a shared, NAT-style ENI managed by AWS that fronts many functions onto the customer's subnet, instead of attaching a dedicated ENI per concurrent execution like the pre-2019 design) to the execution environment. Cold starts are no longer dramatically slower than non-VPC since the 2019 networking redesign, but each VPC consumes ENI quota (default 500/VPC, shared with EFS) ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Worth knowing before mass-deploying VPC-attached functions.
 
 ## See also
 

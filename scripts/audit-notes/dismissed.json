@@ -983,6 +983,54 @@
       "reason": "Trailing Gotchas section is the canonical recipe pattern per AGENTS.md recipe template (tagline -> setup -> example -> table -> defaults -> gotchas -> See also). The decodeUnknown vs decode comparison is a side-note explainer, not a step-2 prerequisite; placing it in the Gotchas cluster keeps section 2's main flow scannable.",
       "date": "2026-05-10",
       "originalLine": "> [!info]- Why `Schema.decodeUnknown` and not `Schema.decode`"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "1342a22b973f3cc518e0bc5d8d61f6f25f195f81",
+      "rule": "mental-model",
+      "reason": "Cold-start subsection deliberately leads with the official Lambda runtime quote and stat (~1% of invocations, sub-100ms to >1s) so the rule-of-thumb IS the official number; replacing it with a folksy analogy would weaken the source-grounding the section is built on.",
+      "date": "2026-05-10",
+      "originalLine": "### Cold starts and the warming-cron anti-pattern"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "0c43bc872399f7f2eae8107f56494aa1a4197cd2",
+      "rule": "callout-severity",
+      "reason": "Open warning is correct severity: the danger is shipping the example numbers as decision-grade — that IS a footgun worth flagging, not a mild advisory.",
+      "date": "2026-05-10",
+      "originalLine": "> [!warning] These numbers are for one workload shape: re-do the math for yours"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "5de78589cf9839bc1452a34275fc87f2b47f2588",
+      "rule": "callout-placement",
+      "reason": "Gotchas are deliberately co-located in a single trailing \"Common gotchas\" section for scan-friendliness; spreading them across upstream sections would dilute the section's purpose. Note structure choice, not a bug.",
+      "date": "2026-05-10",
+      "originalLine": "> [!warning]- Provisioned Concurrency doesn't eliminate cold starts on scale-out"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "5732520979336e6e5c5fdfe21789e320acdaf55b",
+      "rule": "style-hedge",
+      "reason": "\"or queues, depending on your config\" is literal: PC behavior on overflow depends on the `ProvisionedConcurrentExecutions` setting and whether reserved concurrency is also configured (https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html). Specific behavior name with a real config branch, not a hedge softening a verifiable claim.",
+      "date": "2026-05-10",
+      "originalLine": "> PC keeps N environments warm. The N+1th concurrent request still cold-starts (or queues, depending on your config). Sizing PC to peak traffic defeats the \"scale to zero\" benefit and approaches the cost of always-on compute. Per the [PC docs](https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html): you're explicitly trading scale-to-zero for predictable latency."
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "f0ebb958fc0e321197e0acdc7b36b7b12538bc90",
+      "rule": "callout-placement",
+      "reason": "Same reason as L175: trailing-cluster gotchas section is the design.",
+      "date": "2026-05-10",
+      "originalLine": "> [!warning]- The 5-minute warming cron only warms one environment"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "99f80babdd205a2185ca36a497f7f22a658d98e6",
+      "rule": "callout-placement",
+      "reason": "Same reason as L175: trailing-cluster gotchas section is the design.",
+      "date": "2026-05-10",
+      "originalLine": "> [!warning]- IAM permission errors during Init kill the whole environment"
     }
   ]
 }
