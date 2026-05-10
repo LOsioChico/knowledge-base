@@ -21,6 +21,7 @@ related:
 source:
   - https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html
   - https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html
+  - https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html
   - https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html
   - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy.html
   - https://aws.amazon.com/lambda/pricing/
@@ -77,7 +78,7 @@ Per the [Lambda runtime docs](https://docs.aws.amazon.com/lambda/latest/dg/lambd
 The two AWS-blessed workarounds:
 
 1. **Provisioned Concurrency** keeps N execution environments pre-initialized, billed at $0.0000041667 per GB-second whether they handle traffic or not ([source](https://aws.amazon.com/lambda/pricing/)). For a 512 MB function with 10 reserved environments, that's roughly $54/month before any invocation cost (10 × 0.5 GB × $0.0000041667 × 86,400 s/day × 30 days). The math gets worse fast as you reserve more.
-2. **SnapStart** snapshots the post-init state and resumes from it (Java, Python, .NET) ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#runtimes-lifecycle-restore)). Cuts cold start sharply for languages where Init dominates; not a universal fix.
+2. **SnapStart** snapshots the post-init state of an initialized execution environment and resumes from it on cold start; supports Java 11+, Python 3.12+, and .NET 8+ ([source](https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html)). Cuts cold start sharply for languages where Init dominates; not a universal fix.
 
 The unblessed workaround you'll see in the wild: a CloudWatch Events rule pinging the function every 5 minutes to keep one environment warm. Costs near-zero, hides the underlying problem (your monolith doesn't fit Lambda's lifecycle), and only keeps **one** environment warm: the second concurrent request still cold-starts.
 
@@ -91,7 +92,7 @@ The cost: **$0.015 per vCPU-hour, multiplied by the vCPUs of the underlying DB i
 
 ### The 15-minute hard ceiling
 
-Function timeout is "900 seconds (15 minutes)" ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Period. A long video transcode, a multi-step migration, a slow third-party API integration that takes 20 minutes — all of these need to be split into a state-machine (Step Functions), redesigned around durable execution, or moved to Fargate/EC2.
+Function timeout is "900 seconds (15 minutes)" ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Period. A long video transcode, a multi-step migration, a slow third-party API integration that takes 20 minutes: all of these need to be split into a state-machine (Step Functions), redesigned around durable execution, or moved to Fargate/EC2.
 
 > [!warning] Durable Functions raise the ceiling but change the programming model
 > Lambda Durable Functions can run "up to one year" by checkpointing state ([source](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html)), but the function code has to be written against the durable-execution SDK with explicit checkpoints and idempotent operations. It's not "the timeout was lifted"; it's a different runtime contract you opt into.
@@ -182,7 +183,7 @@ When you're tempted to default to Lambda, walk these in order:
 > If your function's static initialization (DB client, S3 client) fails because the execution role lacks a permission, the Init phase fails, the environment is reset, and the next invocation runs Init again ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#runtimes-lifecycle-init-errors)). Reads as "intermittent latency spikes" in monitoring; root cause is missing IAM.
 
 > [!info]- Lambda + VPC adds an ENI cost, not just latency
-> Putting a function in a VPC (to reach private RDS, for example) attaches a Hyperplane ENI (a shared, NAT-style ENI managed by AWS that fronts many functions onto the customer's subnet, instead of attaching a dedicated ENI per concurrent execution like the pre-2019 design) to the execution environment. Cold starts are no longer dramatically slower than non-VPC since the 2019 networking redesign, but each VPC consumes ENI quota (default 500/VPC, shared with EFS) ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Worth knowing before mass-deploying VPC-attached functions.
+> Putting a function in a VPC (to reach private RDS, for example) attaches a Hyperplane ENI (a shared, NAT-style ENI managed by AWS that fronts many functions onto the customer's subnet, instead of attaching a dedicated ENI per concurrent execution like the pre-2019 design) to the execution environment. Cold starts are no longer dramatically slower than non-VPC since the 2019 networking redesign, but each VPC consumes ENI quota (default 500/VPC, shared with EFS, the AWS Elastic File System service that also attaches ENIs into customer subnets) ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Worth knowing before mass-deploying VPC-attached functions.
 
 ## See also
 

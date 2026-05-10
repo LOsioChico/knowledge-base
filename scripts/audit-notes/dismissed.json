@@ -1063,6 +1063,14 @@
       "reason": "FPGA is hardware shorthand in an aws/** EC2-features bullet; in context (GPU, custom kernel, /proc tuning, SR-IOV, FPGA) the audience that needs the bullet already knows the term. Expanding \"Field-Programmable Gate Array\" inline would clutter without adding decision-relevance.",
       "date": "2026-05-10",
       "originalLine": "- **GPU, custom kernel, /proc tuning, SR-IOV (Single-Root I/O Virtualization, the bypass that lets a VM talk to the NIC directly for higher throughput and lower jitter) networking, FPGA**: none available on Lambda or Fargate."
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "ddc3e1fce933336746c7df3b2d7fb90554e8b4b9",
+      "rule": "show-dont-tell",
+      "reason": "show-don't-tell applies to type/recipe per AGENTS.md; this is a type/concept Decision shortcuts numbered list of decision questions, not a behavioral claim that needs a request/response demo.",
+      "date": "2026-05-10",
+      "originalLine": "When you're tempted to default to Lambda, walk these in order:"
     }
   ]
 }
