@@ -1071,6 +1071,14 @@
       "reason": "show-don't-tell applies to type/recipe per AGENTS.md; this is a type/concept Decision shortcuts numbered list of decision questions, not a behavioral claim that needs a request/response demo.",
       "date": "2026-05-10",
       "originalLine": "When you're tempted to default to Lambda, walk these in order:"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "fb364bd8e08888b9517dadc5e0e40ec2c6d6710a",
+      "rule": "callout-severity",
+      "reason": "Open warning is correct severity: the trap is reading \"Durable Functions\" as a drop-in fix for the 15-minute timeout when it actually requires opting into a different runtime contract (explicit checkpoints, idempotent ops). That misread IS a footgun, not an advisory comparison.",
+      "date": "2026-05-10",
+      "originalLine": "> [!warning] Durable Functions raise the ceiling but change the programming model"
     }
   ]
 }
