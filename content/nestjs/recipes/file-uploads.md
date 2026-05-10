@@ -203,7 +203,7 @@ With disk storage `file.buffer` is `undefined` and `file.path` points at the sav
 > `FileInterceptor` is part of `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. Use [`@fastify/multipart`](https://github.com/fastify/fastify-multipart) and Fastify's own request-level API; this whole recipe does not apply.
 
 > [!info]- Swagger needs `@ApiConsumes` to render the file picker
-> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/operations#file-upload)). The "Try it out" form falls back to plain text and is unusable for binary uploads.
+> Without `@ApiConsumes('multipart/form-data')` and a body schema declaring `type: 'string', format: 'binary'`, the generated OpenAPI doc (the machine-readable API description Swagger UI renders) has no `requestBody` content type that Swagger UI recognizes as a file input ([@nestjs/swagger → File upload](https://docs.nestjs.com/openapi/operations#file-upload)). The "Try it out" form falls back to plain text and is unusable for binary uploads.
 
 ## See also
 

@@ -943,6 +943,22 @@
       "reason": "Memoization section's second escape hatch and the Common gotchas callout intentionally restate the same pattern: the gotchas section is the scan-first index for footguns. Both are short, the gotcha is collapsed, and duplication is the point of the gotchas section.",
       "date": "2026-05-09",
       "originalLine": "> [!warning]- Constructing a layer inside a function defeats memoization"
+    },
+    {
+      "path": "content/nestjs/recipes/rate-limiting.md",
+      "sig": "691dcb245f621a1134a6e9e5343470238d917cf9",
+      "rule": "style-jargon",
+      "reason": "'this pod' is glossed inline on the same line: 'Kubernetes-style \"is this pod ready to receive traffic?\" probe'. The auditor missed the intra-line definition.",
+      "date": "2026-05-09",
+      "originalLine": "Skips throttling for the entire controller. Useful for health checks, readiness probes (the Kubernetes-style \"is this pod ready to receive traffic?\" probe), and webhook receivers that legitimately burst."
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "sig": "29a630511061bb86598262f6f57a69d04321d671",
+      "rule": "style-jargon",
+      "reason": "'blast radius' is widely-known security/SRE shorthand for impact scope; the surrounding paragraph (Entity vs DTO leak comparison) makes the meaning unambiguous in context. Glossing would dilute the rhetorical punch line.",
+      "date": "2026-05-09",
+      "originalLine": "Same data, different type, very different blast radius."
     }
   ]
 }

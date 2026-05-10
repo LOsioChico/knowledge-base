@@ -57,7 +57,7 @@ flowchart TD
 
 ## The order
 
-1. Incoming request hits the HTTP adapter.
+1. Incoming request hits the HTTP adapter (the library wiring Nest to Express or Fastify).
 2. [[middleware|Middleware]]: global, then module bound.
 3. [[guards|Guards]]: global, controller, route.
 4. [[interceptors|Interceptors]] (before): global, controller, route.
@@ -74,13 +74,13 @@ flowchart TD
 
 Pick the right tool by asking _when_ it should run:
 
-| Need                                                                     | Tool                                     |
-| ------------------------------------------------------------------------ | ---------------------------------------- |
-| Mutate the raw request, attach correlation IDs                           | [[middleware\|Middleware]]               |
-| Authorization decision before any work                                   | [[guards\|Guards]]                       |
-| Wrap the handler with logging, [[nestjs/data/caching\|caching]], retries | [[interceptors\|Interceptors]]           |
-| Validate or transform input                                              | [[pipes\|Pipes]]                         |
-| Convert a thrown error into an HTTP response                             | [[exception-filters\|Exception filters]] |
+| Need                                                                                                                               | Tool                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| Mutate the raw request, attach correlation IDs (per-request tracing identifiers; see [[nestjs/recipes/trace-id\|trace-id recipe]]) | [[middleware\|Middleware]]               |
+| Authorization decision before any work                                                                                             | [[guards\|Guards]]                       |
+| Wrap the handler with logging, [[nestjs/data/caching\|caching]], retries                                                           | [[interceptors\|Interceptors]]           |
+| Validate or transform input                                                                                                        | [[pipes\|Pipes]]                         |
+| Convert a thrown error into an HTTP response                                                                                       | [[exception-filters\|Exception filters]] |
 
 ## Source
 

@@ -387,8 +387,9 @@ export const Roles = (...roles: string[]) => SetMetadata("roles", roles);
 >     const userId: string | undefined = req.user?.id;
 >     const catId: string = req.params.id;
 >     if (!userId) throw new ForbiddenException();
->     // …query DB; return true/false based on ownership
->     return true;
+>     // Replace with your real lookup; the rule is the equality check below.
+>     const cat = await fakeCatLookup(catId);
+>     return cat?.ownerId === userId;
 >   }
 > }
 > ```
