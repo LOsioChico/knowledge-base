@@ -959,6 +959,22 @@
       "reason": "'blast radius' is widely-known security/SRE shorthand for impact scope; the surrounding paragraph (Entity vs DTO leak comparison) makes the meaning unambiguous in context. Glossing would dilute the rhetorical punch line.",
       "date": "2026-05-09",
       "originalLine": "Same data, different type, very different blast radius."
+    },
+    {
+      "path": "content/effect-ts/layers-and-di.md",
+      "sig": "1cbffe1d5831700da193a15e75cdc674b20a0bb7",
+      "rule": "style-jargon",
+      "reason": "Verified false positive: 'depending on how much ceremony you want' is descriptive framing of two real APIs (Context.Tag + Layer.succeed vs Effect.Service), not a hedge. The two paths objectively differ in lines-of-code and boilerplate. Cite-don't-hedge does not apply because no specific claim is being softened.",
+      "date": "2026-05-10",
+      "originalLine": "A service is two things: a unique tag (identifier) and an interface (the operations it exposes). Effect ships two ways to declare both, depending on how much ceremony you want."
+    },
+    {
+      "path": "content/effect-ts/layers-and-di.md",
+      "sig": "add2be5e2ca6617138ff8d4b051d676eb8660846",
+      "rule": "source-verification",
+      "reason": "Verified at Effect.ts#L13540-L13583: the JSDoc preceding Effect.Service shows '@since 3.9.0' and '@experimental' tags directly. Note already cites that range inline as '[source comment]'. Auditor's extract window evidently missed the JSDoc block.",
+      "date": "2026-05-10",
+      "originalLine": "Added in `effect@3.9.0` as `@experimental` ([source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13585-L13620)), `Effect.Service` collapses the tag + layer declaration into one class. It \"simplifies the creation and management of services in Effect by defining both a `Tag` and a `Layer`\" ([source comment](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13540-L13583))."
     }
   ]
 }
