@@ -30,7 +30,7 @@ source:
 
 ## TL;DR
 
-- **Every API call is signed by a principal** (user, role session, or root) and evaluated against a stack of policies. Default is deny ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
+- **Every authenticated API call is signed by a principal** (user, role session, or root) and evaluated against a stack of policies; anonymous requests (e.g. public S3 GETs) are evaluated under the anonymous principal. Default is deny ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
 - **Identity-based policies** attach to a user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). Same-account: an action is allowed if at least one of identity or resource policies allows AND none denies. Cross-account: the principal needs BOTH an identity-based allow AND a resource-based allow ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_resource-based)).
 - **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy that allows account B's principals; B calls AssumeRole, gets short-lived credentials.
 - **Roles, not users, for code.** Long-lived IAM-user access keys are the most common credential-leak vector. EC2/ECS/Lambda use roles; humans federate via IAM Identity Center.
