@@ -352,6 +352,7 @@ Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is
 3. **Show class fields and constructors that the example references.** If the body uses `this.store`, the field must be declared. If `this.config` is accessed, the constructor must inject it.
 4. **No undefined references.** If a symbol appears (`UpdateCatDTO`, `AuditInterceptor`, `Guard1`), either it was defined earlier on the page, comes from an import, or has an inline comment pointing to where it's defined.
 5. **Single-line illustrative fragments are OK** only when the surrounding prose makes the context unambiguous (e.g., showing one decorator usage right after the full class). When in doubt, write the full snippet.
+6. **Directional comment-pointers must point at the right line.** ASCII type-annotation blocks of the form `//      ┌─── Type` followed by `//      ▼` (the effect.website convention) point DOWN at the next line; the block MUST sit immediately above the binding whose type it annotates, with no blank line between. Forbidden: placing the block after the binding (the `▼` then points at unrelated code below). Audit reflex during the code-block pass: for each `▼` in a snippet, confirm the line directly below is the binding whose type matches the `┌───` label. No linter catches this; the check is mechanical and one second per arrow.
 
 When editing an existing snippet, audit the imports too — adding a new symbol means adding its import.
 
