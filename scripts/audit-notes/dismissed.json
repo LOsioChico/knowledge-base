@@ -1031,6 +1031,38 @@
       "reason": "Same reason as L175: trailing-cluster gotchas section is the design.",
       "date": "2026-05-10",
       "originalLine": "> [!warning]- IAM permission errors during Init kill the whole environment"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "2c62c8180df988c79940030a49bc9a04ac964d57",
+      "rule": "style-jargon",
+      "reason": "AZs and AMI are AWS-shorthand in the aws/** home-area; AGENTS.md jargon judge whitelists this class. Used in a matrix cell where prose room for \"Availability Zone\" / \"Amazon Machine Image\" full names would break the row layout.",
+      "date": "2026-05-10",
+      "originalLine": "| Provisioning                 | None: AWS scales execution environments per-request                                                                                                      | None: AWS schedules tasks onto Fargate capacity                                                                               | You pick instance type, count, AZs, AMI                                     |"
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "9f065e1820e22117a8e2327e358b6e6ae228730c",
+      "rule": "mental-model",
+      "reason": "Cold-starts subsection deliberately leads with the official Lambda docs quote (1% of invocations, sub-100ms to >1s); the rule-of-thumb IS the official number. Replacing it with an analogy weakens the source-grounding the section is built on.",
+      "date": "2026-05-10",
+      "originalLine": "Per the [Lambda runtime docs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#cold-start-latency): \"Cold starts typically occur in under 1% of invocations. The duration of a cold start varies from under 100 ms to over 1 second.\" The Init phase runs three things: extension init, runtime init, and your function's static code (imports, DB clients, etc.) ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#runtimes-lifecycle-ib)). Heavy frameworks (NestJS, Spring, large bundles) push that toward and beyond 1 second per cold start."
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "2bcbe3eafbcdb722cd953b2ee0666aa6e65249c9",
+      "rule": "mental-model",
+      "reason": "15-minute ceiling subsection opens with the literal quota then immediately names the migration paths (state machine, Step Functions, Fargate/EC2). The \"why this forces a pivot\" the auditor wants is in the next sentence; restructuring would just trade order for fluff.",
+      "date": "2026-05-10",
+      "originalLine": "Function timeout is \"900 seconds (15 minutes)\" ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)). Period. A long video transcode, a multi-step migration, a slow third-party API integration that takes 20 minutes — all of these need to be split into a state-machine (Step Functions), redesigned around durable execution, or moved to Fargate/EC2."
+    },
+    {
+      "path": "content/aws/lambda-vs-ec2.md",
+      "sig": "fc285a7f71459d6b70675270ad506f43434fd1b6",
+      "rule": "style-jargon",
+      "reason": "FPGA is hardware shorthand in an aws/** EC2-features bullet; in context (GPU, custom kernel, /proc tuning, SR-IOV, FPGA) the audience that needs the bullet already knows the term. Expanding \"Field-Programmable Gate Array\" inline would clutter without adding decision-relevance.",
+      "date": "2026-05-10",
+      "originalLine": "- **GPU, custom kernel, /proc tuning, SR-IOV (Single-Root I/O Virtualization, the bypass that lets a VM talk to the NIC directly for higher throughput and lower jitter) networking, FPGA**: none available on Lambda or Fargate."
     }
   ]
 }
