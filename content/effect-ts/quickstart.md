@@ -43,20 +43,19 @@ Create `src/hello.ts`:
 ```typescript
 import { Effect } from "effect";
 
-// Effect.sync wraps a synchronous side effect into an Effect<void, never, never>.
+// Effect.sync wraps a synchronous side effect into an Effect.
 // The function inside is NOT run yet — `program` is just a description.
 const log = (message: string) =>
   Effect.sync(() => {
     console.log(message);
   });
 
+//        ┌─── Effect<void, never, never>
+//        ▼
 const program = log("Hello, Effect!");
 ```
 
-Two things to internalize from this snippet:
-
-1. **`program` is a value, not a side effect.** Importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
-2. **The type is `Effect<void, never, never>`**: succeeds with `void`, can't fail (`never` in the error channel), needs no dependencies (`never` in the requirements channel).
+Read the inferred type as: succeeds with `void`, can't fail (`never` in the error channel), needs no dependencies (`never` in the requirements channel). And **`program` is a value, not a side effect**: importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
 
 ## 2. Run it
 
@@ -98,6 +97,8 @@ const log = (message: string) =>
     console.log(message);
   });
 
+//        ┌─── Effect<number, never, never>
+//        ▼
 const program = Effect.gen(function* () {
   const greeting = yield* greet("Effect");
   yield* log(greeting);
@@ -111,7 +112,7 @@ console.log("returned:", result);
 // returned: 14
 ```
 
-`program` is now `Effect<number, never, never>`: the generator's `return` value becomes the success type. The compiler tracks this without annotations.
+The generator's `return` value becomes the success type; the compiler tracks this without annotations.
 
 ## 4. Add a typed error
 
@@ -124,22 +125,24 @@ class ParseError extends Data.TaggedError("ParseError")<{
   readonly message: string;
 }> {}
 
+//        ┌─── (input: string) => Effect<unknown, ParseError, never>
+//        ▼
 const parseJson = (input: string) =>
   Effect.try({
     try: () => JSON.parse(input) as unknown,
     catch: (cause) => new ParseError({ message: `invalid JSON: ${String(cause)}` }),
   });
-// parseJson :: (input: string) => Effect<unknown, ParseError, never>
 
 const program = Effect.gen(function* () {
   const value = yield* parseJson('{"ok":true}');
   return value;
 });
 
+//      ┌─── Effect<unknown, never, never>   (E channel is `never`: error handled)
+//      ▼
 const main = program.pipe(
   Effect.catchTag("ParseError", (e) => Effect.succeed({ recovered: e.message })),
 );
-// main :: Effect<unknown, never, never>  // E channel is now `never` — error handled.
 
 console.log(Effect.runSync(main));
 // Output: { ok: true }

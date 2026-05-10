@@ -45,6 +45,8 @@ Per the same docs, `Effect` values are "lazily executed... it doesn't run immedi
 import { Effect } from "effect";
 
 // Building this value does NOT log anything yet.
+//        ┌─── Effect<number, never, never>
+//        ▼
 const program = Effect.sync(() => {
   console.log("side effect");
   return 42;
@@ -102,8 +104,9 @@ declare const program: Effect.Effect<User, NotFound, UserRepo>;
 
 // Effect.runSync(program) // ❌ type error: missing UserRepo
 
+//        ┌─── Effect<User, NotFound, never>
+//        ▼
 const provided = program.pipe(Effect.provide(UserRepoLive));
-// provided :: Effect<User, NotFound, never>
 Effect.runSync(provided); // ✅
 ```
 
