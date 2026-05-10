@@ -20,6 +20,7 @@ related:
   - "[[aws/account-migrations]]"
 source:
   - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
+  - https://aws.amazon.com/lambda/pricing/
 ---
 
 > AWS Lambda is the "give me a function, I'll run it on demand" compute primitive: you ship code + a handler name + a runtime, AWS provisions and tears down execution environments to match incoming requests, and you pay per invocation + GB-second (gigabytes of memory × seconds of execution time).
@@ -30,7 +31,7 @@ source:
 - **Execution role** is the [[aws/iam/index|IAM]] role the function runs as: every AWS API call from your handler uses these credentials.
 - **Triggers** invoke the function: API Gateway, SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge (managed event bus for application and scheduled events), Function URL (built-in HTTPS endpoint on the function), direct invoke. Each trigger is its own resource with its own permission grant.
 - **Versions are immutable; aliases are re-pointable.** Wire triggers to aliases (`prod`, `staging`) so you can flip traffic without touching the trigger.
-- **Pricing** is per invocation + GB-second. CPU scales linearly with the `MemorySize` setting (more memory = more CPU).
+- **Pricing** is per invocation + GB-second. CPU scales linearly with the `MemorySize` setting (more memory = more CPU) ([source](https://aws.amazon.com/lambda/pricing/)).
 
 ## When to use
 
