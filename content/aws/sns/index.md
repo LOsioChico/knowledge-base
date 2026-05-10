@@ -12,6 +12,7 @@ related:
 source:
   - https://docs.aws.amazon.com/sns/latest/dg/welcome.html
   - https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html
+  - https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html
 ---
 
 > Amazon SNS (Simple Notification Service) is the managed pub/sub: a publisher pushes a message to a **topic**, every subscriber to that topic gets a copy. Subscribers can be [[aws/sqs/index|SQS]] queues, [[aws/lambda/index|Lambda]] functions, HTTP endpoints, email addresses, SMS, or mobile-push tokens.
@@ -28,7 +29,7 @@ source:
 
 - **Use SNS** for: fan-out to multiple consumers, mobile push notifications, email alerts, simple webhooks-out-of-AWS.
 - **Use SNS + SQS together** for fan-out where each consumer needs its own buffered queue with retry + DLQ semantics. SNS delivers a copy to each queue; each queue can be processed independently.
-- **Don't use SNS** for: ordered event streams (use Kinesis), large payload delivery (256 KB message size limit), or anything that needs replay.
+- **Don't use SNS** for: ordered event streams (use Kinesis), large payload delivery (256 KB message size limit), or replay on Standard topics. FIFO topics ship optional [message archiving and replay](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html) (up to 365 days); Standard topics have no built-in replay.
 
 ## Pending notes
 

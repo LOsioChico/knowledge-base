@@ -21,6 +21,7 @@ related:
 source:
   - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
   - https://aws.amazon.com/lambda/pricing/
+  - https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html
 ---
 
 > AWS Lambda is the "give me a function, I'll run it on demand" compute primitive: you ship code + a handler name + a runtime, AWS provisions and tears down execution environments to match incoming requests, and you pay per invocation + GB-second (gigabytes of memory × seconds of execution time).
@@ -36,7 +37,7 @@ source:
 ## When to use
 
 - **Use Lambda** for: event-driven glue, scheduled jobs, webhooks, S3-trigger-style processing, anything that benefits from scale-to-zero.
-- **Don't use Lambda** for: long-running workloads (15-minute hard cap), latency-critical paths where cold starts hurt, or anything that needs persistent local state.
+- **Don't use Lambda** for: a single non-durable invocation that exceeds 15 minutes (the per-invocation cap), latency-critical paths where cold starts hurt, or anything that needs persistent local state. For multi-step workflows that must run longer, use [durable Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html), which checkpoint progress and can run up to one year.
 
 ## Mental model
 
