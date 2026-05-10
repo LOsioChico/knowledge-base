@@ -64,7 +64,7 @@ Two things to internalize from this snippet:
 
 ## 2. Run it
 
-Effect ships three entry points to bridge from "description" to "execution" ([running-effects docs](https://effect.website/docs/getting-started/running-effects/)). Add to `src/hello.ts`:
+Effect ships five `run*` entry points to bridge from "description" to "execution": `runSync`, `runSyncExit`, `runPromise`, `runPromiseExit`, and `runFork` ([running-effects docs](https://effect.website/docs/getting-started/running-effects/)). The three you'll reach for first are below; the `*Exit` variants return the full success/failure `Exit` value instead of throwing or rejecting. Add to `src/hello.ts`:
 
 ```typescript
 // runSync: execute synchronously, return the success value.
