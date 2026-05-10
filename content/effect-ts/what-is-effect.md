@@ -8,6 +8,7 @@ related:
   - "[[effect-ts/index]]"
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/typed-errors]]"
+  - "[[effect-ts/layers-and-di]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://effect.website/docs/getting-started/running-effects/
@@ -110,7 +111,7 @@ const provided = program.pipe(Effect.provide(UserRepoLive));
 Effect.runSync(provided); // ✅
 ```
 
-No string tokens, no module-resolution magic, no "service not registered" runtime crashes. The same compiler that catches typos catches missing dependencies.
+No string tokens, no module-resolution magic, no "service not registered" runtime crashes. The same compiler that catches typos catches missing dependencies. See [[effect-ts/layers-and-di|Layers and dependency injection]] for `Context.Tag`, `Effect.Service`, and `Layer.provide` in detail.
 
 ### 3. Structured concurrency and resource safety
 
@@ -137,5 +138,6 @@ Per the [`fp-ts` README](https://github.com/gcanti/fp-ts), "fp-ts is officially 
 
 - [[effect-ts/quickstart|Quickstart]]: install and run your first effect.
 - [[effect-ts/typed-errors|Typed errors]]: the `E` channel in practice.
+- [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice.
 - [Effect type page](https://effect.website/docs/getting-started/the-effect-type/) (official).
 - [Running effects page](https://effect.website/docs/getting-started/running-effects/) (official).

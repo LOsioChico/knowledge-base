@@ -8,6 +8,7 @@ related:
   - "[[effect-ts/index]]"
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/typed-errors]]"
+  - "[[effect-ts/layers-and-di]]"
 source:
   - https://effect.website/docs/getting-started/installation/
   - https://effect.website/docs/getting-started/creating-effects/
@@ -156,6 +157,7 @@ See [[effect-ts/typed-errors|Typed errors]] for the full pattern: multiple error
 
 - [[effect-ts/what-is-effect|What is Effect]]: the mental model behind `Effect<A, E, R>`, the runtime, and why laziness matters.
 - [[effect-ts/typed-errors|Typed errors]]: tag your errors, narrow the E channel, recover with `catchTag` / `catchAll`.
+- [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; declare services, build layers, narrow R to `never`.
 - [Effect "Getting Started" docs](https://effect.website/docs/getting-started/introduction/) (official): the next pages cover building pipelines, control flow, and the `Schema` module.
 
 ## See also

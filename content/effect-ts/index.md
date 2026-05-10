@@ -9,6 +9,7 @@ related:
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/typed-errors]]"
+  - "[[effect-ts/layers-and-di]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://github.com/Effect-TS/effect
@@ -60,7 +61,6 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 ## Pending notes
 
 - Schema basics (`Schema.Struct`, encoders/decoders, OpenAPI hookup).
-- Layers and dependency injection (the `R` channel in practice).
 - Streams (`Effect.Stream`) for backpressured data flow.
 - Concurrency primitives (fibers, queues, semaphores, structured cancellation).
 - `@effect/platform` HTTP server vs NestJS for backend APIs.
@@ -70,5 +70,6 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 - [[effect-ts/quickstart|Quickstart]]: install, write, and run your first Effect in ~10 minutes.
 - [[effect-ts/what-is-effect|What is Effect]]: the type, the runtime, and why "lazy descriptions" matter.
 - [[effect-ts/typed-errors|Typed errors]]: errors in the type signature, `Effect.try`, `catchTag`.
+- [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; `Context.Tag`, `Effect.Service`, `Layer.provide`.
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official).
 - [Effect-TS/effect on GitHub](https://github.com/Effect-TS/effect).

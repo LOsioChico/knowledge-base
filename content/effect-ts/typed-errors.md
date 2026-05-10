@@ -8,6 +8,7 @@ related:
   - "[[effect-ts/index]]"
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/what-is-effect]]"
+  - "[[effect-ts/layers-and-di]]"
 source:
   - https://effect.website/docs/error-management/expected-errors/
   - https://effect.website/docs/error-management/unexpected-errors/
