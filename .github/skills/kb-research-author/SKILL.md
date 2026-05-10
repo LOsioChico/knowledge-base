@@ -22,8 +22,7 @@ Order of preference, strict:
 1. **Official documentation** for the technology (AWS user guides, NestJS docs, the package's README on GitHub).
 2. **Official source code** at a pinned ref (file URL with line anchor).
 3. **Official RFCs/specs** when behavior is protocol-level.
-4. **Educative / paid courses** ONLY as a *signal of what's worth covering* (which subtopics matter, which gotchas recur). Never as a citation. Use `mcp__educative__search_courses` then `get_course` + `get_lesson` to inventory the topic surface, then go to the official docs to verify each claim.
-5. Blogs, Stack Overflow, other LLMs: forbidden as sources (per AGENTS.md sourcing rule).
+4. **Secondary sources** (blogs, conference talks, Stack Overflow, Educative / paid courses, other LLMs) — valid as *topic-surface inventory and perspective*: which subtopics matter, which tradeoffs practitioners hit, how to frame the decision. NEVER as the citation backing a claim. Workflow: read the secondary source → extract a claim list → verify each claim against an official primary source → cite the primary source. If a secondary source meaningfully shaped the note's framing, credit it in a "Further reading" sub-bullet under `## See also`, never in `source:`. For Educative specifically, use `mcp__educative__search_courses` then `get_course` + `get_lesson` to inventory the topic surface.
 
 When using a course as a topic-surface inventory:
 
