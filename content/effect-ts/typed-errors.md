@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/composition]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
 source:
   - https://effect.website/docs/error-management/expected-errors/
   - https://effect.website/docs/error-management/unexpected-errors/

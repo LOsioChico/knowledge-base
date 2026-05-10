@@ -10,6 +10,7 @@ related:
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/composition]]"
   - "[[effect-ts/quickstart]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
 source:
   - https://github.com/Effect-TS/effect/tree/main/packages
   - https://effect.website/docs/ai/introduction/

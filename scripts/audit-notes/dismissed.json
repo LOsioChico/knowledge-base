@@ -975,6 +975,14 @@
       "reason": "Verified at Effect.ts#L13540-L13583: the JSDoc preceding Effect.Service shows '@since 3.9.0' and '@experimental' tags directly. Note already cites that range inline as '[source comment]'. Auditor's extract window evidently missed the JSDoc block.",
       "date": "2026-05-10",
       "originalLine": "Added in `effect@3.9.0` as `@experimental` ([source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13585-L13620)), `Effect.Service` collapses the tag + layer declaration into one class. It \"simplifies the creation and management of services in Effect by defining both a `Tag` and a `Layer`\" ([source comment](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13540-L13583))."
+    },
+    {
+      "path": "content/effect-ts/fault-tolerant-ingestion.md",
+      "sig": "ffeb7457e3a3f266212a25c6722c228a2c3b8dd1",
+      "rule": "callout-placement",
+      "reason": "Trailing Gotchas section is the canonical recipe pattern per AGENTS.md recipe template (tagline -> setup -> example -> table -> defaults -> gotchas -> See also). The decodeUnknown vs decode comparison is a side-note explainer, not a step-2 prerequisite; placing it in the Gotchas cluster keeps section 2's main flow scannable.",
+      "date": "2026-05-10",
+      "originalLine": "> [!info]- Why `Schema.decodeUnknown` and not `Schema.decode`"
     }
   ]
 }

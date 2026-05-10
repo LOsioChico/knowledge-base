@@ -11,6 +11,7 @@ related:
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/building-pipelines/

@@ -9,6 +9,7 @@ related:
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/composition]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
 source:
   - https://effect.website/docs/error-management/retrying/
   - https://effect.website/docs/scheduling/built-in-schedules/

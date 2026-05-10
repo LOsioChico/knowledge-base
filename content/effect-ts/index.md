@@ -12,6 +12,7 @@ related:
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/composition]]"
   - "[[effect-ts/retry-and-schedule]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
@@ -55,6 +56,7 @@ If you're new to Effect, read in this order:
 4. [[effect-ts/typed-errors|Typed errors]]: the `E` channel in practice (`Effect.try`, `catchTag`).
 5. [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice.
 6. [[effect-ts/retry-and-schedule|Retry and Schedule]]: bounded retries, backoff, jitter, fallback.
+7. [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion pipeline]]: capstone recipe composing every primitive above.
 
 After that, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for `@effect/*` packages.
 
@@ -73,6 +75,7 @@ After that, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for 
 - [[effect-ts/typed-errors|Typed errors]]: errors in the type signature, `Effect.try`, `catchTag`.
 - [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; `Context.Tag`, `Effect.Service`, `Layer.provide`.
 - [[effect-ts/retry-and-schedule|Retry and Schedule]]: bounded retries, exponential backoff with jitter, fallback after exhaustion.
+- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion pipeline]]: end-to-end recipe weaving `tryPromise`, `Schema`, `timeout`, `retry`, and `forEach` into one typed pipeline.
 - [[effect-ts/ecosystem-map|Ecosystem map]]: every `@effect/*` package, what it does, when to install it.
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official).
 - [Effect-TS/effect on GitHub](https://github.com/Effect-TS/effect).
