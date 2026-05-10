@@ -9,6 +9,8 @@ related:
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
+  - "[[effect-ts/composition]]"
+  - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/installation/
   - https://effect.website/docs/getting-started/creating-effects/
@@ -87,7 +89,7 @@ Run it: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 
 ## 3. Compose with `Effect.gen`
 
-Effect's idiomatic composition is the generator DSL: `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
+Effect's idiomatic [[effect-ts/composition|composition]] is the generator DSL: `yield*` an effect to "await" its result inside another effect. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
 
 ```typescript
 import { Effect } from "effect";

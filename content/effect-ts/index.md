@@ -10,6 +10,8 @@ related:
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
+  - "[[effect-ts/composition]]"
+  - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://github.com/Effect-TS/effect
@@ -28,7 +30,7 @@ source:
 ## When to use
 
 - **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams + backpressure), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), LLM agents (`@effect/ai`).
-- **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based composition.
+- **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based [[effect-ts/composition|composition]].
 - **Adoption signal**: as of 2026-05-08 the npm registry's last-week download API reports `effect` at 12,942,715 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,032,499 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
 
 ## Mental model
@@ -53,7 +55,9 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
 - [[effect-ts/quickstart|Quickstart]]: install, write, and run your first Effect in ~10 minutes.
 - [[effect-ts/what-is-effect|What is Effect]]: the type, the runtime, and why "lazy descriptions" matter.
+- [[effect-ts/composition|Composition: pipe, gen, and fn]]: the three idioms for chaining effects together; when to reach for each.
 - [[effect-ts/typed-errors|Typed errors]]: errors in the type signature, `Effect.try`, `catchTag`.
 - [[effect-ts/layers-and-di|Layers and dependency injection]]: the `R` channel in practice; `Context.Tag`, `Effect.Service`, `Layer.provide`.
+- [[effect-ts/ecosystem-map|Ecosystem map]]: every `@effect/*` package, what it does, when to install it.
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official).
 - [Effect-TS/effect on GitHub](https://github.com/Effect-TS/effect).

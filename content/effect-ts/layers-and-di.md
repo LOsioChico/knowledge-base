@@ -9,6 +9,8 @@ related:
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/typed-errors]]"
+  - "[[effect-ts/composition]]"
+  - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/requirements-management/services/
   - https://effect.website/docs/requirements-management/layers/
@@ -176,7 +178,7 @@ For services with a single static value, `Effect.provideService(tag, value)` is 
 Two operators ([Layer module](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L567), [`Layer.provide` source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L899)):
 
 - **`Layer.merge(a, b)`** : parallel union. The result produces the services of both, and requires the union of what both require. Use when two layers are siblings.
-- **`Layer.provide(outer, inner)`** : sequential composition. `inner`'s outputs feed `outer`'s requirements. Use when one layer depends on another.
+- **`Layer.provide(outer, inner)`** : sequential [[effect-ts/composition|composition]]. `inner`'s outputs feed `outer`'s requirements. Use when one layer depends on another.
 
 ```typescript
 import { Layer } from "effect";

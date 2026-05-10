@@ -9,6 +9,8 @@ related:
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
+  - "[[effect-ts/composition]]"
+  - "[[effect-ts/ecosystem-map]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://effect.website/docs/getting-started/running-effects/

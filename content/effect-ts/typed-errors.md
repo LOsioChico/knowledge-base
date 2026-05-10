@@ -9,6 +9,7 @@ related:
   - "[[effect-ts/quickstart]]"
   - "[[effect-ts/what-is-effect]]"
   - "[[effect-ts/layers-and-di]]"
+  - "[[effect-ts/composition]]"
 source:
   - https://effect.website/docs/error-management/expected-errors/
   - https://effect.website/docs/error-management/unexpected-errors/
