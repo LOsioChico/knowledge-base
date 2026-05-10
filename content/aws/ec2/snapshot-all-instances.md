@@ -32,7 +32,7 @@ source:
 For "save state of every instance, restore at any moment", use AMIs. The recipe below is the AMI path.
 
 > [!warning] `--no-reboot` and file-system consistency
-> By default, `create-image` powers the instance down before snapshotting so volumes are quiesced. Passing `--no-reboot` (or unchecking _Reboot instance_ in the console) skips that step: there is no downtime, but AWS [explicitly does not guarantee file-system integrity](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html) of the resulting image. Stateless app servers usually tolerate this; for databases either stop the instance first OR rely on the database's own backup mechanism (e.g. [[aws/rds/index|RDS]] snapshot, `pg_basebackup`).
+> By default, `create-image` powers the instance down before snapshotting so volumes are quiesced (writes flushed and paused so the on-disk state is consistent). Passing `--no-reboot` (or unchecking _Reboot instance_ in the console) skips that step: there is no downtime, but AWS [explicitly does not guarantee file-system integrity](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html) of the resulting image. Stateless app servers usually tolerate this; for databases either stop the instance first OR rely on the database's own backup mechanism (e.g. [[aws/rds/index|RDS]] snapshot, `pg_basebackup`).
 
 ## Recipe
 

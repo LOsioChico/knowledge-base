@@ -21,7 +21,7 @@ source:
 
 ## TL;DR
 
-- **Instance = a VM**. Identified by an instance ID; lives in one Availability Zone; owns one or more EBS (Elastic Block Store) volumes for storage.
+- **Instance = a VM**. Identified by an instance ID; lives in one Availability Zone (AZ, an isolated datacenter within a Region); owns one or more EBS (Elastic Block Store) volumes for storage.
 - **AMI = the boot disk template**. Same AMI in another Region requires [`copy-image`](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html); same AMI in another account requires sharing both the image and its underlying snapshots ([[aws/ec2/ami-cross-account-copy|cross-account AMI copy]]).
 - **Whole-machine backups are AMIs, not raw EBS snapshots**. An AMI captures the root volume + boot config + every attached EBS volume so the machine is redeployable from one ID. Recipe: [[aws/ec2/snapshot-all-instances|snapshot every EC2 instance]].
 - **Networking lives in the VPC**. Security groups gate traffic; key pairs gate SSH; an [Elastic IP](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html) keeps the public address sticky across stop/start (otherwise the public IP changes).

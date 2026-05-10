@@ -54,7 +54,7 @@ This deletes any object under `tmp/` 7 days after creation. Existing objects old
 
 ## A realistic multi-action rule
 
-Aging app logs: keep hot for 30 days, IA for 60 more, archive for 6 years, then delete. Plus, clean up versioned overwrites and failed uploads.
+Aging app logs: keep hot for 30 days, Standard-IA (Infrequent Access) for 60 more, archive for 6 years, then delete. Plus, clean up versioned overwrites and failed uploads.
 
 ```json
 {
