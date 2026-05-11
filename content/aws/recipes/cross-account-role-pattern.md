@@ -19,7 +19,7 @@ source:
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html
   - https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html
   - https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
-  - https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-credential-providers/Function/fromTemporaryCredentials/
+  - https://github.com/aws/aws-sdk-js-v3/blob/main/packages/credential-providers/src/fromTemporaryCredentials.ts
 ---
 
 > Pattern for partial [[aws/account-migrations|AWS account migrations]]: leave a service in the old account and let new-account compute reach it via STS (Security Token Service) `AssumeRole` with an external ID and a tightly-scoped permission policy.
@@ -203,7 +203,7 @@ async function buildSesClient() {
 }
 ```
 
-[`AssumeRole`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) returns short-lived credentials ([`DurationSeconds`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters) defaults to 3600s, max 43200s capped by the role's maximum session duration; **role chaining is capped at 1 hour** and the call fails if you ask for more). For long-running processes, refresh before expiry; the AWS SDK credential provider chain has built-in helpers (e.g. [`fromTemporaryCredentials`](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-aws-sdk-credential-providers/Function/fromTemporaryCredentials/) in JS SDK v3) that handle refresh automatically.
+[`AssumeRole`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html) returns short-lived credentials ([`DurationSeconds`](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html#API_AssumeRole_RequestParameters) defaults to 3600s, max 43200s capped by the role's maximum session duration; **role chaining is capped at 1 hour** and the call fails if you ask for more). For long-running processes, refresh before expiry; the AWS SDK credential provider chain has built-in helpers (e.g. [`fromTemporaryCredentials`](https://github.com/aws/aws-sdk-js-v3/blob/main/packages/credential-providers/src/fromTemporaryCredentials.ts) in JS SDK v3) that handle refresh automatically.
 
 ## Permission scope traps
 

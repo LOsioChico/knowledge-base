@@ -69,7 +69,7 @@ What this gives you:
 
 - One AMI per instance, named `backup-<instance-name>-<timestamp>`.
 - Underlying EBS snapshots are created and tagged automatically by `--tag-specifications` (separate `image` and `snapshot` resource types).
-- `describe-instances` returns running AND stopped instances by default; pass `--filters Name=instance-state-name,Values=running` to scope to running only.
+- `describe-instances` returns running AND stopped instances by default ([describe-instances default behavior](https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeInstances.html#API_DescribeInstances_RequestParameters)): pass `--filters Name=instance-state-name,Values=running` to scope to running only.
 
 ### 2. Wait for the AMIs to become `available`
 
