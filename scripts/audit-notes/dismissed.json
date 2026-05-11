@@ -1087,6 +1087,14 @@
       "reason": "Verified at https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html: cross-account pulls require both a repository policy AND an IAM policy granting ecr:GetAuthorizationToken (the GetAuthorizationToken clause is on the same cited page). Auditor pattern-matched the same-account either/or rule.",
       "date": "2026-05-10",
       "originalLine": "- **Image registry is ECR (Elastic Container Registry)** by default. Cross-account pull requires both an IAM policy on the puller and a repository policy on the registry ([source](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html))."
+    },
+    {
+      "path": "content/effect-ts/layers-and-di.md",
+      "sig": "f9a68b33b34e49fd4ce4bdb83ef2300f3ae2ab2b",
+      "rule": "style-hedge",
+      "reason": "Verified at content/effect-ts/layers-and-di.md#L37: 'depending on how much ceremony you want' is legitimate either/or framing for Context.Tag vs Effect.Service, not softening of a factual claim. Each variant is documented concretely in the same note.",
+      "date": "2026-05-10",
+      "originalLine": "A service is two things: a unique tag (identifier) and an interface (the operations it exposes). Effect ships two ways to declare both, depending on how much ceremony you want."
     }
   ]
 }
