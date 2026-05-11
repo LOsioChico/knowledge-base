@@ -17,6 +17,7 @@ related:
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://effect.website/docs/getting-started/running-effects/
+  - https://effect.website/blog/ts-plus-postmortem/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts
 ---
 
@@ -139,6 +140,22 @@ No string tokens, no module-resolution magic, no "service not registered" runtim
 ### 3. Structured concurrency and resource safety
 
 Because effects are lazy values, the runtime can implement primitives that would be near-impossible to retrofit onto `Promise`: structured cancellation that propagates through the call tree, fibers (lightweight tasks the runtime schedules) that supervise children, [[effect-ts/scoped-resources|scoped resources]] released even on interruption. These are the features Effect inherits from the ZIO design (Scala's effect system, where the same model has been load-bearing in production for years).
+
+## Promise vs Effect at a glance
+
+| Dimension           | `Promise<T>`                          | `Effect<A, E, R>`                                                    |
+| ------------------- | ------------------------------------- | -------------------------------------------------------------------- |
+| Error type          | `unknown` (lost at `catch`)           | Generic `E`, tracked by the compiler                                 |
+| Dependencies        | Implicit (imports, globals)           | Explicit `R`; missing ones are compile errors                        |
+| Execution timing    | Eager: starts immediately on creation | Lazy: runs only when handed to a runner                              |
+| Cancellation        | `AbortController` (manual wiring)     | Structured concurrency: automatic, propagates through the fiber tree |
+| Resource management | `try/finally` (manual nesting)        | `acquireRelease`: released on success, failure, and interruption     |
+| Retry               | Hand-rolled loop                      | `Schedule`: declarative, composable policies                         |
+
+The lazy/eager gap is the one that unlocks the rest: because an `Effect` is a description rather than a running computation, the runtime can replay it (retry), compose it with cleanup (scoped resources), or cancel it mid-flight (interruption) in ways that are difficult or impossible to retrofit onto a `Promise` that's already executing.
+
+> [!info]- Effect requires no custom compiler or build tooling
+> Effect ships as a standard npm package that works with any TypeScript toolchain: no compiler fork, no custom Babel/esbuild plugin, no Vite adapter. This wasn't inevitable: an earlier experiment called TS+ (ts-plus) added pipe operators, operator overloading, and enhanced do-notation by forking `tsc`. It was abandoned because HMR in Next.js and Vite slowed down under the fork and the custom compiler couldn't integrate cleanly into parallel build pipelines ([TS+ postmortem](https://effect.website/blog/ts-plus-postmortem/)). The lesson the team took: "never cross the boundary of having to integrate with build tooling." Current Effect proves that lesson right: the ergonomics come from the library's type machinery, not from patching the compiler.
 
 ## Ecosystem snapshot
 

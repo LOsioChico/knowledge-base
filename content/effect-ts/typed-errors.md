@@ -16,6 +16,7 @@ related:
 source:
   - https://effect.website/docs/error-management/expected-errors/
   - https://effect.website/docs/error-management/unexpected-errors/
+  - https://effect.website/docs/error-management/error-channel-operations/
   - https://effect.website/docs/getting-started/creating-effects/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
 ---
@@ -180,7 +181,46 @@ const fullyHandled = program.pipe(
 // still kill the fiber; see §5.
 ```
 
-## 5. Recover from anything with `catchAll`
+## 5. Transform without handling with `mapError`
+
+`catchTag` and `catchAll` both _handle_ errors: they run recovery logic and remove the error from the channel. Sometimes you don't want to handle an error at all; you want to **re-type it** so callers see a cleaner abstraction. That's [`Effect.mapError`](https://effect.website/docs/error-management/error-channel-operations/) ([source L5275-L5313](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L5275-L5313)): it transforms `E → E2` and leaves the effect still failing, just with a different type.
+
+The canonical use is wrapping lower-module errors behind an abstraction boundary so the caller doesn't need to know implementation details:
+
+```typescript
+import { Data, Effect, pipe } from "effect";
+
+// Lower-module errors — implementation details of the DB layer.
+class DbConnectionError extends Data.TaggedError("DbConnectionError")<{}> {}
+class DbQueryError extends Data.TaggedError("DbQueryError")<{
+  readonly sql: string;
+}> {}
+
+// Upper-module error — what the service layer exposes.
+class OrderServiceError extends Data.TaggedError("OrderServiceError")<{
+  readonly cause: DbConnectionError | DbQueryError;
+}> {}
+
+declare const getOrderFromDb: (
+  id: string,
+) => Effect.Effect<{ id: string; total: number }, DbConnectionError | DbQueryError>;
+
+//      ┌─── Effect<{ id: string; total: number }, OrderServiceError, never>
+//      ▼
+const getOrder = (id: string) =>
+  pipe(
+    getOrderFromDb(id),
+    // Wrap: the caller sees OrderServiceError, not the DB internals.
+    Effect.mapError((cause) => new OrderServiceError({ cause })),
+  );
+```
+
+The `DbConnectionError | DbQueryError` union disappears from the caller's view; all they see is `OrderServiceError`. This keeps abstraction layers honest: the HTTP handler calling `getOrder` shouldn't need to know whether the failure came from a dropped connection or a bad SQL query.
+
+> [!info]- `mapError` vs `catchTag` in one sentence
+> `catchTag` handles and removes a specific error (recovery). `mapError` transforms every error to a new type without removing it (re-typing). If the resulting `E2` is `never`, use `catchAll` instead.
+
+## 6. Recover from anything with `catchAll`
 
 When you don't care which error fired, [`Effect.catchAll`](https://effect.website/docs/error-management/expected-errors/) handles every error in the channel:
 
@@ -197,7 +237,7 @@ const safe = program.pipe(
 
 Note from the docs: "This function only handles recoverable errors." **Defects** are unexpected failures: bugs, things you'd consider unrecoverable. They live in a separate channel and `catchAll` will not touch them. You produce one explicitly with [`Effect.die`](https://effect.website/docs/error-management/unexpected-errors/), and you handle them with `Effect.catchAllCause` / `Effect.catchAllDefect`. For now, treat `catchAll` as the "I've handled every expected failure" combinator.
 
-## 6. Putting it together
+## 7. Putting it together
 
 ```typescript
 import { Data, Effect } from "effect";

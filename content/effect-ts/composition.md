@@ -123,6 +123,9 @@ When to reach for `gen`:
 > [!warning]- `Effect.gen` short-circuits on failure
 > The first `yield*` that fails ends the generator: nothing after it runs. This is the right default for "the next step depends on the previous step", but it bites if you expected each `yield*` to be independently observable. Use `Effect.either(child)` to lift the failure into the success channel as `Either<E, A>` so the gen block can keep going.
 
+> [!warning]- `Effect.gen` is single-shot: use `pipe` for `Stream`
+> JavaScript generators can only be traversed once: once an iterator advances, it cannot rewind. `Effect.gen` inherits this constraint, so it only works for effects that produce **one result** per run. Multi-value producers like `Stream` are not single-shot: they yield items repeatedly. Attempting to `yield*` a `Stream` inside `Effect.gen` doesn't work; use `pipe` with dedicated `Stream.*` operators instead. This is the practical reason the decision table below says "use `pipe` for linear chains on a `Stream`" rather than gen.
+
 ## `Effect.fn`: named callables with auto-tracing
 
 `Effect.fn` was added in Effect 3.11.0 ([source L14629-L14684](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14629-L14684)) and the Effect source's JSDoc names two reasons to prefer it over a plain `(args) => Effect.gen(...)` wrapper:
