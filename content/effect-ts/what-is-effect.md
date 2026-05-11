@@ -17,6 +17,7 @@ related:
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://effect.website/docs/getting-started/running-effects/
+  - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts
 ---
 
 > Effect's core type is `Effect<Success, Error, Requirements>`: a value that _describes_ a computation. A runtime executes it. Errors and dependencies live in the type, not in `try/catch` and DI containers.
@@ -150,7 +151,7 @@ The core ships as the single `effect` npm package. Adjacent packages live under 
 - `@effect/workflow`: durable, resumable workflows similar to Temporal (the durable-workflow engine), in-process.
 - `@effect/rpc`, `@effect/cluster`, `@effect/opentelemetry`, `@effect/vitest`, `@effect/printer`, `@effect/typeclass`, `@effect/experimental`.
 
-`Schema` (validators, encoders, decoders, OpenAPI schema generation for HTTP APIs) is exported from the core `effect` package itself; the standalone `@effect/schema` package is **not** in the current `packages/` directory and should be treated as legacy unless re-verified.
+`Schema` (validators, encoders, decoders, OpenAPI schema generation for HTTP APIs) is exported from the core `effect` package itself ([`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts)); the standalone [`@effect/schema`](https://www.npmjs.com/package/@effect/schema) package is deprecated with the message "this package has been merged into the main effect package".
 
 ## Relationship to fp-ts
 

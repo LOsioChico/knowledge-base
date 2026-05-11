@@ -18,6 +18,7 @@ related:
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://github.com/Effect-TS/effect
+  - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Stream.ts
 ---
 
 > Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency (child fibers cancelled with their parent scope). Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
@@ -32,7 +33,7 @@ source:
 
 ## When to use
 
-- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams with backpressure: producers slow down when consumers lag), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), large-language-model (LLM) agents (`@effect/ai`).
+- **Use Effect** for: backend services with non-trivial error taxonomies, data pipelines (typed streams with backpressure: `Stream` is pull-based, so a slow downstream operator naturally throttles upstream production without manual buffer management; [Stream.ts#L57-L61](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Stream.ts#L57-L61)), CLI tools (`@effect/cli`), durable workflows (`@effect/workflow`), schema-first apps (built-in `Schema` module), large-language-model (LLM) agents (`@effect/ai`).
 - **Don't use Effect** for: tiny scripts where the runtime overhead and learning curve outweigh the wins; teams unwilling to learn generator syntax (`Effect.gen(function* () { ... })`) and `pipe`-based [[effect-ts/composition|composition]].
 - **Adoption signal**: for the week of 2026-05-02 to 2026-05-08, the npm registry's last-week download API reports `effect` at 13,403,437 ([api.npmjs.org/downloads/point/last-week/effect](https://api.npmjs.org/downloads/point/last-week/effect)), higher than `@nestjs/core` at 9,550,875 ([same API](https://api.npmjs.org/downloads/point/last-week/@nestjs%2Fcore)). Library momentum is strong; specific paid-job demand for "Effect-TS" is a separate question and changes month to month, so check a fresh job-board search before drawing conclusions.
 

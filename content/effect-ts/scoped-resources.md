@@ -197,7 +197,7 @@ Use `ensuring` when you don't have a resource value to clean up, just a side eff
 
 ## Finalizer ordering
 
-Per [the Scope docs](https://effect.website/docs/resource-management/scope/), finalizers run in **reverse order of registration** when the scope closes. This is the LIFO stack a reader of imperative code expects: if you opened A then B, you close B then A. Important when resources depend on each other (close the transaction before closing the connection it ran on).
+Per [the Scope docs](https://effect.website/docs/resource-management/scope/), finalizers run in **reverse order of registration** when the scope closes. This is the last-in-first-out (LIFO) stack a reader of imperative code expects: if you opened A then B, you close B then A. Important when resources depend on each other (close the transaction before closing the connection it ran on).
 
 ```typescript
 import { Console, Effect } from "effect";

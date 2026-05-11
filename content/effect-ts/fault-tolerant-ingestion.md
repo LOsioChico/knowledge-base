@@ -79,7 +79,7 @@ const fetchRaw = (url: string) =>
 
 Two wins from the rewrite:
 
-- The `signal: AbortSignal` argument to `try` is wired automatically: if the effect is interrupted (timeout, or the surrounding fiber that's running it is cancelled), the underlying `fetch` is aborted ([Effect.ts#L4634-L4638](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4634-L4638)).
+- The `signal: AbortSignal` argument to `try` is wired automatically: if the effect is interrupted (timeout, or the surrounding [[effect-ts/what-is-effect|fiber]] (Effect's lightweight thread, the unit of concurrency) that's running it is cancelled), the underlying `fetch` is aborted ([Effect.ts#L4634-L4638](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4634-L4638)).
 - HTTP status checks become a typed branch: `HttpError` is in the `E` channel, so `Effect.catchTag("HttpError", ...)` is exhaustive (see [[effect-ts/typed-errors|typed errors]]).
 
 ## 2. Parse with `Schema`, not `as`
