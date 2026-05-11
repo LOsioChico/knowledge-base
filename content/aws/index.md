@@ -34,7 +34,7 @@ If you're new to AWS, read in this order:
 1. [[aws/cli/index|AWS CLI]]: profiles, credentials, `--query`/`--output`. Required before any per-service walkthrough.
 2. [[aws/iam/index|IAM]]: identities, policies, role-based access. Every other service depends on IAM.
 3. [[aws/s3/quickstart|S3 quickstart]]: 10-minute hands-on with the simplest stateful primitive (object storage).
-4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]]: the trust-policy + ExternalId pattern that recurs across services.
+4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]]: the trust policy (the role document naming who may call `sts:AssumeRole`) + `ExternalId` (the optional shared secret the trusting account requires on every assume call) pattern that recurs across services.
 
 After that, jump to whichever service the task needs; the per-service indexes are scannable in any order.
 

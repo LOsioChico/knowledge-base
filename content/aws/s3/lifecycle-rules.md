@@ -105,7 +105,7 @@ A rule's `Filter` decides which objects it matches. Pick one combination:
 
 Not every class-to-class transition is allowed. The two practical constraints:
 
-- **Standard → IA classes ([[aws/s3/storage-classes|Standard-IA]], One Zone-IA): minimum 30 days.** AWS rejects rules that try to transition sooner because IA classes have a 30-day minimum storage charge anyway: moving earlier costs more, not less.
+- **Standard → IA classes ([[aws/s3/storage-classes|Standard-IA]], [[aws/s3/storage-classes|One Zone-IA]]): minimum 30 days.** AWS rejects rules that try to transition sooner because IA classes have a 30-day minimum storage charge anyway: moving earlier costs more, not less.
 - **Smaller-to-larger storage class only.** You can transition Standard → IA → Glacier → Deep Archive, but not the reverse. To "un-archive" an object, restore it (which copies it back to Standard temporarily) or copy it manually.
 
 See [Supported transitions](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html#lifecycle-general-considerations-transition-sc) for the full matrix.

@@ -19,7 +19,7 @@ source:
   - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html
 ---
 
-> Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify/index|Amplify]] app), attach a domain and a certificate, and CloudFront holds the response in edge locations and serves it from the nearest one.
+> Amazon CloudFront is AWS's global CDN: you point a **distribution** at one or more **origins** (S3 bucket, Application Load Balancer, generic HTTPS endpoint, [[aws/amplify/index|Amplify]] app), attach a domain and a certificate, and CloudFront caches the response at **edge locations** (regional points of presence near end users) and serves it from the nearest one.
 
 ## TL;DR
 

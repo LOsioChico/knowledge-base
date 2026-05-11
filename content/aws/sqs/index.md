@@ -17,7 +17,7 @@ source:
 
 ## TL;DR
 
-- **Two queue types**. **Standard** = best-effort ordering, at-least-once delivery, near-unlimited throughput. **FIFO** = strict ordering + exactly-once processing within a `MessageGroupId`, capped throughput.
+- **Two queue types**. **Standard** = best-effort ordering, at-least-once delivery, near-unlimited throughput. **FIFO** = strict ordering + exactly-once processing within a `MessageGroupId` (the message is delivered to the consumer exactly once and SQS deduplicates retries within a 5-minute window), capped throughput.
 - **Pull, not push**. Consumers call `ReceiveMessage` and must `DeleteMessage` after success. Failure to delete = redelivery after the visibility timeout expires.
 - **Visibility timeout** hides a message from other consumers while one is processing it. Tune it longer than your worst-case handler time, or extend it mid-flight.
 - **Dead-letter queue (DLQ)**: a second queue that auto-receives messages that failed too many times. Always wire one up; without it, poison messages loop forever.

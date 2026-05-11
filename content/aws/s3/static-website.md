@@ -114,7 +114,7 @@ Useful for migrating URLs: dump all old paths as zero-byte objects with a redire
 
 ## Costs
 
-Same as normal S3: storage + request costs + egress. There is no extra fee for enabling website hosting. If you front with CloudFront, the egress cost shifts to CloudFront's per-Region pricing, which is often cheaper at scale and avoids cross-Region S3 egress.
+Same as normal S3: storage + request costs + egress (data transferred out of AWS to the internet). There is no extra fee for enabling website hosting. If you front with CloudFront, the egress cost shifts to CloudFront's per-Region pricing, which is often cheaper at scale and avoids cross-Region S3 egress.
 
 ## See also
 

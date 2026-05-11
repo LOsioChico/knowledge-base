@@ -37,7 +37,7 @@ source:
 
 ## When to use
 
-- **Use Lambda** for: event-driven glue, scheduled jobs, webhooks, S3-trigger-style processing, anything that benefits from scale-to-zero.
+- **Use Lambda** for: event-driven glue, scheduled jobs, webhooks, S3-trigger-style processing, anything that benefits from scale-to-zero (idle capacity drops to zero between invocations: no instances, no charges, no warm pool to manage).
 - **Don't use Lambda** for: a single non-durable invocation that exceeds 15 minutes (the per-invocation cap; [function timeout is 900 seconds](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#function-configuration-deployment-and-execution)), latency-critical paths where cold starts (the extra latency on the first invoke after the runtime container is recreated) hurt, or anything that needs persistent local state. For multi-step workflows that must run longer, use [durable Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html), which checkpoint progress and can run up to one year.
 
 ## Mental model

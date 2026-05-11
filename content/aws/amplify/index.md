@@ -23,7 +23,7 @@ source:
 ## TL;DR
 
 - **Four primitives**: App (project) → Branch (per-environment config) → Deployment / Job (one build) → Domain association (custom hostnames).
-- **Two ways to ship**: git-connected (auto-build on push) or manual zip (`create-deployment` returns a presigned URL, you `curl --upload-file` then `start-deployment`).
+- **Two ways to ship**: git-connected (auto-build on push) or manual zip (`create-deployment` returns a [[aws/s3/presigned-urls|presigned URL]], you `curl --upload-file` then `start-deployment`).
 - **Hosting underneath is CloudFront** + ACM in `us-east-1` + Route 53 records (AWS's managed DNS, if your domain is in Route 53). Amplify owns and hides all three.
 - **Custom domain = `create-domain-association`**: provisions ACM cert, attaches it, sets the alias.
 - **Amplify Gen 2** is the code-first successor to the original Amplify CLI; it co-deploys data/auth/storage from the same project.
@@ -50,7 +50,7 @@ App (one per project)
 | **Deployment / Job**   | One build. `JobType` is `RELEASE` (git push), `RETRY`, `MANUAL` (zip upload), or `WEB_HOOK`.                                |
 | **Domain association** | Custom hostnames mapped to branches (`app.example.com` → `main`, `staging.example.com` → `staging`).                        |
 
-Underneath, Amplify provisions a CloudFront distribution that you don't see in `cloudfront list-distributions`. You manage it through `aws amplify` instead.
+Underneath, Amplify provisions a CloudFront distribution that you don't see in `cloudfront list-distributions`. You manage it through `aws amplify` instead. Evidence: Amplify domain associations are subject to CloudFront's global CNAME uniqueness rule, leaking as "ghost" alternate-domain claims when an association fails (see [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost claims]]).
 
 ## Pending notes
 
