@@ -143,6 +143,8 @@ Because effects are lazy values, the runtime can implement primitives that would
 
 ## Promise vs Effect at a glance
 
+Six dimensions where the two diverge most visibly:
+
 | Dimension           | `Promise<T>`                          | `Effect<A, E, R>`                                                    |
 | ------------------- | ------------------------------------- | -------------------------------------------------------------------- |
 | Error type          | `unknown` (lost at `catch`)           | Generic `E`, tracked by the compiler                                 |
@@ -155,7 +157,7 @@ Because effects are lazy values, the runtime can implement primitives that would
 The lazy/eager gap is the one that unlocks the rest: because an `Effect` is a description rather than a running computation, the runtime can replay it (retry), compose it with cleanup (scoped resources), or cancel it mid-flight (interruption) in ways that are difficult or impossible to retrofit onto a `Promise` that's already executing.
 
 > [!info]- Effect requires no custom compiler or build tooling
-> Effect ships as a standard npm package that works with any TypeScript toolchain: no compiler fork, no custom Babel/esbuild plugin, no Vite adapter. This wasn't inevitable: an earlier experiment called TS+ (ts-plus) added pipe operators, operator overloading, and enhanced do-notation by forking `tsc`. It was abandoned because HMR in Next.js and Vite slowed down under the fork and the custom compiler couldn't integrate cleanly into parallel build pipelines ([TS+ postmortem](https://effect.website/blog/ts-plus-postmortem/)). The lesson the team took: "never cross the boundary of having to integrate with build tooling." Current Effect proves that lesson right: the ergonomics come from the library's type machinery, not from patching the compiler.
+> Effect ships as a standard npm package that works with any TypeScript toolchain: no compiler fork, no custom Babel/esbuild plugin, no Vite adapter. This wasn't inevitable: an earlier experiment called TS+ (ts-plus) added pipe operators, operator overloading, and enhanced sequencing syntax (the `do`-notation style from Haskell, adapted for generator syntax) by forking `tsc`. It was abandoned because hot module replacement (HMR) in Next.js and Vite slowed down under the fork and the custom compiler couldn't integrate cleanly into parallel build pipelines ([TS+ postmortem](https://effect.website/blog/ts-plus-postmortem/)). The lesson the team took: "never cross the boundary of having to integrate with build tooling." Current Effect proves that lesson right: the ergonomics come from the library's type machinery, not from patching the compiler.
 
 ## Ecosystem snapshot
 
