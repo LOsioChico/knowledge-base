@@ -32,7 +32,8 @@ yarn start --base origin/main
 yarn start --json ../../content/aws/s3/index.md > /tmp/audit.json
 
 # skip Pass 2 verifier (faster local iteration; not recommended for triage)
-yarn start --no-verify ../../content/nestjs/fundamentals/pipes.md
+yarn start --skip-verify ../../content/nestjs/fundamentals/pipes.md
+# (`--no-verify` is accepted as a deprecated alias and prints a warning)
 ```
 
 ## Other scripts

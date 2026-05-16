@@ -10,7 +10,8 @@
 //   CURSOR_API_KEY=... yarn start <file.md> [more.md ...]
 //
 // Flags:
-//   --no-verify   skip Pass 2 verifier (faster; useful for local debugging)
+//   --skip-verify   skip Pass 2 verifier (faster; useful for local debugging)
+//                   (--no-verify still accepted as a deprecated alias)
 //   --json        emit only the final JSON to stdout (for CI piping)
 //
 // Source verification (Pass 1b) is always on. CURSOR_API_KEY must be set;
@@ -92,7 +93,14 @@ function targetsFromBase(ref: string): string[] {
 
 function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
-  const noVerify: boolean = argv.includes("--no-verify");
+  const hasLegacy: boolean = argv.includes("--no-verify");
+  if (hasLegacy) {
+    log(
+      "warning: --no-verify is deprecated; use --skip-verify (alias will be removed in a future release)",
+    );
+  }
+  const noVerify: boolean =
+    argv.includes("--skip-verify") || hasLegacy;
   const jsonOnly: boolean = argv.includes("--json");
   const baseIdx: number = argv.indexOf("--base");
   const baseRef: string | null =
