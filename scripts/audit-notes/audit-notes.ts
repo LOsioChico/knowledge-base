@@ -137,6 +137,43 @@ function log(msg: string): void {
   if (!JSON_ONLY) console.error(msg);
 }
 
+// Aggregate per-label LLM run stats. The Cursor SDK (v1.0.11) does not
+// expose token counts on `RunResult`, so the best cost proxy we have is
+// wall-clock duration and run counts grouped by skill label. Printed at the
+// end of the audit so we can spot regressions (e.g. a prompt that suddenly
+// takes 3x longer).
+interface RunStat {
+  runs: number;
+  totalMs: number;
+  model: string | null;
+}
+const RUN_STATS: Map<string, RunStat> = new Map();
+function recordRun(label: string, durationMs: number, model: string | null): void {
+  const prev: RunStat = RUN_STATS.get(label) ?? { runs: 0, totalMs: 0, model: null };
+  RUN_STATS.set(label, {
+    runs: prev.runs + 1,
+    totalMs: prev.totalMs + durationMs,
+    model: prev.model ?? model,
+  });
+}
+function logRunStatsSummary(): void {
+  if (RUN_STATS.size === 0) return;
+  const labels: string[] = Array.from(RUN_STATS.keys()).sort();
+  let totalRuns: number = 0;
+  let totalMs: number = 0;
+  log("\n--- LLM run stats (cost proxy: SDK does not expose token usage) ---");
+  for (const label of labels) {
+    const s: RunStat = RUN_STATS.get(label)!;
+    totalRuns += s.runs;
+    totalMs += s.totalMs;
+    const avg: string = (s.totalMs / s.runs / 1000).toFixed(1);
+    const total: string = (s.totalMs / 1000).toFixed(1);
+    const model: string = s.model ?? "?";
+    log(`[stats] ${label.padEnd(20)} runs=${s.runs.toString().padStart(3)} total=${total}s avg=${avg}s model=${model}`);
+  }
+  log(`[stats] ${"TOTAL".padEnd(20)} runs=${totalRuns.toString().padStart(3)} total=${(totalMs / 1000).toFixed(1)}s`);
+}
+
 async function streamAssistantText(run: Run): Promise<string> {
   let buf: string = "";
   for await (const event of run.stream() as AsyncIterable<SDKMessage>) {
@@ -251,13 +288,19 @@ async function runAgent(prompt: string, label: string): Promise<string> {
       const run: Run = await agent.send(prompt);
       const text: string = await streamAssistantText(run);
       const result: RunResult = await run.wait();
-      const elapsed: string = ((Date.now() - t0) / 1000).toFixed(1);
+      const elapsedMs: number = Date.now() - t0;
+      const elapsed: string = (elapsedMs / 1000).toFixed(1);
+      const modelId: string | null =
+        typeof result.model === "object" && result.model !== null
+          ? (result.model.id ?? null)
+          : null;
       log(
         `\n[${label}] status=${result.status} duration=${elapsed}s runId=${result.id}`,
       );
       if (result.status !== "finished") {
         throw new Error(`${label} failed: status=${result.status}`);
       }
+      recordRun(label, elapsedMs, modelId);
       return text;
     } catch (err: unknown) {
       lastError = err;
@@ -708,6 +751,7 @@ async function main(): Promise<void> {
     { high: 0, advisory: 0 },
   );
   log(`\n[totals] high=${totals.high} advisory=${totals.advisory}`);
+  logRunStatsSummary();
   // Exit 1 only on high-confidence findings; advisory ones are non-blocking.
   process.exit(totals.high > 0 ? 1 : 0);
 }
