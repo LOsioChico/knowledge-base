@@ -18,7 +18,7 @@
 
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -66,7 +66,10 @@ interface Args {
 function targetsFromBase(ref: string): string[] {
   let raw: string;
   try {
-    raw = execSync(`git diff --name-only ${ref} -- 'content/**/*.md'`, {
+    // execFileSync (no shell) prevents shell metacharacters in `ref` from
+    // injecting commands. The `content/**/*.md` filter is applied client-side
+    // below since a literal pathspec would not be glob-expanded without a shell.
+    raw = execFileSync("git", ["diff", "--name-only", ref], {
       cwd: REPO_ROOT,
       encoding: "utf8",
     });
@@ -79,9 +82,11 @@ function targetsFromBase(ref: string): string[] {
     .split("\n")
     .map((s: string): string => s.trim())
     .filter((s: string): boolean => s.length > 0);
-  return all.filter((p: string): boolean =>
-    existsSync(resolve(REPO_ROOT, p)),
-  );
+  return all
+    .filter(
+      (p: string): boolean => p.startsWith("content/") && p.endsWith(".md"),
+    )
+    .filter((p: string): boolean => existsSync(resolve(REPO_ROOT, p)));
 }
 
 function parseArgs(): Args {
