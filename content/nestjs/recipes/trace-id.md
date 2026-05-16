@@ -9,7 +9,7 @@ aliases:
     AsyncLocalStorage trace,
     Request trace ID propagation,
   ]
-tags: [type/recipe, tech/asynclocalstorage, lifecycle, errors]
+tags: [type/recipe, tech/asynclocalstorage, lifecycle, errors, gotchas]
 area: nestjs
 status: evergreen
 related:

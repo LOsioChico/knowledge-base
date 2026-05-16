@@ -10,7 +10,7 @@ aliases:
     JWT authentication,
     bearer token auth,
   ]
-tags: [type/recipe, tech/jwt]
+tags: [type/recipe, tech/jwt, gotchas]
 area: nestjs
 status: evergreen
 related:

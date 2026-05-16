@@ -10,7 +10,7 @@ aliases:
   - enableShutdownHooks
   - shutdown hooks
   - Application lifecycle hooks
-tags: [type/concept, lifecycle]
+tags: [type/concept, lifecycle, gotchas]
 area: nestjs
 status: evergreen
 related:

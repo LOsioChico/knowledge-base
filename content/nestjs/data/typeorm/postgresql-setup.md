@@ -10,7 +10,7 @@ aliases:
     autoLoadEntities,
     typeorm migrations,
   ]
-tags: [type/recipe, tech/typeorm, tech/postgres]
+tags: [type/recipe, tech/typeorm, tech/postgres, gotchas]
 area: nestjs
 status: evergreen
 related:

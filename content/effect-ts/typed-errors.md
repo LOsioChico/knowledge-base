@@ -1,7 +1,7 @@
 ---
 title: Typed errors
 aliases: [effect typed errors, effect error channel, effect catchtag, effect.try recipe]
-tags: [type/recipe, tech/typescript, tech/effect-ts, errors]
+tags: [type/recipe, tech/typescript, tech/effect-ts, errors, gotchas]
 area: effect-ts
 status: evergreen
 related:

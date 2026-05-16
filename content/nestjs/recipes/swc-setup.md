@@ -10,7 +10,7 @@ aliases:
     "@swc/core nest",
     SWC builder for NestJS,
   ]
-tags: [type/recipe, tech/typescript, tech/nest-cli]
+tags: [type/recipe, tech/typescript, tech/nest-cli, gotchas]
 area: nestjs
 status: evergreen
 related:

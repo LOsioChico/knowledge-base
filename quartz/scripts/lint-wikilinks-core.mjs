@@ -63,6 +63,7 @@ const VALID_TAGS = new Set([
   "streaming",
   "validation",
   "errors",
+  "gotchas",
 ])
 
 const STOPWORDS = new Set([

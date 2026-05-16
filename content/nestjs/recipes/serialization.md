@@ -8,7 +8,7 @@ aliases:
     expose fields,
     Response serialization with class-transformer,
   ]
-tags: [type/recipe, tech/class-transformer, tech/http]
+tags: [type/recipe, tech/class-transformer, tech/http, gotchas]
 area: nestjs
 status: evergreen
 related:

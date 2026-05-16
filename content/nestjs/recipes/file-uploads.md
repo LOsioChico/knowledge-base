@@ -1,7 +1,7 @@
 ---
 title: File uploads with Multer
 aliases: [multipart upload, multer, file upload]
-tags: [type/recipe, tech/multer, tech/http, validation]
+tags: [type/recipe, tech/multer, tech/http, validation, gotchas]
 area: nestjs
 status: evergreen
 related:

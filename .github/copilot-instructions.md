@@ -121,7 +121,9 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 ### Cross-cutting concepts (no namespace, used sparingly)
 
-- `lifecycle`, `events`, `cqrs`, `messaging`, `streaming`, `validation`, `errors`
+- `lifecycle`, `events`, `cqrs`, `messaging`, `streaming`, `validation`, `errors`, `gotchas`
+
+`gotchas` is applied to any note that carries a `## Gotchas` (or `## Common gotchas`) section of substantive content — the section is *part of the note*, not a single throwaway bullet. The tag is cross-cutting because gotchas live inside concepts and recipes alike; `type/gotcha` stays reserved for notes whose entire purpose is documenting one specific footgun (e.g. `aws/cloudfront/alternate-domain-claim.md`). The two are not redundant: `type/gotcha` is "this note IS a footgun"; `gotchas` is "this note CONTAINS a footgun section worth finding". Quartz auto-generates `/tags/gotchas/` from the latter.
 
 ## Pre-flight discovery ritual (MANDATORY before creating or significantly editing a note)
 

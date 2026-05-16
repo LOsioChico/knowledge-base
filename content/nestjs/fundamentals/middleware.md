@@ -1,7 +1,7 @@
 ---
 title: Middleware
 aliases: [express middleware, NestMiddleware, MiddlewareConsumer]
-tags: [type/concept, lifecycle, tech/http]
+tags: [type/concept, lifecycle, tech/http, gotchas]
 area: nestjs
 status: evergreen
 related:

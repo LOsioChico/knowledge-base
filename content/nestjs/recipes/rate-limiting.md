@@ -1,7 +1,7 @@
 ---
 title: Rate limiting with @nestjs/throttler
 aliases: [rate limiting, throttling, throttler, ThrottlerGuard]
-tags: [type/recipe, tech/http, errors]
+tags: [type/recipe, tech/http, errors, gotchas]
 area: nestjs
 status: evergreen
 related:

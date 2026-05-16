@@ -1,7 +1,7 @@
 ---
 title: Layers and dependency injection
 aliases: [effect layers, effect di, effect.service, context.tag, layer.provide, the r channel]
-tags: [type/concept, tech/typescript, tech/effect-ts]
+tags: [type/concept, tech/typescript, tech/effect-ts, gotchas]
 area: effect-ts
 status: evergreen
 related:

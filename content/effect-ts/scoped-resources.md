@@ -9,7 +9,7 @@ aliases:
     effect addFinalizer,
     effect ensuring,
   ]
-tags: [type/concept, tech/typescript, tech/effect-ts]
+tags: [type/concept, tech/typescript, tech/effect-ts, gotchas]
 area: effect-ts
 status: evergreen
 related:

@@ -7,7 +7,7 @@ aliases:
   - serverless vs vm
   - when to use lambda
   - when to use fargate
-tags: [type/concept, tech/aws, tech/lambda, tech/ec2, tech/ecs]
+tags: [type/concept, tech/aws, tech/lambda, tech/ec2, tech/ecs, gotchas]
 area: aws
 status: evergreen
 related:

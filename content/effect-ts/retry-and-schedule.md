@@ -1,7 +1,7 @@
 ---
 title: Retry and Schedule
 aliases: [effect retry, effect schedule, effect backoff, effect retryorelse]
-tags: [type/recipe, tech/typescript, tech/effect-ts]
+tags: [type/recipe, tech/typescript, tech/effect-ts, gotchas]
 area: effect-ts
 status: evergreen
 related:

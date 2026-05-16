@@ -11,7 +11,7 @@ aliases:
     nest generate library,
     NestJS CLI monorepos,
   ]
-tags: [type/recipe, tech/nest-cli, tech/typescript]
+tags: [type/recipe, tech/nest-cli, tech/typescript, gotchas]
 area: nestjs
 status: evergreen
 related:

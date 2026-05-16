@@ -1,7 +1,7 @@
 ---
 title: Caching with @nestjs/cache-manager
 aliases: [caching, cache, CacheModule, CacheInterceptor, cache-manager, Keyv, Redis cache]
-tags: [type/recipe, tech/typescript]
+tags: [type/recipe, tech/typescript, gotchas]
 area: nestjs
 status: evergreen
 related:

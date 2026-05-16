@@ -1,7 +1,7 @@
 ---
 title: Interceptors
 aliases: [aspect, around-handler]
-tags: [type/concept, lifecycle, tech/rxjs]
+tags: [type/concept, lifecycle, tech/rxjs, gotchas]
 area: nestjs
 status: evergreen
 related:

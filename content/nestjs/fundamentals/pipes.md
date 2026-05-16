@@ -1,7 +1,7 @@
 ---
 title: Pipes
 aliases: [validation pipe, transform pipe]
-tags: [type/concept, lifecycle, validation]
+tags: [type/concept, lifecycle, validation, gotchas]
 area: nestjs
 status: evergreen
 related:

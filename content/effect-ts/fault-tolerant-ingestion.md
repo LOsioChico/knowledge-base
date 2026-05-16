@@ -1,7 +1,7 @@
 ---
 title: Fault-tolerant ingestion pipeline
 aliases: [effect ingestion, effect scraping, effect resilient fetch, effect data pipeline recipe]
-tags: [type/recipe, tech/typescript, tech/effect-ts]
+tags: [type/recipe, tech/typescript, tech/effect-ts, gotchas]
 area: effect-ts
 status: evergreen
 related:

@@ -9,7 +9,7 @@ aliases:
     APP_FILTER,
     Exception Filters,
   ]
-tags: [type/concept, lifecycle, errors]
+tags: [type/concept, lifecycle, errors, gotchas]
 area: nestjs
 status: evergreen
 related:

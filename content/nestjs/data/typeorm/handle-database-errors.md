@@ -10,7 +10,7 @@ aliases:
     ER_DUP_ENTRY,
     Handle database errors,
   ]
-tags: [type/recipe, tech/typeorm, tech/postgres, errors]
+tags: [type/recipe, tech/typeorm, tech/postgres, errors, gotchas]
 area: nestjs
 status: evergreen
 related:
