@@ -19,16 +19,9 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
 
 import type { FlatFinding } from "./types.js";
-import { extractSourceUrls } from "./source-verify.js";
-
-// Mirrors `source-verify.ts:cacheKey`. Kept private here to avoid widening
-// that module's public surface for one helper.
-function cacheKey(url: string): string {
-  return createHash("sha256").update(url).digest("hex").slice(0, 24);
-}
+import { cacheKey, extractSourceUrls } from "./source-verify.js";
 
 function cachedSourcePath(repoRoot: string, url: string): string {
   return resolve(

@@ -46,7 +46,7 @@ function cacheDir(repoRoot: string): string {
   return resolve(repoRoot, "scripts/audit-notes/.cache/sources");
 }
 
-function cacheKey(url: string): string {
+export function cacheKey(url: string): string {
   return createHash("sha256").update(url).digest("hex").slice(0, 24);
 }
 
