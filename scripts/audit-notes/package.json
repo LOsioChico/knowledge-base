@@ -6,6 +6,7 @@
   "scripts": {
     "start": "tsx audit-notes.ts",
     "autofix": "tsx autofix.ts",
+    "cache:clean": "tsx cache-clean.ts",
     "lint:content": "tsx pass0-all.ts",
     "lint:format": "prettier --check ../../content",
     "format": "prettier --write ../../content",
