@@ -388,22 +388,6 @@ function flatten(report: Report): FlatFinding[] {
   );
 }
 
-function nest(targets: readonly string[], flat: FlatFinding[]): Report {
-  const byPath: Map<string, FileReport> = new Map();
-  for (const t of targets) byPath.set(t, { path: t, findings: [] });
-  for (const f of flat) {
-    const file: FileReport | undefined = byPath.get(f.path);
-    if (file === undefined) continue;
-    const { path: _path, ...rest } = f;
-    void _path;
-    file.findings.push(rest);
-  }
-  for (const file of byPath.values()) {
-    file.findings.sort((a, b): number => a.line - b.line);
-  }
-  return { files: Array.from(byPath.values()) };
-}
-
 function nestTiered(
   targets: readonly string[],
   flat: Array<FlatFinding & { tier: ConfidenceTier }>,
