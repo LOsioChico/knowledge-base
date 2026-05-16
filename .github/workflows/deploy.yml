@@ -3,6 +3,8 @@ name: CI (lint → build → deploy)
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -44,9 +46,10 @@ jobs:
             npm run lint:format
           fi
 
-  # 2. Build Quartz site.
+  # 2. Build Quartz site. Skipped on pull_request: deploy is main-only.
   build:
     needs: lint
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
