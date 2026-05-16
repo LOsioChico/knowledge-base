@@ -10,6 +10,7 @@
     "lint:content": "tsx pass0-all.ts",
     "lint:format": "prettier --check ../../content",
     "format": "prettier --write ../../content",
+    "test": "node --import tsx --test extract-json.test.ts deterministic.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
