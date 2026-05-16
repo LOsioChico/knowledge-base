@@ -10,6 +10,7 @@ related:
   - "[[nestjs/fundamentals/lifecycle-hooks]]"
   - "[[nestjs/recipes/index]]"
   - "[[nestjs/releases/index]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
 ---
 
@@ -90,3 +91,7 @@ Problems I already solved and do not want to google again.
 - [[nestjs/gotchas/circular-deps|Circular dependencies: forwardRef and how to avoid it (planned)]]
 - [[nestjs/gotchas/scope-request-pitfalls|Request-scoped providers: the hidden cost (planned)]]
 - [[nestjs/gotchas/async-providers|Async providers: useFactory with dependencies (planned)]]
+
+## Cross-pillar
+
+- Effect vs NestJS DI: [[effect-ts/layers-and-di|Effect Layers]] vs NestJS providers; see the [[effect-ts/layers-vs-nestjs-di|side-by-side comparison]] for when to pick which and how to use both together.

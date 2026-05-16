@@ -16,6 +16,7 @@ related:
   - "[[nestjs/data/caching]]"
   - "[[nestjs/releases/v10]]"
   - "[[nestjs/releases/v11]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://docs.nestjs.com/middleware
   - https://docs.nestjs.com/faq/request-lifecycle

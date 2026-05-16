@@ -16,6 +16,7 @@ related:
   - "[[nestjs/fundamentals/global-providers]]"
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://docs.nestjs.com/guards
   - https://docs.nestjs.com/fundamentals/execution-context

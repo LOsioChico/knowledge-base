@@ -12,6 +12,7 @@ related:
   - "[[effect-ts/composition]]"
   - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/ecosystem-map]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/requirements-management/services/
   - https://effect.website/docs/requirements-management/layers/

@@ -15,6 +15,7 @@ related:
   - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://github.com/Effect-TS/effect
@@ -87,5 +88,6 @@ After that, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for 
 - [[effect-ts/scoped-resources|Scoped resources]]: `acquireRelease`, `acquireUseRelease`, `addFinalizer`, `ensuring`; the four primitives for cleanup that runs on success, failure, and interruption.
 - [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion pipeline]]: end-to-end recipe weaving `tryPromise`, `Schema`, `timeout`, `retry`, and `forEach` into one typed pipeline.
 - [[effect-ts/ecosystem-map|Ecosystem map]]: every `@effect/*` package, what it does, when to install it.
+- [[effect-ts/layers-vs-nestjs-di|Effect Layers vs NestJS DI]]: side-by-side comparison of the two dependency-injection models, when to pick which, and how to use both together.
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official).
 - [Effect-TS/effect on GitHub](https://github.com/Effect-TS/effect).

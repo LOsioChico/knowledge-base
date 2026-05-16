@@ -13,6 +13,7 @@ related:
   - "[[effect-ts/retry-and-schedule]]"
   - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/error-management/expected-errors/
   - https://effect.website/docs/error-management/unexpected-errors/

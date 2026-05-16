@@ -23,6 +23,7 @@ related:
   - "[[nestjs/recipes/trace-id]]"
   - "[[nestjs/recipes/rate-limiting]]"
   - "[[nestjs/data/caching]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://docs.nestjs.com/pipes#global-scoped-pipes
   - https://docs.nestjs.com/guards#binding-guards

@@ -18,6 +18,7 @@ related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/index]]"
   - "[[nestjs/releases/v11]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://docs.nestjs.com/fundamentals/lifecycle-events
   - https://github.com/nestjs/nest/releases/tag/v11.0.0

@@ -12,6 +12,7 @@ related:
   - "[[effect-ts/composition]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/getting-started/installation/
   - https://effect.website/docs/getting-started/creating-effects/

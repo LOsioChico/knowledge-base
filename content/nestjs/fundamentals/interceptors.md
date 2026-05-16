@@ -18,6 +18,7 @@ related:
   - "[[nestjs/auth/jwt-strategy]]"
   - "[[nestjs/data/caching]]"
   - "[[nestjs/releases/v10]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://docs.nestjs.com/interceptors
   - https://docs.nestjs.com/cli/usages

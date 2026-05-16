@@ -14,6 +14,7 @@ related:
   - "[[effect-ts/scoped-resources]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/ecosystem-map]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/getting-started/the-effect-type/
   - https://effect.website/docs/getting-started/running-effects/

@@ -19,6 +19,7 @@ related:
   - "[[effect-ts/typed-errors]]"
   - "[[effect-ts/layers-and-di]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
 source:
   - https://effect.website/docs/resource-management/introduction/
   - https://effect.website/docs/resource-management/scope/
