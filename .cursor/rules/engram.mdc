@@ -1,52 +1,34 @@
 ---
-description: Engram MCP usage guide — session memory vs CodeGraph vs AGENTS.md
+description: knowledge-base repo — Engram project id and vault workflow
 alwaysApply: true
 ---
-<!-- ENGRAM_START -->
-## Engram
-
-This repo uses Engram MCP (`mem_search`, `mem_save`, etc.) for **durable session learnings** scoped to project `knowledge-base`. Engram complements `AGENTS.md` Learned User Preferences / Learned Workspace Facts and Cursor continual-learning hooks; it does **not** replace them. AGENTS.md stays the checked-in contract; Engram holds evolving triage patterns, audit workflow notes, and repo-specific habits discovered across sessions.
-
-### Division of labor
-
-| Need | Use |
-|---|---|
-| Project habits, audit triage patterns, "how we work here" across sessions | Engram (`mem_search` at session start, `mem_save` when something durable lands) |
-| Symbol structure, callers/callees, impact in `scripts/` | CodeGraph (`codegraph_*`) — see `.cursor/rules/codegraph.mdc` |
-| Invariants, schema, linter rules, sourcing | `AGENTS.md` (read end-to-end before editing `content/`) |
-| Literal strings, comments, log lines | `rg` / read file |
+<!-- ENGRAM_KB_START -->
+## Engram (knowledge-base)
 
 **Project id:** always `knowledge-base` for `mem_search` / `mem_save` and CLI (`engram save --project knowledge-base`).
 
-### When to `mem_search`
+Global Memory Protocol: `~/.cursor/rules/engram.mdc`. This file is **repo-specific overlay only**.
 
-- At the **start** of a substantive session on this repo (after reading `AGENTS.md` if editing content).
-- When resuming work on audit tooling, vault conventions, or effect-ts notes and you need prior triage decisions.
-- Query examples: `audit profiles`, `vault:check`, `composer-2.5`, `effect-ts triage`, `commit policy`.
+### Division of labor (this repo)
 
-### When to `mem_save`
+| Need | Use |
+|---|---|
+| Audit triage, vault habits, session learnings | Engram (`mem_search` at substantive session start) |
+| Symbol structure under `scripts/` | CodeGraph — `.cursor/rules/codegraph.mdc` |
+| Schema, linter rules, sourcing invariants | `AGENTS.md` (read end-to-end before editing `content/`) |
 
-Save **durable** facts the next agent should not rediscover:
+### When to `mem_search` here
+
+- Start of substantive sessions (after `AGENTS.md` if editing `content/`).
+- Resuming audit tooling, vault conventions, or `effect-ts` notes.
+- Examples: `audit profiles`, `vault:check`, `composer-2.5`, `effect-ts triage`, `commit policy`.
+
+### When to `mem_save` here
 
 - Audit profile usage (`ci` / `triage` / `full`) and default post-edit `vault:check`
-- Verified triage patterns (e.g. verify high-tier findings before apply; anchor false-positive rate)
-- Workflow decisions the user stated explicitly (commit only when asked; verify-first when requested)
+- Verified triage patterns (verify high-tier findings before apply; anchor false-positive rate)
+- User-stated workflow (commit only when asked; verify-first when requested)
 - Tooling defaults (e.g. Composer 2.5 Fast for LLM audit passes)
 
-Do **not** save:
-
-- One-off task state ("fixing line 42 in X")
-- Secrets, tokens, `.env` contents, or `CURSOR_API_KEY`
-- Facts that belong in `AGENTS.md` as permanent contract (promote there instead if it's an invariant)
-
-### Rules of thumb
-
-- **Search before reinventing** — a prior session may have already triaged the same audit finding class.
-- **Prefer AGENTS.md for invariants** — if a rule should block CI or every agent, put it in `AGENTS.md` and mirror to `.github/copilot-instructions.md`, not only Engram.
-- **Keep memories concise** — title + short body; link to paths/commands, not pasted logs.
-- **Engram + CodeGraph together** — Engram for *how we work*; CodeGraph for *what the code does* under `scripts/`.
-
-### If Engram MCP is unavailable
-
-Ask the user to confirm `engram` is on PATH and `~/.cursor/mcp.json` includes the `engram` server. CLI fallback: `engram save --project knowledge-base --title "..." --body "..."` then `engram search --project knowledge-base`.
-<!-- ENGRAM_END -->
+Promote invariants to `AGENTS.md` + `.github/copilot-instructions.md`, not only Engram.
+<!-- ENGRAM_KB_END -->
