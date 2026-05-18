@@ -26,9 +26,6 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Install Quartz deps
-        working-directory: quartz
-        run: npm ci
       - name: Install root deps (lint tooling)
         run: npm ci
       - name: Lint wikilinks
@@ -47,24 +44,35 @@ jobs:
             npm run lint:format
           fi
 
-  # 2. Build Quartz site. Skipped on pull_request: deploy is main-only.
+  # 2. Build the site by cloning the Quartz fork at build time. Skipped on
+  # pull_request: deploy is main-only. To pin a specific Quartz version,
+  # change `ref:` below to a tag or commit SHA on LOsioChico/quartz-fork.
   build:
     needs: lint
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout content
+        uses: actions/checkout@v5
         with:
+          path: content-repo
           fetch-depth: 0
+      - name: Checkout Quartz fork
+        uses: actions/checkout@v5
+        with:
+          repository: LOsioChico/quartz-fork
+          ref: main
+          path: quartz
+          token: ${{ secrets.QUARTZ_FORK_READ_TOKEN }}
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Install dependencies
+      - name: Install Quartz deps
         working-directory: quartz
         run: npm ci
-      - name: Build Quartz
+      - name: Build Quartz against this repo's content
         working-directory: quartz
-        run: npx quartz build -d ../content
+        run: npx quartz build -d ../content-repo/content
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

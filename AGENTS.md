@@ -17,7 +17,7 @@ for executing on them.
 
 ## What this repo is
 
-A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. Source markdown lives under `content/` at the repo root. All Quartz machinery (config, framework source, `package.json`, `node_modules`, build output) lives under `quartz/`. Quartz config is `quartz/quartz.config.ts`. Static assets shipped as-is from `quartz/quartz/static/`.
+A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. This repo owns ONLY the content: source markdown under `content/`, lint tooling under `scripts/`, and the deploy workflow under `.github/workflows/`. The Quartz build pipeline lives in a separate repo (`LOsioChico/quartz-fork`, private); CI clones it at build time. Quartz is swappable — to change frameworks, edit `.github/workflows/deploy.yml`.
 
 ## Folder layout
 
@@ -29,7 +29,8 @@ content/
     <subarea>/
       index.md                   # sub-area MOC if the subarea has 3+ notes
       <note>.md                  # atomic note, one concept per file
-quartz/static/                   # site-level static assets (favicon, og image, etc.) — actual path is quartz/quartz/static/
+scripts/                         # wikilink linter + content audit tooling
+.github/workflows/deploy.yml     # lint → clone quartz-fork → build → deploy Pages
 ```
 
 Rules:
@@ -361,14 +362,14 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 ## When you finish
 
-- Run `cd quartz && npx quartz build --serve -d ../content` if you changed plugins or config. Skip for content-only edits unless requested.
+- To preview locally, clone `LOsioChico/quartz-fork` somewhere outside this repo and run `npx quartz build --serve -d <path-to-this-repo>/content`. Skip for content-only edits unless requested.
 - ALWAYS run ALL local linters before each content commit; CI runs them and will fail the push otherwise. Three checks, all blocking: `lint:wikilinks` (broken links, asymmetric `related:`, backticks-in-wikilinks, etc.), `lint:content` (Pass-0: em-dashes, `--`), and `lint:format` (Prettier on `content/`). Forbidden: committing after running only a subset. One-liner from repo root:
 
   ```bash
   npm run lint:wikilinks && (cd scripts/audit-notes && yarn lint:content && yarn lint:format)
   ```
 
-  All three must pass before `git commit`. If formatting fails, run `yarn format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores `quartz/` (the framework manages its own format) and the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+  All three must pass before `git commit`. If formatting fails, run `yarn format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
 - **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `yarn autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `yarn autofix` (no args walks `content/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
 - After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
 - Commit. Do NOT push: pushing is the user's call.

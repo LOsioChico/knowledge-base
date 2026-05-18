@@ -5,23 +5,24 @@ Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base
 ## Layout
 
 - `content/` — source markdown notes.
-- `quartz/` — Quartz v4 vendored as the static site generator (config, framework source, `package.json`).
-- `scripts/` — repository tooling (wikilink linter).
+- `scripts/` — repository tooling (wikilink linter, content audit).
 - `AGENTS.md` — operating contract for AI editors. Read it before touching any note.
 
-## Build locally
+The Quartz site generator lives in a separate private repo, `LOsioChico/quartz-fork` (a fork of [jackyzha0/quartz](https://github.com/jackyzha0/quartz)). CI clones it at build time; see `.github/workflows/deploy.yml`. To swap site generators, change that workflow.
+
+## Preview locally
+
+Clone the quartz fork somewhere outside this repo, then point it at this `content/`:
 
 ```bash
-cd quartz
-npm ci
-npx quartz build --serve -d ../content
+git clone https://github.com/LOsioChico/quartz-fork.git ~/quartz-fork
+cd ~/quartz-fork && npm ci
+npx quartz build --serve -d <path-to-knowledge-base>/content
 ```
 
 ## Lint
 
 ```bash
-cd quartz
+npm ci             # one-time install of lint tooling
 npm run lint:wikilinks
 ```
-
-Quartz upstream: https://github.com/jackyzha0/quartz (MIT).
