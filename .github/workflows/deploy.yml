@@ -29,8 +29,9 @@ jobs:
       - name: Install Quartz deps
         working-directory: quartz
         run: npm ci
+      - name: Install root deps (lint tooling)
+        run: npm ci
       - name: Lint wikilinks
-        working-directory: quartz
         run: npm run lint:wikilinks
       - name: Lint content (Pass 0)
         working-directory: scripts/audit-notes

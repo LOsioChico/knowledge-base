@@ -196,7 +196,7 @@ function stripOrphanSources(lines: string[]): string[] {
 }
 
 function normalizeUrl(u: string): string {
-  // Mirrors `normalizeAnyUrl` in `quartz/scripts/lint-wikilinks-core.mjs`:
+  // Mirrors `normalizeAnyUrl` in `scripts/lint-wikilinks-core.mjs`:
   // strip fragment, trailing markdown punctuation, and a single trailing
   // slash so prose like `see https://x/y/z.` matches the bare frontmatter
   // entry `https://x/y/z`.
@@ -204,7 +204,7 @@ function normalizeUrl(u: string): string {
   return noFrag.replace(/[.,;:]+$/, "").replace(/\/$/, "");
 }
 
-// Mirrors `PRIMARY_SOURCE_RE` in `quartz/scripts/lint-wikilinks-core.mjs`. Any
+// Mirrors `PRIMARY_SOURCE_RE` in `scripts/lint-wikilinks-core.mjs`. Any
 // inline markdown link whose target matches this regex must appear in
 // frontmatter `source:`. The `inline-source-citations` linter rule enforces
 // the requirement; this autofixer adds the missing entries.
