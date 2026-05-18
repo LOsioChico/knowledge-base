@@ -20,9 +20,21 @@ cd ~/quartz-fork && npm ci
 npx quartz build --serve -d <path-to-knowledge-base>/content
 ```
 
-## Lint
+## Lint and audit
 
 ```bash
-bun install        # one-time install of lint tooling
+bun install   # one-time: wikilink linter + audit-notes deps
 bun run lint:wikilinks
 ```
+
+Default post-edit quality gate (diff-scoped wikilinks, Pass 0, triage audit,
+discoverability hints). Requires `CURSOR_API_KEY` in a repo-root `.env` for the
+LLM portion:
+
+```bash
+bun run vault:check --base HEAD~1
+```
+
+Conventions, sourcing rules, and the full audit triage loop live in
+[`AGENTS.md`](AGENTS.md) and [`.github/skills/kb-audit-triage/SKILL.md`](.github/skills/kb-audit-triage/SKILL.md).
+Audit pipeline details: [`scripts/audit-notes/README.md`](scripts/audit-notes/README.md).

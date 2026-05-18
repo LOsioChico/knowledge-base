@@ -191,15 +191,32 @@ Run with `node /tmp/add-dismiss.cjs`. Delete the script after.
 
 ## Step 5 — Lint chain (BEFORE every commit)
 
+From repo root (preferred — includes diff-scoped wikilinks, Pass 0, and triage audit):
+
 ```bash
-(cd quartz && npm run lint:wikilinks) && (cd scripts/audit-notes && yarn lint:content && yarn lint:format)
+set -a; source .env; set +a   # when running vault:check (CURSOR_API_KEY)
+bun run vault:check --base HEAD~1
 ```
 
-All three must pass. Forbidden: `| tail -N` between any of these — pipe exit status becomes
+Manual linter-only chain (no LLM audit):
+
+```bash
+bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format)
+```
+
+All checks must pass. Forbidden: `| tail -N` between any of these — pipe exit status becomes
 the tail's (always 0) and silently masks failures. Forbidden: chaining `&& git commit` after
 a tailed lint. Read all the output.
 
-If formatting fails: `(cd scripts/audit-notes && yarn format)` auto-fixes.
+**Areas with no recent diff** (smoke-test after a bulk import): pass explicit paths instead of
+`--base`:
+
+```bash
+cd scripts/audit-notes
+bun start --json --profile=triage ../../content/effect-ts/ecosystem-map.md ../../content/effect-ts/layers-and-di.md
+```
+
+If formatting fails: `(cd scripts/audit-notes && bun run format)` auto-fixes.
 
 If you touched any frontmatter `source:` URL or added an inline GitHub blob link, also run:
 
@@ -250,6 +267,13 @@ without explicit ask is a violation.
   loop produced an AGENTS.md edit. Lint-enforced; CI fails on drift.
 - **Not bundling identical fixes across notes.** When the same wrong claim is in N notes,
   one commit fixing all N is greppable; N commits aren't.
+
+## Skip zones and corpus tests
+
+[`skip-zones.ts`](../../../scripts/audit-notes/skip-zones.ts) excludes MOC pending lists,
+`## See also`, and similar enumeration sections from jargon/show-dont-tell candidate finders.
+After changing skip logic or dismissal patterns, run `cd scripts/audit-notes && bun test`
+(`corpus-silent.test.ts` + [`fixtures/corpus-manifest.json`](../../../scripts/audit-notes/fixtures/corpus-manifest.json)).
 
 ## Boundaries
 

@@ -384,13 +384,14 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 ## When you finish
 
 - To preview locally, clone `LOsioChico/quartz-fork` somewhere outside this repo and run `npx quartz build --serve -d <path-to-this-repo>/content`. Skip for content-only edits unless requested.
-- ALWAYS run ALL local linters before each content commit; CI runs them and will fail the push otherwise. Three checks, all blocking: `lint:wikilinks` (broken links, asymmetric `related:`, backticks-in-wikilinks, etc.), `lint:content` (Pass-0: em-dashes, `--`), and `lint:format` (Prettier on `content/`). Forbidden: committing after running only a subset. One-liner from repo root:
+- **Default post-edit quality gate** (from repo root; diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
-  bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format)
+  bun run vault:check --base HEAD~1
   ```
 
-  All three must pass before `git commit`. If formatting fails, run `bun run format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+  Equivalent manual chain when you only need linters without audit: `bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format)`. All three must pass before `git commit`. If formatting fails, run `bun run format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. Forbidden: committing after running only a subset. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+- **Corpus regression** (after changing `skip-zones.ts`, `dismissed.json` patterns, or `fixtures/corpus-manifest.json`): `cd scripts/audit-notes && bun test`. Skip-zone rules live in [`skip-zones.ts`](scripts/audit-notes/skip-zones.ts); the manifest lists paths/lines that must stay silent for specific rules ([`corpus-silent.test.ts`](scripts/audit-notes/corpus-silent.test.ts)).
 - **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `bun run autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `bun run autofix` (no args walks `content/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
 - After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
 - Commit. Do NOT push: pushing is the user's call.
@@ -422,3 +423,14 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 - **Persisted dismissals**: when an advisory or high-tier finding has been triaged and rejected (rule misapplication, already-cited claim the auditor missed, literal-not-hedge phrasing, callout-scope exclusion, etc.) and the underlying line is unlikely to change soon, record it in `scripts/audit-notes/dismissed.json` so future audit runs auto-suppress it. Each entry is `{path, sig, rule, reason, date, originalLine}` where `sig = sha1(path + "\0" + rule + "\0" + trimmed line text)`. The signature is content-addressed: it survives line-number drift but **re-fires when the prose is rewritten**, which is the right time to re-evaluate. The audit pipeline filters before emitting the final tiered report and logs every suppression as `[dismissed] suppressed N previously-triaged finding(s)` with the original rationale, so the audit trail stays visible. Generate a new entry by running a small node one-liner that reads the line at `path:line`, hashes it, and appends to the JSON (see commit history for the seed batch). Forbidden: dismissing a finding by silently ignoring it in chat triage when the same finding will obviously re-appear on the next full-vault run — that wastes future-you's triage cycles. Forbidden: dismissing high-tier `Contradicts` findings without a written verification chain in the `reason` field (these are the highest-signal class; if you're dismissing one, the reason needs to explain why the auditor was wrong, not just "false positive"). The dismissal file is checked in so triage state is shared across machines and rebuilds.
 - If the user asks to push, GitHub Pages rebuilds in 1-2 minutes.
 - If you established a new convention, update this file in the same commit.
+
+## Learned User Preferences
+
+- Commit only when the user explicitly asks; do not push unless they ask.
+- When the user says to verify first, run the full lint and test suite before committing tooling changes.
+
+## Learned Workspace Facts
+
+- Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
+- LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
+- To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
