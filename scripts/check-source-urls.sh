@@ -15,7 +15,11 @@ set -u
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 TARGETS=("${@:-$ROOT/content}")
 
-mapfile -t URLS < <(grep -rohE 'https://github\.com/[^ )"]+\.(ts|tsx|js|jsx|mjs|cjs|json|md|mdx)\b' "${TARGETS[@]}" 2>/dev/null | sort -u)
+# Portable URL collection (macOS ships bash 3.2 without mapfile).
+URLS=()
+while IFS= read -r line; do
+  URLS+=("$line")
+done < <(grep -rohE 'https://github\.com/[^ )"]+\.(ts|tsx|js|jsx|mjs|cjs|json|md|mdx)\b' "${TARGETS[@]}" 2>/dev/null | sort -u)
 
 if [ "${#URLS[@]}" -eq 0 ]; then
   echo "no GitHub blob URLs found"
