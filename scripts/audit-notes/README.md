@@ -56,8 +56,8 @@ positives before they reach the human.
 | ------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **0**   | deterministic                       | em-dash, double-hyphen, frontmatter schema (`pass0-all.ts`, `deterministic.ts`)                                                               |
 | **1**   | LLM (`kb-auditor`)                  | code-imports, table-link, express-first, callout vocabulary                                                                                   |
-| **1a**  | LLM (`kb-show-dont-tell`)           | recipes that claim observable behavior without showing it                                                                                     |
-| **1b**  | LLM (`kb-source-verify`, N=3)       | claims contradicted by or unsupported by cited `source:` URLs; self-consistency voting drops findings without majority                        |
+| **1a**  | LLM (`kb-show-dont-tell-judge`)     | recipes that claim observable behavior without showing it                                                                                     |
+| **1b**  | LLM (`kb-source-verifier`, N=3)     | claims contradicted by or unsupported by cited `source:` URLs; self-consistency voting drops findings without majority                        |
 | **1c**  | deterministic                       | anchor-verifier: drops `source-verification` findings whose anchor claim is wrong but the cited symbol IS within the original range           |
 | **1d**  | deterministic                       | fact-grounding: drops "Not supported by" findings whose high-information terms ALL appear in the cached source extracts                       |
 | **1e**  | LLM (`kb-jargon-judge`)             | undefined acronyms / named features used without inline gloss or wikilink                                                                     |

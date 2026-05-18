@@ -15,6 +15,27 @@ reference-table linking, sourcing), and the "encode-repeated-patterns" reflex. A
 the source of truth for invariants (schema, vocabulary, linter rules); the skill is the playbook
 for executing on them.
 
+## Skills directory
+
+All agent skills live under `.github/skills/<name>/SKILL.md`. Three kinds:
+
+**Workflow skills (human/agent-facing, load on demand):**
+
+- [`kb-author`](.github/skills/kb-author/SKILL.md) — authoring workflow + pre-flight discovery + post-edit audits (indexed A–P in [`audits/`](.github/skills/kb-author/audits)).
+- [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
+- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — eight-phase workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and committing audit-clean notes.
+
+**LLM judges (runtime, invoked by `scripts/audit-notes/`):**
+
+- [`kb-auditor`](.github/skills/kb-auditor/SKILL.md) — Pass 1. Structural rules: code-imports, table-link, express-first, callout vocabulary.
+- [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) — Pass 1a. Binary verdict on behavioral-claim candidates surfaced by the deterministic finder.
+- [`kb-source-verifier`](.github/skills/kb-source-verifier/SKILL.md) — Pass 1b. Claims contradicted by or unsupported by cited `source:` URLs.
+- [`kb-jargon-judge`](.github/skills/kb-jargon-judge/SKILL.md) — Pass 1e. Undefined acronyms / named features used without an inline gloss or wikilink.
+- [`kb-verifier`](.github/skills/kb-verifier/SKILL.md) — Pass 2. Adversarial REJECT-by-default re-check of Pass 1 findings.
+- [`kb-fix-proposer`](.github/skills/kb-fix-proposer/SKILL.md) — Pass 3. Proposes `{before, after, primarySource}` for surviving high-tier findings; declines freely.
+
+When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above.
+
 ## What this repo is
 
 A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. This repo owns ONLY the content: source markdown under `content/`, lint tooling under `scripts/`, and the deploy workflow under `.github/workflows/`. The Quartz build pipeline lives in a separate repo (`LOsioChico/quartz-fork`, private); CI clones it at build time. Quartz is swappable — to change frameworks, edit `.github/workflows/deploy.yml`.
