@@ -57,6 +57,8 @@ related:
 ${related}${unrelated ? `unrelated:\n${unrelated}` : ""}source: []
 ---
 
+> ${title} fixture note for wikilink linter tests.
+
 # ${title}
 
 ${body}
@@ -359,7 +361,7 @@ test("reports first-mention line numbers after frontmatter accurately", async ()
   const result = await runLinter(repoRoot)
 
   assert.equal(result.code, 1)
-  assert.match(result.stderr, /L13: "Target Widget"/)
+  assert.match(result.stderr, /L15: "Target Widget"/)
 })
 
 test("emits structured JSON output", async () => {
@@ -386,6 +388,8 @@ status: maybe
 related:
 source: []
 ---
+
+> Alpha Recipe fixture with invalid frontmatter fields.
 
 # Alpha Recipe
 

@@ -1,0 +1,141 @@
+{
+  "paths": [
+    "content/aws/lambda-vs-ec2.md",
+    "content/nestjs/fundamentals/middleware.md",
+    "content/nestjs/recipes/serialization.md",
+    "content/nestjs/recipes/monorepo.md",
+    "content/nestjs/recipes/trace-id.md",
+    "content/nestjs/fundamentals/pipes.md",
+    "content/nestjs/releases/v11.md",
+    "content/nestjs/fundamentals/global-providers.md",
+    "content/nestjs/recipes/file-uploads.md",
+    "content/aws/recipes/cross-account-role-pattern.md",
+    "content/aws/s3/lifecycle-rules.md",
+    "content/aws/account-migrations.md",
+    "content/nestjs/fundamentals/index.md",
+    "content/effect-ts/layers-and-di.md",
+    "content/nestjs/fundamentals/guards.md",
+    "content/nestjs/auth/jwt-strategy.md",
+    "content/nestjs/data/typeorm/postgresql-setup.md",
+    "content/aws/cloudfront/alternate-domain-claim.md",
+    "content/aws/s3/index.md",
+    "content/aws/dynamodb/index.md",
+    "content/nestjs/recipes/validation.md",
+    "content/nestjs/recipes/rate-limiting.md"
+  ],
+  "expectSilent": [
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "rule": "show-dont-tell",
+      "line": 29,
+      "reason": "Recipe tagline blockquote (framing, not behavioral claim); dismissed as structural FP"
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "rule": "show-dont-tell",
+      "line": 156,
+      "reason": "GET example six lines above; forward-only window miss (known limitation)"
+    },
+    {
+      "path": "content/nestjs/fundamentals/index.md",
+      "rule": "style-jargon",
+      "line": 29,
+      "reason": "## Pending planned-recipes list (skip-zone analog)"
+    },
+    {
+      "path": "content/nestjs/recipes/index.md",
+      "rule": "style-jargon",
+      "line": 32,
+      "reason": "## Pending planned-recipes list"
+    },
+    {
+      "path": "content/aws/account-migrations.md",
+      "rule": "style-jargon",
+      "line": 81,
+      "reason": "What's NOT in this playbook (yet) planned-recipes list"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "rule": "source-verification",
+      "line": 75,
+      "reason": "Already cited inline and in source: (fetch-error FP)"
+    }
+  ],
+  "dismissedShouldSuppress": [
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "rule": "show-dont-tell",
+      "sig": "c06488acb4cdaa8c3ae6976780f66bc23318ce7d"
+    },
+    {
+      "path": "content/nestjs/recipes/serialization.md",
+      "rule": "show-dont-tell",
+      "sig": "5f0060c64e8c3047a9dce35105ee7824a6b707c1"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "rule": "source-verification",
+      "sig": "d6cafc1bfc02b5726fef892e8baaadcd1e50c69f"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "rule": "source-verification",
+      "sig": "8eea3501350f53f025a5bc0f0abcd653798e7851"
+    },
+    {
+      "path": "content/nestjs/releases/v11.md",
+      "rule": "source-verification",
+      "sig": "872caa93d7be76bae743d51d856e7ee7b1556817"
+    },
+    {
+      "path": "content/nestjs/recipes/validation.md",
+      "rule": "style-hedge",
+      "sig": "7781c2400003e56b3d1dc684388116140c8917bb"
+    },
+    {
+      "path": "content/nestjs/fundamentals/index.md",
+      "rule": "style-jargon",
+      "sig": "dba3ac4434759d6469163df34d650320851101bd"
+    },
+    {
+      "path": "content/nestjs/recipes/index.md",
+      "rule": "style-jargon",
+      "sig": "99b41926677e0cd9addd0caa22aa9451be7d07f0"
+    },
+    {
+      "path": "content/aws/account-migrations.md",
+      "rule": "style-jargon",
+      "sig": "f134da31f1b86ea5f5f3ce81d470466b70566bc8"
+    },
+    {
+      "path": "content/nestjs/fundamentals/request-lifecycle.md",
+      "rule": "source-verification",
+      "sig": "015185b70bea3064785948d1071dbea0c190ee11"
+    },
+    {
+      "path": "content/nestjs/auth/jwt-strategy.md",
+      "rule": "source-verification",
+      "sig": "f9fed3d71e6f60fb371a76b5adf3f12f15e3e74d"
+    },
+    {
+      "path": "content/nestjs/recipes/monorepo.md",
+      "rule": "source-verification",
+      "sig": "8eea3501350f53f025a5bc0f0abcd653798e7851"
+    },
+    {
+      "path": "content/nestjs/fundamentals/middleware.md",
+      "rule": "source-verification",
+      "sig": "6e3726e3bd97c64e77b7b90ffa93dd91d6d079ff"
+    },
+    {
+      "path": "content/aws/vpc/index.md",
+      "rule": "style-jargon",
+      "sig": "68338668af923ee3972e5f1a93dd3a46a7c34297"
+    },
+    {
+      "path": "content/nestjs/releases/v10.md",
+      "rule": "source-verification",
+      "sig": "55da4546c2af07e545b13ce1e85b90ca275ec965"
+    }
+  ]
+}

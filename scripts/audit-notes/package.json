@@ -2,7 +2,7 @@
   "name": "audit-notes",
   "private": true,
   "type": "module",
-  "description": "Spike: use Cursor SDK (composer-2) to audit knowledge-base notes against AGENTS.md.",
+  "description": "Spike: use Cursor SDK (composer-2.5-fast) to audit knowledge-base notes against AGENTS.md.",
   "scripts": {
     "start": "tsx audit-notes.ts",
     "autofix": "tsx autofix.ts",
@@ -10,7 +10,8 @@
     "lint:content": "tsx pass0-all.ts",
     "lint:format": "prettier --check ../../content",
     "format": "prettier --write ../../content",
-    "test": "node --import tsx --test extract-json.test.ts deterministic.test.ts",
+    "test": "node --import tsx --test extract-json.test.ts deterministic.test.ts dismissed.test.ts show-dont-tell.test.ts",
+    "test:dismissed": "node --import tsx --test dismissed.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

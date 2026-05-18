@@ -53,6 +53,16 @@ export function signFinding(
   if (line < 1 || line > lines.length) return null;
   const text: string = (lines[line - 1] ?? "").trim();
   if (text.length === 0) return null;
+  return signLineText(path, rule, text);
+}
+
+/** Content-addressed signature for a trimmed line (used by `signFinding` and contract tests). */
+export function signLineText(
+  path: string,
+  rule: RuleId,
+  lineText: string,
+): string {
+  const text: string = lineText.trim();
   return createHash("sha1")
     .update(`${path}\0${rule}\0${text}`)
     .digest("hex");

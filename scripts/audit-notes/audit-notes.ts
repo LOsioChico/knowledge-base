@@ -142,8 +142,23 @@ function parseArgs(): Args {
 }
 
 let JSON_ONLY: boolean = false;
+let writingFinalJson: boolean = false;
+let jsonStdoutGuardInstalled: boolean = false;
+
+function installJsonStdoutGuard(): void {
+  if (!JSON_ONLY || jsonStdoutGuardInstalled) return;
+  jsonStdoutGuardInstalled = true;
+  const origWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = ((...args: Parameters<typeof process.stdout.write>) => {
+    if (writingFinalJson) return origWrite(...args);
+    return process.stderr.write(...args);
+  }) as typeof process.stdout.write;
+}
+
 function log(msg: string): void {
-  if (!JSON_ONLY) console.error(msg);
+  // Progress logs are suppressed in --json mode, but fatal/config errors must
+  // still reach stderr for operators piping stdout to jq.
+  if (!JSON_ONLY || msg.startsWith("error:")) console.error(msg);
 }
 
 // Aggregate per-label LLM run stats. The Cursor SDK (v1.0.11) does not
@@ -221,11 +236,11 @@ async function runAgent(prompt: string, label: string): Promise<string> {
     try {
       await using agent = await Agent.create({
         apiKey,
-        // Per `Cursor.models.list()` (queried 2026-05-02), `composer-2` exposes
+        // Per `Cursor.models.list()` (queried 2026-05-18), `composer-2.5` exposes
         // a single `fast: "true" | "false"` parameter and `fast=true` is the
         // default variant (`isDefault: true`). Passing it explicitly pins the
         // selection so the audit doesn't drift if Cursor changes the default.
-        model: { id: "composer-2", params: [{ id: "fast", value: "true" }] },
+        model: { id: "composer-2.5", params: [{ id: "fast", value: "true" }] },
         local: { cwd: REPO_ROOT, settingSources: ["project"] },
       });
       const run: Run = await agent.send(prompt);
@@ -401,6 +416,7 @@ function nestTiered(
 async function main(): Promise<void> {
   const args: Args = parseArgs();
   JSON_ONLY = args.jsonOnly;
+  if (JSON_ONLY) installJsonStdoutGuard();
 
   if ((process.env["CURSOR_API_KEY"] ?? "") === "") {
     log("error: CURSOR_API_KEY is not set; source verification is mandatory");
@@ -677,7 +693,9 @@ async function main(): Promise<void> {
   );
 
   if (JSON_ONLY) {
+    writingFinalJson = true;
     process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
+    writingFinalJson = false;
   } else {
     log("\n--- final report ---");
     process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
