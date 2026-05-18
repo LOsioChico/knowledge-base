@@ -20,6 +20,7 @@ source:
   - https://effect.website/docs/getting-started/running-effects/
   - https://effect.website/blog/ts-plus-postmortem/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts
+  - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
 ---
 
 > Effect's core type is `Effect<Success, Error, Requirements>`: a value that _describes_ a computation. A runtime executes it. Errors and dependencies live in the type, not in `try/catch` and DI containers.
@@ -99,7 +100,7 @@ declare const fetchUser: () => Effect.Effect<{ id: string }, NetworkError | Pars
 // The compiler knows EXACTLY what can fail. No "did I forget a catch?" doubt.
 ```
 
-`Effect.catchTag` then _removes_ a tag from `E`, so after handling `NetworkError` the remaining failure type is `Effect<{ id: string }, ParseError>`. Forgetting a case becomes a compile error. See [[effect-ts/typed-errors|Typed errors]] for the full pattern.
+`Effect.catchTag` then _removes_ a tag from `E`, so after handling `NetworkError` the remaining failure type is `Effect<{ id: string }, ParseError>` ([`Exclude<E, { _tag: K }>` return](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3883-L3889)). Forgetting a case becomes a compile error. See [[effect-ts/typed-errors|Typed errors]] for the full pattern.
 
 ### 2. Dependency injection in the type signature
 

@@ -20,6 +20,7 @@ source:
   - https://effect.website/docs/error-management/error-channel-operations/
   - https://effect.website/docs/getting-started/creating-effects/
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
+  - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Data.ts
 ---
 
 > Put failure modes in the type signature, not in `try/catch`. `Effect.fail` declares an error in the `E` channel; `Effect.try` / `Effect.tryPromise` lift fallible code; `Effect.catchTag` discriminates by `_tag` and removes the handled tag from the residual error type.
@@ -34,7 +35,7 @@ That's it: typed errors are part of the core `effect` package. Examples below as
 
 ## 1. Declare a tagged error
 
-`Data.TaggedError` is the canonical declaration form ([expected-errors docs](https://effect.website/docs/error-management/expected-errors/)): it adds the `_tag` field, the constructor, and structural equality in one line.
+`Data.TaggedError` is the canonical declaration form ([expected-errors docs](https://effect.website/docs/error-management/expected-errors/), [`Data.TaggedError`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Data.ts#L580-L582)): it adds the `_tag` field, the constructor, and structural equality in one line.
 
 ```typescript
 import { Data } from "effect";

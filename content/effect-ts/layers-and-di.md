@@ -198,7 +198,7 @@ const LoggerWithConfig = Layer.provide(LoggerLive, ConfigLive);
 const AppLive = DatabaseLive.pipe(Layer.provide(LoggerWithConfig), Layer.provide(ConfigLive));
 ```
 
-The `provide` signature is the one to internalize ([source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L899-L903)): `Layer<RIn2, E2, ROut2 | Exclude<R, ROut>>` : the inner layer's outputs are subtracted from the outer's requirements.
+The `provide` signature is the one to internalize ([source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L899-L916)): for `Layer.provide(self, that)` with `self: Layer<ROut2, E2, RIn2>` and `that: Layer<ROut, E, RIn>`, the result is `Layer<ROut2, E | E2, RIn | Exclude<RIn2, ROut>>` : the inner layer's outputs are subtracted from the outer's requirements.
 
 ## Memoization (default; usually invisible)
 
