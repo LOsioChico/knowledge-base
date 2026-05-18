@@ -2,7 +2,7 @@
   "name": "knowledge-base",
   "private": true,
   "type": "module",
-  "description": "Tooling for the knowledge-base content vault (wikilink linter and tests). Quartz lives under quartz/ with its own package.json.",
+  "description": "Tooling for the knowledge-base content vault (wikilink linter and tests).",
   "scripts": {
     "lint:wikilinks": "node scripts/lint-wikilinks.mjs",
     "test": "tsx --test scripts/*.test.mjs"

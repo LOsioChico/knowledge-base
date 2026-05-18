@@ -26,23 +26,19 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - name: Install root deps (lint tooling)
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Lint wikilinks
-        run: npm run lint:wikilinks
+        run: bun run lint:wikilinks
       - name: Lint content (Pass 0)
         working-directory: scripts/audit-notes
         run: |
-          if [ -f yarn.lock ]; then
-            corepack enable
-            yarn install --frozen-lockfile
-            yarn lint:content
-            yarn lint:format
-          else
-            npm install --no-audit --no-fund
-            npm run lint:content
-            npm run lint:format
-          fi
+          bun install --frozen-lockfile
+          bun run lint:content
+          bun run lint:format
 
   # 2. Build the site by cloning the Quartz fork at build time. Skipped on
   # pull_request: deploy is main-only. To pin a specific Quartz version,

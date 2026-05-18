@@ -23,6 +23,6 @@ npx quartz build --serve -d <path-to-knowledge-base>/content
 ## Lint
 
 ```bash
-npm ci             # one-time install of lint tooling
-npm run lint:wikilinks
+bun install        # one-time install of lint tooling
+bun run lint:wikilinks
 ```
