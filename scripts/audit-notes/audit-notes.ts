@@ -10,12 +10,15 @@
 //   CURSOR_API_KEY=... yarn start <file.md> [more.md ...]
 //
 // Flags:
+//   --profile=ci|triage|full   pass set (default: full for backward compat)
 //   --skip-verify   skip Pass 2 verifier (faster; useful for local debugging)
 //                   (--no-verify still accepted as a deprecated alias)
 //   --json        emit only the final JSON to stdout (for CI piping)
 //
-// Source verification (Pass 1b) is always on. CURSOR_API_KEY must be set;
-// the script exits non-zero on missing key or any auth/network failure.
+// Profiles:
+//   ci     — Pass 0 only (deterministic; no LLM; no CURSOR_API_KEY)
+//   triage — Pass 0 + 0b + 1b + 1c + 1d + source grounding + dismissed filter
+//   full   — all passes (Pass 1, 1a, 1e, 2, 3 require CURSOR_API_KEY)
 
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
@@ -56,10 +59,28 @@ const DEFAULT_TARGETS: readonly string[] = [
   "content/nestjs/fundamentals/guards.md",
 ];
 
+export type AuditProfile = "ci" | "triage" | "full";
+
 interface Args {
   targets: string[];
   noVerify: boolean;
   jsonOnly: boolean;
+  profile: AuditProfile;
+}
+
+function parseProfile(argv: readonly string[]): AuditProfile {
+  for (const arg of argv) {
+    const eq: RegExpMatchArray | null = /^--profile=(ci|triage|full)$/.exec(arg);
+    if (eq !== null) return eq[1] as AuditProfile;
+  }
+  const idx: number = argv.indexOf("--profile");
+  if (idx !== -1) {
+    const val: string | undefined = argv[idx + 1];
+    if (val === "ci" || val === "triage" || val === "full") return val;
+    log("error: --profile requires ci, triage, or full");
+    process.exit(2);
+  }
+  return "full";
 }
 
 // Resolve targets from `git diff --name-only <ref>` (committed + staged +
@@ -93,6 +114,7 @@ function targetsFromBase(ref: string): string[] {
 
 function parseArgs(): Args {
   const argv: string[] = process.argv.slice(2);
+  const profile: AuditProfile = parseProfile(argv);
   const hasLegacy: boolean = argv.includes("--no-verify");
   if (hasLegacy) {
     log(
@@ -103,6 +125,7 @@ function parseArgs(): Args {
     argv.includes("--skip-verify") || hasLegacy;
   const jsonOnly: boolean = argv.includes("--json");
   const baseIdx: number = argv.indexOf("--base");
+  const profileIdx: number = argv.indexOf("--profile");
   const baseRef: string | null =
     baseIdx !== -1 ? (argv[baseIdx + 1] ?? null) : null;
   if (baseIdx !== -1 && baseRef === null) {
@@ -112,6 +135,8 @@ function parseArgs(): Args {
   const positional: string[] = argv.filter((a: string, i: number): boolean => {
     if (a.startsWith("--")) return false;
     if (baseIdx !== -1 && i === baseIdx + 1) return false;
+    if (profileIdx !== -1 && i === profileIdx + 1) return false;
+    if (/^--profile=(ci|triage|full)$/.test(a)) return false;
     return true;
   });
 
@@ -138,7 +163,7 @@ function parseArgs(): Args {
       process.exit(2);
     }
   }
-  return { targets, noVerify, jsonOnly };
+  return { targets, noVerify, jsonOnly, profile };
 }
 
 let JSON_ONLY: boolean = false;
@@ -413,19 +438,106 @@ function nestTiered(
   return { files: Array.from(byPath.values()) };
 }
 
+function emitReportAndExit(
+  targets: readonly string[],
+  allTiered: Array<FlatFinding & { tier: ConfidenceTier }>,
+): void {
+  const dismissResult = filterDismissed(REPO_ROOT, allTiered);
+  if (dismissResult.dropped.length > 0) {
+    log(
+      `\n[dismissed] suppressed ${dismissResult.dropped.length} previously-triaged finding(s):`,
+    );
+    for (const { finding, entry } of dismissResult.dropped) {
+      log(`  - ${finding.path}:${finding.line} (${finding.rule}) — ${entry.reason}`);
+    }
+  }
+
+  const finalReport: TieredReport = nestTiered(targets, dismissResult.kept);
+
+  if (JSON_ONLY) {
+    writingFinalJson = true;
+    process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
+    writingFinalJson = false;
+  } else {
+    log("\n--- final report ---");
+    process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
+  }
+
+  const totals = finalReport.files.reduce(
+    (acc: { high: number; advisory: number }, f: TieredFileReport) => {
+      for (const x of f.findings) {
+        if (x.tier === "high") acc.high += 1;
+        else acc.advisory += 1;
+      }
+      return acc;
+    },
+    { high: 0, advisory: 0 },
+  );
+  log(`\n[totals] high=${totals.high} advisory=${totals.advisory}`);
+  logRunStatsSummary();
+  process.exit(totals.high > 0 ? 1 : 0);
+}
+
+async function processSourceFindings(
+  sourceFindings: FlatFinding[],
+): Promise<{
+  highSourceFindings: FlatFinding[];
+  advisorySourceFindings: FlatFinding[];
+}> {
+  const anchorVerified = await runAnchorVerifyPass(sourceFindings, {
+    repoRoot: REPO_ROOT,
+    log,
+  });
+  if (anchorVerified.dropped.length > 0) {
+    log(
+      `[pass-1c] anchor-verifier dropped ${anchorVerified.dropped.length} false-positive(s) (original anchor was correct)`,
+    );
+  }
+
+  const factGrounded = runFactGroundPass(anchorVerified.kept, {
+    repoRoot: REPO_ROOT,
+    log,
+  });
+  if (factGrounded.dropped.length > 0) {
+    log(
+      `[pass-1d] fact-grounding dropped ${factGrounded.dropped.length} false-positive(s) (claim terms found in source extracts)`,
+    );
+  }
+
+  const groundedSource = groundFindings(REPO_ROOT, factGrounded.kept, 10);
+  if (groundedSource.dropped.length > 0) {
+    log(
+      `[ground] dropped ${groundedSource.dropped.length} source-verification finding(s) lacking verbatim evidence`,
+    );
+  }
+
+  const verifiedSourceFindings: FlatFinding[] = groundedSource.kept;
+  const advisorySourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
+    (f: FlatFinding): boolean => f.message.startsWith("Plausible but unsourced"),
+  );
+  const highSourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
+    (f: FlatFinding): boolean => !f.message.startsWith("Plausible but unsourced"),
+  );
+  return { highSourceFindings, advisorySourceFindings };
+}
+
 async function main(): Promise<void> {
   const args: Args = parseArgs();
   JSON_ONLY = args.jsonOnly;
   if (JSON_ONLY) installJsonStdoutGuard();
 
-  if ((process.env["CURSOR_API_KEY"] ?? "") === "") {
-    log("error: CURSOR_API_KEY is not set; source verification is mandatory");
+  const needsApiKey: boolean = args.profile !== "ci";
+  if (needsApiKey && (process.env["CURSOR_API_KEY"] ?? "") === "") {
+    log("error: CURSOR_API_KEY is not set (required for triage and full profiles)");
     process.exit(2);
   }
 
   log(`[audit] cwd=${REPO_ROOT}`);
+  log(`[audit] profile=${args.profile}`);
   log(`[audit] targets=${args.targets.join(", ")}`);
-  log(`[audit] verify=${!args.noVerify}`);
+  if (args.profile === "full") {
+    log(`[audit] verify=${!args.noVerify}`);
+  }
 
   if (args.targets.length === 0) {
     log("[audit] no targets to audit; exiting clean");
@@ -443,8 +555,18 @@ async function main(): Promise<void> {
   const detFlat: FlatFinding[] = flatten({ files: det });
   log(`[pass-0] ${detFlat.length} findings`);
 
-  // Pass 0b: deterministic advisory (hedge sniff). Routed to the advisory
-  // tier so existing hedges in the vault don't wedge CI.
+  if (args.profile === "ci") {
+    const ciTiered: Array<FlatFinding & { tier: ConfidenceTier }> = detFlat.map(
+      (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+        ...f,
+        tier: "high",
+      }),
+    );
+    emitReportAndExit(args.targets, ciTiered);
+    return;
+  }
+
+  log("\n--- pass 0b (deterministic advisory) ---");
   const detAdvisory: FileReport[] = args.targets.map(
     (p: string): FileReport =>
       runDeterministicAdvisory(resolve(REPO_ROOT, p), p),
@@ -452,18 +574,54 @@ async function main(): Promise<void> {
   const detAdvisoryFlat: FlatFinding[] = flatten({ files: detAdvisory });
   log(`[pass-0b] ${detAdvisoryFlat.length} advisory hedge findings`);
 
-  // Pass 1, 1a, 1b, 1e run concurrently — they're independent and all network-bound.
-  log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1b (source verify) + 1e (jargon judge) in parallel ---");
-  const [audit, sdtFindings, sourceFindings, jargonFindings] = await Promise.all([
+  log("\n--- pass 1b (source verify) ---");
+  const sourceFindings: FlatFinding[] = await runSourceVerifyPass({
+    repoRoot: REPO_ROOT,
+    targets: args.targets,
+    runAgent,
+    extractJson,
+    log,
+  });
+  log(`[pass-1b] ${sourceFindings.length} source-verification finding(s)`);
+
+  const { highSourceFindings, advisorySourceFindings } =
+    await processSourceFindings(sourceFindings);
+
+  if (args.profile === "triage") {
+    const triageTiered: Array<FlatFinding & { tier: ConfidenceTier }> = [
+      ...detFlat.map(
+        (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+          ...f,
+          tier: "high",
+        }),
+      ),
+      ...highSourceFindings.map(
+        (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+          ...f,
+          tier: "high",
+        }),
+      ),
+      ...advisorySourceFindings.map(
+        (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+          ...f,
+          tier: "advisory",
+        }),
+      ),
+      ...detAdvisoryFlat.map(
+        (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({
+          ...f,
+          tier: "advisory",
+        }),
+      ),
+    ];
+    emitReportAndExit(args.targets, triageTiered);
+    return;
+  }
+
+  log("\n--- pass 1 (auditor) + 1a (show-dont-tell) + 1e (jargon judge) in parallel ---");
+  const [audit, sdtFindings, jargonFindings] = await Promise.all([
     runAuditorPass(args.targets),
     runShowDontTellPass(args.targets),
-    runSourceVerifyPass({
-      repoRoot: REPO_ROOT,
-      targets: args.targets,
-      runAgent,
-      extractJson,
-      log,
-    }),
     runJargonVerifyPass({
       repoRoot: REPO_ROOT,
       targets: args.targets,
@@ -475,40 +633,7 @@ async function main(): Promise<void> {
   const auditFlat: FlatFinding[] = flatten(audit);
   log(`[pass-1]  ${auditFlat.length} candidate findings`);
   log(`[pass-1a] ${sdtFindings.length} show-dont-tell finding(s)`);
-  log(`[pass-1b] ${sourceFindings.length} source-verification finding(s)`);
   log(`[pass-1e] ${jargonFindings.length} jargon finding(s)`);
-
-  // Pass 1c: deterministic anchor verifier. Drops `source-verification`
-  // findings whose only complaint is a wrong GitHub line anchor when the
-  // anchor actually points at a definition of the cited symbol. This
-  // catches the most common LLM false-positive pattern (~50% rate
-  // empirically) before it reaches Pass 3 / human triage.
-  const anchorVerified = await runAnchorVerifyPass(sourceFindings, {
-    repoRoot: REPO_ROOT,
-    log,
-  });
-  if (anchorVerified.dropped.length > 0) {
-    log(
-      `[pass-1c] anchor-verifier dropped ${anchorVerified.dropped.length} false-positive(s) (original anchor was correct)`,
-    );
-  }
-
-  // Pass 1d: deterministic fact-grounding. For each "Not supported by"
-  // source-verification finding, extract high-information terms from the
-  // claim and grep them across the cached source extracts. If ALL terms
-  // appear in at least one source, the LLM missed it — drop as a false
-  // positive. Conservative: never touches "Contradicts" or "Plausible but
-  // unsourced" findings.
-  const factGrounded = runFactGroundPass(anchorVerified.kept, {
-    repoRoot: REPO_ROOT,
-    log,
-  });
-  if (factGrounded.dropped.length > 0) {
-    log(
-      `[pass-1d] fact-grounding dropped ${factGrounded.dropped.length} false-positive(s) (claim terms found in source extracts)`,
-    );
-  }
-  const verifiedSourceFindings: FlatFinding[] = factGrounded.kept;
 
   // Span-grounding (technique C): drop any LLM finding whose evidence quote
   // is not a substring of the file within ±10 lines of the cited line.
@@ -576,19 +701,6 @@ async function main(): Promise<void> {
     );
   }
 
-  // Pass 3: fix-proposer. Runs on the union of high-tier findings (verified
-  // objective + grounded show-dont-tell + source-verification). Cheap because
-  // post-verification the count is typically 0-5.
-  //
-  // Split source-verification findings: "Plausible but unsourced" findings are
-  // advisory (action is "add a `source:` URL", not "rewrite the prose"). Real
-  // contradictions and unsupported claims stay high-tier.
-  const advisorySourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
-    (f: FlatFinding): boolean => f.message.startsWith("Plausible but unsourced"),
-  );
-  const highSourceFindings: FlatFinding[] = verifiedSourceFindings.filter(
-    (f: FlatFinding): boolean => !f.message.startsWith("Plausible but unsourced"),
-  );
   const highTierForFixes: FlatFinding[] = [
     ...verifiedFlat,
     ...groundedSdt.kept,
@@ -674,47 +786,7 @@ async function main(): Promise<void> {
     ),
   ];
 
-  // Filter against the dismissed-finding registry. Entries are keyed by
-  // sha1(path + rule + trimmed line text) so the dismissal survives line-
-  // number drift but re-fires when the underlying prose is rewritten.
-  const dismissResult = filterDismissed(REPO_ROOT, allTiered);
-  if (dismissResult.dropped.length > 0) {
-    log(
-      `\n[dismissed] suppressed ${dismissResult.dropped.length} previously-triaged finding(s):`,
-    );
-    for (const { finding, entry } of dismissResult.dropped) {
-      log(`  - ${finding.path}:${finding.line} (${finding.rule}) — ${entry.reason}`);
-    }
-  }
-
-  const finalReport: TieredReport = nestTiered(
-    args.targets,
-    dismissResult.kept,
-  );
-
-  if (JSON_ONLY) {
-    writingFinalJson = true;
-    process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
-    writingFinalJson = false;
-  } else {
-    log("\n--- final report ---");
-    process.stdout.write(JSON.stringify(finalReport, null, 2) + "\n");
-  }
-
-  const totals = finalReport.files.reduce(
-    (acc: { high: number; advisory: number }, f: TieredFileReport) => {
-      for (const x of f.findings) {
-        if (x.tier === "high") acc.high += 1;
-        else acc.advisory += 1;
-      }
-      return acc;
-    },
-    { high: 0, advisory: 0 },
-  );
-  log(`\n[totals] high=${totals.high} advisory=${totals.advisory}`);
-  logRunStatsSummary();
-  // Exit 1 only on high-confidence findings; advisory ones are non-blocking.
-  process.exit(totals.high > 0 ? 1 : 0);
+  emitReportAndExit(args.targets, allTiered);
 }
 
 main().catch((err: unknown): void => {

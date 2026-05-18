@@ -17,6 +17,12 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import {
+  buildShowDontTellSkipContext,
+  findBodyStartLine,
+  isShowDontTellLineSkipped,
+} from "../skip-zones.js";
+
 export interface ShowDontTellCandidate {
   path: string; // repo-relative
   line: number; // 1-based, the prose line with the claim
@@ -180,23 +186,16 @@ export function findShowDontTellCandidates(
   repoRelPath: string,
 ): ShowDontTellCandidate[] {
   const scanned: ScannedFile = scanFile(repoRelPath, repoRoot);
+  const noteText: string = readFileSync(resolve(repoRoot, repoRelPath), "utf8");
+  const skipCtx = buildShowDontTellSkipContext(repoRelPath, noteText);
   const candidates: ShowDontTellCandidate[] = [];
   const WINDOW: number = 30;
-
-  // Locate first non-frontmatter, non-blank body line so the tagline guard is
-  // anchored to actual content rather than the frontmatter offset.
-  let bodyStart: number = 1;
-  for (let i: number = 0; i < scanned.lines.length; i++) {
-    const ln: string = scanned.lines[i] ?? "";
-    if (ln.trim() && ln.trim() !== "---") {
-      bodyStart = i + 1;
-      break;
-    }
-  }
+  const bodyStart: number = findBodyStartLine(scanned.lines);
 
   for (let i: number = 0; i < scanned.lines.length; i++) {
     const lineNo: number = i + 1;
     if (scanned.inCodeAt.has(lineNo)) continue;
+    if (isShowDontTellLineSkipped(skipCtx, lineNo)) continue;
     // Skip lines inside `> [!warning]` / `> [!info]` / `> [!example]` callouts.
     // The reader expectation for a callout is a compact warning, not an
     // expanded recipe section. Behavior-shown belongs in body sections; in

@@ -13,6 +13,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { FlatFinding } from "./types.js";
+import { findSkipLines } from "./skip-zones.js";
 import { readVotingConfig, runWithVoting } from "./voting.js";
 
 interface JargonFinding {
@@ -33,46 +34,6 @@ interface JargonVerifyArgs {
   runAgent: (prompt: string, label: string) => Promise<string>;
   extractJson: (text: string) => string;
   log: (msg: string) => void;
-}
-
-// Headings whose bodies are link/topic enumerations, not prose claims.
-// Jargon flags inside these sections are noise: "OpenAPI", "NestJS", "fibers"
-// here are titles of planned notes or pointers, not undefined terms in prose.
-const SKIP_SECTION_HEADINGS: readonly string[] = [
-  "pending notes",
-  "see also",
-  "further reading",
-  "related",
-  "references",
-];
-
-// Returns 1-based line numbers that fall inside any skip-zone section.
-// A section starts at its `## Heading` line and runs until the next
-// `## ` heading at the same depth or EOF. Frontmatter is excluded from
-// section detection.
-function findSkipLines(noteText: string): Set<number> {
-  const lines: string[] = noteText.split("\n");
-  const skip: Set<number> = new Set();
-  let inSkipSection: boolean = false;
-  let inFrontmatter: boolean = lines[0] === "---";
-  for (let i: number = 0; i < lines.length; i++) {
-    const line: string = lines[i] ?? "";
-    if (inFrontmatter) {
-      if (i > 0 && line === "---") inFrontmatter = false;
-      continue;
-    }
-    const heading: RegExpExecArray | null = /^##\s+(.+?)\s*$/.exec(line);
-    if (heading !== null) {
-      const text: string = heading[1]!.toLowerCase().trim();
-      inSkipSection = SKIP_SECTION_HEADINGS.some(
-        (h: string): boolean => text === h || text.startsWith(`${h}:`),
-      );
-      // Heading line itself is fine to evaluate — skip only its body.
-      continue;
-    }
-    if (inSkipSection) skip.add(i + 1);
-  }
-  return skip;
 }
 
 // Cap concurrent LLM sessions in line with source-verify (4). Each call is

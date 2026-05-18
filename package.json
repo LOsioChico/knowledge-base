@@ -5,6 +5,7 @@
   "description": "Tooling for the knowledge-base content vault (wikilink linter and tests).",
   "scripts": {
     "lint:wikilinks": "node scripts/lint-wikilinks.mjs",
+    "vault:check": "node scripts/vault-check.mjs",
     "test": "tsx --test scripts/*.test.mjs"
   },
   "engines": {

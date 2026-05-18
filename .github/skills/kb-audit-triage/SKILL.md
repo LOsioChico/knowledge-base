@@ -40,29 +40,34 @@ finding → act → persist.
 
 ## Step 1 — Run the audit
 
-From repo root. **Default scope is the whole vault** (every `.md` under `content/`); narrow
-only when the user asks for "my last commit" or names specific files.
+From repo root. **Default post-edit workflow**: diff-aware `triage` profile on the last
+commit (Pass 0 + 0b + source-verify + deterministic FP filters; skips Pass 1/1a/1e/2/3).
 
 ```bash
 set -a; source .env; set +a   # loads CURSOR_API_KEY (gitignored)
 cd scripts/audit-notes
-# Default: full-vault audit. Excludes content/inbox.md — it's a planning queue
-# (status: seed, external URLs as bullets, no claims-to-verify); the source /
-# show-don't-tell / behavior-in-snippet passes don't apply to it.
-yarn start --json $(find ../../content -name '*.md' -not -path '*/inbox.md' | sort) > /tmp/audit.json 2> /tmp/audit.err
+bun start --json --base HEAD~1 --profile=triage > /tmp/audit.json 2> /tmp/audit.err
 ```
 
-Variants (use only when the user scopes the request):
+### Profiles (`--profile=ci|triage|full`, default `full`)
 
-- `--base HEAD~1` — only files changed in last commit. Use when the user says "audit my
-  last commit" or similar.
+| Profile | When to use | Passes |
+| --- | --- | --- |
+| `triage` | **Default after editing notes** — fast post-commit loop | 0, 0b, 1b, 1c, 1d, source grounding, dismissed filter |
+| `full` | Deep sweep before a major release or when user asks for full audit | All passes including Pass 1, 1a, 1e, 2, 3 |
+| `ci` | CI gate only — no LLM, no API key | Pass 0 only (same as `lint:content`) |
+
+Scripts: `bun run audit:triage`, `bun run audit:ci`.
+
+### Scope variants
+
+- `--base HEAD~1` — files changed in last commit (default workflow above).
 - `--base origin/main` — everything since the branch diverged.
 - `--base <ref>` — committed + staged + unstaged changes since `<ref>`.
-- Explicit paths: `yarn start --json ../../content/<path>.md [more.md ...]` (full re-audit
-  of a specific note).
-- Bare `yarn start --json` (no args, no `--base`) falls back to a small hardcoded
-  `DEFAULT_TARGETS` list inside `audit-notes.ts` — NOT the whole vault. Avoid; pass the
-  `find` glob above instead.
+- Explicit paths: `bun start --json --profile=triage ../../content/<path>.md`.
+- **Full vault** (rare): `bun start --json --profile=full $(find ../../content -name '*.md' -not -path '*/inbox.md' | sort)`.
+- Bare `bun start` (no args, no `--base`) falls back to `DEFAULT_TARGETS` in
+  `audit-notes.ts` — avoid; pass `--base` or explicit paths.
 - Empty diff exits cleanly (`{ "files": [] }`).
 
 Read `/tmp/audit.json`. Skim `/tmp/audit.err` for `[pass-1c] anchor-verifier dropped N`,

@@ -12,8 +12,8 @@ export const DEFAULT_INDEXED_FOLDERS = [
   { area: "aws", folder: "s3" },
 ]
 
-const SIMILARITY_THRESHOLD = 0.2
-const ADVISORY_SIMILARITY_THRESHOLD = 0.16
+export const SIMILARITY_THRESHOLD = 0.2
+export const ADVISORY_SIMILARITY_THRESHOLD = 0.16
 
 const VALID_STATUSES = new Set(["seed", "draft", "evergreen", "archived"])
 const VALID_TAGS = new Set([
@@ -1279,4 +1279,82 @@ export async function lintVault({
 
   result.ok = result.violations.length === 0
   return result
+}
+
+/** Repo-relative path for a note slug (e.g. `nestjs/fundamentals/guards`). */
+export function slugToContentPath(slug) {
+  return `content/${slug}.md`
+}
+
+function pairTouchesChanged(a, b, changedSet) {
+  return changedSet.has(slugToContentPath(a)) || changedSet.has(slugToContentPath(b))
+}
+
+/**
+ * Non-blocking link suggestions for changed files: discoverability pairs (score ≥
+ * ADVISORY_SIMILARITY_THRESHOLD), first-mention gaps, and orphans.
+ */
+export function buildLinkSuggestions(lintResult, changedFiles) {
+  const changedSet = new Set(changedFiles)
+  const suggestions = []
+
+  const discoverabilityItems = [
+    ...lintResult.warnings.filter((w) => w.check === "discoverability-advisory"),
+    ...lintResult.violations.filter((v) => v.check === "discoverability"),
+  ]
+  for (const item of discoverabilityItems) {
+    if (item.score < ADVISORY_SIMILARITY_THRESHOLD) continue
+    if (!pairTouchesChanged(item.a, item.b, changedSet)) continue
+    suggestions.push({
+      kind: "link-pair",
+      a: item.a,
+      b: item.b,
+      score: item.score,
+      sharedTerms: item.sharedTerms ?? [],
+      blocking: item.check === "discoverability",
+      suggestedActions: item.suggestedActions ?? [
+        "related-both-ways",
+        "body-wikilink",
+        "unrelated-opt-out",
+      ],
+    })
+  }
+
+  for (const item of lintResult.violations) {
+    if (item.check === "first-mention" && item.file && changedSet.has(item.file)) {
+      suggestions.push({
+        kind: "first-mention",
+        file: item.file,
+        line: item.line,
+        target: item.target,
+        term: item.term,
+      })
+    }
+    if (item.check === "orphans" && item.file && changedSet.has(item.file)) {
+      suggestions.push({ kind: "orphan", file: item.file })
+    }
+  }
+
+  return suggestions
+}
+
+/** Keep violations/warnings relevant to a changed-file set (plus global checks). */
+export function filterLintResultForChanged(lintResult, changedFiles) {
+  const changedSet = new Set(changedFiles)
+  const globalChecks = new Set(["agents-mirror"])
+
+  function keep(item) {
+    if (globalChecks.has(item.check)) return true
+    if (item.file && changedSet.has(item.file)) return true
+    if (item.a && item.b && pairTouchesChanged(item.a, item.b, changedSet)) return true
+    return false
+  }
+
+  const violations = lintResult.violations.filter(keep)
+  const warnings = lintResult.warnings.filter(keep)
+  return {
+    ok: violations.length === 0,
+    violations,
+    warnings,
+  }
 }

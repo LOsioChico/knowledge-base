@@ -23,6 +23,12 @@ describe("findShowDontTellCandidates", (): void => {
     assert.ok(!lines.includes(1), `unexpected candidate at line 1: ${lines}`);
   });
 
+  it("does not flag the recipe tagline blockquote (line 29)", (): void => {
+    const path: string = "content/nestjs/recipes/serialization.md";
+    const lines: number[] = candidateLines(path);
+    assert.ok(!lines.includes(29), `tagline should be skipped: ${lines}`);
+  });
+
   it("skips behavioral claims inside Obsidian callouts", (): void => {
     const path: string = "content/nestjs/fundamentals/exception-filters.md";
     const lines: number[] = candidateLines(path);
