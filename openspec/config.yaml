@@ -1,13 +1,14 @@
 strict_tdd: false
 context: |
-  knowledge-base is a personal Quartz v4 markdown vault. Primary surface: content/ (notes, MOCs, recipes).
-  Operating contract: AGENTS.md and .github/skills/kb-author/SKILL.md before editing content/.
-  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs (vault linking/schema), scripts/vault-check.mjs (diff-scoped gate),
-  scripts/audit-notes/ (Pass 0 lint, Prettier on content/, LLM audit pipeline).
+  knowledge-base: vault content/ (Quartz/Obsidian) + published sites/docs/ (Starlight MDX, migration in progress).
+  Operating contract: AGENTS.md; kb-author for content/; kb-starlight-author for sites/docs/.
+  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/vault-check.mjs, scripts/audit-notes/, scripts/merge-pages.mjs.
   Strict TDD applies only to scripts/** changes. content/ edits use vault lint + audit, not test-first TDD.
   Post-edit gate when content/ changed: bun run vault:check --base HEAD~1 (LLM audit needs CURSOR_API_KEY in repo-root .env).
-  Linter-only chain (no LLM): bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format).
-  CI (.github/workflows/deploy.yml): lint:wikilinks, audit-notes lint:content, lint:format (no test job).
+  vault:check also runs lint:docs when sites/docs/ is in the git diff.
+  After sites/docs/ only: bun run lint:docs && bun run docs:build. sites/docs uses Bun (bun.lock).
+  Linter-only chain (no LLM): bun run lint:ci (matches CI lint job).
+  CI (.github/workflows/deploy.yml): lint:ci on PR+main; docs:build on PR; Quartz+Starlight merge on main. See docs/PIPELINE.md.
   Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, GitHub Actions.
 rules:
   proposal:
@@ -21,7 +22,7 @@ rules:
   apply:
     test_command: "bun run test && cd scripts/audit-notes && bun run test"
   verify:
-    test_command: "bun run lint:wikilinks && bun run test && cd scripts/audit-notes && bun run test && cd scripts/audit-notes && bun run lint:content && cd scripts/audit-notes && bun run lint:format"
+    test_command: "bun run lint:ci && bun run test:ci"
 testing:
   detected: "2026-05-19"
   runner:
@@ -48,17 +49,14 @@ testing:
     commands:
       []
 quality:
-  lint: "bun run lint:wikilinks"
+  lint: "bun run lint:ci"
   lint_commands:
     - scope: "."
-      command: "bun run lint:wikilinks"
-      framework: "wikilink linter"
-    - scope: "scripts/audit-notes"
-      command: "cd scripts/audit-notes && bun run lint:content"
-      framework: "Pass 0 content lint"
-    - scope: "scripts/audit-notes"
-      command: "cd scripts/audit-notes && bun run lint:format"
-      framework: "prettier check"
+      command: "bun run lint:ci"
+      framework: "CI lint job (vault wikilinks + Pass 0 + Starlight)"
+    - scope: "sites/docs"
+      command: "bun run lint:docs"
+      framework: "Starlight astro check + MDX wikilinks + link hygiene"
   typecheck: "cd scripts/audit-notes && bun run typecheck"
   typecheck_commands:
     - scope: "scripts/audit-notes"
@@ -71,6 +69,6 @@ quality:
       framework: "prettier write"
 vault:
   check_command: "bun run vault:check --base HEAD~1"
-  check_command_lint_only: "bun run lint:wikilinks && cd scripts/audit-notes && bun run lint:content && cd scripts/audit-notes && bun run lint:format"
+  check_command_lint_only: "bun run lint:ci"
   source_urls_command: "scripts/check-source-urls.sh"
   audit_triage_command: "cd scripts/audit-notes && bun start --json --base HEAD~1 --profile=triage"

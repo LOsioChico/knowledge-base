@@ -1,0 +1,173 @@
+---
+title: What is Effect
+description: Effect Success, Error, and Requirements — lazy descriptions, runners, and why they beat untyped Promise for services.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Effect's core type is `Effect<Success, Error, Requirements>`: a value that _describes_ a computation. A runtime executes it. Errors and dependencies live in the type, not in `try/catch` and DI containers.
+
+## The type, three channels
+
+Per the [Effect type docs](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), the three parameters are:
+
+| Channel | Name in docs | What it tracks |
+| --- | --- | --- |
+| `A` | Success | The value the effect yields when it succeeds. |
+| `E` | Error | The expected, recoverable errors that can occur. |
+| `R` | Requirements | Services and config the effect needs (`Context.Tag`, layers). |
+
+Read `Effect<User, NotFound, UserRepo>` as: when you run this, you get a `User`, or it fails with `NotFound`, and you must provide a `UserRepo`:
+
+```ts twoslash
+import { Effect } from "effect";
+
+type FindUser = (id: string) => Effect.Effect<
+  { name: string },
+  { _tag: "NotFound" },
+  never
+>;
+```
+
+## Lazy descriptions, not running code
+
+Per the [Effect type docs](https://effect.website/docs/getting-started/the-effect-type/), values are lazily executed: importing a module, constructing an `Effect`, or `pipe(Effect.map(...))` runs **nothing** until a runner executes it.
+
+```ts twoslash
+import { Effect } from "effect";
+
+const program = Effect.sync(() => {
+  console.log("side effect");
+  return 42;
+});
+
+const result = Effect.runSync(program);
+// logs "side effect", result === 42
+```
+
+Before `runSync`, `program` is still `Effect<number, never, never>` — nothing has run yet. That is the main shift from `Promise`, which starts work as soon as you call `new Promise(...)` or `fetch(...)`.
+
+<Aside type="note" title="Promise vs Effect, in one paragraph">
+
+A `Promise<T>` is an in-flight computation that already started and resolves to `T` or rejects with `unknown`. An `Effect<A, E, R>` is a _recipe_ that has not started, succeeds with `A` or fails with typed `E`, and needs `R` provided. Laziness is what makes retry, scoped cleanup, and structured cancellation one-liners instead of hand-rolled plumbing.
+
+</Aside>
+
+## The runtime: three ways to execute
+
+Effect ships three [runners](https://effect.website/docs/getting-started/running-effects/) you reach for first:
+
+| Runner | Returns | When |
+| --- | --- | --- |
+| `Effect.runSync` | `A` (throws on failure) | Known-synchronous paths only |
+| `Effect.runPromise` | `Promise<A>` | Bridge to `async/await` at the edge |
+| `Effect.runFork` | `Fiber<A, E>` | Background work you may interrupt |
+
+Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; pick a runner only at the **entry point**. [[effect-ts/quickstart|Quickstart]] walks all three with runnable code.
+
+## Why this design
+
+<Tabs>
+  <TabItem label="Typed errors (E)">
+    `Promise<T>` rejects with `unknown`. `Effect<A, E, R>` puts failures in `E`:
+
+    ```ts twoslash
+    import { Data, Effect } from "effect";
+
+    class NetworkError extends Data.TaggedError("NetworkError") {}
+    class ParseError extends Data.TaggedError("ParseError") {}
+
+    const fetchUser = (): Effect.Effect<
+      { id: string },
+      NetworkError | ParseError
+    > => Effect.succeed({ id: "u_1" });
+    ```
+
+    `Effect.catchTag` removes a tag from `E` ([Effect.ts#L3883-L3889](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3883-L3889)). See [[effect-ts/typed-errors|Typed errors]] for the full pattern.
+
+  </TabItem>
+  <TabItem label="Dependencies (R)">
+    The `R` channel lists services the effect still needs. After `Layer.provide`, `R` becomes `never` and the effect is runnable:
+
+    ```ts twoslash
+    import { Context, Data, Effect, Layer } from "effect";
+
+    class NotFound extends Data.TaggedError("NotFound")<{ readonly id: string }> {}
+
+    class UserRepo extends Context.Tag("UserRepo")<
+      UserRepo,
+      {
+        readonly find: (
+          id: string,
+        ) => Effect.Effect<{ id: string; name: string }, NotFound>;
+      }
+    >() {}
+
+    const UserRepoLive = Layer.succeed(UserRepo, {
+      find: (id) =>
+        id === "u_1"
+          ? Effect.succeed({ id, name: "Ada" })
+          : Effect.fail(new NotFound({ id })),
+    });
+
+    const program = Effect.gen(function* () {
+      const repo = yield* UserRepo;
+      return yield* repo.find("u_1");
+    });
+
+    const provided = program.pipe(Effect.provide(UserRepoLive));
+    console.log(Effect.runSync(provided));
+    // { id: 'u_1', name: 'Ada' }
+    ```
+
+    `provided` has `R` of `never` — `UserRepo` was satisfied by the layer.
+
+  </TabItem>
+  <TabItem label="Concurrency">
+    Lazy effects let the runtime cancel children with their parent scope, supervise fibers, and release [[effect-ts/scoped-resources|scoped resources]] on interruption — patterns borrowed from ZIO-style systems.
+
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Missing services are compile errors">
+
+Calling `Effect.runSync(program)` while `R` still includes `UserRepo` fails the typechecker. Provide layers at the edge, not inside domain logic.
+
+</Aside>
+
+## Promise vs Effect at a glance
+
+| Dimension | `Promise<T>` | `Effect<A, E, R>` |
+| --- | --- | --- |
+| Error type | `unknown` | Generic `E` |
+| Dependencies | Implicit | Explicit `R` |
+| Execution | Eager | Lazy until a runner |
+| Cancellation | Manual `AbortController` | Structured fibers |
+| Resources | `try/finally` | `acquireRelease`, `Scope` |
+| Retry | Hand-rolled loops | `Schedule` |
+
+Because `Effect` is a description, the runtime can replay (retry), attach cleanup (scope), or stop mid-flight (interrupt) in ways that are awkward on an already-running `Promise`.
+
+<Aside type="note" title="No custom TypeScript compiler">
+
+Effect is a normal npm package: no forked `tsc`. An earlier **TS+** experiment added syntax via a compiler fork and was abandoned when HMR and parallel builds suffered ([TS+ postmortem](https://effect.website/blog/ts-plus-postmortem/)). Ergonomics today come from library types, not build patches.
+
+</Aside>
+
+## Ecosystem snapshot
+
+Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)) — platform, CLI, SQL, AI, workflow, RPC, OpenTelemetry, Vitest, and more.
+
+`Schema` lives in core [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts); standalone `@effect/schema` on npm is deprecated (merged into `effect`). Full lookup: [[effect-ts/ecosystem-map|Ecosystem map]].
+
+## Relationship to fp-ts
+
+Per the [`fp-ts` README](https://github.com/gcanti/fp-ts), fp-ts is merging into Effect; Effect is the successor to fp-ts v2.
+
+## See also
+
+- [[effect-ts/quickstart|Quickstart]]
+- [[effect-ts/typed-errors|Typed errors]]
+- [[effect-ts/layers-and-di|Layers and DI]]
+- [Effect type](https://effect.website/docs/getting-started/the-effect-type/) (official)
+- [Running effects](https://effect.website/docs/getting-started/running-effects/) (official)

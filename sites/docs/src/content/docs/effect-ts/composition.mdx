@@ -1,0 +1,215 @@
+---
+title: Composition with pipe, gen, and fn
+description: When to use pipe, Effect.gen, and Effect.fn for linear transforms, control flow, and traced callables.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Effect ships three ways to compose effects: `pipe` for linear value-to-value transforms, `Effect.gen` for branching and loops, and `Effect.fn` for named callables that auto-instrument tracing. They are complementary, not competing.
+
+## The three idioms in one minute
+
+```ts twoslash
+import { Effect } from "effect";
+
+const fetchUser = (id: string) => Effect.succeed({ name: `user_${id}` });
+const sendWelcome = (name: string) =>
+  Effect.sync(() => {
+    console.log(`welcome, ${name}`);
+  });
+
+// 1. pipe — linear: take an Effect, transform it.
+const a = fetchUser("u_1").pipe(
+  Effect.map((u) => u.name),
+  Effect.tap((name) => Effect.log(`got ${name}`)),
+);
+
+// 2. Effect.gen — control flow: branch, loop, share intermediate names.
+const b = Effect.gen(function* () {
+  const user = yield* fetchUser("u_1");
+  if (user.name.startsWith("guest_")) return;
+  yield* sendWelcome(user.name);
+});
+
+// 3. Effect.fn — named callable that auto-creates a tracing span when named.
+const onboard = Effect.fn("onboard")(function* (id: string) {
+  const user = yield* fetchUser(id);
+  yield* sendWelcome(user.name);
+});
+
+Effect.runSync(a);
+Effect.runSync(b);
+Effect.runSync(onboard("u_2"));
+```
+
+Same problem, three shapes. The sections below explain when each is the right shape.
+
+<Tabs>
+  <TabItem label="pipe">
+    ## `pipe`: linear transformations
+
+    `pipe` composes functions sequentially: the output of one step becomes the input of the next ([building-pipelines docs](https://effect.website/docs/getting-started/building-pipelines/)). Effect values also expose `.pipe(...)` with the same semantics.
+
+    ```ts twoslash
+    import { Data, Effect } from "effect";
+
+    class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
+
+    const fetchUser = (id: string) =>
+      Effect.try({
+        try: () => ({ name: `user_${id}` }),
+        catch: () => new DbError({ message: "unavailable" }),
+      });
+
+    const greeting = fetchUser("u_1").pipe(
+      Effect.map((u) => `Hello, ${u.name}!`),
+      Effect.tap((g) => Effect.log(g)),
+      Effect.catchTag("DbError", () => Effect.succeed("Hello, stranger!")),
+    );
+
+    Effect.runSync(greeting);
+    // Hello, user_u_1!
+    ```
+
+    `pipe` shines when every step is a one-input/one-output transform: `map`, `flatMap`, `tap`, `catchTag`, `withSpan`, `timeout`, `retry`. The reader scans top-to-bottom and sees one chain applied to one initial effect.
+
+    `pipe` becomes awkward when you need to **branch** on an intermediate value, **loop**, or **reuse** a named intermediate later in the block. That is `Effect.gen` territory (next tab).
+
+  </TabItem>
+  <TabItem label="Effect.gen">
+    ## `Effect.gen`: control flow
+
+    `Effect.gen` writes effectful code with generator functions; `yield*` an effect to await its result ([using-generators docs](https://effect.website/docs/getting-started/using-generators/)). The compiler unions every yielded error into the block's `E`.
+
+    ```ts twoslash
+    import { Data, Effect } from "effect";
+
+    class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
+
+    const fetchUser = (id: string) =>
+      Effect.try({
+        try: () => ({ name: `user_${id}`, admin: id === "admin" }),
+        catch: () => new DbError({ message: "unavailable" }),
+      });
+
+    const sendWelcome = (name: string) => Effect.log(`welcome, ${name}`);
+    const sendAdminBriefing = (name: string) => Effect.log(`admin brief: ${name}`);
+
+    const program = Effect.gen(function* () {
+      const user = yield* fetchUser("u_1");
+
+      if (user.admin) {
+        yield* sendAdminBriefing(user.name);
+      } else {
+        yield* sendWelcome(user.name);
+      }
+
+      return `done: ${user.name}`;
+    });
+
+    Effect.runSync(program);
+  ```
+
+    Reach for `gen` when you need:
+
+    - `if/else`, `for`/`while`, or early `return` between effects.
+    - Two later steps that depend on an earlier value (a `const`, not a threaded tuple).
+    - Failures that should propagate: the first failed `yield*` ends the generator ([using-generators docs](https://effect.website/docs/getting-started/using-generators/)); use `Effect.either` on a child when you must continue past a failure.
+
+    <Aside type="caution" title="Effect.gen short-circuits on failure">
+
+    The first `yield*` that fails ends the generator: nothing after it runs. Use `Effect.either(child)` to lift the failure into the success channel as `Either<E, A>` when the block must keep going.
+
+    </Aside>
+
+    <Aside type="caution" title="Effect.gen is single-shot — not for Stream">
+
+    JavaScript generators advance once per run. `Effect.gen` works for effects that produce **one** result per execution ([using-generators docs](https://effect.website/docs/getting-started/using-generators/)). Multi-item producers like `Stream` need `pipe` with `Stream.*` operators instead of `yield*` inside `Effect.gen`.
+
+    </Aside>
+
+  </TabItem>
+  <TabItem label="Effect.fn">
+    ## `Effect.fn`: named callables with auto-tracing
+
+    `Effect.fn` (since Effect 3.11.0; [`Effect.ts` export](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14630)) wraps a generator or a function that returns an `Effect`. The JSDoc lists two benefits: **stack traces with location details** on failure, and **automatic spans** when you pass a name ([Effect.ts#L14493-L14506](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14493-L14506)).
+
+    ```ts twoslash
+    import { Data, Effect } from "effect";
+
+    class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
+
+    const fetchUser = (id: string) =>
+      Effect.try({
+        try: () => ({ name: `user_${id}` }),
+        catch: () => new DbError({ message: "unavailable" }),
+      });
+
+    const fn1 = Effect.fn(function* (id: string) {
+      return yield* fetchUser(id);
+    });
+
+    const fn2 = Effect.fn("fetchUserById")(function* (id: string) {
+      return yield* fetchUser(id);
+    });
+
+    const fn3 = Effect.fn("fetchUserById")((id: string) => fetchUser(id));
+
+    const fn4 = Effect.fn("fetchUserById")(
+      function* (id: string) {
+        return yield* fetchUser(id);
+      },
+      (effect, id) => Effect.withLogSpan(`fetch:${id}`)(effect),
+    );
+
+    Effect.runSync(fn2("u_1"));
+    ```
+
+    The official JSDoc example shows three stack frames on failure (raise, definition, call) that a plain `(id) => Effect.gen(...)` wrapper often loses ([Effect.ts#L14512-L14528](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14512-L14528)):
+
+    ```ts twoslash
+    import { Effect } from "effect";
+
+    const myfunc = Effect.fn("myspan")(function* <N extends number>(n: N) {
+      yield* Effect.annotateCurrentSpan("n", n);
+      yield* Effect.fail(new Error("Boom!"));
+    });
+
+    Effect.runFork(myfunc(100).pipe(Effect.catchAllCause(Effect.logError)));
+  ```
+
+    <Aside type="note" title="Effect.fnUntraced">
+
+    Same overload shapes as `Effect.fn`, but no auto-span ([`Effect.fnUntraced`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14765)). Use in hot paths or library code where you still want callable ergonomics without telemetry noise.
+
+    </Aside>
+
+  </TabItem>
+</Tabs>
+
+## Picking one per call site
+
+| Situation | Reach for |
+| --- | --- |
+| Linear chain of operators on one effect (`map`, `tap`, `catchTag`, `timeout`, …) | `pipe` |
+| `if` / `for` / `while` / early `return` between effect steps | `Effect.gen` |
+| Reuse a named intermediate across two later steps | `Effect.gen` |
+| **Named function** that returns an `Effect` and should appear as a span in traces | `Effect.fn` |
+| Same, but spans are too expensive | `Effect.fnUntraced` |
+| Anonymous helper used once | `pipe` or inline `Effect.gen` |
+
+These are not exclusive. A typical service method is `Effect.fn("createOrder")(function* (input) { ... pipe(...) ... })`: `fn` for the outer name and span, `gen` for branching, `pipe` for inline transforms on a single intermediate effect.
+
+## What `Effect.fn` is not
+
+- **Not a replacement for `(...args) => Effect.gen(...)`.** That works for one-offs. `Effect.fn` adds named tracing spans and richer stack locations; the body can be identical ([Effect.ts#L14538-L14580](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14538-L14580) shows OpenTelemetry export).
+- **Not for runtime entry points.** Runners (`Effect.runSync`, `Effect.runPromise`, `Effect.runFork`) still belong at the program edge; `Effect.fn` is for definitions inside.
+
+## See also
+
+- [[effect-ts/quickstart|Quickstart]] — install, run, and first `Effect.gen`
+- [[effect-ts/what-is-effect|What is Effect]] — lazy descriptions and the three channels
+- [[effect-ts/typed-errors|Typed errors]] — how `E` composes inside each idiom
+- [[effect-ts/ecosystem-map|Ecosystem map]] — `@effect/*` packages composed with these idioms
+- [Building pipelines](https://effect.website/docs/getting-started/building-pipelines/) (official)
+- [Using generators](https://effect.website/docs/getting-started/using-generators/) (official)

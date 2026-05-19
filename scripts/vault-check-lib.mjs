@@ -25,8 +25,8 @@ export function parseVaultCheckArgs(argv) {
   return { baseRef, json }
 }
 
-/** Same resolution as audit-notes `targetsFromBase`. */
-export function targetsFromBase(ref, repoRoot = REPO_ROOT) {
+/** Paths changed since `ref` (committed diff only; same as audit-notes `targetsFromBase`). */
+export function changedPathsFromBase(ref, repoRoot = REPO_ROOT) {
   let raw
   try {
     raw = execFileSync("git", ["diff", "--name-only", ref], {
@@ -41,8 +41,17 @@ export function targetsFromBase(ref, repoRoot = REPO_ROOT) {
     .split("\n")
     .map((s) => s.trim())
     .filter((s) => s.length > 0)
+}
+
+/** Same resolution as audit-notes `targetsFromBase`. */
+export function targetsFromBase(ref, repoRoot = REPO_ROOT) {
+  return changedPathsFromBase(ref, repoRoot)
     .filter((p) => p.startsWith("content/") && p.endsWith(".md"))
     .filter((p) => existsSync(resolve(repoRoot, p)))
+}
+
+export function docsPathsChangedFromBase(ref, repoRoot = REPO_ROOT) {
+  return changedPathsFromBase(ref, repoRoot).some((p) => p.startsWith("sites/docs/"))
 }
 
 export async function runWikilinkPass({ contentRoot, repoRoot, changedFiles }) {
@@ -80,6 +89,14 @@ export function formatHumanReport(report) {
 
   if (report.changedFiles.length === 0) {
     lines.push("No content/**/*.md changes in range.")
+    if (report.docsLint) {
+      lines.push("")
+      lines.push(
+        report.docsLint.ok
+          ? "✓ lint:docs (sites/docs changed): clean"
+          : `✗ lint:docs (sites/docs changed): failed`,
+      )
+    }
     return lines.join("\n")
   }
 
@@ -113,6 +130,15 @@ export function formatHumanReport(report) {
         lines.push(`  ${f.path}:${finding.line} [${finding.rule}] ${finding.message}`)
       }
     }
+    lines.push("")
+  }
+
+  if (report.docsLint) {
+    lines.push(
+      report.docsLint.ok
+        ? "✓ lint:docs (sites/docs changed): clean"
+        : "✗ lint:docs (sites/docs changed): failed (see stderr above)",
+    )
     lines.push("")
   }
 

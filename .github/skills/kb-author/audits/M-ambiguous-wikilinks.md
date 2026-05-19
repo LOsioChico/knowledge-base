@@ -70,7 +70,7 @@ note) is not.
 
 ## When this audit fires
 
-- Any time `npm run lint:wikilinks` reports a first-mention violation.
+- Any time `bun run lint:wikilinks` reports a first-mention violation.
 - Any time you're tempted to add a wikilink because a word "matches" another note's title.
 - Any time you're tempted to add `unrelated:` to silence the discoverability linter — pause and
   check whether a body-link rephrase would solve it instead.

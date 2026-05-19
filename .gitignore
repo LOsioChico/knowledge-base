@@ -4,7 +4,6 @@ public
 prof
 tsconfig.tsbuildinfo
 .obsidian
-.quartz-cache
 private/
 .replit
 replit.nix
@@ -12,3 +11,9 @@ replit.nix
 
 # Local Pi runtime state
 .atl/
+
+# Starlight site build artifacts
+sites/docs/node_modules/
+sites/docs/.astro/
+sites/docs/dist/
+merged-public/

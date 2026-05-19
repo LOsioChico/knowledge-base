@@ -1,0 +1,357 @@
+---
+title: Layers and dependency injection
+description: Context.Tag, Layer, and Effect.provide — the R channel as a typed dependency graph with compile-time checks.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> The `R` channel of `Effect<A, E, R>` is the typed dependency graph. Declare a service with a `Tag`, build an implementation as a `Layer`, and `Effect.provide` it. The compiler refuses to run an effect whose `R` is not `never`.
+
+<Steps>
+
+1. **Declare** a service (`Context.Tag` or `Effect.Service`).
+2. **Build** a `Layer` (`succeed`, `effect`, or `scoped`).
+3. **Provide** the layer so `R` narrows toward `never`.
+4. **Compose** layers with `merge` (siblings) or `provide` (depends-on).
+5. **Run** only when `R` is `never`.
+
+</Steps>
+
+## Why DI in the type
+
+A traditional DI container is a runtime registry: missing bindings throw at startup or first resolve. Effect puts the graph in the type system:
+
+- Services an effect needs appear in `R`.
+- `Effect.provide` **subtracts** satisfied tags from `R`.
+- When `R` is `never`, the effect is runnable.
+
+No string tokens or decorator metadata — missing dependencies are compile errors, not runtime crashes. Compare with [[effect-ts/typed-errors|typed errors]] on the `E` channel.
+
+## Declaring a service
+
+<Tabs>
+  <TabItem label="Context.Tag">
+    The foundation since Effect 2.x. A class extends `Context.Tag(<key>)` with `<Self, Shape>` ([services docs](https://effect.website/docs/requirements-management/services/)):
+
+    ```ts twoslash
+    import { Context, Effect } from "effect";
+
+    class Random extends Context.Tag("MyRandomService")<
+      Random,
+      { readonly next: Effect.Effect<number> }
+    >() {}
+
+    const program = Effect.gen(function* () {
+      const random = yield* Random;
+      return yield* random.next;
+    });
+
+    // program still needs Random in R until Effect.provide
+    ```
+
+    The string key is the runtime identity (memoization, equality). `Random` as the first type parameter is the self-reference so `yield* Random` returns the right shape.
+
+    Use when you need **multiple interchangeable implementations** of the same tag (libraries, tests, plugins).
+
+  </TabItem>
+  <TabItem label="Effect.Service">
+    Since `effect@3.9.0` as `@experimental` ([`Effect.Service` source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13540-L13620)): one class declares tag + default layer.
+
+    ```ts twoslash
+    import { Effect } from "effect";
+
+    class Random extends Effect.Service<Random>()("MyRandomService", {
+      sync: () => ({
+        next: Effect.sync(() => Math.random()),
+      }),
+    }) {}
+
+    const program = Effect.gen(function* () {
+      const random = yield* Random;
+      return yield* random.next;
+    });
+
+    const runnable = program.pipe(Effect.provide(Random.Default));
+    Effect.runSync(runnable);
+    ```
+
+    `Random.Default` is the generated layer. Variant keys map to layer constructors (`succeed`, `sync`, `effect`, `scoped`).
+
+    <Aside type="note" title="Experimental API">
+
+    `Effect.Service` may change between releases ([source note](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13582)). Pin `effect` and read release notes when upgrading. Libraries usually stick to `Context.Tag` + `Layer`.
+
+    </Aside>
+
+  </TabItem>
+</Tabs>
+
+## Building a layer
+
+A `Layer<ROut, E, RIn>` constructs services `ROut`, may fail with `E`, and may need `RIn` to build ([`Layer` module](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts)):
+
+| Constructor | Use when | Typical `RIn` |
+| --- | --- | --- |
+| [`Layer.succeed`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L772) | Static implementation, no construction effects | `never` |
+| [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289) | Construction is an effect (I/O, other services) | From the builder effect's `R` |
+| [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727) | Service owns a resource with cleanup | Inferred; `Scope` excluded |
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Config extends Context.Tag("Config")<
+  Config,
+  { readonly logLevel: string; readonly dbUrl: string }
+>() {}
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+const ConfigLive = Layer.succeed(Config, {
+  logLevel: "INFO",
+  dbUrl: "postgres://localhost/app",
+});
+
+const LoggerLive = Layer.effect(
+  Logger,
+  Effect.gen(function* () {
+    const config = yield* Config;
+    return {
+      log: (msg) =>
+        Effect.sync(() => {
+          console.log(`[${config.logLevel}] ${msg}`);
+        }),
+    };
+  }),
+);
+```
+
+### Scoped layers and cleanup
+
+When a service holds a pool, handle, or socket, use `Layer.scoped` with `Effect.acquireRelease` ([scoped layers](https://effect.website/docs/requirements-management/layers/), [[effect-ts/scoped-resources|scoped resources]]):
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Database extends Context.Tag("Database")<
+  Database,
+  { readonly query: (sql: string) => Effect.Effect<string> }
+>() {}
+
+const DatabaseLive = Layer.scoped(
+  Database,
+  Effect.acquireRelease(
+    Effect.sync(() => {
+      console.log("opening pool");
+      return {
+        query: (sql: string) => Effect.succeed(`result: ${sql}`),
+      };
+    }),
+    () => Effect.sync(() => console.log("closing pool")),
+  ),
+);
+
+Effect.runSync(
+  Effect.gen(function* () {
+    const db = yield* Database;
+    return yield* db.query("SELECT 1");
+  }).pipe(Effect.provide(DatabaseLive)),
+);
+// opening pool
+// closing pool
+```
+
+Release runs at program end, including on interruption.
+
+## Providing a layer
+
+[`Effect.provide`](https://effect.website/docs/requirements-management/services/) removes the layer's outputs from `R`:
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Config extends Context.Tag("Config")<
+  Config,
+  { readonly logLevel: string }
+>() {}
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+const ConfigLive = Layer.succeed(Config, { logLevel: "INFO" });
+
+const LoggerLive = Layer.effect(
+  Logger,
+  Effect.gen(function* () {
+    const config = yield* Config;
+    return {
+      log: (msg) =>
+        Effect.sync(() => {
+          console.log(`[${config.logLevel}] ${msg}`);
+        }),
+    };
+  }),
+);
+
+const program = Effect.gen(function* () {
+  const logger = yield* Logger;
+  yield* logger.log("hello");
+});
+
+const partlyProvided = program.pipe(Effect.provide(LoggerLive));
+const runnable = partlyProvided.pipe(Effect.provide(ConfigLive));
+
+Effect.runSync(runnable);
+// [INFO] hello
+```
+
+For a single static value, `Effect.provideService(tag, value)` skips layer ceremony. Layers compose; one-off values do not.
+
+## Composing layers
+
+Two operators ([`Layer.merge`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L567), [`Layer.provide`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L899)):
+
+- **`Layer.merge(a, b)`** — parallel union: produces both outputs, requires the union of inputs (siblings).
+- **`Layer.provide(outer, inner)`** — sequential [[effect-ts/composition|composition]]: `inner` satisfies part of `outer`'s requirements.
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Config extends Context.Tag("Config")<
+  Config,
+  { readonly logLevel: string }
+>() {}
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+const ConfigLive = Layer.succeed(Config, { logLevel: "INFO" });
+
+const LoggerLive = Layer.effect(
+  Logger,
+  Effect.gen(function* () {
+    const config = yield* Config;
+    return {
+      log: (msg) =>
+        Effect.sync(() => {
+          console.log(`[${config.logLevel}] ${msg}`);
+        }),
+    };
+  }),
+);
+
+const LoggerWithConfig = Layer.provide(LoggerLive, ConfigLive);
+
+Effect.runSync(
+  Effect.gen(function* () {
+    const logger = yield* Logger;
+    yield* logger.log("composed");
+  }).pipe(Effect.provide(LoggerWithConfig)),
+);
+// [INFO] composed
+```
+
+## Memoization (default)
+
+Layers are **shared by default** within one `Effect.provide` graph ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)): if two consumers need `LoggerLive`, the pool is built once.
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Counter extends Context.Tag("Counter")<
+  Counter,
+  { readonly id: number }
+>() {}
+
+let next = 0;
+const CounterLive = Layer.effect(
+  Counter,
+  Effect.sync(() => {
+    next += 1;
+    console.log(`built Counter #${next}`);
+    return { id: next };
+  }),
+);
+
+const Memoized = Layer.merge(CounterLive, CounterLive);
+Effect.runSync(Effect.gen(function* () {}).pipe(Effect.provide(Memoized)));
+// built Counter #1
+
+const Fresh = Layer.merge(CounterLive, Layer.fresh(CounterLive));
+Effect.runSync(Effect.gen(function* () {}).pipe(Effect.provide(Fresh)));
+// built Counter #2
+// built Counter #3
+```
+
+Escape hatches: [`Layer.fresh`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L397) for a non-memoized instance; avoid defining layers inside functions (each call creates a new layer value).
+
+<Aside type="caution" title="Memoization is per Effect.provide">
+
+Two unrelated `Effect.provide(LoggerLive)` calls on two effects build two loggers. Sharing is within one provision graph. For a process-wide singleton, build the layer once at the entry point and reuse that graph.
+
+</Aside>
+
+## Common gotchas
+
+<Aside type="caution" title="Unsatisfied R is a type error">
+
+```ts twoslash
+// @errors: 2379
+import { Context, Effect } from "effect";
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+const program = Effect.gen(function* () {
+  const logger = yield* Logger;
+  yield* logger.log("hi");
+});
+
+Effect.runSync(program);
+```
+
+The compiler names the missing tag in `R`. Provide layers until `R` is `never`.
+
+</Aside>
+
+<Aside type="caution" title="Layer factory functions defeat memoization">
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+const makeLogger = (level: string) =>
+  Layer.succeed(Logger, {
+    log: (msg) => Effect.sync(() => console.log(`[${level}] ${msg}`)),
+  });
+
+const a = makeLogger("INFO");
+const b = makeLogger("INFO");
+// a !== b — two layers, two builds if both are provided
+```
+
+Call the factory once and reuse the resulting `Layer` value.
+
+</Aside>
+
+## See also
+
+- [[effect-ts/what-is-effect|What is Effect]] — the `R` channel in `Effect<A, E, R>`
+- [[effect-ts/scoped-resources|Scoped resources]] — `acquireRelease` and `Scope` in depth
+- [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]] — side-by-side with Nest's container
+- [[effect-ts/ecosystem-map|Ecosystem map]] — `@effect/*` packages wired through layers
+- [Services](https://effect.website/docs/requirements-management/services/) (official)
+- [Layers](https://effect.website/docs/requirements-management/layers/) (official)
+- [Layer memoization](https://effect.website/docs/requirements-management/layer-memoization/) (official)

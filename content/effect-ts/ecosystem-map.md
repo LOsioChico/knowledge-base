@@ -32,6 +32,9 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/ai/amazon-bedrock/package.json
 ---
 
+> [!todo]- Starlight publish
+> Enriched MDX: `sites/docs/src/content/docs/effect-ts/ecosystem-map.mdx`. Vault note remains audit source.
+
 > A reader's map of every package that ships from the [`Effect-TS/effect` monorepo](https://github.com/Effect-TS/effect/tree/main/packages). The core ships as `effect`; everything else lives under `@effect/*`. Use this to decide what to install before you write a line of code.
 
 ## How the packages are laid out

@@ -1,0 +1,169 @@
+---
+title: Quickstart
+description: Install effect, write a tiny program, run it three ways, then handle a typed error (~10 min).
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+> Install `effect`, write a tiny program, run it three different ways, then handle a typed error. The 10-minute path from "I've heard of Effect" to "I have a working `Effect<A, E, R>` in front of me".
+
+<Steps>
+
+1. **Before you start** — strict TypeScript project + `effect` installed.
+2. **Write** a lazy `program` with `Effect.sync`.
+3. **Run** with `runSync`, `runPromise`, or `runFork`.
+4. **Compose** with `Effect.gen` (`yield*`).
+5. **Handle** a typed failure with `Effect.try` + `catchTag`.
+
+</Steps>
+
+## Before you start
+
+You need:
+
+- **TypeScript 5.4 or newer** ([install docs](https://effect.website/docs/getting-started/installation/#manual-installation)).
+- A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package declares no `engines` field ([package.json](https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json)), so any modern version works; pick whatever your project already uses).
+- A new project. Fastest path with Node + tsx:
+
+  ```bash
+  mkdir effect-quickstart && cd effect-quickstart
+  npm init -y
+  npm install effect
+  npm install -D typescript tsx @types/node
+  npx tsc --init --target es2022 --module nodenext --moduleResolution nodenext --strict
+  ```
+
+  `tsx` runs `.ts` files directly, no build step. Strict mode matters: Effect's type magic depends on it.
+
+## 1. Write your first effect
+
+Create `src/hello.ts`:
+
+```ts twoslash
+import { Effect } from "effect";
+
+// Effect.sync wraps a synchronous side effect into an Effect<void, never, never>.
+// The function inside is NOT run yet — `program` is just a description.
+const log = (message: string) =>
+  Effect.sync(() => {
+    console.log(message);
+  });
+
+const program = log("Hello, Effect!");
+```
+
+Two things to internalize:
+
+1. **`program` is a value, not a side effect.** Importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
+2. **`program` is `Effect<void, never, never>`** — success `void`, no expected errors, no services required.
+
+## 2. Run it
+
+Effect ships five `run*` entry points ([running-effects docs](https://effect.website/docs/getting-started/running-effects/)): `runSync`, `runSyncExit`, `runPromise`, `runPromiseExit`, and `runFork`. The three you reach for first:
+
+```ts twoslash
+import { Effect } from "effect";
+
+const log = (message: string) =>
+  Effect.sync(() => {
+    console.log(message);
+  });
+
+const program = log("Hello, Effect!");
+
+Effect.runSync(program);
+// Output: Hello, Effect!
+
+const succeeded = Effect.runPromise(Effect.succeed(1));
+succeeded.then(console.log);
+// Output: 1
+
+const fiber = Effect.runFork(program);
+// Output: Hello, Effect!
+```
+
+Run: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
+
+| Runner | Returns | Reach for |
+| --- | --- | --- |
+| `runSync` | `A` (throws on failure) | Known-synchronous paths only |
+| `runPromise` | `Promise<A>` | App edge: HTTP handlers, tests, `async/await` |
+| `runFork` | `Fiber` | Background or interruptible work |
+
+<Aside type="note" title="Which runner to use">
+
+Pick the runner at the **entry point** only. Inside the program, compose with `pipe` / [[effect-ts/composition|Effect.gen]]; do not sprinkle `runSync` through domain code.
+
+</Aside>
+
+## 3. Compose with `Effect.gen`
+
+Effect's idiomatic [[effect-ts/composition|composition]] is the generator DSL: `yield*` an effect to "await" it. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
+
+```ts twoslash
+import { Effect } from "effect";
+
+const greet = (name: string) => Effect.sync(() => `Hello, ${name}!`);
+const log = (message: string) =>
+  Effect.sync(() => {
+    console.log(message);
+  });
+
+const program = Effect.gen(function* () {
+  const greeting = yield* greet("Effect");
+  yield* log(greeting);
+  return greeting.length;
+});
+
+const result = Effect.runSync(program);
+console.log("returned:", result);
+// Hello, Effect!
+// returned: 14
+```
+
+`program` infers success type `number` without extra annotations.
+
+## 4. Add a typed error
+
+Failures belong in the type signature. Wrap fallible work with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
+
+```ts twoslash
+import { Data, Effect } from "effect";
+
+class ParseError extends Data.TaggedError("ParseError")<{
+  readonly message: string;
+}> {}
+
+const parseJson = (input: string) =>
+  Effect.try({
+    try: () => JSON.parse(input) as unknown,
+    catch: (cause) => new ParseError({ message: `invalid JSON: ${String(cause)}` }),
+  });
+
+const program = Effect.gen(function* () {
+  const value = yield* parseJson('{"ok":true}');
+  return value;
+});
+
+const main = program.pipe(
+  Effect.catchTag("ParseError", (e) => Effect.succeed({ recovered: e.message })),
+);
+
+console.log(Effect.runSync(main));
+// { ok: true }
+```
+
+[`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) narrows on `_tag` and **removes** the handled error from `E`, so `main` is `Effect<unknown, never, never>`.
+
+## 5. Where to go next
+
+- [[effect-ts/what-is-effect|What is Effect]] — laziness, the three channels, and runners in depth.
+- [[effect-ts/typed-errors|Typed errors]] — `try`, `tryPromise`, `catchTag`, `catchAll`.
+- [[effect-ts/composition|Composition]] — `pipe` vs `Effect.gen` vs `Effect.fn`.
+
+Official next read: [Effect getting started](https://effect.website/docs/getting-started/introduction/) (pipelines, control flow, `Schema`).
+
+## See also
+
+- [[effect-ts|Effect-TS overview]]
+- [Effect installation guide](https://effect.website/docs/getting-started/installation/) (official)

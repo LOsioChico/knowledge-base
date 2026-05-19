@@ -1,0 +1,314 @@
+---
+title: Effect Layers vs NestJS DI
+description: Side-by-side map of Effect layers and NestJS IoC — compile-time R, scopes, cleanup, tests, and running both in one process.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Effect [[effect-ts/layers-and-di|layers]] and NestJS's IoC container both wire dependencies. They differ on **when** missing deps surface, **how** graphs compose, and **how** cleanup is modeled.
+
+## TL;DR
+
+- **Effect** — missing services are a **type error** (`R` must be `never` to run).
+- **NestJS** — missing providers fail at **bootstrap** with "Nest can't resolve dependencies…".
+- **Sharing** — Nest singletons per app; Effect memoizes per `Effect.provide` graph (use `ManagedRuntime` for app-wide).
+- **Cleanup** — `Layer.scoped` vs `OnModuleDestroy` / shutdown hooks (opt-in on Nest).
+- **Together** — Nest owns the provider; Effect runs programs via `ManagedRuntime` inside methods.
+
+## Mental model
+
+| Concept | Effect | NestJS |
+| --- | --- | --- |
+| Declaration | `Context.Tag` / `Effect.Service` | `@Injectable()` |
+| Implementation | `Layer.succeed` / `effect` / `scoped` | `providers: [...]` |
+| Wiring | `Effect.provide` narrows `R` | Module `imports` / `providers` |
+| Missing dep | Compile error | Bootstrap exception |
+| Default lifetime | Per provision graph | Singleton |
+| Per-request | Fresh layer per handler | `Scope.REQUEST` |
+| Cleanup | `Layer.scoped` / `acquireRelease` | Lifecycle hooks |
+| Tests | Swap `Layer` | `overrideProvider` |
+
+## The same graph: Logger + Greeter
+
+<Tabs>
+  <TabItem label="Effect">
+    ```ts twoslash
+    import { Context, Effect, Layer } from "effect";
+
+    class Logger extends Context.Tag("Logger")<
+      Logger,
+      { readonly log: (msg: string) => Effect.Effect<void> }
+    >() {}
+
+    class Greeter extends Context.Tag("Greeter")<
+      Greeter,
+      { readonly greet: (name: string) => Effect.Effect<void> }
+    >() {}
+
+    const LoggerLive = Layer.succeed(Logger, {
+      log: (msg) => Effect.sync(() => console.log(`[INFO] ${msg}`)),
+    });
+
+    const GreeterLive = Layer.effect(
+      Greeter,
+      Effect.gen(function* () {
+        const logger = yield* Logger;
+        return {
+          greet: (name: string) => logger.log(`hello, ${name}`),
+        };
+      }),
+    );
+
+    const AppLive = Layer.provide(GreeterLive, LoggerLive);
+
+    const program = Effect.gen(function* () {
+      const greeter = yield* Greeter;
+      yield* greeter.greet("world");
+    });
+
+    Effect.runPromise(program.pipe(Effect.provide(AppLive)));
+    // [INFO] hello, world
+    ```
+
+    Omit `LoggerLive` and `Effect.runPromise(program)` does not typecheck: `R` still includes `Greeter`.
+
+  </TabItem>
+  <TabItem label="NestJS">
+    ```typescript
+    import { Injectable, Module } from "@nestjs/common";
+    import { NestFactory } from "@nestjs/core";
+
+    @Injectable()
+    class Logger {
+      log(msg: string) {
+        console.log(`[INFO] ${msg}`);
+      }
+    }
+
+    @Injectable()
+    class Greeter {
+      constructor(private readonly logger: Logger) {}
+
+      greet(name: string) {
+        this.logger.log(`hello, ${name}`);
+      }
+    }
+
+    @Module({ providers: [Logger, Greeter] })
+    class AppModule {}
+
+    async function bootstrap() {
+      const app = await NestFactory.createApplicationContext(AppModule);
+      app.get(Greeter).greet("world");
+      await app.close();
+    }
+    ```
+
+    Omit `Logger` from `providers` and bootstrap throws: `Nest can't resolve dependencies of the Greeter`.
+
+  </TabItem>
+</Tabs>
+
+<Aside type="note" title="Same bug, different feedback loop">
+
+Effect surfaces the mistake in the editor. Nest surfaces it when `NestFactory.create` runs. CI catches both; Effect catches it at keystroke time.
+
+</Aside>
+
+## Where they diverge
+
+### Compile-time `R` vs bootstrap DI
+
+```ts twoslash
+// @errors: 2379
+import { Context, Effect } from "effect";
+
+class Db extends Context.Tag("Db")<
+  Db,
+  { readonly query: (sql: string) => Effect.Effect<void> }
+>() {}
+
+const program = Effect.gen(function* () {
+  const db = yield* Db;
+  yield* db.query("select 1");
+});
+
+Effect.runPromise(program);
+```
+
+NestJS resolves the graph at bootstrap ([custom providers](https://docs.nestjs.com/fundamentals/custom-providers#di-fundamentals)).
+
+### Scope and memoization
+
+Nest providers are **singletons** unless scoped ([injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes#provider-scope)). Effect layers memoize **per `Effect.provide`** ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)).
+
+```ts twoslash
+import { Context, Effect, Layer, ManagedRuntime } from "effect";
+
+class Counter extends Context.Tag("Counter")<
+  Counter,
+  { readonly id: number }
+>() {}
+
+let next = 0;
+const CounterLive = Layer.effect(
+  Counter,
+  Effect.sync(() => {
+    next += 1;
+    return { id: next };
+  }),
+);
+
+Effect.runSync(
+  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`a: ${c.id}`))).pipe(
+    Effect.provide(CounterLive),
+  ),
+);
+Effect.runSync(
+  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`b: ${c.id}`))).pipe(
+    Effect.provide(CounterLive),
+  ),
+);
+// a: 1
+// b: 2
+
+const runtime = ManagedRuntime.make(CounterLive);
+await runtime.runPromise(
+  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`c: ${c.id}`))),
+);
+await runtime.runPromise(
+  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`d: ${c.id}`))),
+);
+// c: 3
+// d: 3
+```
+
+`ManagedRuntime` ≈ one Nest singleton for Effect services.
+
+### Resource cleanup
+
+Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease` — release on interrupt without extra flags.
+
+NestJS: `OnModuleDestroy` / `OnApplicationShutdown` — requires `app.close()` or `enableShutdownHooks()` ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
+
+### Tests
+
+```ts twoslash
+import { Context, Effect, Layer } from "effect";
+
+class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+class Greeter extends Context.Tag("Greeter")<
+  Greeter,
+  { readonly greet: (name: string) => Effect.Effect<void> }
+>() {}
+
+const LoggerLive = Layer.succeed(Logger, {
+  log: (msg) => Effect.sync(() => console.log(`[INFO] ${msg}`)),
+});
+
+const GreeterLive = Layer.effect(
+  Greeter,
+  Effect.gen(function* () {
+    const logger = yield* Logger;
+    return { greet: (name: string) => logger.log(`hello, ${name}`) };
+  }),
+);
+
+const LoggerTest = Layer.succeed(Logger, {
+  log: () => Effect.void,
+});
+
+const AppTest = Layer.provide(GreeterLive, LoggerTest);
+
+const program = Effect.gen(function* () {
+  const greeter = yield* Greeter;
+  yield* greeter.greet("world");
+});
+
+Effect.runPromise(program.pipe(Effect.provide(AppTest)));
+```
+
+Nest: `Test.createTestingModule({...}).overrideProvider(Logger).useValue(...)`.
+
+## When to pick which
+
+| You want | Reach for |
+| --- | --- |
+| Controllers, guards, interceptors, batteries-included HTTP | NestJS |
+| Compile-time wiring guarantees | Effect layers |
+| Per-request DI without manual layers | Nest `Scope.REQUEST` |
+| Cleanup on interruption without shutdown hooks | `Layer.scoped` |
+| Typed retry/timeout inside one service | Effect inside a Nest provider |
+
+## Using both together
+
+```ts twoslash
+import { Context, Effect, Layer, ManagedRuntime } from "effect";
+
+class Http extends Context.Tag("Http")<
+  Http,
+  { readonly get: (url: string) => Effect.Effect<string, HttpError> }
+>() {}
+
+class HttpError {
+  readonly _tag = "HttpError";
+  constructor(readonly cause: unknown) {}
+}
+
+const HttpLive = Layer.succeed(Http, {
+  get: (url) =>
+    Effect.tryPromise({
+      try: () => fetch(url).then((r) => r.text()),
+      catch: (e) => new HttpError(e),
+    }),
+});
+
+// Nest side (shape only — install @nestjs/common in your app):
+// @Injectable()
+// export class CatalogService implements OnApplicationShutdown {
+//   private readonly runtime = ManagedRuntime.make(HttpLive);
+//   fetchListing(id: string) {
+//     return this.runtime.runPromise(
+//       Effect.gen(function* () {
+//         const http = yield* Http;
+//         return yield* http.get(`https://catalog.example.com/items/${id}`).pipe(
+//           Effect.retry({ times: 3 }),
+//         );
+//       }),
+//     );
+//   }
+//   async onApplicationShutdown() {
+//     await this.runtime.dispose();
+//   }
+// }
+
+const runtime = ManagedRuntime.make(HttpLive);
+
+await runtime.runPromise(
+  Effect.gen(function* () {
+    const http = yield* Http;
+    return yield* http.get("https://example.com").pipe(Effect.retry({ times: 3 }));
+  }),
+);
+
+await runtime.dispose();
+```
+
+<Aside type="note" title="Do not merge the containers">
+
+`Context.Tag("Logger")` and `@Injectable() class Logger` are different identities. Pick one container per service lifetime.
+
+</Aside>
+
+## See also
+
+- [[effect-ts/layers-and-di|Layers and DI]]
+- [[effect-ts/scoped-resources|Scoped resources]]
+- [[effect-ts/typed-errors|Typed errors]]
+- [Effect: Managing services](https://effect.website/docs/requirements-management/services/) (official)
+- [NestJS: Custom providers](https://docs.nestjs.com/fundamentals/custom-providers) (official)
+- [NestJS: Injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes) (official)

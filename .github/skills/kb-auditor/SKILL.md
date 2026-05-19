@@ -71,7 +71,7 @@ The following live elsewhere and will produce false positives if you try to chec
   `scripts/audit-notes/deterministic.ts`. Do NOT emit `style-em-dash`, `style-double-hyphen`,
   or `frontmatter-schema` findings; the orchestrator adds them and you would only duplicate.
 - **Symmetric `related:`, first-mention wikilinks, listing completeness, agents-mirror,
-  discoverability** — enforced by `npm run lint:wikilinks`. Skip.
+  discoverability** — enforced by `bun run lint:wikilinks`. Skip.
 - **Sourcing / comparative claims** (audits L and N) — require browsing primary sources to
   verify. Composer-2 in this pipeline cannot reliably do that, and AGENTS.md's anti-pattern
   list forbids emitting sourcing complaints without evidence. Skip; remain a human pre-commit

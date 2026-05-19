@@ -15,6 +15,9 @@ reference-table linking, sourcing), and the "encode-repeated-patterns" reflex. A
 the source of truth for invariants (schema, vocabulary, linter rules); the skill is the playbook
 for executing on them.
 
+Before editing published docs under `sites/docs/`, load **`kb-starlight-author`**
+(`.github/skills/kb-starlight-author/SKILL.md`) and read `docs/STARLIGHT-MIGRATION.md`.
+
 ## Skills directory
 
 All agent skills live under `.github/skills/<name>/SKILL.md`. Three kinds:
@@ -24,6 +27,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Three kinds:
 - [`kb-author`](.github/skills/kb-author/SKILL.md) — authoring workflow + pre-flight discovery + post-edit audits (indexed A–P in [`audits/`](.github/skills/kb-author/audits)).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
 - [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — eight-phase workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and committing audit-clean notes.
+- [`kb-starlight-author`](.github/skills/kb-starlight-author/SKILL.md) — migrate/enrich vault notes into Starlight MDX (`ts twoslash`, Steps, Aside, migration tracker).
 
 **LLM judges (runtime, invoked by `scripts/audit-notes/`):**
 
@@ -38,7 +42,14 @@ When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a 
 
 ## What this repo is
 
-A personal Quartz v4 knowledge base, deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors. This repo owns ONLY the content: source markdown under `content/`, lint tooling under `scripts/`, and the deploy workflow under `.github/workflows/`. The Quartz build pipeline lives in a separate repo (`LOsioChico/quartz-fork`, private); CI clones it at build time. Quartz is swappable — to change frameworks, edit `.github/workflows/deploy.yml`.
+A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
+
+**Dual publish (migration in progress):**
+
+- **Vault:** Obsidian markdown under `content/` — wikilinks, frontmatter schema, `bun run lint:wikilinks`, LLM audit in `scripts/audit-notes/`.
+- **Starlight:** Enriched MDX under `sites/docs/src/content/docs/` — Astro Starlight + `expressive-code-twoslash` (TypeScript hovers, Steps, Tabs). CI merges Starlight `dist/` over Quartz `public/` so migrated URLs win. Tracker: `sites/docs/migration.json`, playbooks in `docs/STARLIGHT-MIGRATION.md` and `docs/STARLIGHT-FEATURES.md`.
+
+The Quartz build pipeline lives in a separate repo (`LOsioChico/quartz-fork`, private); CI clones it at build time. Starlight builds from this repo (`sites/docs/`). Edit `.github/workflows/deploy.yml` for deploy changes.
 
 ## Folder layout
 
@@ -50,8 +61,10 @@ content/
     <subarea>/
       index.md                   # sub-area MOC if the subarea has 3+ notes
       <note>.md                  # atomic note, one concept per file
-scripts/                         # wikilink linter + content audit tooling
-.github/workflows/deploy.yml     # lint → clone quartz-fork → build → deploy Pages
+sites/docs/                      # Starlight app (MDX, migration.json)
+docs/                            # Starlight migration playbooks (STARLIGHT-*.md)
+scripts/                         # wikilink linter, merge-pages, audit tooling
+.github/workflows/deploy.yml     # lint → quartz + starlight build → merge → Pages
 ```
 
 Rules:
@@ -278,7 +291,7 @@ Never write a technical claim from training-data memory. Every fact MUST be veri
 - **Cite in `source:`**: every note's frontmatter `source:` list MUST contain the exact URLs consulted. If a section was added later, append the URL that backs it. No URL, no claim.
 - **Inline link for surprising claims**: if a fact is counterintuitive or version-specific, link the source inline next to the claim, not just in frontmatter.
 - **Citation precision**: when a claim cites a source file, link the specific lines (`blob/master/.../file.ts#L120-L135`); when it cites a docs page, link the section anchor (`docs.nestjs.com/openapi/operations#file-upload`). Bare file/page URLs are too coarse: the source-verification audit has to guess which paragraph backs the claim and degrades to vibes, and the next reader six months later has to re-find what you already found. Forbidden: `https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts` as the only pointer for a claim about one specific function — link `#L450-L470` (or whatever the relevant range is). Same for docs: `https://docs.nestjs.com/openapi/operations` is too coarse if the claim is about file uploads; link `#file-upload`. The exact 413 phrasing in nginx (`Request Entity Too Large`, not `Payload Too Large`) was caught precisely because the link pointed at `#client_max_body_size` — the audit fetched the right paragraph and the contradiction was obvious. Frontmatter `source:` can stay file-level (one URL per file keeps `check-source-urls.sh` cheap); inline prose links carry the precision. Trade-off: line numbers rot when upstream refactors, but the audit catches the drift the next time the note is touched, which is the right time to fix it. Pin to a commit SHA only for historical "this used to be true in vN" claims (e.g. release-notes notes).
-- **Don't soften specifics to satisfy auditors**: when an LLM audit flags a specific anchor as wrong ("real range is L<m>-L<n>", "claim not supported by cited sources"), VERIFY before dropping. These findings have a high false-positive rate: the model often pattern-matches on a nearby symbol or misses that the claim IS supported by a file you simply haven't added to `source:` yet. Required verification: `curl -s <raw-url> | grep -n '<symbol>'` then `sed -n '<a>,<b>p'`. If the original anchor was correct, restore it and ignore the finding. If it was wrong, replace with the verified correct range — NEVER drop to a bare URL. If the claim is true but unsourced, **add the missing inline citation** to the prose (e.g. `([source](https://github.com/.../file.ts#L<n>-L<m>))` next to the claim) instead of weakening it; never edit `source:` directly — the inline citation IS the citation, `yarn autofix` keeps the frontmatter list in sync. Forbidden: replacing `[`formatPid()`](.../console-logger.service.ts#L417-L419)` with `[`formatPid()`](.../console-logger.service.ts)` because an auditor (incorrectly) said "real lines are L407-L409" — verify with `grep -n formatPid` first; the original anchor was right, the auditor was wrong. Forbidden: replacing "same `optional`/`default` ergonomics as `ParseIntPipe`" with a vague "see the pipes reference" because an auditor said the comparison wasn't in the cited sources — the comparison was true and verifiable from `parse-date.pipe.ts#L10-L31`; add that file to `source:` and keep the specific. Specificity > broadness; the audit is a hypothesis, not a verdict.
+- **Don't soften specifics to satisfy auditors**: when an LLM audit flags a specific anchor as wrong ("real range is L<m>-L<n>", "claim not supported by cited sources"), VERIFY before dropping. These findings have a high false-positive rate: the model often pattern-matches on a nearby symbol or misses that the claim IS supported by a file you simply haven't added to `source:` yet. Required verification: `curl -s <raw-url> | grep -n '<symbol>'` then `sed -n '<a>,<b>p'`. If the original anchor was correct, restore it and ignore the finding. If it was wrong, replace with the verified correct range — NEVER drop to a bare URL. If the claim is true but unsourced, **add the missing inline citation** to the prose (e.g. `([source](https://github.com/.../file.ts#L<n>-L<m>))` next to the claim) instead of weakening it; never edit `source:` directly — the inline citation IS the citation, `cd scripts/audit-notes && bun run autofix` keeps the frontmatter list in sync. Forbidden: replacing `[`formatPid()`](.../console-logger.service.ts#L417-L419)` with `[`formatPid()`](.../console-logger.service.ts)` because an auditor (incorrectly) said "real lines are L407-L409" — verify with `grep -n formatPid` first; the original anchor was right, the auditor was wrong. Forbidden: replacing "same `optional`/`default` ergonomics as `ParseIntPipe`" with a vague "see the pipes reference" because an auditor said the comparison wasn't in the cited sources — the comparison was true and verifiable from `parse-date.pipe.ts#L10-L31`; add that file to `source:` and keep the specific. Specificity > broadness; the audit is a hypothesis, not a verdict.
 - **Reader-facing citations only**: cite surprising claims with normal links. Do not expose authoring audit wording in note bodies, such as "verified in", "checked against", "list verified against", raw repo paths as prose, approximate line-number notes, or scratchpad provenance. If a fact needs provenance, put the exact URL in `source:` or link the named API/docs naturally in prose.
 - **Versions matter**: state the version when behavior is version-specific (e.g., "NestJS 10+", "class-validator 0.14"). Verify the claim still holds in the latest stable.
 - **Unknowns are unknowns**: if you cannot verify a claim from primary sources within the session, do NOT write it. Leave a `// TODO: verify` placeholder or omit the section. Hallucinations are worse than gaps.
@@ -383,8 +396,9 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 ## When you finish
 
-- To preview locally, clone `LOsioChico/quartz-fork` somewhere outside this repo and run `npx quartz build --serve -d <path-to-this-repo>/content`. Skip for content-only edits unless requested.
-- **Default post-edit quality gate** (from repo root; diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
+- To preview **vault** locally, clone `LOsioChico/quartz-fork` somewhere outside this repo and run `npx quartz build --serve -d <path-to-this-repo>/content`. Skip for content-only edits unless requested.
+- To preview **Starlight** (migrated MDX): `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI lint job: `bun run lint:ci` (vault wikilinks + Pass 0 + `lint:docs`). PRs also run `docs:build` (Twoslash). Pipeline map: `docs/PIPELINE.md`. Wikilinks in MDX: `[[slug|label]]` (see `docs/STARLIGHT-FEATURES.md`). Backlinks/graph are not ported yet.
+- **Default post-edit quality gate** (from repo root; diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
   bun run vault:check --base HEAD~1
@@ -437,3 +451,4 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 - Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
 - LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
 - To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
+- Starlight migration: canonical app `sites/docs/` (base `/knowledge-base`); `effect-ts` area fully migrated in MDX. Vault remains Obsidian + audit source; enriched MDX wins on deploy for migrated slugs.

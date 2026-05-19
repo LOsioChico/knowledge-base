@@ -6,10 +6,23 @@ import { join } from "node:path"
 import {
   REPO_ROOT,
   buildVaultCheckReport,
+  docsPathsChangedFromBase,
   formatHumanReport,
   parseVaultCheckArgs,
-  targetsFromBase,
 } from "./vault-check-lib.mjs"
+
+function runDocsLint() {
+  const result = spawnSync("bun", ["run", "lint:docs"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    env: process.env,
+  })
+  return {
+    ok: result.status === 0,
+    stdout: result.stdout ?? "",
+    stderr: result.stderr ?? "",
+  }
+}
 
 function runPass0Targets(changedFiles) {
   const pass0Script = join(REPO_ROOT, "scripts/audit-notes/pass0-targets.ts")
@@ -83,6 +96,25 @@ async function main() {
   }
 
   const report = await buildVaultCheckReport({ baseRef: args.baseRef })
+  const docsChanged = docsPathsChangedFromBase(args.baseRef)
+
+  if (
+    report.changedFiles.length === 0 &&
+    docsChanged &&
+    report.auditSkipped?.startsWith("no changed content")
+  ) {
+    report.auditSkipped =
+      "no changed content/**/*.md files (lint:docs ran because sites/docs/ changed)"
+  }
+
+  if (docsChanged) {
+    report.docsLint = runDocsLint()
+    if (!report.docsLint.ok && !args.json) {
+      if (report.docsLint.stdout) process.stdout.write(report.docsLint.stdout)
+      if (report.docsLint.stderr) process.stderr.write(report.docsLint.stderr)
+    }
+  }
+
   report.pass0 =
     report.changedFiles.length > 0
       ? runPass0Targets(report.changedFiles)
@@ -104,6 +136,7 @@ async function main() {
 
   let exitCode = 0
   if (!report.links.ok) exitCode = 1
+  if (report.docsLint && !report.docsLint.ok) exitCode = 1
   if (report.pass0 && !report.pass0.ok) exitCode = 1
   if (report.auditExitCode === 1) exitCode = 1
 
@@ -116,6 +149,7 @@ async function main() {
       changedFiles: report.changedFiles,
       pass0: report.pass0,
       auditSkipped: report.auditSkipped,
+      docsLint: report.docsLint,
     }
     process.stdout.write(`${JSON.stringify(out, null, 2)}\n`)
   } else {

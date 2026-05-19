@@ -40,7 +40,7 @@ For every claim from Phase 2:
 
 1. WebFetch the relevant official doc page or `curl -s` the raw GitHub source.
 2. Quote the supporting text mentally; if the doc contradicts the claim, the claim is wrong (drop or rewrite).
-3. Note the exact URL with anchor (`#section-id` for docs, `#L<m>-L<n>` for source). This becomes the inline citation in the prose AND lands in `source:` via `yarn autofix`.
+3. Note the exact URL with anchor (`#section-id` for docs, `#L<m>-L<n>` for source). This becomes the inline citation in the prose AND lands in `source:` via `cd scripts/audit-notes && bun run autofix`.
 4. **Comparative claims are double work** (per AGENTS.md): "same as X" requires verifying X too. If you can't verify the comparator in this session, drop the comparison.
 5. **Numeric specifics are high risk**: any "~20× cheaper", "~80% reduction", "12+ hours" — either find the exact number in primary docs or replace with a vague-but-honest phrasing ("over an order of magnitude", "measured in hours"). Never ship an unsourced specific.
 
@@ -64,25 +64,24 @@ Follow the recipe / concept template in AGENTS.md (tagline → setup → minimal
 
 - **TypeScript by default**, NestJS service (`@Injectable`) when illustrating a server-side use case. Python/Go/Java acceptable as one-liners after the canonical TS example, never as the only sample.
 - **Fully runnable snippets**: every import present, every class wrapped in its container, every referenced field declared. AGENTS.md "Code examples (MANDATORY)" governs.
-- **Inline citations next to surprising claims** with the precise anchor — not just in `source:`. The `inline-source-citations` linter enforces this and `yarn autofix` syncs `source:`.
+- **Inline citations next to surprising claims** with the precise anchor — not just in `source:`. The `inline-source-citations` linter enforces this; `cd scripts/audit-notes && bun run autofix` syncs `source:`.
 
 ## Phase 6 — Linter pass (BLOCKING, run before audit)
 
-From repo root:
+From repo root (matches CI — see `docs/PIPELINE.md`):
 
 ```bash
-(cd quartz && npm run lint:wikilinks) && \
-  (cd scripts/audit-notes && yarn lint:content && yarn lint:format)
+bun run lint:ci
 ```
 
-Any failure here fails CI. `yarn format` (in `scripts/audit-notes/`) auto-fixes Prettier. Wikilink failures usually mean a missing `related:` back-link or an unlinked first mention of a known concept.
+Or vault-only / Starlight-only slices: `bun run lint:wikilinks`, `bun run lint:docs`. `cd scripts/audit-notes && bun run format` auto-fixes Prettier. Wikilink failures usually mean a missing `related:` back-link or an unlinked first mention of a known concept.
 
 ## Phase 7 — LLM audit and triage
 
 ```bash
 set -a; source .env; set +a
 cd scripts/audit-notes
-yarn start --json ../../content/<area>/<file>.md [more.md ...] > /tmp/audit.json 2> /tmp/audit.err
+bun start --json --profile=triage ../../content/<area>/<file>.md [more.md ...] > /tmp/audit.json 2> /tmp/audit.err
 ```
 
 For each finding, **verify before acting** (per AGENTS.md "Audit findings are suggestions"):

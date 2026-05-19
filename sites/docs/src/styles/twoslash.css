@@ -1,0 +1,12 @@
+/* Minimal Twoslash hover UI (adapted from Effect-TS/website content/src/styles/twoslash.css) */
+.expressive-code .twoslash-popup-container {
+  --ec-twoSlash-brdCol: var(--ec-gtrFg);
+}
+
+.expressive-code .twoslash-popup-container:hover {
+  display: inline-flex;
+}
+
+.expressive-code .twoslash-hover {
+  border-color: var(--ec-twoSlash-brdCol);
+}

@@ -1,9 +1,9 @@
 # audit-notes
 
 LLM-driven audit pipeline that verifies knowledge-base notes against the rules
-in [`AGENTS.md`](../../AGENTS.md). Runs locally on demand (no CI integration);
-results are surfaced in chat for human triage and either applied as fixes or
-recorded in `dismissed.json` for future suppression.
+in [`AGENTS.md`](../../AGENTS.md). **Pass 0** (`lint:content`, `lint:format`) runs in CI via
+`bun run lint:ci`; LLM passes run locally on demand. Results are surfaced in chat for human
+triage and either applied as fixes or recorded in `dismissed.json` for future suppression.
 
 Built on the [Cursor TypeScript SDK](https://cursor.com/blog/typescript-sdk).
 LLM passes use **Composer 2.5 Fast** (`composer-2.5` with `fast: true` in
@@ -60,8 +60,9 @@ Empty diff exits cleanly (`{ "files": [] }`).
 ### Repo-root quality gate
 
 From the repository root, **`bun run vault:check`** runs wikilinks (diff-scoped),
-Pass 0 on changed files, triage audit, discoverability hints, and split
-suggestions. See [`AGENTS.md`](../../AGENTS.md) and
+Pass 0 on changed files, triage audit, discoverability hints, split suggestions, and
+**`lint:docs`** when `sites/docs/` changed. See [`AGENTS.md`](../../AGENTS.md),
+[`docs/PIPELINE.md`](../../docs/PIPELINE.md), and
 [`.github/skills/kb-audit-triage/SKILL.md`](../../.github/skills/kb-audit-triage/SKILL.md).
 
 ```bash

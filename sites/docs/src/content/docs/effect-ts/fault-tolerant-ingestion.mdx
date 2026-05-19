@@ -1,0 +1,261 @@
+---
+title: Fault-tolerant ingestion pipeline
+description: Compose tryPromise, Schema, timeout, retry, and forEach into a typed ingestion pipeline with bounded concurrency.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Fetching from a flaky upstream is the canonical "happy path in dev, silent corruption in prod" problem. This recipe types every failure mode and makes each fix one operator in the pipe.
+
+<Steps>
+
+1. **Wrap** `fetch` with [[effect-ts/typed-errors|typed errors]] (`tryPromise` + status check).
+2. **Parse** with `Schema.decodeUnknown`, not `as`.
+3. **Bound** latency with `Effect.timeout` (abort in-flight `fetch`).
+4. **Retry** only transient tags with a capped jittered schedule.
+5. **Ingest** with `Effect.forEach` and `{ concurrency: n }`.
+
+</Steps>
+
+## Before you start
+
+```bash
+bun add effect
+```
+
+Core `effect` only: `Effect`, `Schedule`, `Schema` ([`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts)).
+
+## The brittle version
+
+<Tabs>
+  <TabItem label="Plain Promise">
+    ```typescript
+    async function fetchTodo(id: number) {
+      const res = await fetch(
+        `https://jsonplaceholder.typicode.com/todos/${id}`,
+      );
+      const body = (await res.json()) as { id: number; title: string };
+      return body;
+    }
+
+    const todos = await Promise.all([1, 2, 3, 4, 5].map(fetchTodo));
+    ```
+
+    Hidden failures: `unknown` rejections, HTTP errors that do not throw, no timeout, no retry, unbounded concurrency.
+
+  </TabItem>
+  <TabItem label="What we fix">
+    | Problem | Fix in this recipe |
+    | --- | --- |
+    | Network `unknown` | `FetchError` via `tryPromise` |
+    | HTTP 4xx/5xx | `HttpError` when `!res.ok` |
+    | Bad JSON / shape | `ParseFailure` via `Schema` |
+    | Hang | `Effect.timeout` + `AbortSignal` |
+    | Transient blip | `Effect.retry` + `Schedule` |
+    | Thundering herd | `Schedule.jittered` + `concurrency` cap |
+
+  </TabItem>
+</Tabs>
+
+## 1. Typed fetch
+
+```ts twoslash
+import { Data, Effect } from "effect";
+
+class FetchError extends Data.TaggedError("FetchError")<{
+  readonly cause: unknown;
+}> {}
+class HttpError extends Data.TaggedError("HttpError")<{
+  readonly status: number;
+}> {}
+
+const fetchRaw = (url: string) =>
+  Effect.tryPromise({
+    try: (signal) => fetch(url, { signal }),
+    catch: (cause) => new FetchError({ cause }),
+  }).pipe(
+    Effect.flatMap((res) =>
+      res.ok
+        ? Effect.succeed(res)
+        : Effect.fail(new HttpError({ status: res.status })),
+    ),
+  );
+```
+
+`try` receives `signal`: interruption and timeout cancel the in-flight request ([`Effect.ts` tryPromise](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4677-L4690)).
+
+## 2. Schema at the boundary
+
+```ts twoslash
+import { Data, Effect, Schema } from "effect";
+
+class ParseFailure extends Data.TaggedError("ParseFailure")<{
+  readonly issues: string;
+}> {}
+
+const Todo = Schema.Struct({
+  userId: Schema.Number,
+  id: Schema.Number,
+  title: Schema.String,
+  completed: Schema.Boolean,
+});
+
+const parseTodo = (res: Response) =>
+  Effect.tryPromise({
+    try: () => res.json(),
+    catch: (cause) =>
+      new ParseFailure({ issues: `bad JSON: ${String(cause)}` }),
+  }).pipe(
+    Effect.flatMap((unknown) =>
+      Schema.decodeUnknown(Todo)(unknown).pipe(
+        Effect.mapError((e) => new ParseFailure({ issues: e.message })),
+      ),
+    ),
+  );
+```
+
+Use `decodeUnknown` for `res.json()` output; use `decode` only between known-encoded layers. Compose with `fetchRaw` in the next section.
+
+## 3. Timeout + retry
+
+```ts twoslash
+import { Data, Effect, Schedule, Schema } from "effect";
+
+class FetchError extends Data.TaggedError("FetchError")<{ readonly cause: unknown }> {}
+class HttpError extends Data.TaggedError("HttpError")<{ readonly status: number }> {}
+class ParseFailure extends Data.TaggedError("ParseFailure")<{ readonly issues: string }> {}
+
+const Todo = Schema.Struct({
+  userId: Schema.Number,
+  id: Schema.Number,
+  title: Schema.String,
+  completed: Schema.Boolean,
+});
+
+const fetchRaw = (url: string) =>
+  Effect.tryPromise({
+    try: (signal) => fetch(url, { signal }),
+    catch: (cause) => new FetchError({ cause }),
+  }).pipe(
+    Effect.flatMap((res) =>
+      res.ok ? Effect.succeed(res) : Effect.fail(new HttpError({ status: res.status })),
+    ),
+  );
+
+const fetchTodo = (id: number) =>
+  fetchRaw(`https://jsonplaceholder.typicode.com/todos/${id}`).pipe(
+    Effect.flatMap((res) =>
+      Effect.tryPromise({
+        try: () => res.json(),
+        catch: (cause) => new ParseFailure({ issues: String(cause) }),
+      }),
+    ),
+    Effect.flatMap((u) =>
+      Schema.decodeUnknown(Todo)(u).pipe(
+        Effect.mapError((e) => new ParseFailure({ issues: e.message })),
+      ),
+    ),
+  );
+
+const retryPolicy = Schedule.intersect(
+  Schedule.jittered(Schedule.exponential("200 millis")),
+  Schedule.recurs(3),
+);
+
+const fetchTodoResilient = (id: number) =>
+  fetchTodo(id).pipe(
+    Effect.timeout("5 seconds"),
+    Effect.retry({
+      schedule: retryPolicy,
+      while: (err) =>
+        err._tag === "FetchError" || err._tag === "TimeoutException",
+    }),
+  );
+```
+
+`HttpError` and `ParseFailure` fail fast; `FetchError` and `TimeoutException` retry ([[effect-ts/retry-and-schedule|Retry and Schedule]]).
+
+## 4. Bounded concurrency
+
+```ts twoslash
+import { Console, Data, Effect, Schedule, Schema } from "effect";
+
+class FetchError extends Data.TaggedError("FetchError")<{ readonly cause: unknown }> {}
+class HttpError extends Data.TaggedError("HttpError")<{ readonly status: number }> {}
+class ParseFailure extends Data.TaggedError("ParseFailure")<{ readonly issues: string }> {}
+
+const Todo = Schema.Struct({
+  userId: Schema.Number,
+  id: Schema.Number,
+  title: Schema.String,
+  completed: Schema.Boolean,
+});
+
+const fetchRaw = (url: string) =>
+  Effect.tryPromise({
+    try: (signal) => fetch(url, { signal }),
+    catch: (cause) => new FetchError({ cause }),
+  }).pipe(
+    Effect.flatMap((res) =>
+      res.ok ? Effect.succeed(res) : Effect.fail(new HttpError({ status: res.status })),
+    ),
+  );
+
+const fetchTodo = (id: number) =>
+  fetchRaw(`https://jsonplaceholder.typicode.com/todos/${id}`).pipe(
+    Effect.flatMap((res) =>
+      Effect.tryPromise({
+        try: () => res.json(),
+        catch: (cause) => new ParseFailure({ issues: String(cause) }),
+      }),
+    ),
+    Effect.flatMap((u) =>
+      Schema.decodeUnknown(Todo)(u).pipe(
+        Effect.mapError((e) => new ParseFailure({ issues: e.message })),
+      ),
+    ),
+    Effect.timeout("5 seconds"),
+    Effect.retry({
+      schedule: Schedule.intersect(
+        Schedule.jittered(Schedule.exponential("200 millis")),
+        Schedule.recurs(3),
+      ),
+      while: (err) =>
+        err._tag === "FetchError" || err._tag === "TimeoutException",
+    }),
+  );
+
+const program = Effect.forEach([1, 2, 3, 4, 5], fetchTodo, {
+  concurrency: 5,
+}).pipe(Effect.tap((todos) => Console.log(`ingested ${todos.length} todos`)));
+
+Effect.runPromise(program);
+```
+
+`{ concurrency: 5 }` caps in-flight work; `1` is sequential; `"unbounded"` matches `Promise.all`.
+
+<Aside type="caution" title="forEach short-circuits on first failure">
+
+Wrap each item in `Effect.either` when you want "ingest as much as possible, log the rest." You trade aggregated `E` for a list of `Either` results.
+
+</Aside>
+
+<Aside type="caution" title="Reads only">
+
+This recipe assumes idempotent **reads**. Retrying a POST replays the mutation unless the upstream deduplicates.
+
+</Aside>
+
+<Aside type="note" title="When to use @effect/platform HttpClient">
+
+Many endpoints or shared headers: switch to `@effect/platform` `HttpClient` (retries, tracing, typed bodies). See [[effect-ts/ecosystem-map|Ecosystem map]].
+
+</Aside>
+
+## See also
+
+- [[effect-ts/retry-and-schedule|Retry and Schedule]]
+- [[effect-ts/typed-errors|Typed errors]]
+- [[effect-ts/scoped-resources|Scoped resources]]
+- [[effect-ts/composition|Composition]]
+- [Retrying](https://effect.website/docs/error-management/retrying/) (official)

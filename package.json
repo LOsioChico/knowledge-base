@@ -2,11 +2,18 @@
   "name": "knowledge-base",
   "private": true,
   "type": "module",
-  "description": "Tooling for the knowledge-base content vault (wikilink linter and tests).",
+  "description": "Knowledge-base vault lint, Starlight MDX lint, audit tooling, and deploy merge scripts.",
   "scripts": {
     "lint:wikilinks": "node scripts/lint-wikilinks.mjs",
+    "lint:mdx-wikilinks": "node scripts/lint-mdx-wikilinks.mjs",
+    "lint:mdx-link-hygiene": "node scripts/lint-mdx-link-hygiene.mjs",
+    "lint:docs": "bun run --cwd sites/docs check && bun run lint:mdx-wikilinks && bun run lint:mdx-link-hygiene --strict",
+    "lint:ci": "bun run lint:wikilinks && bun run --cwd scripts/audit-notes lint:content && bun run --cwd scripts/audit-notes lint:format && bun run lint:docs",
+    "test:ci": "bun run test && bun run --cwd scripts/audit-notes test",
+    "docs:dev": "bun run --cwd sites/docs dev",
+    "docs:build": "bun run --cwd sites/docs build",
     "vault:check": "node scripts/vault-check.mjs",
-    "test": "tsx --test scripts/*.test.mjs"
+    "test": "tsx --test scripts/*.test.mjs scripts/merge-pages.test.mjs"
   },
   "engines": {
     "node": ">=22"

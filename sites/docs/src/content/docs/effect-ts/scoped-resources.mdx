@@ -1,0 +1,187 @@
+---
+title: Scoped resources
+description: acquireRelease, acquireUseRelease, addFinalizer, and ensuring — cleanup on success, failure, and interruption.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> A scoped resource is one whose cleanup is wired to the lifetime of an `Effect`, so the runtime guarantees release on success, failure, and interruption.
+
+<Steps>
+
+1. Pick the primitive (`acquireUseRelease` vs `acquireRelease` + `Scope`).
+2. Register cleanup (release / finalizer).
+3. Discharge `Scope` with `Effect.scoped` or `Layer.scoped`.
+4. Compose with timeout, retry, and interrupt — finalizers still run.
+
+</Steps>
+
+## Why this exists
+
+`try/finally` does not run when an `await` is abandoned by cancellation or when a parent [[effect-ts/what-is-effect|fiber]] is interrupted. Effect registers finalizers; the runtime runs them in reverse order when the scope closes ([Scope docs](https://effect.website/docs/resource-management/scope/)).
+
+Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L5371-L5398), acquire and release run **uninterruptibly** so half-open resources do not leak.
+
+## The four primitives
+
+| API | Lifetime owner | Reach for |
+| --- | --- | --- |
+| `Effect.acquireUseRelease` | One expression | Acquire → use → release in a single block; `R` stays `never` |
+| `Effect.acquireRelease` | Enclosing `Scope` | Resource reused across steps; needs `Effect.scoped` or `Layer.scoped` |
+| `Effect.addFinalizer` | Enclosing `Scope` | Register cleanup next to the code that needs it; sees `Exit` |
+| `Effect.ensuring` | Wrapped effect | Side-effect cleanup with no resource value; no `Scope` in `R` |
+
+<Tabs>
+  <TabItem label="acquireUseRelease">
+    ```ts twoslash
+    import { Console, Effect } from "effect";
+
+    interface Page {
+      readonly url: string;
+      readonly close: () => Promise<void>;
+    }
+
+    const openPage = (url: string): Promise<Page> =>
+      Promise.resolve({
+        url,
+        close: () => {
+          console.log(`closed ${url}`);
+          return Promise.resolve();
+        },
+      });
+
+    const program = Effect.acquireUseRelease(
+      Effect.tryPromise({
+        try: () => openPage("https://example.com"),
+        catch: (cause) => new Error(`open failed: ${String(cause)}`),
+      }),
+      (page) => Console.log(`scraping ${page.url}`),
+      (page) => Effect.promise(() => page.close()),
+    );
+
+    Effect.runPromise(program);
+    // scraping https://example.com
+    // closed https://example.com
+    ```
+
+    `release` runs if `use` fails or the effect is interrupted.
+
+  </TabItem>
+  <TabItem label="acquireRelease + scoped">
+    ```ts twoslash
+    import { Effect } from "effect";
+
+    interface DbPool {
+      readonly query: (sql: string) => Promise<unknown>;
+      readonly end: () => Promise<void>;
+    }
+
+    const connect = Effect.tryPromise({
+      try: () =>
+        Promise.resolve<DbPool>({
+          query: (sql) => Promise.resolve({ sql }),
+          end: () => {
+            console.log("pool closed");
+            return Promise.resolve();
+          },
+        }),
+      catch: (cause) => new Error(`connect failed: ${String(cause)}`),
+    });
+
+    const pool = Effect.acquireRelease(connect, (p) => Effect.promise(() => p.end()));
+
+    const work = Effect.gen(function* () {
+      const db = yield* pool;
+      return yield* Effect.promise(() => db.query("SELECT 1"));
+    });
+
+    Effect.runPromise(Effect.scoped(work));
+    // pool closed
+    ```
+
+    `Scope` appears in `R` until `Effect.scoped` discharges it. Same pattern as [[effect-ts/layers-and-di|Layer.scoped]].
+
+  </TabItem>
+  <TabItem label="addFinalizer">
+    ```ts twoslash
+    import { Console, Effect, Exit } from "effect";
+
+    const program = Effect.gen(function* () {
+      yield* Effect.addFinalizer((exit) =>
+        Exit.isSuccess(exit)
+          ? Console.log("committed")
+          : Console.log(`rolled back: ${exit._tag}`),
+      );
+      return "result";
+    });
+
+    Effect.runPromise(Effect.scoped(program)).then(console.log);
+    // committed
+    // result
+    ```
+
+    Use when cleanup depends on how the scope ended, not a single acquire/release pair.
+
+  </TabItem>
+  <TabItem label="ensuring">
+    ```ts twoslash
+    import { Console, Effect } from "effect";
+
+    const work = Console.log("doing work").pipe(
+      Effect.tap(() => Effect.fail(new Error("boom"))),
+    );
+
+    const guarded = work.pipe(Effect.ensuring(Console.log("cleanup ran")));
+
+    Effect.runPromiseExit(guarded);
+    // doing work
+    // cleanup ran
+    ```
+
+    No `Scope` in `R`. Prefer `acquireRelease` when you have a resource value to release ([Effect.ts#L5700-L5703](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L5700-L5703)).
+
+  </TabItem>
+</Tabs>
+
+## Finalizer ordering
+
+Finalizers run **LIFO** when the scope closes ([Scope docs](https://effect.website/docs/resource-management/scope/)):
+
+```ts twoslash
+import { Console, Effect } from "effect";
+
+const program = Effect.gen(function* () {
+  yield* Effect.addFinalizer(() => Console.log("finalizer 1"));
+  yield* Effect.addFinalizer(() => Console.log("finalizer 2"));
+  yield* Effect.addFinalizer(() => Console.log("finalizer 3"));
+});
+
+Effect.runPromise(Effect.scoped(program));
+// finalizer 3
+// finalizer 2
+// finalizer 1
+```
+
+## Retry, timeout, and interrupt
+
+When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try — the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
+
+<Aside type="caution" title="Forgot Effect.scoped">
+
+If `R` still contains `Scope` at the runner, finalizers are not discharged at your boundary. One-shot: wrap with `Effect.scoped`. Long-lived: `Layer.scoped`.
+
+</Aside>
+
+<Aside type="caution" title="Acquire and release are uninterruptible">
+
+Default `acquireRelease` cannot be interrupted mid-open/mid-close. Use `Effect.acquireReleaseInterruptible` only when you explicitly need a killable long handshake ([Effect.ts#L5476-L5484](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L5476-L5484)).
+
+</Aside>
+
+## See also
+
+- [[effect-ts/layers-and-di|Layers and DI]]
+- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]]
+- [[effect-ts/composition|Composition]]
+- [Resource management](https://effect.website/docs/resource-management/introduction/) (official)
+- [Scope](https://effect.website/docs/resource-management/scope/) (official)

@@ -4,13 +4,20 @@ Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base
 
 ## Layout
 
-- `content/` — source markdown notes.
-- `scripts/` — repository tooling (wikilink linter, content audit).
-- `AGENTS.md` — operating contract for AI editors. Read it before touching any note.
+- `content/` — Obsidian vault (markdown, wikilinks, audit).
+- `sites/docs/` — Starlight + MDX publish app (migrated areas; see `sites/docs/README.md`).
+- `scripts/` — wikilink linter, content audit, deploy merge helper.
+- `AGENTS.md` — operating contract for AI editors.
 
-The Quartz site generator lives in a separate private repo, `LOsioChico/quartz-fork` (a fork of [jackyzha0/quartz](https://github.com/jackyzha0/quartz)). CI clones it at build time; see `.github/workflows/deploy.yml`. To swap site generators, change that workflow.
+`docs/` — Starlight migration playbooks and [`docs/PIPELINE.md`](docs/PIPELINE.md) (CI / lint map). CI builds Quartz + Starlight and merges for GitHub Pages (`.github/workflows/deploy.yml`).
 
-## Preview locally
+## Preview Starlight (migrated pages)
+
+```bash
+bun run docs:dev
+```
+
+## Preview Quartz (full vault)
 
 Clone the quartz fork somewhere outside this repo, then point it at this `content/`:
 
@@ -23,8 +30,13 @@ npx quartz build --serve -d <path-to-knowledge-base>/content
 ## Lint and audit
 
 ```bash
-bun install   # one-time: wikilink linter + audit-notes deps
-bun run lint:wikilinks
+bun install   # root
+cd scripts/audit-notes && bun install
+cd sites/docs && bun install
+bun run lint:ci          # matches CI (vault + Pass 0 + Starlight)
+bun run lint:wikilinks   # vault only
+bun run lint:docs        # Starlight only
+bun run docs:build       # Twoslash production build
 ```
 
 Default post-edit quality gate (diff-scoped wikilinks, Pass 0, triage audit,

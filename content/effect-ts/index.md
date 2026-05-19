@@ -24,6 +24,9 @@ source:
 
 > Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and structured concurrency (child fibers cancelled with their parent scope). Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
 
+> [!todo]- Starlight publish
+> Full Effect-TS area is on Starlight (`sites/docs/src/content/docs/effect-ts/`). This vault note stays the Obsidian + audit source; enriched MDX wins on deploy.
+
 ## TL;DR
 
 - The core type is [`Effect<Success, Error, Requirements>`](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), abbreviated `A`, `E`, `R`. Errors and dependencies are tracked in the type, not lost in `try/catch` and DI containers.

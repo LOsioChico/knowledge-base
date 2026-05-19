@@ -23,6 +23,9 @@ source:
 
 > Install `effect`, write a tiny program, run it three different ways, then handle a typed error. The 10-minute path from "I've heard of Effect" to "I have a working `Effect<A, E, R>` in front of me".
 
+> [!todo]- Starlight publish
+> Enriched MDX with Twoslash: `sites/docs/src/content/docs/effect-ts/quickstart.mdx`. Keep this vault note for Obsidian + audit; edit both when facts change until migration completes.
+
 ## Before you start
 
 You need:

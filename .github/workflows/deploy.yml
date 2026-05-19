@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 1. Fast blocking checks. Stops the pipeline if format/wikilinks are broken.
+  # 1. Fast blocking checks. Stops the pipeline if format/wikilinks/docs are broken.
   lint:
     runs-on: ubuntu-22.04
     steps:
@@ -31,18 +31,38 @@ jobs:
           bun-version: latest
       - name: Install root deps (lint tooling)
         run: bun install --frozen-lockfile
-      - name: Lint wikilinks
-        run: bun run lint:wikilinks
-      - name: Lint content (Pass 0)
+      - name: Install audit-notes deps
         working-directory: scripts/audit-notes
-        run: |
-          bun install --frozen-lockfile
-          bun run lint:content
-          bun run lint:format
+        run: bun install --frozen-lockfile
+      - name: Install Starlight docs deps
+        working-directory: sites/docs
+        run: bun install --frozen-lockfile
+      - name: Lint (vault + Pass 0 + Starlight)
+        run: bun run lint:ci
+      - name: Unit tests
+        run: bun run test:ci
 
-  # 2. Build the site by cloning the Quartz fork at build time. Skipped on
-  # pull_request: deploy is main-only. To pin a specific Quartz version,
-  # change `ref:` below to a tag or commit SHA on LOsioChico/quartz-fork.
+  # PR-only: full Starlight build (Twoslash). Quartz merge needs a private fork token.
+  docs-build:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install root deps
+        run: bun install --frozen-lockfile
+      - name: Install Starlight docs deps
+        working-directory: sites/docs
+        run: bun install --frozen-lockfile
+      - name: Build Starlight (Twoslash)
+        run: bun run docs:build
+
+  # 2. Build Quartz + Starlight, merge for GitHub Pages. Skipped on pull_request.
   build:
     needs: lint
     if: github.event_name != 'pull_request'
@@ -63,16 +83,34 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       - name: Install Quartz deps
         working-directory: quartz
         run: npm ci
       - name: Build Quartz against this repo's content
         working-directory: quartz
         run: npx quartz build -d ../content-repo/content
+      - name: Install Starlight docs deps
+        working-directory: content-repo/sites/docs
+        run: bun install --frozen-lockfile
+      - name: Build Starlight docs
+        working-directory: content-repo/sites/docs
+        run: bun run build
+      - name: Merge Quartz + Starlight output
+        working-directory: content-repo
+        run: node scripts/merge-pages.mjs quartz/public sites/docs/dist merged-public
+      - name: Verify merged Starlight paths
+        working-directory: content-repo
+        run: |
+          test -f merged-public/index.html
+          test -f merged-public/effect-ts/index.html
+          test -f merged-public/effect-ts/quickstart/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: quartz/public
+          path: content-repo/merged-public
 
   # 3. Deploy to GitHub Pages.
   deploy:
