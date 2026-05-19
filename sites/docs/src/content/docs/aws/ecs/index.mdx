@@ -7,7 +7,7 @@ description: Elastic Container Service — task definitions, services, Fargate v
 
 ## TL;DR
 
-- **Task definition = pod-equivalent** — JSON spec of containers, ports, env, [[aws/iam|IAM]] role, CPU/memory. Each revision is immutable.
+- **Task definition = pod-equivalent**: JSON spec of containers, ports, env, [[aws/iam|IAM]] role, CPU/memory. Each revision is immutable.
 - **Service** keeps N copies alive and optionally registers with a load balancer.
 - **Fargate**: pay per task vCPU/memory-second, no nodes. **EC2**: cheaper at scale; you patch nodes.
 - **Networking via [[aws/vpc|VPC]]**. `awsvpc` gives each task its own ENI + security group; required for Fargate ([source](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking-awsvpc.html)).
@@ -28,5 +28,5 @@ description: Elastic Container Service — task definitions, services, Fargate v
 
 ## See also
 
-- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — when Fargate beats Lambda for long-lived backends.
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: when Fargate beats Lambda for long-lived backends.
 - [Amazon ECS developer guide](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) (official).

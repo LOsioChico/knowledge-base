@@ -45,7 +45,7 @@ const result = Effect.runSync(program);
 // logs "side effect", result === 42
 ```
 
-Before `runSync`, `program` is still `Effect<number, never, never>` — nothing has run yet. That is the main shift from `Promise`, which starts work as soon as you call `new Promise(...)` or `fetch(...)`.
+Before `runSync`, `program` is still `Effect<number, never, never>`: nothing has run yet. That is the main shift from `Promise`, which starts work as soon as you call `new Promise(...)` or `fetch(...)`.
 
 <Aside type="note" title="Promise vs Effect, in one paragraph">
 
@@ -120,11 +120,11 @@ Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; p
     // { id: 'u_1', name: 'Ada' }
     ```
 
-    `provided` has `R` of `never` — `UserRepo` was satisfied by the layer.
+    `provided` has `R` of `never`: `UserRepo` was satisfied by the layer.
 
   </TabItem>
   <TabItem label="Concurrency">
-    Lazy effects let the runtime cancel children with their parent scope, supervise fibers, and release [[effect-ts/scoped-resources|scoped resources]] on interruption — patterns borrowed from ZIO-style systems.
+    Lazy effects let the runtime cancel children with their parent scope, supervise fibers, and release [[effect-ts/scoped-resources|scoped resources]] on interruption: patterns borrowed from ZIO-style systems.
 
   </TabItem>
 </Tabs>
@@ -156,7 +156,7 @@ Effect is a normal npm package: no forked `tsc`. An earlier **TS+** experiment a
 
 ## Ecosystem snapshot
 
-Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)) — platform, CLI, SQL, AI, workflow, RPC, OpenTelemetry, Vitest, and more.
+Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)): platform, CLI, SQL, AI, workflow, RPC, OpenTelemetry, Vitest, and more.
 
 `Schema` lives in core [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts); standalone `@effect/schema` on npm is deprecated (merged into `effect`). Full lookup: [[effect-ts/ecosystem-map|Ecosystem map]].
 

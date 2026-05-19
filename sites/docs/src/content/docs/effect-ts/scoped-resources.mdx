@@ -12,7 +12,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 1. Pick the primitive (`acquireUseRelease` vs `acquireRelease` + `Scope`).
 2. Register cleanup (release / finalizer).
 3. Discharge `Scope` with `Effect.scoped` or `Layer.scoped`.
-4. Compose with timeout, retry, and interrupt — finalizers still run.
+4. Compose with timeout, retry, and interrupt: finalizers still run.
 
 </Steps>
 
@@ -164,7 +164,7 @@ Effect.runPromise(Effect.scoped(program));
 
 ## Retry, timeout, and interrupt
 
-When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try — the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
+When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try: the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
 
 <Aside type="caution" title="Forgot Effect.scoped">
 

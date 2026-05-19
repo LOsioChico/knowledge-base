@@ -58,6 +58,6 @@ aws rds wait db-instance-deleted    --db-instance-identifier <id>
 
 ## Tips
 
-- Always `wait` between create/copy/restore in scripts — else `InvalidDBSnapshotState`.
+- Always `wait` between create/copy/restore in scripts: else `InvalidDBSnapshotState`.
 - Full cross-account + [[aws/kms|KMS]] sequence: [[aws/rds/cross-account-snapshot|cross-account RDS snapshot]].
 - See [[aws/cli/profiles-and-credentials|profiles and credentials]] for multi-account `--profile`.

@@ -49,7 +49,7 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
 
 ## Resolution order (inverted)
 
-Every other layer: **global → controller → route**. Filters: **route → controller → global**. First `@Catch()` match wins — siblings do not chain.
+Every other layer: **global → controller → route**. Filters: **route → controller → global**. First `@Catch()` match wins: siblings do not chain.
 
 <Steps>
 
@@ -135,7 +135,7 @@ export class UserNotFoundFilter implements ExceptionFilter<UserNotFoundError> {
 }
 ```
 
-Controller: `throw new UserNotFoundError(id)` — filter owns HTTP shape.
+Controller: `throw new UserNotFoundError(id)`: filter owns HTTP shape.
 
 `GET /users/missing-id` with filter registered:
 
@@ -162,10 +162,10 @@ Use `HttpAdapterHost` instead of `response.json()` so the same filter works on E
 | --- | --- |
 | Typed filter never runs | Catch-all listed after typed filter in `@UseFilters` |
 | "No HTTP adapter" | `new Filter()` instead of class binding |
-| Empty response after filter | `async catch()` rejected without await — use sync or handle promise |
+| Empty response after filter | `async catch()` rejected without await: use sync or handle promise |
 
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
-- [[nestjs/fundamentals/pipes|Pipes]] — throws that filters catch
+- [[nestjs/fundamentals/pipes|Pipes]]: throws that filters catch
 - [NestJS Exception filters](https://docs.nestjs.com/exception-filters)

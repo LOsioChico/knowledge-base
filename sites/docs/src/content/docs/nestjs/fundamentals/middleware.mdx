@@ -32,10 +32,10 @@ Middleware cannot read `@Roles()`, the controller class, or which handler will r
 
 <Steps>
 
-1. **Pick a shape** — class (`NestMiddleware` + DI) or functional (plain `(req, res, next)` when you need no injections). See [functional middleware](https://docs.nestjs.com/middleware#functional-middleware).
-2. **Pick a scope** — global `app.use()` in `main.ts` (no DI) or module `configure()` with `MiddlewareConsumer` (DI-aware).
-3. **Match routes** — `forRoutes(CatsController)`, path strings, or v11 wildcards (`'*splat'`, `'{*splat}'`).
-4. **Call `next()`** — or send a response; never return without doing one of those.
+1. **Pick a shape**: class (`NestMiddleware` + DI) or functional (plain `(req, res, next)` when you need no injections). See [functional middleware](https://docs.nestjs.com/middleware#functional-middleware).
+2. **Pick a scope**: global `app.use()` in `main.ts` (no DI) or module `configure()` with `MiddlewareConsumer` (DI-aware).
+3. **Match routes**: `forRoutes(CatsController)`, path strings, or v11 wildcards (`'*splat'`, `'{*splat}'`).
+4. **Call `next()`**: or send a response; never return without doing one of those.
 
 </Steps>
 
@@ -48,7 +48,7 @@ Middleware cannot read `@Roles()`, the controller class, or which handler will r
 
     async function bootstrap() {
       const app = await NestFactory.create(AppModule);
-      app.use(requestId); // no Nest DI — plain Express middleware
+      app.use(requestId); // no Nest DI: plain Express middleware
       await app.listen(3000);
     }
     bootstrap();
@@ -95,7 +95,7 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 | Concern | API | Notes |
 | --- | --- | --- |
 | Security headers | `app.use(helmet())` | [Helmet](https://docs.nestjs.com/security/helmet) |
-| CORS | `app.enableCors(options)` | Not `app.use(cors())` — adapter-aware ([CORS](https://docs.nestjs.com/security/cors)) |
+| CORS | `app.enableCors(options)` | Not `app.use(cors())`: adapter-aware ([CORS](https://docs.nestjs.com/security/cors)) |
 | Compression | `app.use(compression())` | [Compression](https://docs.nestjs.com/techniques/compression) |
 | Cookies / session | `cookieParser()`, `session()` | [Cookies](https://docs.nestjs.com/techniques/cookies), [Session](https://docs.nestjs.com/techniques/session) |
 
@@ -103,7 +103,7 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 
 ### Request ID on every response
 
-Functional middleware — pair with [[nestjs/recipes/trace-id|trace IDs]] for `AsyncLocalStorage` logging.
+Functional middleware: pair with [[nestjs/recipes/trace-id|trace IDs]] for `AsyncLocalStorage` logging.
 
 ```typescript
 import { randomUUID } from "node:crypto";
@@ -146,7 +146,7 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 
 ### Raw body for signed webhooks
 
-`express.json()` consumes the stream once. Stripe/GitHub sign **exact bytes** — re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
+`express.json()` consumes the stream once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
 
 ```typescript
 import { json, raw } from "express";
@@ -162,7 +162,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-Or `{ rawBody: true }` + `RawBodyRequest` — [Raw body FAQ](https://docs.nestjs.com/faq/raw-body).
+Or `{ rawBody: true }` + `RawBodyRequest`: [Raw body FAQ](https://docs.nestjs.com/faq/raw-body).
 
 ## Gotchas
 
@@ -190,11 +190,11 @@ Nest registers `express.json()` / `urlencoded()` automatically. Custom parsers n
 | --- | --- |
 | Request hangs | No `next()` and no `res.end()` |
 | Provider `undefined` in middleware | Used `app.use()` instead of `MiddlewareConsumer` |
-| Stripe signature fails | `json()` parsed body before verify — use `raw()` on webhook path |
-| `exclude()` ignored | Called after `forRoutes()` — order is `apply` → `exclude` → `forRoutes` |
+| Stripe signature fails | `json()` parsed body before verify: use `raw()` on webhook path |
+| `exclude()` ignored | Called after `forRoutes()`: order is `apply` → `exclude` → `forRoutes` |
 
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
-- [[nestjs/fundamentals/guards|Guards]] — next layer in the pipeline
+- [[nestjs/fundamentals/guards|Guards]]: next layer in the pipeline
 - [NestJS Middleware](https://docs.nestjs.com/middleware)

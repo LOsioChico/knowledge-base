@@ -5,7 +5,7 @@ description: Authorization gate before the handler; CanActivate with ExecutionCo
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Decide whether a request reaches the route handler. Used for **authorization** (roles, permissions, ownership) — after [[nestjs/fundamentals/middleware|middleware]], before [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]].
+> Decide whether a request reaches the route handler. Used for **authorization** (roles, permissions, ownership): after [[nestjs/fundamentals/middleware|middleware]], before [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]].
 
 ## Contract
 
@@ -42,7 +42,7 @@ export class AuthGuard implements CanActivate {
 
 <Tabs>
   <TabItem label="boolean">
-    Sync in-memory checks — no extra microtask.
+    Sync in-memory checks: no extra microtask.
   </TabItem>
   <TabItem label="Promise">
     `async` guards: JWT verify, DB lookup, remote authz service (`Promise<boolean>`).
@@ -54,7 +54,7 @@ export class AuthGuard implements CanActivate {
 
 <Aside type="caution" title="Pass the class, not an instance">
 
-`@UseGuards(RolesGuard)` — DI wires `Reflector`, repos, config. `@UseGuards(new RolesGuard())` skips DI; `this.reflector` is `undefined`. Same rule for interceptors, pipes, and filters.
+`@UseGuards(RolesGuard)`: DI wires `Reflector`, repos, config. `@UseGuards(new RolesGuard())` skips DI; `this.reflector` is `undefined`. Same rule for interceptors, pipes, and filters.
 
 </Aside>
 
@@ -92,7 +92,7 @@ export class AuthGuard implements CanActivate {
     2. Controller guards (left-to-right in `@UseGuards()`)
     3. Route guards (left-to-right)
 
-    **First** `false`, throw, or rejected `Promise` stops the chain — later guards never run.
+    **First** `false`, throw, or rejected `Promise` stops the chain: later guards never run.
   </TabItem>
 </Tabs>
 
@@ -150,19 +150,19 @@ export class RolesGuard implements CanActivate {
 | `AuthGuard('jwt')` | `@nestjs/passport` | [JWT strategy](/knowledge-base/nestjs/auth/jwt-strategy/) |
 | `ThrottlerGuard` | `@nestjs/throttler` | [Rate limiting](/knowledge-base/nestjs/recipes/rate-limiting/) |
 
-Nest core exports `CanActivate` and `@UseGuards` only ([`common/index.ts`](https://github.com/nestjs/nest/blob/master/packages/common/index.ts)) — no shipped guard implementations.
+Nest core exports `CanActivate` and `@UseGuards` only ([`common/index.ts`](https://github.com/nestjs/nest/blob/master/packages/common/index.ts)): no shipped guard implementations.
 
 ## Common errors
 
 | Symptom | Likely cause |
 | --- | --- |
-| `403` unexpectedly | Guard returned `false` — check order; earlier guard may have failed |
+| `403` unexpectedly | Guard returned `false`: check order; earlier guard may have failed |
 | `this.reflector` undefined | Passed `new RolesGuard()` instead of `RolesGuard` |
-| `@Roles()` ignored | Wrong reflector method — use `getAllAndOverride` for override semantics |
-| Public route blocked | Global guard runs first — add `@Public()` + `Reflector` skip ([Passport recipe](https://docs.nestjs.com/recipes/passport)) |
+| `@Roles()` ignored | Wrong reflector method: use `getAllAndOverride` for override semantics |
+| Public route blocked | Global guard runs first: add `@Public()` + `Reflector` skip ([Passport recipe](https://docs.nestjs.com/recipes/passport)) |
 
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
-- [[nestjs/fundamentals/middleware|Middleware]] — runs before guards
+- [[nestjs/fundamentals/middleware|Middleware]]: runs before guards
 - [NestJS Guards](https://docs.nestjs.com/guards)

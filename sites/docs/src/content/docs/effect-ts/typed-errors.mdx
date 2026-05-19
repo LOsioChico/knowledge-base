@@ -11,7 +11,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 1. **Declare** tagged errors with `Data.TaggedError`.
 2. **Lift** throwing or rejecting code into `Effect` (`try` / `tryPromise`).
-3. **Compose** — `Effect.gen` unions every yielded error into `E`.
+3. **Compose**: `Effect.gen` unions every yielded error into `E`.
 4. **Recover** one tag with `catchTag` (or many with `catchTags`).
 5. **Re-type** without handling via `mapError`.
 6. **Recover everything expected** with `catchAll`.
@@ -85,7 +85,7 @@ class HttpError {
 
     const exit = Effect.runSyncExit(parseJson("not json"));
     console.log(exit._tag);
-    // Failure — ParseError in the cause channel, not a silent success
+    // Failure: ParseError in the cause channel, not a silent success
     ```
 
     Prefer `runSyncExit` or `Effect.either` when demonstrating failure paths: `runSync` throws a `FiberFailure` wrapper if `E` is not `never`.
@@ -114,7 +114,7 @@ class HttpError {
     // 200
     ```
 
-    The `catch` callback is **optional**. Without it, failures become `UnknownException` in `E` ([tryPromise docs](https://effect.website/docs/getting-started/creating-effects/#trypromise)) — still typed, but not discriminable with `catchTag("YourTag", ...)`. Pass `catch` when you want a `_tag` you own.
+    The `catch` callback is **optional**. Without it, failures become `UnknownException` in `E` ([tryPromise docs](https://effect.website/docs/getting-started/creating-effects/#trypromise)): still typed, but not discriminable with `catchTag("YourTag", ...)`. Pass `catch` when you want a `_tag` you own.
 
   </TabItem>
 </Tabs>
@@ -169,7 +169,7 @@ const recovered = program.pipe(
 );
 ```
 
-After `catchTag("HttpError", ...)`, `recovered` is `Effect<string, ValidationError, never>` — `HttpError` left the union. Handle every tag and `E` becomes `never`:
+After `catchTag("HttpError", ...)`, `recovered` is `Effect<string, ValidationError, never>`: `HttpError` left the union. Handle every tag and `E` becomes `never`:
 
 ```ts twoslash
 import { Data, Effect } from "effect";
@@ -326,7 +326,7 @@ Fix the annotation or narrow with `catchTag` / `mapError` until `E` matches what
 
 <Aside type="caution" title="Omit catch → UnknownException">
 
-`Effect.try` / `Effect.tryPromise` without `catch` still type-check, but failures land as `UnknownException` — no custom `_tag` for `catchTag`. Use `{ try, catch }` when you need discriminated errors downstream.
+`Effect.try` / `Effect.tryPromise` without `catch` still type-check, but failures land as `UnknownException`: no custom `_tag` for `catchTag`. Use `{ try, catch }` when you need discriminated errors downstream.
 
 </Aside>
 
@@ -338,8 +338,8 @@ Fix the annotation or narrow with `catchTag` / `mapError` until `E` matches what
 
 ## See also
 
-- [[effect-ts/quickstart|Quickstart]] — first `Effect.try` + `catchTag`
-- [[effect-ts/what-is-effect|What is Effect]] — the `E` channel in `Effect<A, E, R>`
-- [[effect-ts/composition|Composition]] — `pipe` and `Effect.gen` with typed errors
+- [[effect-ts/quickstart|Quickstart]]: first `Effect.try` + `catchTag`
+- [[effect-ts/what-is-effect|What is Effect]]: the `E` channel in `Effect<A, E, R>`
+- [[effect-ts/composition|Composition]]: `pipe` and `Effect.gen` with typed errors
 - [Expected errors](https://effect.website/docs/error-management/expected-errors/) (official)
 - [`Effect.catchTag` source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3882-L3947)

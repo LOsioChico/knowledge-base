@@ -53,7 +53,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="caution" title="Need DI inside the pipe?">
 
-`useGlobalPipes(new ValidationPipe(...))` builds the pipe **outside** the container. For `ConfigService`, loggers, or request scope, use `APP_PIPE` — [[nestjs/fundamentals/global-providers|global enhancers]].
+`useGlobalPipes(new ValidationPipe(...))` builds the pipe **outside** the container. For `ConfigService`, loggers, or request scope, use `APP_PIPE`: [[nestjs/fundamentals/global-providers|global enhancers]].
 
 </Aside>
 
@@ -118,7 +118,7 @@ Invalid input:
 
 <Tabs>
   <TabItem label="Strip unknown fields">
-    `whitelist: true` only — extra keys are removed silently.
+    `whitelist: true` only: extra keys are removed silently.
 
     Request:
 
@@ -133,7 +133,7 @@ Invalid input:
     ```
   </TabItem>
   <TabItem label="Reject unknown fields">
-    Add `forbidNonWhitelisted: true` — same request returns:
+    Add `forbidNonWhitelisted: true`: same request returns:
 
     ```json
     {
@@ -165,7 +165,7 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
 { "page": null }
 ```
 
-(`JSON.stringify(NaN)` → `null`.) Prefer `@Query("page", ParseIntPipe)` when bad input should be `400` — see [[nestjs/fundamentals/pipes|Pipes]].
+(`JSON.stringify(NaN)` → `null`.) Prefer `@Query("page", ParseIntPipe)` when bad input should be `400`: see [[nestjs/fundamentals/pipes|Pipes]].
 
 `enableImplicitConversion: true` (in `transformOptions`) coerces whole query objects: `?limit=10` becomes number `10` for `@IsInt()` instead of failing on string `"10"`.
 
@@ -173,15 +173,15 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
   <TabItem label="What gets validated">
     | Parameter | Metatype | Validation runs? |
     | --- | --- | --- |
-    | `@Body() dto: CreateUserDto` | Custom class | Yes — full DTO |
-    | `@Query() q: PaginationQuery` | Custom class | Yes — needs `enableImplicitConversion` for numbers |
-    | `@Param('id') id: string` | `String` | No — use `ParseIntPipe` for strict coercion |
-    | `@Body() raw: object` | `Object` | No — plain body from Express |
+    | `@Body() dto: CreateUserDto` | Custom class | Yes: full DTO |
+    | `@Query() q: PaginationQuery` | Custom class | Yes: needs `enableImplicitConversion` for numbers |
+    | `@Param('id') id: string` | `String` | No: use `ParseIntPipe` for strict coercion |
+    | `@Body() raw: object` | `Object` | No: plain body from Express |
 
     Source: [`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts) metatype check.
   </TabItem>
   <TabItem label="transform: true and methods">
-    DTO with `fullName()` only works when `transform: true` — the pipe must call `plainToInstance`. Without it:
+    DTO with `fullName()` only works when `transform: true`: the pipe must call `plainToInstance`. Without it:
 
     ```text
     TypeError: dto.fullName is not a function
@@ -288,7 +288,7 @@ new ValidationPipe({
 
 ## See also
 
-- [[nestjs/fundamentals/pipes|Pipes]] — binding scopes and built-ins
+- [[nestjs/fundamentals/pipes|Pipes]]: binding scopes and built-ins
 - [[nestjs/recipes|Recipes MOC]]
 - [Validation (official)](https://docs.nestjs.com/techniques/validation)
 - [class-validator decorators](https://github.com/typestack/class-validator#validation-decorators)

@@ -5,13 +5,13 @@ description: Serve a bucket as a public HTTP website — index documents, HTTPS 
 
 import { Aside } from "@astrojs/starlight/components";
 
-> S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only — production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
+> S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only: production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
 
 ## When to reach for it
 
-- **Bare S3 website** — ephemeral/internal/test where HTTP is acceptable.
-- **S3 + CloudFront + ACM** — production static site with HTTPS and custom domain.
-- **Amplify** — AWS's recommended managed path ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
+- **Bare S3 website**: ephemeral/internal/test where HTTP is acceptable.
+- **S3 + CloudFront + ACM**: production static site with HTTPS and custom domain.
+- **Amplify**: AWS's recommended managed path ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
 
 ## 1. Enable hosting
 
@@ -61,7 +61,7 @@ http://my-site.s3-website.us-west-2.amazonaws.com
 | Bucket root | Object list XML | `index.html` |
 | Redirects | No | Per-object and routing rules |
 
-Use the **website** endpoint for static sites — REST returns XML listings.
+Use the **website** endpoint for static sites: REST returns XML listings.
 
 <Aside type="caution" title="Website endpoint is HTTP-only">
 
@@ -79,7 +79,7 @@ Apex domains: Route 53 alias records (CNAME not allowed at apex).
 
 ## SPA error document pattern
 
-Point `error-document` at `index.html` for client-side routing — HTTP status stays `404` (SEO/analytics impact). CloudFront custom error responses can rewrite to `200`.
+Point `error-document` at `index.html` for client-side routing: HTTP status stays `404` (SEO/analytics impact). CloudFront custom error responses can rewrite to `200`.
 
 ## Costs
 

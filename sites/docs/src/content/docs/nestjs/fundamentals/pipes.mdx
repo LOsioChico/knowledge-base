@@ -9,10 +9,10 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Tabs>
   <TabItem label="Use ValidationPipe when">
-    Whole DTO class on `@Body()` / `@Query()` — decorators, whitelist, nested objects. See [[nestjs/recipes/validation|Validation recipe]].
+    Whole DTO class on `@Body()` / `@Query()`: decorators, whitelist, nested objects. See [[nestjs/recipes/validation|Validation recipe]].
   </TabItem>
   <TabItem label="Use built-in Parse* when">
-    Single route or query param — `@Param('id', ParseIntPipe)`, `@Query('page', ParseIntPipe)`. Fails fast with a clear `400` when coercion is impossible.
+    Single route or query param: `@Param('id', ParseIntPipe)`, `@Query('page', ParseIntPipe)`. Fails fast with a clear `400` when coercion is impossible.
   </TabItem>
 </Tabs>
 
@@ -53,7 +53,7 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 | `ParseUUIDPipe` | UUID shape (optional `version`) |
 | `ParseArrayPipe` | Split `a,b,c` → array |
 | `DefaultValuePipe` | Fallback when `null` / `undefined` / `NaN` |
-| `ParseFilePipe` | Upload validators — [file uploads](/knowledge-base/nestjs/recipes/file-uploads/) |
+| `ParseFilePipe` | Upload validators: [file uploads](/knowledge-base/nestjs/recipes/file-uploads/) |
 
 ## Order
 
@@ -107,7 +107,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-**Show the behavior** — invalid body:
+**Show the behavior**: invalid body:
 
 ```json
 POST /cats
@@ -134,7 +134,7 @@ With `whitelist: true`, unknown keys are stripped **before** your method runs. L
 | `whitelist` | `false` | Strip non-decorated properties |
 | `forbidNonWhitelisted` | `false` | Throw instead of strip |
 | `transform` | `false` | Instantiate DTO class + implicit coercion |
-| `transformOptions.enableImplicitConversion` | — | `"1"` → `1` when property is `number` |
+| `transformOptions.enableImplicitConversion` |: | `"1"` → `1` when property is `number` |
 
 Deep DTO patterns: [[nestjs/recipes/validation|validation recipe]].
 
@@ -160,12 +160,12 @@ Bind per param: `@Body(new ZodValidationPipe(createUserSchema))` ([Nest example]
 
 | Symptom | Likely cause |
 | --- | --- |
-| `400` on optional query | Empty string is not nil — add `DefaultValuePipe` or custom normalize |
-| DTO methods missing | `transform: false` — enable `transform: true` |
+| `400` on optional query | Empty string is not nil: add `DefaultValuePipe` or custom normalize |
+| DTO methods missing | `transform: false`: enable `transform: true` |
 | Wrong pipe order on `@Query` | Put `DefaultValuePipe` before `ParseIntPipe` |
 
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
-- [[nestjs/fundamentals/exception-filters|Exception filters]] — shape validation errors globally
+- [[nestjs/fundamentals/exception-filters|Exception filters]]: shape validation errors globally
 - [NestJS Pipes](https://docs.nestjs.com/pipes) · [Validation](https://docs.nestjs.com/techniques/validation)

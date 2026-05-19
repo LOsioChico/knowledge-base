@@ -5,7 +5,7 @@ description: CloudFront CNAME conflicts across accounts — diagnosis, ACM worka
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-> [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims** — retries stack faster than DNS can chase them.
+> [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims**: retries stack faster than DNS can chase them.
 
 ## Symptom
 
@@ -14,7 +14,7 @@ One or more aliases specified for the distribution includes an incorrectly
 configured DNS record that points to another CloudFront distribution.
 ```
 
-DNS is correct, nothing else claims the alias today, error persists. Each retry provisions a **new** CloudFront target — updating DNS is a losing race.
+DNS is correct, nothing else claims the alias today, error persists. Each retry provisions a **new** CloudFront target: updating DNS is a losing race.
 
 ## Diagnose
 
@@ -90,7 +90,7 @@ Stop retries; wait 2–4+ hours; attempt once. Escalate via [AWS Support](https:
 ## Operational notes
 
 - ACM auto-renews while validation CNAME stays in DNS.
-- `*.example.com` does not cover nested subdomains — add SANs.
+- `*.example.com` does not cover nested subdomains: add SANs.
 - Same ghost store affects non-Amplify CloudFront distributions.
 
 ## See also

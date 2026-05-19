@@ -39,22 +39,22 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 <Steps>
 
-1. **CLI + identities** — profiles, `sts get-caller-identity` on both sides.
-2. **IAM cross-account roles** — early, for services staying behind.
-3. **Data** (RDS, S3) — longest copy windows.
-4. **Compute** ([[aws/lambda|Lambda]], [[aws/ecs|ECS]]) — after data validates.
-5. **Frontend + DNS** (Amplify, CloudFront, Route 53) — user-visible cutover last.
-6. **Cleanup** — revoke grants; delete source after rollback window.
+1. **CLI + identities**: profiles, `sts get-caller-identity` on both sides.
+2. **IAM cross-account roles**: early, for services staying behind.
+3. **Data** (RDS, S3): longest copy windows.
+4. **Compute** ([[aws/lambda|Lambda]], [[aws/ecs|ECS]]): after data validates.
+5. **Frontend + DNS** (Amplify, CloudFront, Route 53): user-visible cutover last.
+6. **Cleanup**: revoke grants; delete source after rollback window.
 
 </Steps>
 
 ## Failure modes up front
 
-- **Encrypted snapshots can't share the default service KMS key** — [[aws/rds/cross-account-snapshot|RDS recipe]] re-encrypt step.
-- **CloudFront alternate-domain claims linger** after distribution deletion — [[aws/cloudfront/alternate-domain-claim|ACM bypass]].
-- **Cross-account KMS needs key policy AND consumer IAM policy** — granting only one fails closed.
-- **`sts:AssumeRole` without `ExternalId`** — confused-deputy risk; [[aws/recipes/cross-account-role-pattern|always set one]].
-- **Wrong `--profile` on a write** — `sts get-caller-identity` every time.
+- **Encrypted snapshots can't share the default service KMS key**: [[aws/rds/cross-account-snapshot|RDS recipe]] re-encrypt step.
+- **CloudFront alternate-domain claims linger** after distribution deletion: [[aws/cloudfront/alternate-domain-claim|ACM bypass]].
+- **Cross-account KMS needs key policy AND consumer IAM policy**: granting only one fails closed.
+- **`sts:AssumeRole` without `ExternalId`**: confused-deputy risk; [[aws/recipes/cross-account-role-pattern|always set one]].
+- **Wrong `--profile` on a write**: `sts get-caller-identity` every time.
 
 ## Not in this playbook (yet)
 

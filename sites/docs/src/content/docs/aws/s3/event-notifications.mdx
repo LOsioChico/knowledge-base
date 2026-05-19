@@ -5,7 +5,7 @@ description: S3 object event notifications to SQS, SNS, Lambda, or EventBridge �
 
 import { Aside } from "@astrojs/starlight/components";
 
-> S3 event notifications fire to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge when configured object lifecycle events occur — turning a passive bucket into an event-driven pipeline front.
+> S3 event notifications fire to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
 
 ## Event families
 
@@ -14,7 +14,7 @@ Ten activity types including Intelligent-Tiering auto-tier ([source](https://doc
 | Family | Wildcard | Notes |
 | --- | --- | --- |
 | Object created | `s3:ObjectCreated:*` | Put, Post, Copy, CompleteMultipartUpload |
-| Object removed | `s3:ObjectRemoved:*` | **Not fired for lifecycle deletes** — use `LifecycleExpiration:*` |
+| Object removed | `s3:ObjectRemoved:*` | **Not fired for lifecycle deletes**: use `LifecycleExpiration:*` |
 | Object restored | `s3:ObjectRestore:*` | Glacier restore lifecycle |
 | Lifecycle expiration | `s3:LifecycleExpiration:*` | Lifecycle-driven deletes |
 | Replication | `s3:Replication:*` | Failures, thresholds |
@@ -51,12 +51,12 @@ aws s3api put-bucket-notification-configuration \
   --notification-configuration file://notification.json
 ```
 
-S3 sends a one-time `s3:TestEvent` on configure — if missing, fix destination policy.
+S3 sends a one-time `s3:TestEvent` on configure: if missing, fix destination policy.
 
 ## Delivery semantics
 
-- **At-least-once** — handler must be idempotent.
-- **Not ordered** — use `versionId` / `LastModified`, not delivery order.
+- **At-least-once**: handler must be idempotent.
+- **Not ordered**: use `versionId` / `LastModified`, not delivery order.
 - **Seconds typical**, sometimes minutes ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications)).
 
 ## Recursion footgun
@@ -65,7 +65,7 @@ Lambda writes back to the same bucket without prefix filter → infinite loop bi
 
 <Aside type="caution" title="Overlapping filters rejected">
 
-Two rules cannot match the same object — use disjoint prefixes or fan out via SNS/EventBridge.
+Two rules cannot match the same object: use disjoint prefixes or fan out via SNS/EventBridge.
 
 </Aside>
 
@@ -78,5 +78,5 @@ Two rules cannot match the same object — use disjoint prefixes or fan out via 
 
 ## See also
 
-- [[aws/lambda|Lambda]] — common destination.
+- [[aws/lambda|Lambda]]: common destination.
 - [Using Lambda with S3](https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) (official).

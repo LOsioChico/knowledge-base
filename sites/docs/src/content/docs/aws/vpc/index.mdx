@@ -10,14 +10,14 @@ description: Virtual Private Cloud — subnets, route tables, security groups, N
 - **Primary CIDR at creation** (e.g. `10.0.0.0/16`); add secondary CIDRs later but cannot shrink the primary.
 - **Subnet = AZ + CIDR slice**. Public subnet routes to an Internet Gateway; private egress via NAT Gateway (~$0.045/hr + per-GB).
 - **Security group = stateful** instance firewall. **Network ACL = stateless** subnet filter. SGs are the workhorse.
-- **VPC endpoints** let private subnets reach AWS APIs (S3, DynamoDB, SQS) without internet — saves NAT cost.
+- **VPC endpoints** let private subnets reach AWS APIs (S3, DynamoDB, SQS) without internet: saves NAT cost.
 - **Default VPC** works for sandboxes; too permissive for production.
 
 ## When to use
 
 - **Custom VPC** for production, private databases, compliance.
 - **Default VPC** for throwaway experiments.
-- **Avoid** multiple unconnected VPCs when one suffices — peering and Transit Gateway add cost.
+- **Avoid** multiple unconnected VPCs when one suffices: peering and Transit Gateway add cost.
 
 ## Pending notes
 
@@ -27,5 +27,5 @@ description: Virtual Private Cloud — subnets, route tables, security groups, N
 
 ## See also
 
-- [[aws/ec2|EC2]] — instances live in subnets behind security groups.
+- [[aws/ec2|EC2]]: instances live in subnets behind security groups.
 - [Amazon VPC user guide](https://docs.aws.amazon.com/vpc/latest/userguide/what-is-amazon-vpc.html) (official).

@@ -39,23 +39,23 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ### Cold starts + warming anti-patterns
 
-Heavy Init (NestJS, Spring) pushes toward 1 s+ cold starts. **Provisioned Concurrency** bills ~$54/mo for 10 × 512 MB reserved envs before invocations ([Lambda pricing](https://aws.amazon.com/lambda/pricing/)). **SnapStart** helps Java/Python/.NET Init — not universal.
+Heavy Init (NestJS, Spring) pushes toward 1 s+ cold starts. **Provisioned Concurrency** bills ~$54/mo for 10 × 512 MB reserved envs before invocations ([Lambda pricing](https://aws.amazon.com/lambda/pricing/)). **SnapStart** helps Java/Python/.NET Init: not universal.
 
-Unblessed 5-minute ping keeps **one** env warm — second concurrent request still cold-starts.
+Unblessed 5-minute ping keeps **one** env warm: second concurrent request still cold-starts.
 
 ### DB connections → RDS Proxy
 
-200 concurrent Lambdas → 200 DB connections. [RDS Proxy](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy.html) pools connections — ~$43/mo on 4-vCPU `db.r5.xlarge` ([pricing](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/us-east-1/index.json)).
+200 concurrent Lambdas → 200 DB connections. [RDS Proxy](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/rds-proxy.html) pools connections: ~$43/mo on 4-vCPU `db.r5.xlarge` ([pricing](https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonRDS/current/us-east-1/index.json)).
 
 ### Hard limits
 
-- **900 s timeout** — long jobs need Step Functions, durable functions, or Fargate/EC2.
-- **6 MB sync response** — stream via S3 [[aws/s3/presigned-urls|presigned URLs]] or response streaming.
-- **No long-lived sockets** on Function URL — API Gateway WebSocket or other compute.
+- **900 s timeout**: long jobs need Step Functions, durable functions, or Fargate/EC2.
+- **6 MB sync response**: stream via S3 [[aws/s3/presigned-urls|presigned URLs]] or response streaming.
+- **No long-lived sockets** on Function URL: API Gateway WebSocket or other compute.
 
 <Aside type="note" title="Durable Functions change the model">
 
-Can run up to one year with checkpoints ([source](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html)) — different SDK contract, not "timeout lifted".
+Can run up to one year with checkpoints ([source](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html)): different SDK contract, not "timeout lifted".
 
 </Aside>
 
@@ -106,7 +106,7 @@ Lambda cost is linear in requests × memory × duration; EC2 is flat per hour. U
 
 <Aside type="caution" title="Provisioned Concurrency does not eliminate scale-out cold starts">
 
-N+1th concurrent request still cold-starts unless you size PC to peak — approaching always-on cost ([PC docs](https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html)).
+N+1th concurrent request still cold-starts unless you size PC to peak: approaching always-on cost ([PC docs](https://docs.aws.amazon.com/lambda/latest/dg/provisioned-concurrency.html)).
 
 </Aside>
 

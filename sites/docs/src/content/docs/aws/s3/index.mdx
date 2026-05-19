@@ -10,16 +10,16 @@ import { Aside } from "@astrojs/starlight/components";
 ## TL;DR
 
 - **Object storage, not a filesystem.** `/` in keys is convention, not folders.
-- **Region + name are immutable** after create — wrong Region means new bucket + sync ([[aws/s3/cross-account-migration|cross-account migration]] shape).
-- **Private by default** — [[aws/iam|IAM]], bucket policies, Access Points; keep Block Public Access on.
-- **Strong read-after-write** for PUT/overwrite-PUT/DELETE — no torn reads on a single key ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#ConsistencyModel)).
-- **Concurrent same-key PUTs: last write wins unpredictably** — not a concurrency lock; don't use S3 Object Lock for that ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)).
+- **Region + name are immutable** after create: wrong Region means new bucket + sync ([[aws/s3/cross-account-migration|cross-account migration]] shape).
+- **Private by default**: [[aws/iam|IAM]], bucket policies, Access Points; keep Block Public Access on.
+- **Strong read-after-write** for PUT/overwrite-PUT/DELETE: no torn reads on a single key ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#ConsistencyModel)).
+- **Concurrent same-key PUTs: last write wins unpredictably**: not a concurrency lock; don't use S3 Object Lock for that ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)).
 
 ## When to use S3 vs something else
 
 - **Use S3** for: uploads, artifacts, backups, [[aws/s3/static-website|static assets]] (+ [[aws/cloudfront|CloudFront]]), data-lake files, logs.
-- **Don't use as a database** — no indexes, no cross-key transactions.
-- **Don't use as a queue** — use [[aws/s3/event-notifications|event notifications]] into SQS/Lambda instead.
+- **Don't use as a database**: no indexes, no cross-key transactions.
+- **Don't use as a queue**: use [[aws/s3/event-notifications|event notifications]] into SQS/Lambda instead.
 
 ## Buckets and naming
 
@@ -45,7 +45,7 @@ flowchart LR
 | Enabled | PUT creates new version; DELETE adds delete marker |
 | Suspended | New writes null version ID; old versions kept |
 
-Once enabled, cannot return to unversioned — only suspend.
+Once enabled, cannot return to unversioned: only suspend.
 
 <Aside type="caution" title="Each version bills as full object">
 
@@ -60,7 +60,7 @@ Pair versioning with [[aws/s3/lifecycle-rules|NoncurrentVersionExpiration]] or c
 | [IAM](/knowledge-base/aws/iam/) identity policy | Same-account principals |
 | Bucket policy | Cross-account, public reads (rare) |
 | S3 Access Points | Per-app endpoints at scale |
-| ACLs | Avoid — keep Object Ownership bucket-owner-enforced |
+| ACLs | Avoid: keep Object Ownership bucket-owner-enforced |
 
 Block Public Access at account + bucket ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)).
 

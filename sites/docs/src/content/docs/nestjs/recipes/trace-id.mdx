@@ -26,7 +26,7 @@ No npm install for the core pattern. `AsyncLocalStorage` is in Node's standard l
 
 <Steps>
 
-1. **Middleware opens the context** — create the store helper and middleware:
+1. **Middleware opens the context**: create the store helper and middleware:
 
    ```typescript
    // trace/trace-context.ts
@@ -94,7 +94,7 @@ No npm install for the core pattern. `AsyncLocalStorage` is in Node's standard l
 
    When the client sends an inbound `X-Request-ID`, it's echoed back instead of replaced.
 
-2. **Logger injects the trace ID** — subclass `ConsoleLogger` and override [`formatPid()`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts#L417-L419):
+2. **Logger injects the trace ID**: subclass `ConsoleLogger` and override [`formatPid()`](https://github.com/nestjs/nest/blob/master/packages/common/services/console-logger.service.ts#L417-L419):
 
    ```typescript
    // trace/trace-logger.service.ts
@@ -133,7 +133,7 @@ No npm install for the core pattern. `AsyncLocalStorage` is in Node's standard l
 
    Outside any request (bootstrap, cron), `getTraceId()` returns `undefined` and the prefix is omitted.
 
-3. **Exception filter adds trace ID to error bodies** — read from the store, not the request:
+3. **Exception filter adds trace ID to error bodies**: read from the store, not the request:
 
    ```typescript
    // trace/trace-exception.filter.ts
@@ -202,7 +202,7 @@ No npm install for the core pattern. `AsyncLocalStorage` is in Node's standard l
    }
    ```
 
-4. **Interceptor times the handler** — bind globally via `APP_INTERCEPTOR`:
+4. **Interceptor times the handler**: bind globally via `APP_INTERCEPTOR`:
 
    ```typescript
    // trace/timing.interceptor.ts
@@ -232,7 +232,7 @@ No npm install for the core pattern. `AsyncLocalStorage` is in Node's standard l
    }
    ```
 
-5. **Propagate to outbound HTTP** (optional) — install `@nestjs/axios`, then forward the header on `HttpService.axiosRef`:
+5. **Propagate to outbound HTTP** (optional): install `@nestjs/axios`, then forward the header on `HttpService.axiosRef`:
 
    ```bash
    npm install --save @nestjs/axios axios
@@ -273,7 +273,7 @@ The middleware echoes any client-supplied header. On the public internet, attack
 
 <Aside type="caution" title="TraceLogger MUST be Scope.TRANSIENT">
 
-Default `Scope.DEFAULT` (singleton) reuses one instance app-wide and the `formatPid` override won't pick up per-injection context names. See [Custom logger — Injecting a custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger).
+Default `Scope.DEFAULT` (singleton) reuses one instance app-wide and the `formatPid` override won't pick up per-injection context names. See [Custom logger: Injecting a custom logger](https://docs.nestjs.com/techniques/logger#injecting-a-custom-logger).
 
 </Aside>
 
@@ -318,7 +318,7 @@ Store `getTraceId()` in the job payload when enqueuing; the consumer re-opens th
 
 <Tabs>
   <TabItem label="Correlation ID vs trace ID">
-    A **correlation ID** is a sticker on every log line for one request — grep by it.
+    A **correlation ID** is a sticker on every log line for one request: grep by it.
 
     A **trace ID** adds spans (`spanId`, `parentSpanId`, timings) so a backend reconstructs the call tree.
 
@@ -336,11 +336,11 @@ Store `getTraceId()` in the job payload when enqueuing; the consumer re-opens th
 
     </Aside>
 
-    Don't use `Scope.REQUEST` as a substitute: Passport strategies and request-scoped providers have documented performance and DI limits ([Injection scopes — Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance)).
+    Don't use `Scope.REQUEST` as a substitute: Passport strategies and request-scoped providers have documented performance and DI limits ([Injection scopes: Performance](https://docs.nestjs.com/fundamentals/injection-scopes#performance)).
 
     Generate IDs with [`crypto.randomUUID()`](https://nodejs.org/api/crypto.html#cryptorandomuuidoptions), not `Math.random()`, if you might reuse the value as an idempotency key later.
 
-    Old native bindings without [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may drop context after `await someThirdParty()` — wrap the entry point in `runInAsyncScope`.
+    Old native bindings without [`AsyncResource`](https://nodejs.org/api/async_hooks.html#class-asyncresource) may drop context after `await someThirdParty()`: wrap the entry point in `runInAsyncScope`.
   </TabItem>
 </Tabs>
 
@@ -357,11 +357,11 @@ Store `getTraceId()` in the job payload when enqueuing; the consumer re-opens th
 
 ## See also
 
-- [[nestjs/fundamentals/middleware|Middleware]] — where the context opens
-- [[nestjs/fundamentals/exception-filters|Exception filters]] — trace ID in error bodies
-- [[nestjs/fundamentals/interceptors|Interceptors]] — timing and structured logs
-- [[nestjs/fundamentals/global-providers|Global enhancers]] — `APP_FILTER` / `APP_INTERCEPTOR`
-- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]] — pipeline order
+- [[nestjs/fundamentals/middleware|Middleware]]: where the context opens
+- [[nestjs/fundamentals/exception-filters|Exception filters]]: trace ID in error bodies
+- [[nestjs/fundamentals/interceptors|Interceptors]]: timing and structured logs
+- [[nestjs/fundamentals/global-providers|Global enhancers]]: `APP_FILTER` / `APP_INTERCEPTOR`
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: pipeline order
 - [Async Local Storage recipe](https://docs.nestjs.com/recipes/async-local-storage)
 - [Custom logger](https://docs.nestjs.com/techniques/logger)
 - [`AsyncLocalStorage` API](https://nodejs.org/api/async_context.html#class-asynclocalstorage)

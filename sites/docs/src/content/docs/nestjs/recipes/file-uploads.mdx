@@ -10,7 +10,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ## When to reach for it
 
 - You need a file field on a form, not JSON in `@Body()`.
-- Callers might rename executables as `.jpg` — you want magic-number checks, not client `Content-Type`.
+- Callers might rename executables as `.jpg`: you want magic-number checks, not client `Content-Type`.
 - Uploads work locally but fail behind nginx with `413` before Nest sees the request.
 - You're on Fastify and `FileInterceptor` does nothing (wrong platform package).
 
@@ -64,7 +64,7 @@ Response:
 
 ## Uploaded file checks
 
-For body/query DTOs, use the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, use `ParseFilePipeBuilder` — it composes validators and returns a clean error when something fails.
+For body/query DTOs, use the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, use `ParseFilePipeBuilder`: it composes validators and returns a clean error when something fails.
 
 ```typescript
 import {
@@ -207,13 +207,13 @@ MulterModule.registerAsync({
 
 <Aside type="caution" title="Global ValidationPipe does not see the file">
 
-A global `ValidationPipe` validates `@Body()`, `@Query()`, and `@Param()` — not the `Express.Multer.File` behind `@UploadedFile()`. Multer attaches the file to `req.file` before injection. Validate files with `ParseFilePipe` / `ParseFilePipeBuilder`; validate text fields in the same form with a DTO on `@Body()`.
+A global `ValidationPipe` validates `@Body()`, `@Query()`, and `@Param()`: not the `Express.Multer.File` behind `@UploadedFile()`. Multer attaches the file to `req.file` before injection. Validate files with `ParseFilePipe` / `ParseFilePipeBuilder`; validate text fields in the same form with a DTO on `@Body()`.
 
 </Aside>
 
 <Aside type="caution" title="Reverse-proxy body limit">
 
-nginx defaults to `client_max_body_size 1m`; oversized uploads return `413 Request Entity Too Large` and never reach Nest. Bump the proxy limit to match your Multer cap. ALB, Cloud Run, and Cloudflare impose their own caps — check provider docs.
+nginx defaults to `client_max_body_size 1m`; oversized uploads return `413 Request Entity Too Large` and never reach Nest. Bump the proxy limit to match your Multer cap. ALB, Cloud Run, and Cloudflare impose their own caps: check provider docs.
 
 </Aside>
 
@@ -231,7 +231,7 @@ Without `@ApiConsumes("multipart/form-data")` and a body schema with `type: "str
 
 ## See also
 
-- [[nestjs/fundamentals/interceptors|Interceptors]] — how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
-- [[nestjs/fundamentals/pipes|Pipes]] — what `ParseFilePipe` is
-- [[nestjs/recipes/validation|Validation with class-validator]] — DTO fields in the same multipart form
+- [[nestjs/fundamentals/interceptors|Interceptors]]: how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
+- [[nestjs/fundamentals/pipes|Pipes]]: what `ParseFilePipe` is
+- [[nestjs/recipes/validation|Validation with class-validator]]: DTO fields in the same multipart form
 - [File upload (official)](https://docs.nestjs.com/techniques/file-upload)

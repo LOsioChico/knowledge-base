@@ -17,7 +17,7 @@ description: Simple Notification Service — topics, fan-out to SQS/Lambda/HTTP,
 
 - **Use SNS** for: fan-out, mobile push, email alerts, simple webhooks.
 - **Use SNS + SQS** when each consumer needs its own buffered queue with retry + DLQ.
-- **Don't use SNS** for: ordered event streams (Kinesis), large payloads, replay on Standard topics (FIFO archiving optional — [source](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html)).
+- **Don't use SNS** for: ordered event streams (Kinesis), large payloads, replay on Standard topics (FIFO archiving optional: [source](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html)).
 
 ## Pending notes
 
@@ -27,5 +27,5 @@ description: Simple Notification Service — topics, fan-out to SQS/Lambda/HTTP,
 
 ## See also
 
-- [[aws/sqs|SQS]] — queue most often paired with SNS.
+- [[aws/sqs|SQS]]: queue most often paired with SNS.
 - [Amazon SNS developer guide](https://docs.aws.amazon.com/sns/latest/dg/welcome.html) (official).

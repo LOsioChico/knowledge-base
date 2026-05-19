@@ -10,7 +10,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 <Steps>
 
 1. **Retry** with `{ times: n }` or a `Schedule`.
-2. **Backoff** with `Schedule.exponential` — always cap it.
+2. **Backoff** with `Schedule.exponential`: always cap it.
 3. **Bound** with `Schedule.intersect(..., Schedule.recurs(n))`.
 4. **Jitter** with `Schedule.jittered` when many clients retry together.
 5. **Filter** with `while` / `until` on the error tag.
@@ -172,7 +172,7 @@ Effect.runPromise(resilient).then(console.log);
 
 <Aside type="note" title="intersect vs compose">
 
-Use `intersect` to cap backoff (`exponential ∩ recurs(5)`). `Schedule.compose` feeds outputs into inputs — different semantics ([combinators](https://effect.website/docs/scheduling/schedule-combinators/)).
+Use `intersect` to cap backoff (`exponential ∩ recurs(5)`). `Schedule.compose` feeds outputs into inputs: different semantics ([combinators](https://effect.website/docs/scheduling/schedule-combinators/)).
 
 </Aside>
 

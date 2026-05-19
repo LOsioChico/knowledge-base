@@ -9,7 +9,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="note" title="Not application lifecycle">
 
-Boot and shutdown (`OnModuleInit`, `enableShutdownHooks`) are **process** lifetime — see [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]]. This page is **one HTTP request** from socket to response.
+Boot and shutdown (`OnModuleInit`, `enableShutdownHooks`) are **process** lifetime: see [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]]. This page is **one HTTP request** from socket to response.
 
 </Aside>
 
@@ -58,15 +58,15 @@ Stacked interceptors nest: **pre** runs in registration order, **post** runs **F
 
 <Steps>
 
-1. **HTTP adapter** — Express or Fastify receives the raw request.
-2. [[nestjs/fundamentals/middleware|Middleware]] — global, then module-scoped; mutates `req`/`res` before Nest's enhancer chain.
-3. [[nestjs/fundamentals/guards|Guards]] — global → controller → route; `canActivate` must be true to continue.
-4. [[nestjs/fundamentals/interceptors|Interceptors]] (before) — same order; wrap everything below.
-5. [[nestjs/fundamentals/pipes|Pipes]] — validate/transform params and body; route-param pipes run in **reverse** order.
-6. **Controller handler** — your `@Get()` / `@Post()` method runs.
-7. [[nestjs/fundamentals/interceptors|Interceptors]] (after) — FILO unwind on the response stream.
-8. [[nestjs/fundamentals/exception-filters|Exception filters]] — only if something threw; **route → controller → global** (opposite of steps 3–5).
-9. **Response** — sent to the client.
+1. **HTTP adapter**: Express or Fastify receives the raw request.
+2. [[nestjs/fundamentals/middleware|Middleware]]: global, then module-scoped; mutates `req`/`res` before Nest's enhancer chain.
+3. [[nestjs/fundamentals/guards|Guards]]: global → controller → route; `canActivate` must be true to continue.
+4. [[nestjs/fundamentals/interceptors|Interceptors]] (before): same order; wrap everything below.
+5. [[nestjs/fundamentals/pipes|Pipes]]: validate/transform params and body; route-param pipes run in **reverse** order.
+6. **Controller handler**: your `@Get()` / `@Post()` method runs.
+7. [[nestjs/fundamentals/interceptors|Interceptors]] (after): FILO unwind on the response stream.
+8. [[nestjs/fundamentals/exception-filters|Exception filters]]: only if something threw; **route → controller → global** (opposite of steps 3–5).
+9. **Response**: sent to the client.
 
 </Steps>
 
@@ -92,7 +92,7 @@ Exception filters invert that: **route → controller → global**. First `@Catc
     | Controller | Second |
     | Route | **Wins** (most specific) |
 
-    Example: a route-level `RolesGuard` overrides a global `AuthGuard` only if both run — Nest executes **all** guards in order; each must return true.
+    Example: a route-level `RolesGuard` overrides a global `AuthGuard` only if both run: Nest executes **all** guards in order; each must return true.
   </TabItem>
   <TabItem label="Exception filters">
     Registration order for **errors**:
@@ -103,13 +103,13 @@ Exception filters invert that: **route → controller → global**. First `@Catc
     | Controller | Second |
     | Global | Last resort |
 
-    Throwing **inside** a filter does not re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func` once). It **does** hit a second global-only handler Nest mounts at boot ([`routes-resolver.ts#L162-L183`](https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts#L162-L183)). `BaseExceptionFilter` is the floor when nothing matches — not Express `finalhandler`. See [[nestjs/fundamentals/exception-filters|Exception filters]] (order section).
+    Throwing **inside** a filter does not re-enter the per-handler chain ([`exceptions-handler.ts`](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/exceptions-handler.ts) calls `filter.func` once). It **does** hit a second global-only handler Nest mounts at boot ([`routes-resolver.ts#L162-L183`](https://github.com/nestjs/nest/blob/master/packages/core/router/routes-resolver.ts#L162-L183)). `BaseExceptionFilter` is the floor when nothing matches: not Express `finalhandler`. See [[nestjs/fundamentals/exception-filters|Exception filters]] (order section).
   </TabItem>
 </Tabs>
 
 ## One route, all layers
 
-Decorators on a single handler show **where** each layer attaches (Express adapter; imports omitted on purpose in prose — the fence is copy-pasteable):
+Decorators on a single handler show **where** each layer attaches (Express adapter; imports omitted on purpose in prose: the fence is copy-pasteable):
 
 ```typescript
 import {
@@ -153,5 +153,5 @@ Global `APP_GUARD`, `APP_INTERCEPTOR`, and `APP_PIPE` providers run **before** c
 
 ## See also
 
-- [[nestjs/fundamentals|Fundamentals MOC]] — links to each layer note
+- [[nestjs/fundamentals|Fundamentals MOC]]: links to each layer note
 - [NestJS Request Lifecycle FAQ](https://docs.nestjs.com/faq/request-lifecycle) (primary source)

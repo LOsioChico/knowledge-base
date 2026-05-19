@@ -28,7 +28,7 @@ Pair with [[nestjs/recipes/validation|validation]] on the way in: same `class-tr
 
 2. Register `ClassSerializerInterceptor` globally (next section).
 
-3. Return **class instances** (or use `@SerializeOptions({ type })`) so decorators run — see [Class-instance gotcha](#class-instance-gotcha).
+3. Return **class instances** (or use `@SerializeOptions({ type })`) so decorators run: see [Class-instance gotcha](#class-instance-gotcha).
 
 </Steps>
 
@@ -61,7 +61,7 @@ Decorators need metadata. `main.ts` that imports `NestFactory` from `@nestjs/cor
 
 </Aside>
 
-## `@Exclude()` — drop fields
+## `@Exclude()`: drop fields
 
 ```typescript
 import { Controller, Get, Param } from "@nestjs/common";
@@ -100,7 +100,7 @@ export class UsersController {
 
 The handler still sees `password` on the instance; stripping happens after `return` in the interceptor.
 
-## `@Expose()` + `excludeAll` — opt in
+## `@Expose()` + `excludeAll`: opt in
 
 Hide everything by default; new DB columns stay off the wire until explicitly exposed:
 
@@ -137,7 +137,7 @@ export class UsersController {
 { "id": 1, "email": "a@b.c" }
 ```
 
-## `@Transform()` — reshape values
+## `@Transform()`: reshape values
 
 ```typescript
 import { Controller, Get, Param } from "@nestjs/common";
@@ -178,7 +178,7 @@ export class UsersController {
 
 ## Class-instance gotcha
 
-Decorators apply when the controller returns a **class instance** or the route sets `@SerializeOptions({ type: ... })`. Plain objects still run through `classToPlain`, but `class-transformer` has no class metadata — every field passes through.
+Decorators apply when the controller returns a **class instance** or the route sets `@SerializeOptions({ type: ... })`. Plain objects still run through `classToPlain`, but `class-transformer` has no class metadata: every field passes through.
 
 ```typescript
 import { Controller, Get } from "@nestjs/common";
@@ -330,7 +330,7 @@ Group metadata is only read by `ClassSerializerInterceptor`. No global or per-ro
 
 ## See also
 
-- [[nestjs/recipes/validation|Validation with class-validator]] — inbound twin with parallel `groups`
-- [[nestjs/fundamentals/interceptors|Interceptors]] — where `ClassSerializerInterceptor` sits in the pipeline
+- [[nestjs/recipes/validation|Validation with class-validator]]: inbound twin with parallel `groups`
+- [[nestjs/fundamentals/interceptors|Interceptors]]: where `ClassSerializerInterceptor` sits in the pipeline
 - [Serialization (official)](https://docs.nestjs.com/techniques/serialization)
 - [`class-transformer` README](https://github.com/typestack/class-transformer)

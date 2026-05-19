@@ -21,7 +21,7 @@ flowchart TD
 
 | You need | Pick |
 | --- | --- |
-| Static `ValidationPipe({ whitelist: true })` | Either — `useGlobalPipes` is simplest |
+| Static `ValidationPipe({ whitelist: true })` | Either: `useGlobalPipes` is simplest |
 | `ConfigService` drives pipe options | `APP_PIPE` + `useFactory` |
 | Guard reads `x-tenant-id` per request | `APP_GUARD` + request scope |
 | Throttler / JWT guard from a package | `APP_GUARD` (they inject deps) |
@@ -81,10 +81,10 @@ flowchart TD
 
 <Steps>
 
-1. **Static `ValidationPipe`** — `useGlobalPipes(new ValidationPipe({ whitelist: true }))` in `main.ts` is enough; no injection.
-2. **Config-driven pipe** — `APP_PIPE` + `useFactory` injecting `ConfigService` so `whitelist` follows env.
-3. **Request-scoped guard** — `APP_GUARD` + `@Injectable({ scope: Scope.REQUEST })`; `useGlobalGuards(new TenantGuard())` cannot inject `REQUEST`.
-4. **Interceptor with deps** — `APP_INTERCEPTOR` when the constructor needs `ConfigService` or a logger from the container.
+1. **Static `ValidationPipe`**: `useGlobalPipes(new ValidationPipe({ whitelist: true }))` in `main.ts` is enough; no injection.
+2. **Config-driven pipe**: `APP_PIPE` + `useFactory` injecting `ConfigService` so `whitelist` follows env.
+3. **Request-scoped guard**: `APP_GUARD` + `@Injectable({ scope: Scope.REQUEST })`; `useGlobalGuards(new TenantGuard())` cannot inject `REQUEST`.
+4. **Interceptor with deps**: `APP_INTERCEPTOR` when the constructor needs `ConfigService` or a logger from the container.
 
 </Steps>
 
@@ -122,7 +122,7 @@ import { validationPipeProvider } from "./validation.config";
 export class AppModule {}
 ```
 
-With `useGlobalPipes` in `main.ts`, `ConfigService` is not on the app instance yet in a clean way — you'd hand-resolve with `app.get(ConfigService)`. `APP_PIPE` lets Nest wire it.
+With `useGlobalPipes` in `main.ts`, `ConfigService` is not on the app instance yet in a clean way: you'd hand-resolve with `app.get(ConfigService)`. `APP_PIPE` lets Nest wire it.
 
 ### Request-scoped `APP_GUARD`
 
@@ -199,20 +199,20 @@ export class AppModule {}
 
 <Aside type="note" title="Middleware has no APP_* token">
 
-[[nestjs/fundamentals/middleware|Middleware]] uses `MiddlewareConsumer` or `app.use()` — not this pattern. Only pipes, guards, interceptors, and filters have `APP_PIPE` / `APP_GUARD` / `APP_INTERCEPTOR` / `APP_FILTER`.
+[[nestjs/fundamentals/middleware|Middleware]] uses `MiddlewareConsumer` or `app.use()`: not this pattern. Only pipes, guards, interceptors, and filters have `APP_PIPE` / `APP_GUARD` / `APP_INTERCEPTOR` / `APP_FILTER`.
 
 </Aside>
 
 ## Edge cases
 
-- **Multiple `APP_*` registrations stack** — e.g. logging + timeout interceptors both run.
-- **Mixing `useGlobalPipes` and `APP_PIPE`** — both land in the same global list ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62), [`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695)). Pick one style per enhancer kind so order stays predictable.
-- **No `exports` needed** — official binding examples never export the `APP_*` token; Nest scans `providers` from any module.
-- **Testing overrides** — `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)).
+- **Multiple `APP_*` registrations stack**: e.g. logging + timeout interceptors both run.
+- **Mixing `useGlobalPipes` and `APP_PIPE`**: both land in the same global list ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62), [`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695)). Pick one style per enhancer kind so order stays predictable.
+- **No `exports` needed**: official binding examples never export the `APP_*` token; Nest scans `providers` from any module.
+- **Testing overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)).
 
 ## See also
 
 - [[nestjs/fundamentals/pipes|Pipes]] · [[nestjs/fundamentals/guards|Guards]] · [[nestjs/fundamentals/interceptors|Interceptors]] · [[nestjs/fundamentals/exception-filters|Exception filters]]
-- [[nestjs/recipes/validation|Validation recipe]] — common `APP_PIPE` use case
-- [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]] — parallel composition model
+- [[nestjs/recipes/validation|Validation recipe]]: common `APP_PIPE` use case
+- [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]]: parallel composition model
 - [Hybrid application](https://docs.nestjs.com/faq/hybrid-application) (official)

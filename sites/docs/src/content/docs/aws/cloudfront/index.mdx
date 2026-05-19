@@ -7,11 +7,11 @@ description: Content delivery network — distributions, origins, aliases, cachi
 
 ## TL;DR
 
-- **Distribution = CDN endpoint** — origins, path behaviors, aliases.
+- **Distribution = CDN endpoint**: origins, path behaviors, aliases.
 - **Aliases (CNAMEs) globally unique** across all AWS accounts ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)).
 - **Default 24h TTL**; forwarded headers/cookies/query strings fragment the cache key.
 - **ACM certificate in `us-east-1`** required for custom aliases.
-- **Amplify hides its distribution** — manage via `aws amplify`, not `cloudfront list-distributions`.
+- **Amplify hides its distribution**: manage via `aws amplify`, not `cloudfront list-distributions`.
 
 ## When to use
 
@@ -25,7 +25,7 @@ A **distribution** carries: one or more **origins**, **behaviors** (TTL, forward
 ## Pending notes
 
 - Lookup-key trap when forwarding `Authorization`.
-- Alias eviction and cross-account moves — [[aws/cloudfront/alternate-domain-claim|ghost claims]].
+- Alias eviction and cross-account moves: [[aws/cloudfront/alternate-domain-claim|ghost claims]].
 
 ## See also
 

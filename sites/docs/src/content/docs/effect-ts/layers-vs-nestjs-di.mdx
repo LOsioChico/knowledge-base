@@ -9,11 +9,11 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## TL;DR
 
-- **Effect** — missing services are a **type error** (`R` must be `never` to run).
-- **NestJS** — missing providers fail at **bootstrap** with "Nest can't resolve dependencies…".
-- **Sharing** — Nest singletons per app; Effect memoizes per `Effect.provide` graph (use `ManagedRuntime` for app-wide).
-- **Cleanup** — `Layer.scoped` vs `OnModuleDestroy` / shutdown hooks (opt-in on Nest).
-- **Together** — Nest owns the provider; Effect runs programs via `ManagedRuntime` inside methods.
+- **Effect**: missing services are a **type error** (`R` must be `never` to run).
+- **NestJS**: missing providers fail at **bootstrap** with "Nest can't resolve dependencies…".
+- **Sharing**: Nest singletons per app; Effect memoizes per `Effect.provide` graph (use `ManagedRuntime` for app-wide).
+- **Cleanup**: `Layer.scoped` vs `OnModuleDestroy` / shutdown hooks (opt-in on Nest).
+- **Together**: Nest owns the provider; Effect runs programs via `ManagedRuntime` inside methods.
 
 ## Mental model
 
@@ -187,9 +187,9 @@ await runtime.runPromise(
 
 ### Resource cleanup
 
-Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease` — release on interrupt without extra flags.
+Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease`: release on interrupt without extra flags.
 
-NestJS: `OnModuleDestroy` / `OnApplicationShutdown` — requires `app.close()` or `enableShutdownHooks()` ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
+NestJS: `OnModuleDestroy` / `OnApplicationShutdown`: requires `app.close()` or `enableShutdownHooks()` ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
 
 ### Tests
 

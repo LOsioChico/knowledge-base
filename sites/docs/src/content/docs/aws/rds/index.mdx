@@ -21,7 +21,7 @@ description: Relational Database Service — instances, snapshots, Multi-AZ, enc
 
 ## Mental model
 
-**DB instance** = "I have a database"; **DB snapshot** = "I have a backup". Snapshots restore as new instances across Region/account/class. Encrypted snapshots on the AWS-managed RDS key cannot be shared cross-account — copy under a CMK first ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html)).
+**DB instance** = "I have a database"; **DB snapshot** = "I have a backup". Snapshots restore as new instances across Region/account/class. Encrypted snapshots on the AWS-managed RDS key cannot be shared cross-account: copy under a CMK first ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html)).
 
 ## Pending notes
 

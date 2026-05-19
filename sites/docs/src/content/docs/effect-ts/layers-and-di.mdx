@@ -25,7 +25,7 @@ A traditional DI container is a runtime registry: missing bindings throw at star
 - `Effect.provide` **subtracts** satisfied tags from `R`.
 - When `R` is `never`, the effect is runnable.
 
-No string tokens or decorator metadata — missing dependencies are compile errors, not runtime crashes. Compare with [[effect-ts/typed-errors|typed errors]] on the `E` channel.
+No string tokens or decorator metadata: missing dependencies are compile errors, not runtime crashes. Compare with [[effect-ts/typed-errors|typed errors]] on the `E` channel.
 
 ## Declaring a service
 
@@ -215,8 +215,8 @@ For a single static value, `Effect.provideService(tag, value)` skips layer cerem
 
 Two operators ([`Layer.merge`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L567), [`Layer.provide`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L899)):
 
-- **`Layer.merge(a, b)`** — parallel union: produces both outputs, requires the union of inputs (siblings).
-- **`Layer.provide(outer, inner)`** — sequential [[effect-ts/composition|composition]]: `inner` satisfies part of `outer`'s requirements.
+- **`Layer.merge(a, b)`**: parallel union: produces both outputs, requires the union of inputs (siblings).
+- **`Layer.provide(outer, inner)`**: sequential [[effect-ts/composition|composition]]: `inner` satisfies part of `outer`'s requirements.
 
 ```ts twoslash
 import { Context, Effect, Layer } from "effect";
@@ -348,10 +348,10 @@ Call the factory once and reuse the resulting `Layer` value.
 
 ## See also
 
-- [[effect-ts/what-is-effect|What is Effect]] — the `R` channel in `Effect<A, E, R>`
-- [[effect-ts/scoped-resources|Scoped resources]] — `acquireRelease` and `Scope` in depth
-- [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]] — side-by-side with Nest's container
-- [[effect-ts/ecosystem-map|Ecosystem map]] — `@effect/*` packages wired through layers
+- [[effect-ts/what-is-effect|What is Effect]]: the `R` channel in `Effect<A, E, R>`
+- [[effect-ts/scoped-resources|Scoped resources]]: `acquireRelease` and `Scope` in depth
+- [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]]: side-by-side with Nest's container
+- [[effect-ts/ecosystem-map|Ecosystem map]]: `@effect/*` packages wired through layers
 - [Services](https://effect.website/docs/requirements-management/services/) (official)
 - [Layers](https://effect.website/docs/requirements-management/layers/) (official)
 - [Layer memoization](https://effect.website/docs/requirements-management/layer-memoization/) (official)

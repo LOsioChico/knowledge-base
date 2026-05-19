@@ -44,10 +44,10 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
    export class AppModule {}
    ```
 
-   - `ThrottlerModule.forRoot([{ ttl, limit }])` — `ttl` is the window in **milliseconds**, `limit` is max requests in that window.
+   - `ThrottlerModule.forRoot([{ ttl, limit }])`: `ttl` is the window in **milliseconds**, `limit` is max requests in that window.
    - `APP_GUARD` registers `ThrottlerGuard` globally with full DI (`ThrottlerStorage`, `Reflector`, options). `useGlobalGuards(new ThrottlerGuard())` skips the container. See [[nestjs/fundamentals/global-providers|DI-aware globals]].
 
-3. Exceed the limit — the 11th request in the same minute returns **429**:
+3. Exceed the limit: the 11th request in the same minute returns **429**:
 
    ```http
    HTTP/1.1 429 Too Many Requests
@@ -69,7 +69,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Tabs>
   <TabItem label="@Throttle()">
-    Tighten or loosen the global bucket on one route. The outer key is the **throttler name** — use `default` for a single unnamed bucket:
+    Tighten or loosen the global bucket on one route. The outer key is the **throttler name**: use `default` for a single unnamed bucket:
 
     ```typescript
     import { Controller, Post, Body } from "@nestjs/common";
@@ -172,17 +172,17 @@ Each `forRoot` entry (or `throttlers:` array):
 | `blockDuration` | `number` (ms) | `ttl` | Block time after limit hit |
 | `ignoreUserAgents` | `RegExp[]` | `[]` | Skip matching User-Agent |
 | `skipIf` | `(ctx) => boolean` | none | Programmatic skip |
-| `getTracker` | `(req, ctx) => string` | `req.ip` | Client identity — see proxies below |
+| `getTracker` | `(req, ctx) => string` | `req.ip` | Client identity: see proxies below |
 | `generateKey` | `(ctx, tracker, name) => string` | internal | Storage key shape |
 
 Top-level options on `ThrottlerModule.forRoot({ throttlers: [...], ... })`:
 
 | Option | Notes |
 | --- | --- |
-| `storage` | Swap in-memory store — required for multi-instance Redis |
+| `storage` | Swap in-memory store: required for multi-instance Redis |
 | `errorMessage` | Override 429 body text |
 
-Helpers: `seconds`, `minutes`, `hours`, `days`, `weeks` — `seconds(5) === 5000`.
+Helpers: `seconds`, `minutes`, `hours`, `days`, `weeks`: `seconds(5) === 5000`.
 
 ## How the storage key is built
 
@@ -192,7 +192,7 @@ Default shape ([`generateKey` in `ThrottlerGuard`](https://github.com/nestjs/thr
 sha256("<ControllerClass>-<handler>-<throttlerName>-<tracker>")
 ```
 
-- Counters are **per route, per throttler** — `/users` and `/orders` don't share a bucket.
+- Counters are **per route, per throttler**: `/users` and `/orders` don't share a bucket.
 - Fix `getTracker` when `req.ip` is wrong; don't tweak `limit`/`ttl` to compensate.
 
 ## Proxies and trust proxy
@@ -238,7 +238,7 @@ Default tracker is `req.ip`. Behind a load balancer, every client looks like the
 
 <Aside type="caution" title="Misconfiguring trust proxy">
 
-`trust proxy: true` blindly lets clients spoof `X-Forwarded-For` and bypass throttling. Use the narrowest setting that matches your deployment. [Express — Behind proxies](https://expressjs.com/en/guide/behind-proxies.html).
+`trust proxy: true` blindly lets clients spoof `X-Forwarded-For` and bypass throttling. Use the narrowest setting that matches your deployment. [Express: Behind proxies](https://expressjs.com/en/guide/behind-proxies.html).
 
 </Aside>
 
@@ -321,7 +321,7 @@ Pre-v5, `ttl: 60` meant 60 seconds. In v5+, `ttl: 60` is 60 **milliseconds**. Us
 
 <Aside type="caution" title="WebSockets need a custom subclass">
 
-Default `ThrottlerGuard` reads HTTP context. Extend and override `handleRequest` for `switchToWs()`. Cannot use `APP_GUARD` — bind with `@UseGuards()` on the gateway. [Official WebSockets snippet](https://docs.nestjs.com/security/rate-limiting#websockets).
+Default `ThrottlerGuard` reads HTTP context. Extend and override `handleRequest` for `switchToWs()`. Cannot use `APP_GUARD`: bind with `@UseGuards()` on the gateway. [Official WebSockets snippet](https://docs.nestjs.com/security/rate-limiting#websockets).
 
 </Aside>
 
@@ -333,8 +333,8 @@ Default body is shown in setup step 3. Allowed responses get `X-RateLimit-Limit`
 
 ## See also
 
-- [[nestjs/fundamentals/guards|Guards]] — binding rules and DI traps
-- [[nestjs/fundamentals/exception-filters|Exception filters]] — custom 429 body shape
-- [[nestjs/fundamentals/guards|Guards]] — register auth before throttler so `req.user` exists ([[nestjs/auth/jwt-strategy|JWT strategy]])
+- [[nestjs/fundamentals/guards|Guards]]: binding rules and DI traps
+- [[nestjs/fundamentals/exception-filters|Exception filters]]: custom 429 body shape
+- [[nestjs/fundamentals/guards|Guards]]: register auth before throttler so `req.user` exists ([[nestjs/auth/jwt-strategy|JWT strategy]])
 - [Rate limiting (official)](https://docs.nestjs.com/security/rate-limiting)
 - [`@nestjs/throttler` repo](https://github.com/nestjs/throttler)

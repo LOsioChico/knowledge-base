@@ -9,7 +9,7 @@ description: Elastic Compute Cloud — instances, AMIs, EBS volumes, security gr
 
 - **Instance = VM** in one Availability Zone; EBS volumes for persistent storage.
 - **AMI = boot disk template**. Cross-Region needs `copy-image`; cross-account needs share + copy ([[aws/ec2/ami-cross-account-copy|recipe]]).
-- **Whole-machine backups are AMIs**, not raw EBS snapshots alone — [[aws/ec2/snapshot-all-instances|snapshot every instance]].
+- **Whole-machine backups are AMIs**, not raw EBS snapshots alone: [[aws/ec2/snapshot-all-instances|snapshot every instance]].
 - **Networking in VPC**: security groups gate traffic; Elastic IP keeps public address across stop/start.
 - **Per-second billing**; Reserved and Spot for sustained or interruptible workloads.
 

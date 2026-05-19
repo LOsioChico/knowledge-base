@@ -33,7 +33,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
    Single-project layout: `src/`, `test/`, `package.json`, `nest-cli.json`.
 
-2. **Convert to monorepo** — add a second app:
+2. **Convert to monorepo**: add a second app:
 
    ```bash
    nest g app my-app-2
@@ -76,7 +76,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
    └── README.md
    ```
 
-   The first app keeps `app.*` filenames; the second uses `my-app-2.*` — not a typo.
+   The first app keeps `app.*` filenames; the second uses `my-app-2.*`: not a typo.
 
    After conversion, `nest-cli.json` looks roughly like:
 
@@ -153,7 +153,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
    </Aside>
 
-4. **Run multiple apps in one terminal** — no built-in `start all`; use [`concurrently`](https://github.com/open-cli-tools/concurrently):
+4. **Run multiple apps in one terminal**: no built-in `start all`; use [`concurrently`](https://github.com/open-cli-tools/concurrently):
 
    ```bash
    npm i -D concurrently
@@ -311,7 +311,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="note" title="Libraries have no main.ts">
 
-`"type": "library"` with `"entryFile": "index"` — libraries only run when an app imports them. `nest build popcorn` compiles a library standalone for CI gates. [Creating libraries](https://docs.nestjs.com/cli/libraries#creating-libraries).
+`"type": "library"` with `"entryFile": "index"`: libraries only run when an app imports them. `nest build popcorn` compiles a library standalone for CI gates. [Creating libraries](https://docs.nestjs.com/cli/libraries#creating-libraries).
 
 </Aside>
 
@@ -362,17 +362,17 @@ Nest monorepo mode is folder layout + `nest-cli.json`. You can add `nx.json` or 
 
 | Symptom | Likely cause |
 | --- | --- |
-| `EADDRINUSE :::3000` | Both apps on port 3000 — change one or use `PORT` |
-| `nest build` compiles one app | Default project only — pass `--all` or per-app names |
-| `Cannot find module '@app/<lib>'` | Broken `tsconfig.json#paths` — regenerate library |
+| `EADDRINUSE :::3000` | Both apps on port 3000: change one or use `PORT` |
+| `nest build` compiles one app | Default project only: pass `--all` or per-app names |
+| `Cannot find module '@app/<lib>'` | Broken `tsconfig.json#paths`: regenerate library |
 | Library changes not visible | Restart dev server / clear webpack cache |
-| `concurrently 'npm:start:dev:*'` runs nothing | No matching scripts — check exact prefix |
+| `concurrently 'npm:start:dev:*'` runs nothing | No matching scripts: check exact prefix |
 
 ## See also
 
 - [[nestjs/recipes|Recipes MOC]]
-- [[nestjs/recipes/swc-setup|SWC builder]] — single-app default; monorepo often uses webpack + swc-loader
-- [[nestjs/fundamentals|Fundamentals]] — building blocks per app
+- [[nestjs/recipes/swc-setup|SWC builder]]: single-app default; monorepo often uses webpack + swc-loader
+- [[nestjs/fundamentals|Fundamentals]]: building blocks per app
 - [Workspaces (monorepo)](https://docs.nestjs.com/cli/monorepo)
 - [Libraries](https://docs.nestjs.com/cli/libraries)
 - [`concurrently` shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md)

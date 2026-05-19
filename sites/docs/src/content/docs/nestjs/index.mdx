@@ -11,8 +11,8 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 
 - Every HTTP request walks the same **pipeline**: middleware → guards → interceptors → pipes → handler → (filters on error). See [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
 - **Guards** authorize; **pipes** validate one argument; **interceptors** wrap the handler stream; **filters** shape errors.
-- **Globals** register once via `APP_*` (DI) or `useGlobalX()` (manual `new`) — [[nestjs/fundamentals/global-providers|Global enhancers]].
-- **Boot/shutdown** is separate from per-request flow — [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
+- **Globals** register once via `APP_*` (DI) or `useGlobalX()` (manual `new`): [[nestjs/fundamentals/global-providers|Global enhancers]].
+- **Boot/shutdown** is separate from per-request flow: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
 - Default dev build in this KB: [[nestjs/recipes/swc-setup|SWC]] + `--type-check`.
 
 ## Choose a path
@@ -21,10 +21,10 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
   <TabItem label="New to Nest">
     <Steps>
 
-    1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]] — pipeline order.
-    2. [[nestjs/fundamentals|Fundamentals MOC]] — layer-by-layer notes.
-    3. [[nestjs/recipes/validation|Validation]] — first DTO + `ValidationPipe`.
-    4. [[nestjs/recipes/swc-setup|SWC builder]] — default dev loop.
+    1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: pipeline order.
+    2. [[nestjs/fundamentals|Fundamentals MOC]]: layer-by-layer notes.
+    3. [[nestjs/recipes/validation|Validation]]: first DTO + `ValidationPipe`.
+    4. [[nestjs/recipes/swc-setup|SWC builder]]: default dev loop.
 
     </Steps>
   </TabItem>
@@ -33,7 +33,7 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 
     1. [[effect-ts/layers-vs-nestjs-di|Effect vs NestJS DI]].
     2. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
-    3. [[effect-ts/layers-and-di|Effect Layers]] — domain in Effect, HTTP at the edge.
+    3. [[effect-ts/layers-and-di|Effect Layers]]: domain in Effect, HTTP at the edge.
 
     </Steps>
   </TabItem>

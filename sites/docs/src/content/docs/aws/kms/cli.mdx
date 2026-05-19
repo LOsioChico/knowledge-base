@@ -5,7 +5,7 @@ description: KMS key creation, aliases, key-policy edits, and scheduled deletion
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Key creation, aliasing, policy edits, and deletion. Most [[aws/kms|KMS]] work is inspection plus occasional cross-account policy edits — services call `encrypt`/`decrypt` for you.
+> Key creation, aliasing, policy edits, and deletion. Most [[aws/kms|KMS]] work is inspection plus occasional cross-account policy edits: services call `encrypt`/`decrypt` for you.
 
 ## Create + label
 
@@ -40,7 +40,7 @@ aws kms get-key-policy --key-id <KEY_ID> --policy-name default \
 aws kms put-key-policy --key-id <KEY_ID> --policy-name default --policy file://cmk-policy.json
 ```
 
-`put-key-policy` is read-modify-write with no concurrency token — coordinate manually.
+`put-key-policy` is read-modify-write with no concurrency token: coordinate manually.
 
 ## Cleanup
 
@@ -60,4 +60,4 @@ There's no undo after the pending window. Anything encrypted with that key becom
 ## Tips
 
 - Reference keys by **alias** in app config.
-- Cross-account needs key-policy edit **and** [[aws/iam|IAM]] policy on the consumer — [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]] walkthrough.
+- Cross-account needs key-policy edit **and** [[aws/iam|IAM]] policy on the consumer: [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]] walkthrough.

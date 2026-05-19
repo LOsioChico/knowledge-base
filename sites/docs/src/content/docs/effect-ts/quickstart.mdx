@@ -9,7 +9,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 <Steps>
 
-1. **Before you start** — strict TypeScript project + `effect` installed.
+1. **Before you start**: strict TypeScript project + `effect` installed.
 2. **Write** a lazy `program` with `Effect.sync`.
 3. **Run** with `runSync`, `runPromise`, or `runFork`.
 4. **Compose** with `Effect.gen` (`yield*`).
@@ -55,7 +55,7 @@ const program = log("Hello, Effect!");
 Two things to internalize:
 
 1. **`program` is a value, not a side effect.** Importing this file logs nothing. The `console.log` only fires when a runtime executes `program`.
-2. **`program` is `Effect<void, never, never>`** — success `void`, no expected errors, no services required.
+2. **`program` is `Effect<void, never, never>`**: success `void`, no expected errors, no services required.
 
 ## 2. Run it
 
@@ -157,9 +157,9 @@ console.log(Effect.runSync(main));
 
 ## 5. Where to go next
 
-- [[effect-ts/what-is-effect|What is Effect]] — laziness, the three channels, and runners in depth.
-- [[effect-ts/typed-errors|Typed errors]] — `try`, `tryPromise`, `catchTag`, `catchAll`.
-- [[effect-ts/composition|Composition]] — `pipe` vs `Effect.gen` vs `Effect.fn`.
+- [[effect-ts/what-is-effect|What is Effect]]: laziness, the three channels, and runners in depth.
+- [[effect-ts/typed-errors|Typed errors]]: `try`, `tryPromise`, `catchTag`, `catchAll`.
+- [[effect-ts/composition|Composition]]: `pipe` vs `Effect.gen` vs `Effect.fn`.
 
 Official next read: [Effect getting started](https://effect.website/docs/getting-started/introduction/) (pipelines, control flow, `Schema`).
 

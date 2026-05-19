@@ -5,7 +5,7 @@ description: Wrap the handler before and after; RxJS streams, response mapping, 
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, caching, and timeouts — not for raw `req` mutation or per-argument validation.
+> The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, caching, and timeouts: not for raw `req` mutation or per-argument validation.
 
 ## Contract
 
@@ -30,9 +30,9 @@ export class LoggingInterceptor implements NestInterceptor {
 
 <Steps>
 
-1. **Pre** — code before `next.handle()` (auth side effects, cache lookup).
-2. **Handler** — `next.handle()` returns `Observable<T>`; skipping it skips the handler.
-3. **Post** — RxJS operators on that stream (`map`, `tap`, `catchError`, `timeout`).
+1. **Pre**: code before `next.handle()` (auth side effects, cache lookup).
+2. **Handler**: `next.handle()` returns `Observable<T>`; skipping it skips the handler.
+3. **Post**: RxJS operators on that stream (`map`, `tap`, `catchError`, `timeout`).
 
 </Steps>
 
@@ -59,7 +59,7 @@ intercept(ctx, next) {
 
 <Aside type="caution" title="Pass the class, not an instance">
 
-`@UseInterceptors(LoggingInterceptor)` uses DI. `@UseInterceptors(new LoggingInterceptor())` leaves injections `undefined`. Globals: prefer `APP_INTERCEPTOR` over `useGlobalInterceptors(new …)` — [[nestjs/fundamentals/global-providers|global enhancers]].
+`@UseInterceptors(LoggingInterceptor)` uses DI. `@UseInterceptors(new LoggingInterceptor())` leaves injections `undefined`. Globals: prefer `APP_INTERCEPTOR` over `useGlobalInterceptors(new …)`: [[nestjs/fundamentals/global-providers|global enhancers]].
 
 </Aside>
 
@@ -75,7 +75,7 @@ flowchart LR
 
 A global logging interceptor sees the **final** response after route-level `map()` transforms.
 
-**Example:** global wraps `{ data }`, route adds `meta` — client sees both transforms; global's post runs last.
+**Example:** global wraps `{ data }`, route adds `meta`: client sees both transforms; global's post runs last.
 
 ## RxJS toolbox (post phase)
 
@@ -85,7 +85,7 @@ A global logging interceptor sees the **final** response after route-level `map(
 | `map` | Transform body (e.g. `{ data }`) |
 | `catchError` | Map handler errors before filters ([exception mapping](https://docs.nestjs.com/interceptors#exception-mapping)) |
 | `timeout` | Cancel slow handlers |
-| `of(value)` | Return cached value — skip `next.handle()` |
+| `of(value)` | Return cached value: skip `next.handle()` |
 
 ## Recipes
 
@@ -157,7 +157,7 @@ Serialization: [[nestjs/recipes/serialization|response serialization]] (`ClassSe
 | --- | --- |
 | Handler never runs | Returned `of(cached)` or threw in pre without `next.handle()` |
 | DI `undefined` | Passed `new Interceptor()` to `@UseInterceptors` |
-| Pre-phase throw not caught by `catchError` on stream | Error never reached `next.handle()` — use `try/catch` or `defer` |
+| Pre-phase throw not caught by `catchError` on stream | Error never reached `next.handle()`: use `try/catch` or `defer` |
 
 ## See also
 

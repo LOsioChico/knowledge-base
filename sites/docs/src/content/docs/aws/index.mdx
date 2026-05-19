@@ -12,7 +12,7 @@ import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/
 - **Start with CLI + IAM**: [[aws/cli/profiles-and-credentials|profiles]], [[aws/iam|IAM]], then a hands-on [[aws/s3/quickstart|S3 quickstart]].
 - **Cross-account pattern recurs everywhere**: [[aws/recipes/cross-account-role-pattern|assume-role + ExternalId]] underlies RDS, S3, KMS, and partial migrations.
 - **Account migrations**: [[aws/account-migrations|playbook]] stitches per-service recipes into one ordered cutover.
-- **Compute choice**: [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — workload shape, not "serverless good".
+- **Compute choice**: [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: workload shape, not "serverless good".
 
 ## Start here
 
@@ -20,17 +20,17 @@ import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/
   <TabItem label="New to AWS">
     <Steps>
 
-    1. [[aws/cli|AWS CLI]] — profiles, `sts get-caller-identity`, `--query` / `--output`.
-    2. [[aws/iam|IAM]] — principals, policies, roles for code.
-    3. [[aws/s3/quickstart|S3 quickstart]] — 10-minute first bucket.
-    4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]] — trust policy + ExternalId.
+    1. [[aws/cli|AWS CLI]]: profiles, `sts get-caller-identity`, `--query` / `--output`.
+    2. [[aws/iam|IAM]]: principals, policies, roles for code.
+    3. [[aws/s3/quickstart|S3 quickstart]]: 10-minute first bucket.
+    4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]]: trust policy + ExternalId.
 
     </Steps>
   </TabItem>
   <TabItem label="Account migration">
     <Steps>
 
-    1. [[aws/account-migrations|Account migrations playbook]] — pre-flight and recommended order.
+    1. [[aws/account-migrations|Account migrations playbook]]: pre-flight and recommended order.
     2. Data first: [[aws/rds/cross-account-snapshot|RDS snapshot]], [[aws/s3/cross-account-migration|S3 sync]].
     3. Frontend last: [[aws/amplify/cross-account-migration|Amplify]], [[aws/cloudfront/alternate-domain-claim|CloudFront alias gotcha]].
 
@@ -58,8 +58,8 @@ import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/
 
 ## Cross-cutting
 
-- [[aws/recipes|AWS recipes]] — cross-service procedures.
-- [[aws/account-migrations|Account migrations]] — end-to-end playbook.
-- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — compute decision matrix.
-- [[aws/secrets-manager|Secrets Manager]] — named secrets under KMS.
+- [[aws/recipes|AWS recipes]]: cross-service procedures.
+- [[aws/account-migrations|Account migrations]]: end-to-end playbook.
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: compute decision matrix.
+- [[aws/secrets-manager|Secrets Manager]]: named secrets under KMS.
 

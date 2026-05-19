@@ -72,7 +72,7 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
 
 <Tabs>
   <TabItem label="Init order">
-    Within a class: `onModuleInit` then `onApplicationBootstrap`. Across the app, order follows **module imports** — Nest awaits each imported module before the importer ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
+    Within a class: `onModuleInit` then `onApplicationBootstrap`. Across the app, order follows **module imports**: Nest awaits each imported module before the importer ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
 
     For `A → B → C` (A imports B, B imports C), init effectively runs **C → B → A**.
 
@@ -83,10 +83,10 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
   <TabItem label="Shutdown order (v11+)">
     <Steps>
 
-    1. `onModuleDestroy` — all implementors; Nest awaits promises.
-    2. `beforeApplicationShutdown(signal)` — still before connections close.
+    1. `onModuleDestroy`: all implementors; Nest awaits promises.
+    2. `beforeApplicationShutdown(signal)`: still before connections close.
     3. Connections close (`app.close()` resolves internally).
-    4. `onApplicationShutdown(signal)` — last.
+    4. `onApplicationShutdown(signal)`: last.
 
     </Steps>
 
@@ -132,7 +132,7 @@ Task Manager kills without a signal. `SIGINT` (Ctrl+C) and `SIGBREAK` work local
 
 ## See also
 
-- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]] — per HTTP call, not per process
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: per HTTP call, not per process
 - [[nestjs/fundamentals|Fundamentals MOC]]
-- [[nestjs/releases/v11|NestJS 11 release notes]] — destroy-order change in context
+- [[nestjs/releases/v11|NestJS 11 release notes]]: destroy-order change in context
 - [Lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events) (official)

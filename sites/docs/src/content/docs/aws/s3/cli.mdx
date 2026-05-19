@@ -48,10 +48,10 @@ aws s3 sync s3://<src-bucket> s3://<dst-bucket>
 aws s3 sync ./build/ s3://<bucket>/static/ --delete
 ```
 
-Cross-account `sync` needs source bucket policy granting target `s3:GetObject` + `s3:ListBucket` — [[aws/s3/cross-account-migration|cross-account migration]].
+Cross-account `sync` needs source bucket policy granting target `s3:GetObject` + `s3:ListBucket`: [[aws/s3/cross-account-migration|cross-account migration]].
 
 ## Tips
 
-- Add `--profile <name>` when juggling accounts — [[aws/cli/profiles-and-credentials|profiles]].
+- Add `--profile <name>` when juggling accounts: [[aws/cli/profiles-and-credentials|profiles]].
 - Shape output with [[aws/cli/query-and-output|`--query` / `--output`]].
 - Server-side copies between S3 URIs avoid client bandwidth; run from EC2 in the destination Region for huge transfers.

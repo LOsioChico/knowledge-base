@@ -10,13 +10,13 @@ description: Managed key-value and document database — partition keys, capacit
 - **Schema = key shape only**. Partition key + optional sort key; every other attribute is per-item and free-form.
 - **Access patterns drive design**. Query by key or GSI; no joins, no ad-hoc `WHERE`.
 - **Two capacity modes**: **On-demand** (pay per request, default) vs **provisioned** (pre-purchase RCU/WCU; pairs with auto-scaling) ([source](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html)).
-- **Conditional writes are atomic per item** — locks, idempotency keys, single-writer coordination over [[aws/s3|S3]].
-- **Streams + TTL** — change-data-capture into [[aws/lambda|Lambda]]; per-item expiry without a sweeper.
+- **Conditional writes are atomic per item**: locks, idempotency keys, single-writer coordination over [[aws/s3|S3]].
+- **Streams + TTL**: change-data-capture into [[aws/lambda|Lambda]]; per-item expiry without a sweeper.
 
 ## When to use
 
 - **Use DynamoDB** for: high-traffic key-value reads, session stores, idempotency tables, IoT write paths.
-- **Don't use DynamoDB** for: ad-hoc analytics, joins, SQL — use [[aws/rds|RDS]] or Athena instead.
+- **Don't use DynamoDB** for: ad-hoc analytics, joins, SQL: use [[aws/rds|RDS]] or Athena instead.
 - **Don't use DynamoDB** when access patterns are unknown: re-modeling a hot table is painful.
 
 ## Pending notes

@@ -5,12 +5,12 @@ description: Time-limited S3 GET and PUT URLs for browser download and direct up
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
-> A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials — recipients need no AWS account.
+> A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials: recipients need no AWS account.
 
 ## When to reach for one
 
 - Browser download of a private object without opening the bucket.
-- Browser upload direct to S3 — server signs PUT, client uploads to S3.
+- Browser upload direct to S3: server signs PUT, client uploads to S3.
 - Temporary share with someone outside your org without [[aws/iam|IAM]] users.
 
 For always-public CDN content, front with [[aws/cloudfront|CloudFront]] instead.
@@ -75,7 +75,7 @@ Runtime roles use short-lived STS creds. For true 7-day links, sign from long-li
 
 - GET URL → `s3:GetObject` on the key.
 - PUT URL → `s3:PutObject` on the key.
-- URL generates even if signer lacks permission — usage returns `403`.
+- URL generates even if signer lacks permission: usage returns `403`.
 
 ## Limit blast radius
 
@@ -85,9 +85,9 @@ Runtime roles use short-lived STS creds. For true 7-day links, sign from long-li
 
 ## PUT gotchas
 
-- Signed headers must match on upload — or `SignatureDoesNotMatch`.
-- Presigned PUT has no size cap (up to 5 TB per object) — use POST policies to limit size.
-- Same-key PUT overwrites — use UUID prefixes if undesired.
+- Signed headers must match on upload: or `SignatureDoesNotMatch`.
+- Presigned PUT has no size cap (up to 5 TB per object): use POST policies to limit size.
+- Same-key PUT overwrites: use UUID prefixes if undesired.
 
 ## Common errors
 
