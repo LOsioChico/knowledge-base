@@ -4,6 +4,7 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import ecTwoSlash from "expressive-code-twoslash";
 
+import { remarkBacklinks } from "./src/plugins/remark-backlinks.mjs";
 import { remarkInternalBaseLinks } from "./src/plugins/remark-internal-base-links.mjs";
 import { remarkWikilinks } from "./src/plugins/remark-wikilinks.mjs";
 import { rehypeKbLinkClasses } from "./src/plugins/rehype-kb-link-classes.mjs";
@@ -229,6 +230,7 @@ export default defineConfig({
     remarkPlugins: [
       remarkWikilinks({ docsRoot, base: BASE }),
       remarkInternalBaseLinks({ base: BASE }),
+      remarkBacklinks({ docsRoot, base: BASE }),
     ],
     rehypePlugins: [
       rehypeKbLinkClasses({ siteOrigin: SITE, basePath: BASE }),
