@@ -4,6 +4,7 @@
     "**/*.ts",
     "**/*.tsx",
     "**/*.js",
+    "**/*.mjs",
     "**/*.jsx",
     "**/*.py",
     "**/*.go",
@@ -32,8 +33,13 @@
     "**/*.dfm",
     "**/*.fmx",
     "**/*.scala",
-    "**/*.sc"  ],
+    "**/*.sc"
+  ],
   "exclude": [
+    "content/**",
+    "sites/docs/src/content/**",
+    "merged-public/**",
+    "spikes/**",
     "**/.git/**",
     "**/node_modules/**",
     "**/vendor/**",

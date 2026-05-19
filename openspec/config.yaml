@@ -1,16 +1,20 @@
+schema: spec-driven
 strict_tdd: false
 context: |
-  knowledge-base: vault content/ (Obsidian markdown, not deployed) + published sites/docs/ (Starlight MDX). Full vault ↔ MDX parity except inbox.md; enforced by bun run lint:publish-parity.
-  Operating contract: AGENTS.md; kb-author (vault A–P, MDX S1–S6); docs/PUBLISHING.md; Starlight-only deploy.
-  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/lint-mdx-*.mjs, scripts/vault-check.mjs, scripts/audit-notes/.
-  Strict TDD applies only to scripts/** changes. content/ edits use vault lint + audit, not test-first TDD.
-  Post-edit gate when content/ changed: bun run vault:check --base HEAD~1 (LLM audit needs CURSOR_API_KEY in repo-root .env).
-  vault:check also runs lint:docs when sites/docs/ is in the git diff.
-  After sites/docs/ only: bun run lint:docs && bun run docs:build. sites/docs uses Bun (bun.lock).
-  Linter-only (no LLM): bun run lint:ci (vault wikilinks + Pass 0 + lint:docs). Matches CI lint job.
-  LLM audit profiles: cd scripts/audit-notes && bun run audit:triage (not root package.json).
-  CI (.github/workflows/deploy.yml): lint:ci + test:ci on PR+main; docs:build on PR+main; Pages serves sites/docs/dist only. See docs/PIPELINE.md.
-  Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, sites/docs/package.json, GitHub Actions.
+  knowledge-base: published Starlight MDX at sites/docs/src/content/docs/ (canonical reader surface; GitHub Pages /knowledge-base).
+  Legacy vault content/ is read-only pre-migration markdown — do not edit for reader-facing work; kept for lint:publish-parity and optional vault audit only.
+  Full vault ↔ MDX slug parity (except inbox.md): bun run lint:publish-parity (in lint:ci).
+  Operating contract: AGENTS.md; kb-author (vault A–P, MDX S1–S6); docs/PUBLISHING.md, docs/TOOLING.md, docs/PIPELINE.md.
+  CodeGraph indexes scripts/** (.mjs), scripts/audit-notes/** (.ts), sites/docs/src/plugins/** — not markdown trees. Init: npx @colbymchenry/codegraph init -i.
+  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/lint-mdx-*.mjs, scripts/lint-mdx-recipe-context.mjs, scripts/vault-check.mjs, scripts/audit-notes/ (vault + MDX audit).
+  Strict TDD applies only to scripts/** changes. Never edit content/ for publish work; edit sites/docs/**/*.mdx only.
+  MDX recipes: teaching prose before every bash fence (S1/S2); lint:mdx-recipe-context (CI advisory; --strict blocks orphan/thin bash).
+  Post-edit when sites/docs/ changed: bun run lint:docs && bun run docs:build; optional bun run vault:check --base HEAD~1 (diff-scoped MDX Pass 0 + lint:docs; vault LLM audit needs CURSOR_API_KEY in repo-root .env).
+  Post-edit when content/ changed (rare): bun run vault:check --base HEAD~1 — prefer avoiding content/ edits entirely.
+  Linter-only gate: bun run lint:ci (vault wikilinks + parity + aws-profile + mdx-recipe-context + Pass 0 vault/mdx + Starlight). Matches CI lint job.
+  LLM audit: vault cd scripts/audit-notes && bun start --profile=triage; MDX bun run audit:mdx-triage (kb-mdx-auditor).
+  CI (.github/workflows/deploy.yml): lint:ci + test:ci on PR+main; docs:build on PR+main; Pages serves sites/docs/dist only.
+  Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, sites/docs/package.json.
 rules:
   proposal:
     require_problem_statement: true
@@ -25,7 +29,7 @@ rules:
   verify:
     test_command: "bun run lint:ci && bun run test:ci"
 testing:
-  detected: "2026-05-18"
+  detected: "2026-05-19"
   runner:
     command: "bun run test:ci"
     framework: "package script"
@@ -51,10 +55,13 @@ quality:
   lint_commands:
     - scope: "."
       command: "bun run lint:ci"
-      framework: "CI lint job (vault wikilinks + Pass 0 + Starlight)"
+      framework: "CI lint job (vault wikilinks + parity + mdx-recipe-context + Pass 0 + Starlight)"
     - scope: "sites/docs"
       command: "bun run lint:docs"
       framework: "Starlight astro check + MDX wikilinks + link hygiene"
+    - scope: "sites/docs (recipes)"
+      command: "bun run lint:mdx-recipe-context:strict"
+      framework: "Orphan/thin bash before teaching prose on recipe-shaped MDX"
   typecheck: "cd scripts/audit-notes && bun run typecheck"
   typecheck_commands:
     - scope: "scripts/audit-notes"
@@ -64,9 +71,11 @@ quality:
   format_commands:
     - scope: "scripts/audit-notes"
       command: "cd scripts/audit-notes && bun run format"
-      framework: "prettier write"
+      framework: "prettier write (content/ only; MDX uses autofix:mdx for em-dash)"
 vault:
   check_command: "bun run vault:check --base HEAD~1"
   check_command_lint_only: "bun run lint:ci"
   source_urls_command: "scripts/check-source-urls.sh"
   audit_triage_command: "cd scripts/audit-notes && bun start --json --base HEAD~1 --profile=triage"
+  mdx_audit_triage_command: "bun run audit:mdx-triage -- --base HEAD~1"
+  content_policy: "read-only legacy; do not edit for publish"

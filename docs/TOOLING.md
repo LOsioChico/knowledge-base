@@ -105,6 +105,18 @@ See [`scripts/audit-notes/README.md`](../scripts/audit-notes/README.md).
 
 ---
 
+## Agent tooling (local)
+
+| Tool | Config | Init / refresh |
+| --- | --- | --- |
+| **CodeGraph** | `.codegraph/config.json` (indexes `scripts/**`, `audit-notes/**`, `sites/docs/src/plugins/**`; excludes `content/` + MDX prose) | `npx @colbymchenry/codegraph init -i` then `npx @colbymchenry/codegraph index` after config changes |
+| **OpenSpec** | `openspec/config.yaml` (SDD context, lint/test commands, vault read-only policy) | Edit YAML; no build step |
+| **Engram** | `.cursor/rules/engram.mdc` (project id `knowledge-base`) | MCP `mem_*` tools |
+
+MCP `codegraph` in Cursor should invoke the same `@colbymchenry/codegraph` binary as `npx` (see `~/.cursor/mcp.json`).
+
+---
+
 ## Decision log (revalidation)
 
 | Old assumption | Current status |
