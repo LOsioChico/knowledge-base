@@ -5,7 +5,7 @@ description: Move encrypted RDS between accounts — CMK re-encrypt, share snaps
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared — re-encrypt under a customer-managed key first.
+> Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.
 
 ## The trap
 
@@ -15,99 +15,263 @@ import { Aside } from "@astrojs/starlight/components";
 Snapshots encrypted with the default service KMS key cannot be shared.
 ```
 
-Re-encrypt under a **customer-managed key (CMK)** in account A, grant account B `kms:Decrypt` on that key, then share the snapshot ([encrypted snapshot sharing](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/share-encrypted-snapshot.html)). Cross-account copy in B also needs an IAM principal allowed to use the key.
+Re-encrypt under a **customer-managed key (CMK)** in `account-a`, grant `account-b` `kms:Decrypt` on that key, then share the snapshot ([encrypted snapshot sharing](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/share-encrypted-snapshot.html)). Cross-account copy in `account-b` also needs an IAM principal allowed to use the key.
 
 </Aside>
 
-## Recipe
+## Before you start
 
-Profiles: `account-a` (source), `account-b` (target).
+- Two named CLI profiles ([[aws/cli/profiles-and-credentials|profiles and credentials]]): `account-a` (source) and `account-b` (target). Convention matches [[aws/account-migrations|account migrations]].
+- Replace placeholders in every command: `REGION`, `ACCOUNT_A_ID`, `ACCOUNT_B_ID`, `source-db`, `target-db`, subnet group, security group.
 
-| Step | Account | Action |
+```bash
+export REGION=us-east-1
+export ACCOUNT_A_ID=111122223333
+export ACCOUNT_B_ID=444455556666
+```
+
+## Recipe overview
+
+| Step | Account (profile) | What it does |
 | --- | --- | --- |
-| 1 | A | Create CMK + grant B decrypt |
-| 2 | A | Manual snapshot |
-| 3 | A | Copy snapshot with CMK (re-encrypt) |
-| 4 | A | Share via `restore` attribute |
-| 5 | B | Copy shared snapshot locally |
-| 6 | B | Restore DB instance |
-| 7 | B | Smoke test |
+| 1 | `account-a` | Create CMK + grant `account-b` decrypt |
+| 2 | `account-a` | Manual snapshot |
+| 3 | `account-a` | Copy snapshot with CMK (re-encrypt) |
+| 4 | `account-a` | Share via `restore` attribute |
+| 5 | `account-b` | Copy shared snapshot locally |
+| 6 | `account-b` | Restore DB instance |
+| 7 | `account-b` | Smoke test (read-only) |
 
-## 1. Pre-flight
+## 1. Pre-flight: confirm each profile points at the right account
+
+Mixing up profiles is the most expensive mistake in this recipe: the next commands create KMS keys, snapshots, and shares in whatever account the profile resolves to.
+
+Run [`aws sts get-caller-identity`](https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html) once per profile and read the `Account` field:
 
 ```bash
 aws sts get-caller-identity --profile account-a --output json
 aws sts get-caller-identity --profile account-b --output json
 ```
 
-## 2. In account A
+- `account-a` must show `Account` = `ACCOUNT_A_ID` (the database you are leaving).
+- `account-b` must show `Account` = `ACCOUNT_B_ID` (where you will restore).
+
+If either number is wrong, fix `~/.aws/config` before any KMS or RDS write. Do not continue until both match.
+
+## 2. In `account-a` (source)
+
+### 2a. Create a customer-managed KMS key
+
+RDS can only share snapshots encrypted with a CMK you control, in the **same Region** as the database ([`aws kms create-key`](https://docs.aws.amazon.com/cli/latest/reference/kms/create-key.html)):
 
 ```bash
 KEY_ID=$(aws kms create-key \
---profile account-a --region REGION \
---description "CMK for cross-account RDS snapshot share to ACCOUNT_B_ID" \
---query KeyMetadata.KeyId --output text)
+  --profile account-a --region "$REGION" \
+  --description "CMK for cross-account RDS snapshot share to $ACCOUNT_B_ID" \
+  --query KeyMetadata.KeyId --output text)
+echo "$KEY_ID"
 ```
 
-Key policy (`cmk-policy.json`) — allow Account B root `kms:Decrypt`, `DescribeKey`, `GenerateDataKey`, `CreateGrant` ([external accounts guide](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)):
+### 2b. Grant `account-b` use of the key
+
+Write `cmk-policy.json` from the exports in **Before you start** so ARNs use `${ACCOUNT_A_ID}` / `${ACCOUNT_B_ID}` (shell expansion, not manual find-replace in JSON). Then attach the policy ([`aws kms put-key-policy`](https://docs.aws.amazon.com/cli/latest/reference/kms/put-key-policy.html), [external accounts guide](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)):
 
 ```bash
+cat > cmk-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "EnableRootPermissions",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::${ACCOUNT_A_ID}:root" },
+      "Action": "kms:*",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowAccountBToUseTheKey",
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::${ACCOUNT_B_ID}:root" },
+      "Action": ["kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey", "kms:CreateGrant"],
+      "Resource": "*"
+    }
+  ]
+}
+EOF
+
 aws kms put-key-policy \
---profile account-a --region REGION \
---key-id "$KEY_ID" --policy-name default --policy file://cmk-policy.json
+  --profile account-a --region "$REGION" \
+  --key-id "$KEY_ID" --policy-name default --policy file://cmk-policy.json
 ```
 
-Cross-account KMS needs **both** this key policy **and** [[aws/iam|IAM]] on B's copy principal.
+<Aside type="caution" title="KMS cross-account needs two policies">
+
+Cross-account KMS access requires **both** this key policy in `account-a` **and** an [[aws/iam|IAM]] policy on `account-b` that grants the same actions to the principal that will run `copy-db-snapshot`. Neither side alone is enough ([KMS docs](https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html)).
+
+</Aside>
+
+Optional: human-readable alias ([`aws kms create-alias`](https://docs.aws.amazon.com/cli/latest/reference/kms/create-alias.html)):
 
 ```bash
+aws kms create-alias \
+  --profile account-a --region "$REGION" \
+  --alias-name alias/rds-migration \
+  --target-key-id "$KEY_ID"
+```
+
+Confirm `KeyState` is `Enabled` ([`aws kms describe-key`](https://docs.aws.amazon.com/cli/latest/reference/kms/describe-key.html)):
+
+```bash
+aws kms describe-key \
+  --profile account-a --region "$REGION" \
+  --key-id "$KEY_ID" \
+  --query 'KeyMetadata.{Arn:Arn,KeyState:KeyState}' --output table
+```
+
+### 2c. Take a manual snapshot
+
+Point at the live source instance ([`aws rds create-db-snapshot`](https://docs.aws.amazon.com/cli/latest/reference/rds/create-db-snapshot.html)):
+
+```bash
+SNAP_ID="source-db-snap-$(date +%Y%m%d)"
+
 aws rds create-db-snapshot \
---profile account-a --region REGION \
---db-instance-identifier source-db \
---db-snapshot-identifier source-db-snap-$(date +%Y%m%d)
+  --profile account-a --region "$REGION" \
+  --db-instance-identifier source-db \
+  --db-snapshot-identifier "$SNAP_ID"
 
 aws rds wait db-snapshot-available \
---profile account-a --region REGION \
---db-snapshot-identifier source-db-snap-$(date +%Y%m%d)
-
-aws rds copy-db-snapshot \
---profile account-a --region REGION \
---source-db-snapshot-identifier source-db-snap-$(date +%Y%m%d) \
---target-db-snapshot-identifier source-db-snap-cmk \
---kms-key-id "$KEY_ID"
-
-aws rds modify-db-snapshot-attribute \
---profile account-a --region REGION \
---db-snapshot-identifier source-db-snap-cmk \
---attribute-name restore \
---values-to-add ACCOUNT_B_ID
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier "$SNAP_ID"
 ```
 
-## 3. In account B
+### 2d. Re-encrypt by copying the snapshot
+
+You cannot change a snapshot's KMS key in place. `copy-db-snapshot` with `--kms-key-id` is the only re-encrypt path ([`aws rds copy-db-snapshot`](https://docs.aws.amazon.com/cli/latest/reference/rds/copy-db-snapshot.html)):
 
 ```bash
 aws rds copy-db-snapshot \
---profile account-b --region REGION \
---source-db-snapshot-identifier arn:aws:rds:REGION:ACCOUNT_A_ID:snapshot:source-db-snap-cmk \
---target-db-snapshot-identifier source-db-snap-local \
---kms-key-id alias/aws/rds
+  --profile account-a --region "$REGION" \
+  --source-db-snapshot-identifier "$SNAP_ID" \
+  --target-db-snapshot-identifier source-db-snap-cmk \
+  --kms-key-id "$KEY_ID"
 
-aws rds restore-db-instance-from-db-snapshot \
---profile account-b --region REGION \
---db-instance-identifier target-db \
---db-snapshot-identifier source-db-snap-local \
---db-subnet-group-name target-db-subnet-group \
---vpc-security-group-ids sg-XXXXXXXX
+aws rds wait db-snapshot-available \
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-cmk
 ```
 
-Verify endpoint and row counts before cutover.
+### 2e. Share with `account-b`
 
-## Why copy is mandatory
+Use the target **account ID**, not an ARN. Do not use `all` ([`aws rds modify-db-snapshot-attribute`](https://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-snapshot-attribute.html)):
 
-You cannot change a snapshot's KMS key in place — `copy-db-snapshot` with `--kms-key-id` is the only re-encrypt path.
+```bash
+aws rds modify-db-snapshot-attribute \
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-cmk \
+  --attribute-name restore \
+  --values-to-add "$ACCOUNT_B_ID"
+```
+
+Confirm the share before switching profiles ([`aws rds describe-db-snapshot-attributes`](https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-snapshot-attributes.html)). `restore` should list `ACCOUNT_B_ID`:
+
+```bash
+aws rds describe-db-snapshot-attributes \
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-cmk \
+  --query 'DBSnapshotAttributesResult.DBSnapshotAttributes[?AttributeName==`restore`].AttributeValues' \
+  --output json
+```
+
+## 3. In `account-b` (target)
+
+### 3a. Confirm the shared snapshot is visible
+
+`account-b` must see the snapshot before copy ([`aws rds describe-db-snapshots`](https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-snapshots.html)):
+
+```bash
+aws rds describe-db-snapshots \
+  --profile account-b --region "$REGION" \
+  --include-shared --snapshot-type shared \
+  --query 'DBSnapshots[?DBSnapshotIdentifier==`source-db-snap-cmk`].DBSnapshotArn' \
+  --output text
+```
+
+Save the ARN from this output for the next step.
+
+### 3b. Copy the shared snapshot into `account-b`
+
+You cannot restore directly from a shared encrypted snapshot. Copy it locally first, re-encrypting with a key `account-b` owns ([Sharing a DB snapshot](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html)):
+
+```bash
+aws rds copy-db-snapshot \
+  --profile account-b --region "$REGION" \
+  --source-db-snapshot-identifier arn:aws:rds:${REGION}:${ACCOUNT_A_ID}:snapshot:source-db-snap-cmk \
+  --target-db-snapshot-identifier source-db-snap-local \
+  --kms-key-id alias/aws/rds
+
+aws rds wait db-snapshot-available \
+  --profile account-b --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-local
+```
+
+Use a CMK owned by `account-b` instead of `alias/aws/rds` if your org requires it.
+
+### 3c. Restore and smoke-test
+
+Restore into a new instance ([`aws rds restore-db-instance-from-db-snapshot`](https://docs.aws.amazon.com/cli/latest/reference/rds/restore-db-instance-from-db-snapshot.html)):
+
+```bash
+aws rds restore-db-instance-from-db-snapshot \
+  --profile account-b --region "$REGION" \
+  --db-instance-identifier target-db \
+  --db-snapshot-identifier source-db-snap-local \
+  --db-subnet-group-name target-db-subnet-group \
+  --vpc-security-group-ids sg-XXXXXXXX
+
+aws rds wait db-instance-available \
+  --profile account-b --region "$REGION" \
+  --db-instance-identifier target-db
+```
+
+Read the endpoint and compare row counts against the source before cutover ([`aws rds describe-db-instances`](https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-instances.html)):
+
+```bash
+aws rds describe-db-instances \
+  --profile account-b --region "$REGION" \
+  --db-instance-identifier target-db \
+  --query 'DBInstances[0].{status:DBInstanceStatus,endpoint:Endpoint.Address}' \
+  --output table
+```
+
+## Cost and timing
+
+- Copy time scales with database size; plan a long first run.
+- CMK: about [$1/month per key](https://aws.amazon.com/kms/pricing/) while it exists; schedule deletion after cutover.
+- Same-Region copies avoid cross-Region data transfer; cross-Region copies bill per [RDS copy docs](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CopySnapshot.html).
 
 ## Cleanup
 
-Revoke share, delete CMK re-encrypted snapshot in A, schedule CMK deletion ($1/month). Keep original snapshot for rollback until confident.
+After `account-b` validates data, revoke the share, delete the CMK-backed snapshot in `account-a`, and schedule CMK deletion (keep the original manual snapshot until cutover is final):
+
+```bash
+aws rds modify-db-snapshot-attribute \
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-cmk \
+  --attribute-name restore \
+  --values-to-remove "$ACCOUNT_B_ID"
+
+aws rds delete-db-snapshot \
+  --profile account-a --region "$REGION" \
+  --db-snapshot-identifier source-db-snap-cmk
+
+aws kms schedule-key-deletion \
+  --profile account-a --region "$REGION" \
+  --key-id "$KEY_ID" \
+  --pending-window-in-days 7
+```
+
+Keep the original snapshot (`$SNAP_ID`) and the source DB until you are confident in cutover.
 
 ## See also
 

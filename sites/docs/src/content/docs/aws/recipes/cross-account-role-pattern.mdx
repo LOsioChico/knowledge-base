@@ -29,9 +29,18 @@ Per the [IAM cross-account tutorial](https://docs.aws.amazon.com/IAM/latest/User
 
 ## Recipe
 
-Profiles: `account-a` (resource owner), `account-b` (caller).
+Profiles: `account-a` (resource owner / account A), `account-b` (caller / account B). Headings below use account A/B; commands use the profile names.
+
+```bash
+export ACCOUNT_A_ID=111122223333
+export ACCOUNT_B_ID=444455556666
+export REGION=us-east-1
+export EXTERNAL_ID=your-external-id
+```
 
 ## 1. Pre-flight
+
+Replace `ACCOUNT_A_ID` / `ACCOUNT_B_ID` in the JSON below with the `Account` values from each profile:
 
 ```bash
 aws sts get-caller-identity --profile account-a --output json
@@ -40,22 +49,24 @@ aws sts get-caller-identity --profile account-b --output json
 
 ## 2. In account A, create the role
 
-Trust policy (`trust-policy.json`):
+In account A, create the role. Write `trust-policy.json` with `${ACCOUNT_B_ID}` and `${EXTERNAL_ID}` expanded from the exports above:
 
-```json
+```bash
+cat > trust-policy.json <<EOF
 {
-"Version": "2012-10-17",
-"Statement": [
-{
-"Effect": "Allow",
-"Principal": { "AWS": "arn:aws:iam::ACCOUNT_B_ID:root" },
-"Action": "sts:AssumeRole",
-"Condition": {
-"StringEquals": { "sts:ExternalId": "your-external-id" }
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "AWS": "arn:aws:iam::${ACCOUNT_B_ID}:root" },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": { "sts:ExternalId": "${EXTERNAL_ID}" }
+      }
+    }
+  ]
 }
-}
-]
-}
+EOF
 ```
 
 <Aside type="caution" title="Always set an ExternalId">
@@ -64,25 +75,25 @@ Trust policy (`trust-policy.json`):
 
 </Aside>
 
-Permission policy example (`permission-policy.json`):
-
-```json
-{
-"Version": "2012-10-17",
-"Statement": [
-{
-"Effect": "Allow",
-"Action": ["ses:SendEmail", "ses:SendRawEmail"],
-"Resource": [
-"arn:aws:ses:REGION:ACCOUNT_A_ID:identity/example.com",
-"arn:aws:ses:REGION:ACCOUNT_A_ID:configuration-set/*"
-]
-}
-]
-}
-```
+Permission policy (`permission-policy.json`) with `${REGION}` and `${ACCOUNT_A_ID}` in ARNs:
 
 ```bash
+cat > permission-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["ses:SendEmail", "ses:SendRawEmail"],
+      "Resource": [
+        "arn:aws:ses:${REGION}:${ACCOUNT_A_ID}:identity/example.com",
+        "arn:aws:ses:${REGION}:${ACCOUNT_A_ID}:configuration-set/*"
+      ]
+    }
+  ]
+}
+EOF
+
 aws iam create-role \
 --profile account-a \
 --role-name CrossAccountServiceRole \
@@ -96,6 +107,8 @@ aws iam put-role-policy \
 ```
 
 ## 3. In account B, grant sts:AssumeRole
+
+Attach an inline policy on the Lambda/ECS execution role in account B that allows assuming only the account A role ARN:
 
 ```json
 {
@@ -117,7 +130,7 @@ aws sts assume-role \
 --profile account-b \
 --role-arn arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole \
 --role-session-name smoke-test \
---external-id your-external-id
+--external-id "$EXTERNAL_ID"
 ```
 
 ## 4. In application code, assume at startup
@@ -158,15 +171,17 @@ sessionToken: c.SessionToken!,
 | S3 `GetObject` | `bucket/key` | Bucket ARN for some operations |
 | [KMS](/knowledge-base/aws/kms/) `Decrypt` | The key | KMS grant for short-lived consumers |
 
-Read the first `AccessDenied` — it names the exact ARN checked.
+Read the first `AccessDenied`: it names the exact ARN checked.
 
 ## When NOT to use
 
-- Both accounts yours and no blocker — migrate the service instead.
-- High-throughput callers refreshing more than hourly — consider IAM Identity Center or federation.
-- Resource supports resource policies (S3, SQS, SNS, KMS) — often simpler without an intermediate role.
+- Both accounts yours and no blocker: migrate the service instead.
+- High-throughput callers refreshing more than hourly: consider IAM Identity Center or federation.
+- Resource supports resource policies (S3, SQS, SNS, KMS): often simpler without an intermediate role.
 
 ## Cleanup after migration
+
+When the service finally moves to account B, tear down the bridge role and the caller's `sts:AssumeRole` grant (order: inline policies first, then role):
 
 ```bash
 aws iam delete-role-policy --profile account-a --role-name CrossAccountServiceRole --policy-name SesSendOnly

@@ -5,7 +5,7 @@ description: Share and copy an EC2 AMI to a destination account so the destinati
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image` — snapshot share is required.
+> Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image`: snapshot share is required.
 
 ## Launch ≠ copy permission
 
@@ -22,9 +22,11 @@ Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGui
 
 ## Recipe
 
-Profiles: `source`, `dest`. Replace regions, AMI/snapshot IDs, `DEST_ACCOUNT_ID`.
+Profiles: `source` (`account-a`, AMI owner), `dest` (`account-b`, receives copy). Same convention as [[aws/account-migrations|account migrations]]; only the profile names differ here. Replace regions, AMI/snapshot IDs, `DEST_ACCOUNT_ID`.
 
 ## 1. Pre-flight
+
+Confirm `Account` in each profile matches owner vs destination before any share or copy:
 
 ```bash
 aws sts get-caller-identity --profile source --output json
@@ -33,58 +35,64 @@ aws sts get-caller-identity --profile dest   --output json
 
 ## 2. List AMIs to share
 
+Map each AMI to its root snapshot and whether encryption is on (you will share every snapshot ID in the block device mapping):
+
 ```bash
 aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
---filters "Name=tag:Backup,Values=BACKUP_TAG" \
---query 'Images[].{AMI:ImageId,Snap:BlockDeviceMappings[0].Ebs.SnapshotId,Enc:BlockDeviceMappings[0].Ebs.Encrypted}' \
---output table
+  --filters "Name=tag:Backup,Values=BACKUP_TAG" \
+  --query 'Images[].{AMI:ImageId,Snap:BlockDeviceMappings[0].Ebs.SnapshotId,Enc:BlockDeviceMappings[0].Ebs.Encrypted}' \
+  --output table
 ```
 
-## 3. 1b. KMS path
+## 3. KMS path (encrypted AMIs only)
 
 | Encrypted | KmsKeyId | Action |
 | --- | --- | --- |
-| False | — | Skip KMS section |
+| False | n/a | Skip KMS section |
 | True | Customer CMK | Share key ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
 | True | `alias/aws/ebs` | Re-encrypt with `copy-snapshot --kms-key-id` first |
 
 ## 4. Share AMI (launch permission)
 
+Grants destination `RunInstances` from your AMI (not sufficient for `copy-image` alone):
+
 ```bash
 aws ec2 modify-image-attribute --profile source --region SOURCE_REGION \
---image-id AMI_ID \
---launch-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+  --image-id AMI_ID \
+  --launch-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
 ```
 
 ## 5. Share underlying snapshot(s)
 
+Required for `copy-image`: repeat for every snapshot in the AMI's block device mapping:
+
 ```bash
 aws ec2 modify-snapshot-attribute --profile source --region SOURCE_REGION \
---snapshot-id SNAPSHOT_ID \
---create-volume-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+  --snapshot-id SNAPSHOT_ID \
+  --create-volume-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
 ```
-
-Repeat for every block device mapping.
 
 ## 6. Copy from destination
 
+Run in account B; `copy-image` returns a new AMI ID owned by B. Wait until `available`:
+
 ```bash
 NEW_AMI=$(aws ec2 copy-image --profile dest --region DEST_REGION \
---source-region SOURCE_REGION \
---source-image-id AMI_ID \
---name "copied-$(date +%Y%m%d)-AMI_ID" \
---query ImageId --output text)
+  --source-region SOURCE_REGION \
+  --source-image-id AMI_ID \
+  --name "copied-$(date +%Y%m%d)-AMI_ID" \
+  --query ImageId --output text)
 
 aws ec2 wait image-available --profile dest --region DEST_REGION --image-ids $NEW_AMI
 ```
 
 ## 7. Re-tag AMI and snapshots
 
-Tags from other accounts do not copy ([CopyingAMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html)). Tag AMI and each new snapshot ID separately.
+Tags from other accounts do not copy ([CopyingAMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html)). Tag the new AMI and each snapshot ID in account B separately.
 
 ## Anti-pattern: share without copy
 
-Destination can launch while A owns the AMI — closing A or revoking share loses access. For "keep forever in B", **copy is mandatory**.
+Destination can launch while A owns the AMI: closing A or revoking share loses access. For "keep forever in B", **copy is mandatory**.
 
 ## See also
 
