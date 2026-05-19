@@ -1,0 +1,76 @@
+strict_tdd: false
+context: |
+  knowledge-base is a personal Quartz v4 markdown vault. Primary surface: content/ (notes, MOCs, recipes).
+  Operating contract: AGENTS.md and .github/skills/kb-author/SKILL.md before editing content/.
+  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs (vault linking/schema), scripts/vault-check.mjs (diff-scoped gate),
+  scripts/audit-notes/ (Pass 0 lint, Prettier on content/, LLM audit pipeline).
+  Strict TDD applies only to scripts/** changes. content/ edits use vault lint + audit, not test-first TDD.
+  Post-edit gate when content/ changed: bun run vault:check --base HEAD~1 (LLM audit needs CURSOR_API_KEY in repo-root .env).
+  Linter-only chain (no LLM): bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format).
+  CI (.github/workflows/deploy.yml): lint:wikilinks, audit-notes lint:content, lint:format (no test job).
+  Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, GitHub Actions.
+rules:
+  proposal:
+    require_problem_statement: true
+  spec:
+    require_acceptance_criteria: true
+  design:
+    require_tradeoffs: true
+  tasks:
+    protect_review_workload: true
+  apply:
+    test_command: "bun run test && cd scripts/audit-notes && bun run test"
+  verify:
+    test_command: "bun run lint:wikilinks && bun run test && cd scripts/audit-notes && bun run test && cd scripts/audit-notes && bun run lint:content && cd scripts/audit-notes && bun run lint:format"
+testing:
+  detected: "2026-05-19"
+  runner:
+    command: "bun run test && cd scripts/audit-notes && bun run test"
+    framework: "package script"
+  layers:
+    unit: "package script (root wikilink/vault-check tests), package script (audit-notes)"
+    integration: ""
+    e2e: ""
+  commands:
+    unit:
+      - scope: "."
+        command: "bun run test"
+        framework: "node:test via tsx"
+      - scope: "scripts/audit-notes"
+        command: "cd scripts/audit-notes && bun run test"
+        framework: "node:test via tsx"
+    integration:
+      []
+    e2e:
+      []
+  coverage:
+    command: ""
+    commands:
+      []
+quality:
+  lint: "bun run lint:wikilinks"
+  lint_commands:
+    - scope: "."
+      command: "bun run lint:wikilinks"
+      framework: "wikilink linter"
+    - scope: "scripts/audit-notes"
+      command: "cd scripts/audit-notes && bun run lint:content"
+      framework: "Pass 0 content lint"
+    - scope: "scripts/audit-notes"
+      command: "cd scripts/audit-notes && bun run lint:format"
+      framework: "prettier check"
+  typecheck: "cd scripts/audit-notes && bun run typecheck"
+  typecheck_commands:
+    - scope: "scripts/audit-notes"
+      command: "cd scripts/audit-notes && bun run typecheck"
+      framework: "tsc --noEmit"
+  format: "cd scripts/audit-notes && bun run format"
+  format_commands:
+    - scope: "scripts/audit-notes"
+      command: "cd scripts/audit-notes && bun run format"
+      framework: "prettier write"
+vault:
+  check_command: "bun run vault:check --base HEAD~1"
+  check_command_lint_only: "bun run lint:wikilinks && cd scripts/audit-notes && bun run lint:content && cd scripts/audit-notes && bun run lint:format"
+  source_urls_command: "scripts/check-source-urls.sh"
+  audit_triage_command: "cd scripts/audit-notes && bun start --json --base HEAD~1 --profile=triage"

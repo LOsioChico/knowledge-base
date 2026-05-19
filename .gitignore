@@ -9,3 +9,6 @@ private/
 .replit
 replit.nix
 .env
+
+# Local Pi runtime state
+.atl/

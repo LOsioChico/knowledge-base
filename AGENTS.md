@@ -432,6 +432,8 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 ## Learned Workspace Facts
 
 - Engram MCP is configured for this repo with project id `knowledge-base` (session memories via `mem_search` / `mem_save`; see `.cursor/rules/engram.mdc`).
+- CodeGraph is initialized (`.codegraph/`); prefer `codegraph_*` MCP tools for structural queries under `scripts/`.
+- OpenSpec SDD config lives at `openspec/config.yaml` (`strict_tdd: false`; `content/` post-edit gate is `bun run vault:check --base HEAD~1`).
 - Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
 - LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
 - To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
