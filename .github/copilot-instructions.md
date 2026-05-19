@@ -23,7 +23,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 - [`kb-author`](.github/skills/kb-author/SKILL.md) — vault + MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
-- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — eight-phase workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and committing audit-clean notes.
+- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean vault + MDX notes.
 
 **LLM judges (runtime, invoked by `scripts/audit-notes/` on vault `content/`):**
 
@@ -33,8 +33,11 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 - [`kb-jargon-judge`](.github/skills/kb-jargon-judge/SKILL.md) — Pass 1e. Undefined acronyms / named features used without an inline gloss or wikilink.
 - [`kb-verifier`](.github/skills/kb-verifier/SKILL.md) — Pass 2. Adversarial REJECT-by-default re-check of Pass 1 findings.
 - [`kb-fix-proposer`](.github/skills/kb-fix-proposer/SKILL.md) — Pass 3. Proposes `{before, after, primarySource}` for surviving high-tier findings; declines freely.
+- [`kb-mdx-auditor`](.github/skills/kb-mdx-auditor/SKILL.md) — MDX Pass 1. Starlight pages under `sites/docs/`; invoked by `mdx-audit-notes.ts` (`mdx-triage` / `mdx-full`).
 
-When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above.
+When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md). `kb-starlight-author` was removed; Starlight MDX guidance lives in `kb-author` audits S1–S6.
+
+**LLM judges** (`kb-auditor`, `kb-source-verifier`, etc.) run on **vault** `content/**/*.md` only. **MDX** uses deterministic `lint:docs` + kb-author audits **S1–S6** (no LLM pass on `.mdx` yet).
 
 ## What this repo is
 
@@ -42,7 +45,7 @@ A personal knowledge base deployed to https://losiochico.github.io/knowledge-bas
 
 **Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/` — enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; vault ↔ MDX parity: `bun run lint:publish-parity`.
 
-**Vault (`content/`):** Obsidian markdown mirror for drafting, `related:` symmetry, and LLM audit (`lint:wikilinks`, `scripts/audit-notes/`). Not deployed as HTML; keep in sync with MDX when facts change.
+**Vault (`content/`):** Legacy Obsidian tree from pre-Starlight migration. **Do not edit** — stale relative to published MDX. Still used by `lint:publish-parity` (slug coverage) and optional vault LLM audit if you touch a file by mistake; new work is **MDX-only** under `sites/docs/`.
 
 Edit `.github/workflows/deploy.yml` for deploy changes.
 
@@ -390,20 +393,20 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 ## When you finish
 
-- To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (vault + Pass 0 + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
+- To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
 - **MDX links:** `[[slug|label]]` in prose and lists; **never** `[[slug|label]]` inside markdown table rows (the `|` breaks columns). In tables use `[label](/knowledge-base/slug/)`. See `docs/STARLIGHT-FEATURES.md`. Enforced by `bun run lint:mdx-table-wikilinks`.
 - **Vault** preview: Obsidian on `content/` (wikilinks, graph). The vault is never published as HTML; only `sites/docs/dist/` ships to GitHub Pages.
-- **Default post-edit quality gate** (from repo root; diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
+- **Default post-edit quality gate** (from repo root; full publish parity, diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
   bun run vault:check --base HEAD~1
   ```
 
-  Linter-only (no LLM audit), matches CI lint job: `bun run lint:ci` (vault wikilinks + Pass 0 + `lint:docs`). Install deps under `scripts/audit-notes` and `sites/docs` first. If formatting fails, run `bun run format` in `scripts/audit-notes/`. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. Forbidden: committing after running only a subset (e.g. vault wikilinks without `lint:docs` after MDX edits). If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+  Linter-only (no LLM audit), matches CI lint job: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Install deps under `scripts/audit-notes` and `sites/docs` first. If formatting fails, run `bun run format` in `scripts/audit-notes/`. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. `vault:check` is not a full `lint:ci` replacement: it scopes wikilink and Pass 0 output to changed vault files and does not run Prettier. Forbidden: committing after running only a subset (e.g. vault wikilinks without `lint:docs` after MDX edits). If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
 - **Corpus regression** (after changing `skip-zones.ts`, `dismissed.json` patterns, or `fixtures/corpus-manifest.json`): `cd scripts/audit-notes && bun test`. Skip-zone rules live in [`skip-zones.ts`](scripts/audit-notes/skip-zones.ts); the manifest lists paths/lines that must stay silent for specific rules ([`corpus-silent.test.ts`](scripts/audit-notes/corpus-silent.test.ts)).
 - **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `bun run autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `bun run autofix` (no args walks `content/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
 - After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
-- Commit. Do NOT push: pushing is the user's call.
+- Commit only when explicitly asked. Do NOT push: pushing is the user's call.
 - After committing any change under `content/`, run the audit on touched files and surface findings in chat for triage. **Default post-edit workflow** (diff-aware, no full-vault cost):
 
   ```bash
@@ -437,6 +440,9 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 - Commit only when the user explicitly asks; do not push unless they ask.
 - When the user says to verify first, run the full lint and test suite before committing tooling changes.
+- **Never update `content/`** — it is stale pre-migration material; the published site (`sites/docs/**/*.mdx`) is the only surface to edit for reader-facing notes.
+- Published MDX recipes must explain why before each bash fence and what to verify in output; command dumps without teaching prose fail the publish bar (S1/S2).
+- Starlight MDX migrations re-author and enrich page-by-page; do not bulk-copy or over-compress legacy vault prose into published MDX.
 
 ## Learned Workspace Facts
 
@@ -446,4 +452,6 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 - Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
 - LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
 - To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
-- Published site: `sites/docs/` (base `/knowledge-base`). Every vault note except `inbox.md` has a matching MDX page (`lint:publish-parity`). Vault remains Obsidian + audit mirror; MDX is what deploys.
+- Published site: `sites/docs/` (base `/knowledge-base`) is canonical. `lint:publish-parity` still requires a matching `content/` slug per MDX page (legacy tree; do not refresh vault body to match MDX).
+- `lint:mdx-recipe-context` is advisory in `lint:ci`; `lint:mdx-recipe-context:strict` blocks orphan/thin bash fences on recipe-shaped MDX.
+- `lint:aws-profile-consistency` in `lint:ci` fails cross-account recipes whose tables use bare `A`/`B` when `account-a`/`account-b` profiles are declared.

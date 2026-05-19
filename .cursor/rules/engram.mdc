@@ -15,12 +15,12 @@ Global Memory Protocol: `~/.cursor/rules/engram.mdc`. This file is **repo-specif
 |---|---|
 | Audit triage, vault habits, session learnings | Engram (`mem_search` at substantive session start) |
 | Symbol structure under `scripts/` | CodeGraph — `.cursor/rules/codegraph.mdc` |
-| Schema, linter rules, sourcing invariants | `AGENTS.md` (read end-to-end before editing `content/`) |
+| Schema, linter rules, sourcing invariants | `AGENTS.md` (read end-to-end before editing MDX) |
 | Starlight MDX, publish validate (S1–S6) | `kb-author` Workflow 3, `kb-author/audits/S*.md`, `docs/PUBLISHING.md`, `lint:docs` |
 
 ### When to `mem_search` here
 
-- Start of substantive sessions (after `AGENTS.md` if editing `content/`; kb-author Workflow 3 + S1–S6 if editing `sites/docs/`).
+- Start of substantive sessions (after `AGENTS.md`; kb-author Workflow 3 + S1–S6 when editing `sites/docs/` — do not edit `content/`).
 - Resuming audit tooling, vault conventions, `effect-ts` notes, or Starlight MDX publish.
 - Examples: `audit profiles`, `vault:check`, `lint:docs`, `lint:publish-parity`, `composer-2.5`, `effect-ts triage`, `commit policy`.
 
