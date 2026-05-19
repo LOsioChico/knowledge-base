@@ -9,11 +9,13 @@ import {
   filterLintResultForChanged,
   lintVault,
 } from "./lint-wikilinks-core.mjs"
+import { checkPublishParity } from "./check-publish-parity.mjs"
 
 const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url))
 const SPLIT_LINE_THRESHOLD = 250
+const MDX_CONTENT_PREFIX = "sites/docs/src/content/docs/"
 
-export { REPO_ROOT, SPLIT_LINE_THRESHOLD }
+export { REPO_ROOT, SPLIT_LINE_THRESHOLD, MDX_CONTENT_PREFIX }
 
 export function parseVaultCheckArgs(argv) {
   const json = argv.includes("--json")
@@ -54,6 +56,13 @@ export function docsPathsChangedFromBase(ref, repoRoot = REPO_ROOT) {
   return changedPathsFromBase(ref, repoRoot).some((p) => p.startsWith("sites/docs/"))
 }
 
+/** Same resolution as mdx-audit-notes `targetsFromBase`. */
+export function mdxTargetsFromBase(ref, repoRoot = REPO_ROOT) {
+  return changedPathsFromBase(ref, repoRoot)
+    .filter((p) => p.startsWith(MDX_CONTENT_PREFIX) && p.endsWith(".mdx"))
+    .filter((p) => existsSync(resolve(repoRoot, p)))
+}
+
 export async function runWikilinkPass({ contentRoot, repoRoot, changedFiles }) {
   const full = await lintVault({ contentRoot, repoRoot })
   const links = filterLintResultForChanged(full, changedFiles)
@@ -82,20 +91,96 @@ export async function findSplitCandidates(changedFiles, repoRoot = REPO_ROOT) {
   return candidates
 }
 
+function formatPass0Block(label, pass0) {
+  const lines = []
+  if (!pass0) return lines
+  const n = pass0.findings ?? 0
+  lines.push(
+    n === 0
+      ? `✓ ${label}: clean`
+      : `✗ ${label}: ${n} finding(s) across ${pass0.files ?? 0} file(s)`,
+  )
+  for (const f of pass0.details ?? []) {
+    for (const finding of f.findings) {
+      lines.push(`  ${f.path}:${finding.line} [${finding.rule}] ${finding.message}`)
+    }
+  }
+  lines.push("")
+  return lines
+}
+
+function formatAuditTotalsBlock(label, audit, skipped) {
+  const lines = []
+  if (skipped) {
+    lines.push(`⊘ ${label}: skipped (${skipped})`)
+  } else if (audit) {
+    const totals = audit.files.reduce(
+      (acc, f) => {
+        for (const x of f.findings) {
+          if (x.tier === "high") acc.high += 1
+          else acc.advisory += 1
+        }
+        return acc
+      },
+      { high: 0, advisory: 0 },
+    )
+    lines.push(`${label}: high=${totals.high} advisory=${totals.advisory}`)
+  }
+  lines.push("")
+  return lines
+}
+
 export function formatHumanReport(report) {
   const lines = []
-  lines.push(`vault:check — ${report.changedFiles.length} changed note(s) (base ${report.baseRef})`)
+  const mdxCount = report.changedMdxFiles?.length ?? 0
+  lines.push(
+    `vault:check — ${report.changedFiles.length} vault note(s), ${mdxCount} MDX file(s) (base ${report.baseRef})`,
+  )
   lines.push("")
 
   if (report.changedFiles.length === 0) {
     lines.push("No content/**/*.md changes in range.")
-    if (report.docsLint) {
+    if (mdxCount > 0) {
       lines.push("")
+      lines.push("Changed MDX:")
+      for (const f of report.changedMdxFiles) lines.push(`  ${f}`)
+    }
+    lines.push("")
+    lines.push(...formatPass0Block("pass-0-mdx (changed MDX)", report.pass0Mdx))
+    if (report.docsLint) {
       lines.push(
         report.docsLint.ok
           ? "✓ lint:docs (sites/docs changed): clean"
-          : `✗ lint:docs (sites/docs changed): failed`,
+          : "✗ lint:docs (sites/docs changed): failed (see stderr above)",
       )
+      lines.push("")
+    }
+    lines.push(...formatAuditTotalsBlock("mdx-audit (triage)", report.mdxAudit, report.mdxAuditSkipped))
+    if (report.publishParity) {
+      lines.push(
+        report.publishParity.ok
+          ? `✓ publish-parity: ${report.publishParity.vaultCount} vault ↔ ${report.publishParity.mdxCount} MDX`
+          : `✗ publish-parity: ${report.publishParity.errors.join("; ")}`,
+      )
+      lines.push("")
+    }
+    if (!report.auditSkipped) {
+      lines.push(...formatAuditTotalsBlock("vault-audit (triage)", report.audit, null))
+    } else if (mdxCount === 0) {
+      lines.push(`⊘ vault-audit: skipped (${report.auditSkipped})`)
+      lines.push("")
+    }
+    if (report.suggestions?.length) {
+      lines.push(`suggestions (${report.suggestions.length}):`)
+      for (const s of report.suggestions) {
+        if (s.kind === "link-pair") {
+          lines.push(
+            `  link-pair ${s.score.toFixed(3)} [[${s.a}]] <-> [[${s.b}]]${s.blocking ? " (blocking)" : ""}`,
+          )
+        }
+      }
+    } else {
+      lines.push("i suggestions: none")
     }
     return lines.join("\n")
   }
@@ -118,19 +203,13 @@ export function formatHumanReport(report) {
   }
   lines.push("")
 
-  if (report.pass0) {
-    const n = report.pass0.findings
-    lines.push(
-      n === 0
-        ? "✓ pass-0 (changed files): clean"
-        : `✗ pass-0 (changed files): ${n} finding(s) across ${report.pass0.files} file(s)`,
-    )
-    for (const f of report.pass0.details ?? []) {
-      for (const finding of f.findings) {
-        lines.push(`  ${f.path}:${finding.line} [${finding.rule}] ${finding.message}`)
-      }
-    }
+  lines.push(...formatPass0Block("pass-0 (changed vault)", report.pass0))
+
+  if (mdxCount > 0) {
+    lines.push("Changed MDX:")
+    for (const f of report.changedMdxFiles) lines.push(`  ${f}`)
     lines.push("")
+    lines.push(...formatPass0Block("pass-0-mdx (changed MDX)", report.pass0Mdx))
   }
 
   if (report.docsLint) {
@@ -142,22 +221,17 @@ export function formatHumanReport(report) {
     lines.push("")
   }
 
-  if (report.auditSkipped) {
-    lines.push(`⊘ audit: skipped (${report.auditSkipped})`)
-  } else if (report.audit) {
-    const totals = report.audit.files.reduce(
-      (acc, f) => {
-        for (const x of f.findings) {
-          if (x.tier === "high") acc.high += 1
-          else acc.advisory += 1
-        }
-        return acc
-      },
-      { high: 0, advisory: 0 },
+  lines.push(...formatAuditTotalsBlock("vault-audit (triage)", report.audit, report.auditSkipped))
+  lines.push(...formatAuditTotalsBlock("mdx-audit (triage)", report.mdxAudit, report.mdxAuditSkipped))
+
+  if (report.publishParity) {
+    lines.push(
+      report.publishParity.ok
+        ? `✓ publish-parity: ${report.publishParity.vaultCount} vault ↔ ${report.publishParity.mdxCount} MDX`
+        : `✗ publish-parity: ${report.publishParity.errors.join("; ")}`,
     )
-    lines.push(`audit (triage): high=${totals.high} advisory=${totals.advisory}`)
+    lines.push("")
   }
-  lines.push("")
 
   if (report.suggestions.length === 0) {
     lines.push("i suggestions: none")
@@ -186,15 +260,22 @@ export function formatHumanReport(report) {
 export async function buildVaultCheckReport({ baseRef, repoRoot = REPO_ROOT }) {
   const contentRoot = join(repoRoot, "content")
   const changedFiles = targetsFromBase(baseRef, repoRoot)
+  const changedMdxFiles = mdxTargetsFromBase(baseRef, repoRoot)
+  const publishParity = checkPublishParity(repoRoot)
 
   if (changedFiles.length === 0) {
     return {
       baseRef,
       changedFiles,
+      changedMdxFiles,
       links: { ok: true, violations: [], warnings: [] },
       suggestions: [],
-      pass0: { findings: 0, files: 0, details: [] },
-      auditSkipped: "no changed content/**/*.md files",
+      pass0: { ok: true, findings: 0, files: 0, details: [] },
+      pass0Mdx: null,
+      auditSkipped:
+        changedMdxFiles.length === 0 ? "no changed content/**/*.md files" : undefined,
+      mdxAuditSkipped: undefined,
+      publishParity,
     }
   }
 
@@ -209,10 +290,15 @@ export async function buildVaultCheckReport({ baseRef, repoRoot = REPO_ROOT }) {
   return {
     baseRef,
     changedFiles,
+    changedMdxFiles,
     links,
     suggestions,
     pass0: null,
+    pass0Mdx: null,
     audit: undefined,
     auditSkipped: undefined,
+    mdxAudit: undefined,
+    mdxAuditSkipped: undefined,
+    publishParity,
   }
 }

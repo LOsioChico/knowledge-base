@@ -7,6 +7,7 @@ import test from "node:test"
 import { buildLinkSuggestions } from "./lint-wikilinks-core.mjs"
 import {
   findSplitCandidates,
+  formatHumanReport,
   parseVaultCheckArgs,
   SPLIT_LINE_THRESHOLD,
 } from "./vault-check-lib.mjs"
@@ -78,4 +79,41 @@ test("buildLinkSuggestions includes discoverability pairs for changed files", ()
   assert.equal(blocking?.kind, "link-pair")
   assert.equal(blocking?.blocking, true)
   assert.equal(advisory?.blocking, false)
+})
+
+test("formatHumanReport includes publish parity status", () => {
+  const report = {
+    baseRef: "HEAD~1",
+    changedFiles: ["content/aws/s3/index.md"],
+    changedMdxFiles: [],
+    links: { ok: true, violations: [], warnings: [] },
+    pass0: { ok: true, findings: 0, files: 1, details: [] },
+    auditSkipped: "CURSOR_API_KEY not set",
+    publishParity: { ok: true, vaultCount: 82, mdxCount: 82, errors: [] },
+    suggestions: [],
+  }
+
+  const output = formatHumanReport(report)
+
+  assert.match(output, /publish-parity: 82 vault ↔ 82 MDX/)
+})
+
+test("formatHumanReport shows MDX-only changes", () => {
+  const report = {
+    baseRef: "HEAD~1",
+    changedFiles: [],
+    changedMdxFiles: ["sites/docs/src/content/docs/aws/s3/quickstart.mdx"],
+    links: { ok: true, violations: [], warnings: [] },
+    pass0: { ok: true, findings: 0, files: 0, details: [] },
+    pass0Mdx: { ok: true, findings: 0, files: 1, details: [] },
+    mdxAuditSkipped: "CURSOR_API_KEY not set",
+    publishParity: { ok: true, vaultCount: 81, mdxCount: 81, errors: [] },
+    suggestions: [],
+  }
+
+  const output = formatHumanReport(report)
+
+  assert.match(output, /0 vault note\(s\), 1 MDX file\(s\)/)
+  assert.match(output, /Changed MDX:/)
+  assert.match(output, /pass-0-mdx/)
 })
