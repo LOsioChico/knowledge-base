@@ -37,7 +37,7 @@ const nestjsSidebar = [
   { label: "Overview", slug: "nestjs" },
   {
     label: "Fundamentals",
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: "Fundamentals overview", slug: "nestjs/fundamentals" },
       {
@@ -55,7 +55,7 @@ const nestjsSidebar = [
   },
   {
     label: "Recipes",
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: "Recipes overview", slug: "nestjs/recipes" },
       { label: "Validation", slug: "nestjs/recipes/validation" },
@@ -120,7 +120,7 @@ const awsSidebar = [
   },
   {
     label: "S3",
-    collapsed: false,
+    collapsed: true,
     items: [
       { label: "S3 overview", slug: "aws/s3" },
       { label: "Quickstart", slug: "aws/s3/quickstart" },
@@ -254,17 +254,17 @@ export default defineConfig({
         { label: "Home", link: "/" },
         {
           label: "Effect-TS",
-          collapsed: false,
+          collapsed: true,
           items: effectTsSidebar,
         },
         {
           label: "NestJS",
-          collapsed: false,
+          collapsed: true,
           items: nestjsSidebar,
         },
         {
           label: "AWS",
-          collapsed: false,
+          collapsed: true,
           items: awsSidebar,
         },
       ],
