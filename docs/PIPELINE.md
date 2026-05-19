@@ -2,25 +2,32 @@
 
 How vault markdown, Starlight MDX, and GitHub Pages fit together. **Source of truth for commands:** root `package.json` and `.github/workflows/deploy.yml`.
 
-## Deploy flow (main only)
+## CI and deploy flow
 
 ```mermaid
 flowchart LR
   subgraph lint [lint job — PR + main]
     W[lint:wikilinks]
+    PP[lint:publish-parity]
     P0[audit Pass 0 + format]
     D[lint:docs]
     T[test:ci]
   end
-  subgraph build [build job — main only]
+  subgraph docsBuild [docs-build job — PR + main]
     S[Starlight build]
+  end
+  subgraph pagesBuild [build job — main only]
+    Smoke[deploy smoke]
   end
   subgraph deploy [deploy job]
     P[GitHub Pages]
   end
-  lint --> build
-  build --> deploy
-  S --> P
+  W --> PP --> P0 --> D --> T
+  lint --> docsBuild
+  docsBuild --> pagesBuild
+  pagesBuild --> deploy
+  S --> Smoke
+  Smoke --> P
 ```
 
 | Step | Command / script | What it guards |
@@ -32,7 +39,7 @@ flowchart LR
 | Starlight build (PR + main) | `bun run docs:build` | Twoslash compiles, static export succeeds |
 | Pages | `deploy-pages` | Serves `sites/docs/dist/` at `base: /knowledge-base` |
 
-**Published coverage:** every vault note (except `inbox.md`) has a Starlight MDX sibling — enforced by `bun run lint:publish-parity`. `content/` remains the audit/discovery mirror.
+**Published coverage:** every MDX page has a matching `content/` slug — enforced by `bun run lint:publish-parity`. `content/` is legacy (do not edit); MDX under `sites/docs/` is canonical.
 
 ## Local commands (repo root)
 
@@ -40,8 +47,8 @@ flowchart LR
 | --- | --- |
 | Match CI lint job | `bun run lint:ci` |
 | Starlight only | `bun run lint:docs` / `bun run docs:build` / `bun run docs:dev` |
-| Vault post-edit (`content/`) | `bun run vault:check --base HEAD~1` (needs `CURSOR_API_KEY` for triage audit) |
-| Vault + docs when MDX changed | `vault:check` runs `lint:docs` if `sites/docs/` is in the git diff |
+| Vault + MDX post-edit | `bun run vault:check --base HEAD~1` — parity, diff-scoped Pass 0 (vault + MDX), `lint:docs` when `sites/docs/` changed, optional vault/`mdx-triage` when `CURSOR_API_KEY` is set |
+| MDX LLM triage only | `bun run audit:mdx-triage -- --base HEAD~1` (same LLM pass as `vault:check` MDX leg) |
 | Script unit tests | `bun run test:ci` |
 
 ## What each linter owns
@@ -61,14 +68,19 @@ flowchart LR
 - **Unit tests** run in the CI `lint` job (`bun run test:ci`). They do not re-run `docs:build` (separate `docs-build` job).
 - **Untracked files** are invisible to `git diff` — run `bun run lint:docs` locally after MDX edits.
 - **Deploy smoke** — `main` `build` job checks key paths under `sites/docs/dist/`.
-- **Backlinks / graph** — not on Starlight yet (vault-only until an index is built).
+- **Backlinks** — Starlight pages get a build-time `## Backlinks` section; vault graph stays in Obsidian.
 - **`check-source-urls.sh`** is manual (GitHub rate limits); run after touching vault `source:` URLs.
+
+`vault:check` is the default post-edit gate, not a byte-for-byte CI clone: it always runs
+publish parity, diff-scoped vault and MDX Pass 0, `lint:docs` when `sites/docs/` changed,
+optional vault/`mdx-triage` when `CURSOR_API_KEY` is set, and skips Prettier. Run `bun run lint:ci` for the full linter-only CI chain.
 
 ## Doc drift watchlist
 
 | Location | Role |
 | --- | --- |
 | `docs/PUBLISHING.md` | Starlight authoring + publish validate |
+| `docs/TOOLING.md` | Skills + scripts inventory (revalidated for Starlight-only) |
 | `docs/PIPELINE.md` | CI map (this file) |
 | `AGENTS.md` | Vault invariants + publish gates; mirror to copilot-instructions |
 | `.github/skills/kb-author/SKILL.md` | Vault audits A–P, MDX audits S1–S6 |

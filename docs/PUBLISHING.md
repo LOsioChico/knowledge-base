@@ -8,7 +8,7 @@ GitHub Pages serves **Starlight only** (`sites/docs/dist/`). The vault is not pu
 | Path | Role |
 | --- | --- |
 | `sites/docs/src/content/docs/**/*.mdx` | **Canonical published pages** |
-| `content/**/*.md` | Obsidian vault mirror — discovery, `related:`, LLM audit (`lint:wikilinks`); 1:1 with MDX (`lint:publish-parity`) |
+| `content/**/*.md` | **Legacy** (pre-migration; **do not edit**). Parity check only: each MDX slug must have a matching vault path (`lint:publish-parity`) |
 | `sites/docs/astro.config.mjs` | Sidebar |
 
 ## Skills (one workflow)
@@ -22,15 +22,14 @@ There is no separate Starlight skill. LLM judges (`kb-auditor`, etc.) still run 
 
 ## Per-page workflow (MDX)
 
-1. Read vault source (if any) + verify facts against primary sources.
+1. Verify facts against primary sources (do not treat `content/` as authoritative; it is stale).
 2. Author `sites/docs/src/content/docs/<area>/<slug>.mdx` — **re-author**, not paste ([S1](../.github/skills/kb-author/audits/S1-publish-bar.md)).
-3. Add or update matching `content/<area>/<slug>.md` when the topic is new (keeps vault parity).
-4. Run audits **S1–S6** ([index](../.github/skills/kb-author/SKILL.md#starlight-mdx-audits-published-site)).
-5. `bun run lint:docs` and `bun run docs:build`.
-6. Update sidebar and area MOC CardGrid; fix any `[[wikilinks]]` on other MDX pages.
-7. If `content/` source changed: `bun run lint:wikilinks` on touched vault files.
+3. Run audits **S1–S6** ([index](../.github/skills/kb-author/SKILL.md#starlight-mdx-audits-published-site)).
+4. `bun run lint:docs` and `bun run docs:build`.
+5. Update sidebar and area MOC CardGrid; fix any `[[wikilinks]]` on other MDX pages.
+6. `lint:publish-parity` must still pass (MDX slug has a matching `content/` path; **do not** edit vault body to sync).
 
-**Sign-off:** a reader can answer *where this fits*, *when to use it*, and *what failure looks like* — without reading the vault.
+**Sign-off:** a reader can answer *where this fits*, *when to use it*, and *what failure looks like* from the published page alone.
 
 ## Links in MDX
 

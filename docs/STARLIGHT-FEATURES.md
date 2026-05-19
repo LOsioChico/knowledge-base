@@ -68,20 +68,16 @@ Preview any published page: internal wikilinks vs `effect.website` / GitHub link
 | --- | --- | --- |
 | `[[path\|alias]]` syntax | Yes | Yes (remark plugin in markdown/MDX prose) |
 | Resolve at build | N/A (not deployed) | Yes + `lint:mdx-wikilinks` |
-| Backlinks panel | Obsidian / local only | **Not yet** (needs build-time index + component) |
+| Backlinks panel | Obsidian / local only | **Yes** — `remark-backlinks` appends `## Backlinks` on each page |
 | Graph view | Obsidian / local only | **Not yet** (separate visualization or defer) |
 | First-mention / `related:` / discoverability | `lint:wikilinks` on `content/` | Vault-only until MDX is canonical for a topic |
 | Cross-area link to note without MDX yet | Wikilink in vault | "Planned" in MDX prose; no dead site URLs |
 
-### Backlinks (future)
+### Backlinks
 
-A practical path for Starlight:
-
-1. At build time, scan all MDX for `[[...]]` and markdown links → `Map<slug, inbound[]>`.
-2. Expose via `getStaticPaths` data or a small `<Backlinks slug={...} />` component.
-3. Optionally merge vault `content/` links while both surfaces exist.
-
-Not implemented yet.
+At build time, `src/plugins/build-backlinks.mjs` scans all MDX for `[[wikilinks]]` and
+`/knowledge-base/<slug>/` markdown links, then `remark-backlinks.mjs` appends a
+`## Backlinks` section (inbound pages only). Vault `content/` links are not merged yet.
 
 ## What stays on the vault linter
 

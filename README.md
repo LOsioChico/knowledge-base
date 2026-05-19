@@ -5,7 +5,7 @@ Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base
 ## Layout
 
 - `sites/docs/` — **Published site** (Starlight MDX, Twoslash, sidebar). This is what readers see.
-- `content/` — Obsidian vault mirror (discovery, `related:`, LLM audit). Not deployed as HTML; 1:1 with MDX.
+- `content/` — Legacy pre-migration tree (**do not edit**). Parity check only (`lint:publish-parity`). Not deployed.
 - `scripts/` — Wikilink linter, MDX linters, audit tooling.
 - `AGENTS.md` — Operating contract for AI editors.
 

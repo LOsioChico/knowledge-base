@@ -37,7 +37,7 @@ jobs:
       - name: Install Starlight docs deps
         working-directory: sites/docs
         run: bun install --frozen-lockfile
-      - name: Lint (vault + Pass 0 + Starlight)
+      - name: Lint (vault + parity + Pass 0 + format + Starlight)
         run: bun run lint:ci
       - name: Unit tests
         run: bun run test:ci
