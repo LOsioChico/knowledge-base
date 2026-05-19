@@ -12,7 +12,10 @@
 // that changed (one path per line) on stdout for the caller to consume.
 //
 // Usage:
-//   tsx autofix.ts <file...>
+//   tsx autofix.ts <file...>       # explicit paths (.md or .mdx)
+//   tsx autofix.ts                 # walk content/**/*.md (vault)
+//   tsx autofix.ts --mdx           # walk sites/docs/src/content/docs/**/*.mdx
+//   tsx autofix.ts --all           # vault + MDX trees
 //
 // Exits 0 always. The list of changed files (possibly empty) is the contract.
 
@@ -67,12 +70,19 @@ function applyOutsideCode(s: string): string {
   return out;
 }
 
+function isMdxPath(absPath: string): boolean {
+  return absPath.endsWith(".mdx");
+}
+
 function fixFile(absPath: string): FixResult {
   const text: string = readFileSync(absPath, "utf8");
   let lines: string[] = text.split("\n");
 
-  lines = stripOrphanSources(lines);
-  lines = addMissingInlineSources(lines);
+  // MDX frontmatter is title/description only; skip vault `source:` sync.
+  if (!isMdxPath(absPath)) {
+    lines = stripOrphanSources(lines);
+    lines = addMissingInlineSources(lines);
+  }
 
   let inFrontmatter: boolean = false;
   let inFence: boolean = false;
@@ -288,20 +298,33 @@ function addMissingInlineSources(lines: string[]): string[] {
   return [...lines.slice(0, insertAt), ...newLines, ...lines.slice(insertAt)];
 }
 
+const REPO_ROOT: string = resolve(
+  fileURLToPath(new URL("../..", import.meta.url)),
+);
+const VAULT_ROOT: string = join(REPO_ROOT, "content");
+const MDX_ROOT: string = join(REPO_ROOT, "sites/docs/src/content/docs");
+
 function main(): void {
   const argv: string[] = process.argv.slice(2);
+  const walkMdx: boolean = argv.includes("--mdx");
+  const walkAll: boolean = argv.includes("--all");
+  const fileArgs: string[] = argv.filter(
+    (a: string): boolean => !a.startsWith("--"),
+  );
+
   let targets: string[];
-  if (argv.length === 0) {
-    // No args: walk content/ from the repo root (this file lives at
-    // scripts/audit-notes/autofix.ts, so ../../content is the vault).
-    const repoRoot: string = resolve(
-      fileURLToPath(new URL("../..", import.meta.url)),
-    );
-    const contentRoot: string = join(repoRoot, "content");
+  if (fileArgs.length > 0) {
+    targets = fileArgs.map((a: string) => resolve(process.cwd(), a));
+  } else if (walkAll) {
     targets = [];
-    walkMarkdown(contentRoot, targets);
+    walkMarkdown(VAULT_ROOT, targets);
+    walkMdxFiles(MDX_ROOT, targets);
+  } else if (walkMdx) {
+    targets = [];
+    walkMdxFiles(MDX_ROOT, targets);
   } else {
-    targets = argv.map((a) => resolve(process.cwd(), a));
+    targets = [];
+    walkMarkdown(VAULT_ROOT, targets);
   }
   const changed: string[] = [];
   for (const abs of targets) {
@@ -318,6 +341,15 @@ function walkMarkdown(dir: string, out: string[]): void {
     const st = statSync(full);
     if (st.isDirectory()) walkMarkdown(full, out);
     else if (st.isFile() && entry.endsWith(".md")) out.push(full);
+  }
+}
+
+function walkMdxFiles(dir: string, out: string[]): void {
+  for (const entry of readdirSync(dir)) {
+    const full: string = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) walkMdxFiles(full, out);
+    else if (st.isFile() && entry.endsWith(".mdx")) out.push(full);
   }
 }
 
