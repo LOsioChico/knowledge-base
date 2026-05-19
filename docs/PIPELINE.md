@@ -6,27 +6,17 @@ How vault markdown, Starlight MDX, and GitHub Pages fit together. **Source of tr
 
 ```mermaid
 flowchart LR
-  subgraph lint [lint job — PR + main]
-    W[lint:wikilinks]
-    PP[lint:publish-parity]
-    P0[audit Pass 0 + format]
+  subgraph ci [ci job — PR + main]
+    W[lint:ci:tooling]
     D[lint:docs]
     T[test:ci]
-  end
-  subgraph docsBuild [docs-build job — PR + main]
-    S[Starlight build]
-  end
-  subgraph pagesBuild [build job — main only]
+    S[docs:build:ci]
     Smoke[deploy smoke]
   end
-  subgraph deploy [deploy job]
+  subgraph deploy [deploy job — main only]
     P[GitHub Pages]
   end
-  W --> PP --> P0 --> D --> T
-  lint --> docsBuild
-  docsBuild --> pagesBuild
-  pagesBuild --> deploy
-  S --> Smoke
+  W --> D --> T --> S --> Smoke
   Smoke --> P
 ```
 
@@ -36,7 +26,8 @@ flowchart LR
 | Vault ↔ MDX parity | `bun run lint:publish-parity` | Every vault note (except `inbox.md`) has matching `.mdx` |
 | Pass 0 + format | `cd scripts/audit-notes && bun run lint:content && bun run lint:format` | Em-dash, double-hyphen, Prettier on `content/` |
 | Starlight | `bun run lint:docs` | `astro check`, MDX wikilinks, link hygiene (`--strict`) |
-| Starlight build (PR + main) | `bun run docs:build` | Twoslash compiles, static export succeeds |
+| Starlight build (CI) | `bun run docs:build:ci` | `astro build` only (check already ran in `lint:docs`) |
+| Starlight build (local) | `bun run docs:build` | `astro check && astro build` |
 | Pages | `deploy-pages` | Serves `sites/docs/dist/` at `base: /knowledge-base` |
 
 **Published coverage:** every MDX page has a matching `content/` slug — enforced by `bun run lint:publish-parity`. `content/` is legacy (do not edit); MDX under `sites/docs/` is canonical.
@@ -65,9 +56,9 @@ flowchart LR
 ## Gaps and intentional limits
 
 - **LLM audit** is not in CI (cost + `CURSOR_API_KEY`). CI runs Pass 0 only; triage stays local via `vault:check`.
-- **Unit tests** run in the CI `lint` job (`bun run test:ci`). They do not re-run `docs:build` (separate `docs-build` job).
+- **Unit tests** run in the CI job (`bun run test:ci`) before a single `docs:build:ci` (no duplicate Starlight build).
 - **Untracked files** are invisible to `git diff` — run `bun run lint:docs` locally after MDX edits.
-- **Deploy smoke** — `main` `build` job checks key paths under `sites/docs/dist/`.
+- **Deploy smoke** — `main` CI job checks key paths under `sites/docs/dist/` before upload.
 - **Backlinks** — Starlight pages get a build-time `## Backlinks` section; vault graph stays in Obsidian.
 - **`check-source-urls.sh`** is manual (GitHub rate limits); run after touching vault `source:` URLs.
 

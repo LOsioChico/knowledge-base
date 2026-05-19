@@ -12,78 +12,42 @@ permissions:
   pages: write
   id-token: write
 
-# One pipeline at a time per branch; never two concurrent runs racing on Pages.
+# Cancel superseded runs on the same branch (saves queue time on rapid pushes).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  # 1. Fast blocking checks. Stops the pipeline if format/wikilinks/docs are broken.
-  lint:
-    runs-on: ubuntu-22.04
+  # Single job: one install, astro check once, build once. PRs stop before upload.
+  ci:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install root deps (lint tooling)
-        run: bun install --frozen-lockfile
-      - name: Install audit-notes deps
-        working-directory: scripts/audit-notes
-        run: bun install --frozen-lockfile
-      - name: Install Starlight docs deps
-        working-directory: sites/docs
-        run: bun install --frozen-lockfile
-      - name: Lint (vault + parity + Pass 0 + format + Starlight)
-        run: bun run lint:ci
+      - name: Cache Bun
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock', 'scripts/audit-notes/bun.lock', 'sites/docs/bun.lock') }}
+          restore-keys: |
+            bun-${{ runner.os }}-
+      - name: Install dependencies
+        run: |
+          bun install --frozen-lockfile
+          bun install --frozen-lockfile --cwd scripts/audit-notes
+          bun install --frozen-lockfile --cwd sites/docs
+      - name: Lint (vault + MDX check, no build)
+        run: |
+          bun run lint:ci:tooling
+          bun run lint:docs
       - name: Unit tests
         run: bun run test:ci
-
-  # PR + main: Starlight build (Twoslash).
-  docs-build:
-    needs: lint
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install root deps
-        run: bun install --frozen-lockfile
-      - name: Install Starlight docs deps
-        working-directory: sites/docs
-        run: bun install --frozen-lockfile
       - name: Build Starlight (Twoslash)
-        run: bun run docs:build
-
-  # 2. Deploy Starlight dist to GitHub Pages. Skipped on pull_request.
-  build:
-    needs: docs-build
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 22
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Install root deps
-        run: bun install --frozen-lockfile
-      - name: Install Starlight docs deps
-        working-directory: sites/docs
-        run: bun install --frozen-lockfile
-      - name: Build Starlight docs
-        working-directory: sites/docs
-        run: bun run build
+        run: bun run docs:build:ci
       - name: Verify published paths
+        if: github.event_name != 'pull_request'
         working-directory: sites/docs
         run: |
           test -f dist/index.html
@@ -98,14 +62,15 @@ jobs:
           test -f dist/aws/s3/quickstart/index.html
           test -f dist/aws/lambda-vs-ec2/index.html
           test -f dist/aws/recipes/cross-account-role-pattern/index.html
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v3
         with:
           path: sites/docs/dist
 
-  # 3. Deploy to GitHub Pages.
   deploy:
-    needs: build
+    needs: ci
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

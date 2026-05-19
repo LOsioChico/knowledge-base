@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro check && astro build",
+    "build:ci": "astro build",
     "preview": "astro preview",
     "check": "astro check"
   },
