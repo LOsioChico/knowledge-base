@@ -1,6 +1,6 @@
 # Audit G — Callout placement (place at first use, not in topical clusters)
 
-A callout (`> [!warning]-`, `> [!info]-`, `> [!tip]-`, `> [!example]-`) explains, qualifies, or
+A callout (`> [!warning]-`, `> [!info]-`, `> [!example]-`, `> [!todo]-`) explains, qualifies, or
 elaborates on something the reader just encountered. Its placement signals what triggers it.
 
 Two valid placements:
@@ -36,7 +36,7 @@ Audit procedure:
      ("see [step N](#…)") instead of backward ("the snippet above").
    - **No** (it's a general concern that applies broadly) → leave it in the trailing cluster.
 3. After moving, verify no two callouts in the trailing cluster collapse to "this only applies
-   if you used config X" — those should also migrate to where X is introduced.
+   if you used config X" — those should also move to where X is introduced.
 
 Trailing-cluster sections (`## Gotchas`, `## See also`) are still valuable: they catch readers
 who land via search and skim from the bottom up. Keep callouts there when they're cross-cutting.

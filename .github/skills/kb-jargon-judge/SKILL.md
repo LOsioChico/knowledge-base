@@ -1,6 +1,6 @@
 ---
 name: kb-jargon-judge
-description: Per-note judge for the "no assumed-knowledge jargon" rule (audit P). Given a single note's body, names the specific tokens a first-time reader cannot decode, or emits an empty findings array. Use when invoked by `scripts/audit-notes/audit-notes.ts` Pass 1e.
+description: Per-note judge for the "no assumed-knowledge jargon" rule (audit P) on vault `content/**/*.md` only (not MDX). Given a single note body, names undefined tokens or emits empty findings. Pass 1e in `scripts/audit-notes/`.
 ---
 
 # kb-jargon-judge

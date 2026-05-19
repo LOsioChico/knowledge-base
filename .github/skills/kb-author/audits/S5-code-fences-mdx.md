@@ -7,6 +7,16 @@ Run on every `.mdx` you touch.
 
 Same bar as vault audit A: full imports, class wrappers, no undefined symbols. Prefer `ts twoslash` when types teach.
 
+## Shell placeholders in AWS recipes
+
+| Fence | Placeholder style | Why |
+| --- | --- | --- |
+| `bash` | `$VAR` or `"$VAR"` in commands; `${VAR}` inside double-quoted strings and heredocs | Shiki highlights shell variables |
+| `json` (static file user edits by hand) | Angle brackets `<SRC_BUCKET>` only when there is no export block | Valid JSON; no `$` prefix (invalid in JSON strings) |
+| Policy tied to `export` block above | `bash` + unquoted heredoc (`<<EOF`) emitting `.json` | `${ACCOUNT_A_ID}` expands at write time and highlights as shell |
+
+Do not put bare `ACCOUNT_A_ID` in a `json` fence when the recipe already exports shell variables: use a heredoc in `bash` instead.
+
 ## MDX expression hazards
 
 | Pattern | Risk | Fix |

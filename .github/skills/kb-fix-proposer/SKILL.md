@@ -1,6 +1,6 @@
 ---
 name: kb-fix-proposer
-description: Proposes concrete `{before, after, primarySource}` fixes for high-tier audit findings that survived Pass 2. Obeys the AGENTS.md "Cite, don't hedge" rule and declines freely when a good fix is not obvious. Returns a strict JSON `Report`. Use when invoked by `scripts/audit-notes/audit-notes.ts` Pass 3.
+description: Proposes `{before, after, primarySource}` fixes for vault audit findings (Pass 3). Not used for MDX. Obeys "Cite, don't hedge"; declines when unsure.
 ---
 
 # kb-fix-proposer

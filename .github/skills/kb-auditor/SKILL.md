@@ -22,8 +22,10 @@ schema below.
 
 The caller passes:
 
-- `targets`: an array of repo-relative paths to `.md` notes under `content/`.
+- `targets`: an array of repo-relative paths to `.md` notes under `content/` (not `sites/docs/**/*.mdx`).
 - (Optional) hints about which rules to emphasize. Default: all rules below.
+
+**MDX:** use kb-author audits **S1–S6** and `bun run lint:docs` / `docs:build`. This skill is not invoked on Starlight pages.
 
 ## Rule index
 

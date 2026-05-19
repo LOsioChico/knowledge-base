@@ -9,4 +9,5 @@ applyTo: "content/**/*.md"
 - Vault notes are **not** published as HTML. Starlight MDX under `sites/docs/` is the live site.
 - Published copy lives in `sites/docs/**/*.mdx`; keep vault facts aligned when MDX changes.
 - After vault edits: `bun run lint:wikilinks`; `bun run vault:check --base HEAD~1` when triage is needed.
+- New reader-facing notes need a matching `.mdx` under `sites/docs/` (`bun run lint:publish-parity`).
 - Preview vault in Obsidian; preview the site with `bun run docs:dev`.

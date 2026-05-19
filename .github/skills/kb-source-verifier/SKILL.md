@@ -6,7 +6,7 @@ description: >
   caches each source URL, strips it to plain text, and hands you (a) the note body with
   line numbers and (b) the extracted source contents. You decide which specific claims in
   the note are unsupported by, or contradicted by, the cited sources. Returns a strict
-  JSON `Report`. Triggered by the orchestrator on every audit run (Pass 1b is mandatory).
+  JSON `Report`. Vault `content/**/*.md` only (not MDX). Pass 1b in `scripts/audit-notes/`.
 ---
 
 # kb-source-verifier
@@ -51,8 +51,9 @@ specification, or version, decide one of:
   vague enough that a missing citation is itself the defect. Emit a finding.
 - `"unsourced-but-plausible"` — concrete, specific claim (names a real API, version,
   line range, or behavior) that is NOT in the cited sources but looks correct from
-  the surrounding context. Downstream action is "add a `source:` URL", NOT "rewrite
-  the prose". Emit a finding with this status when in doubt — see FP patterns below.
+  the surrounding context. Downstream action is "add an inline citation so
+  `autofix` can sync `source:`", NOT "rewrite the prose". Emit a finding with this
+  status when in doubt — see FP patterns below.
 - `"contradicted"` — directly contradicted by a cited source. Emit a finding.
 
 Examples of claims you SHOULD evaluate:

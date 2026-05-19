@@ -10,7 +10,7 @@ Goal: a reader can **orient**, **decide**, and **debug** without re-reading the 
 | Pipeline orchestrator (e.g. request lifecycle) | **Contrast Aside** (e.g. not application lifecycle) + **symptom → layer** table near top |
 | Layer concept (guard, pipe, filter, …) | **"Why not X?"** or comparison table vs adjacent layers |
 | Global/cross-cutting (global providers, lifecycle) | **Decision table or mermaid** before long examples |
-| Recipe | **When to reach for it** bullets + **Steps** for setup (see audit S3 for payloads) |
+| Recipe | **When to reach for it** bullets + **Steps** for setup (see audit S3 for payloads). **Before each command block:** one sentence on purpose + what to verify in output |
 
 ## TL;DR rules
 

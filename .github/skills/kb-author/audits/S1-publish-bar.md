@@ -12,8 +12,9 @@ Read the MDX page without the vault open. Ask:
 2. Is there a **concrete path** (Steps, numbered setup, or symptom table) before deep reference material?
 3. Are vault-only concerns (long audit chains, `related:` dumps, discoverability asides) **absent**?
 4. Is anything **shorter** than the vault because redundancy was cut, not because facts were dropped?
+5. Does **every fenced command block** have prose immediately above it that says **why** to run it and what to check in the output? (A heading alone is not enough.)
 
-If (1) or (2) is no → restructure before enriching.
+If (1), (2), or (5) is no → restructure before enriching.
 
 ## What to add (not in vault)
 
@@ -32,6 +33,15 @@ If (1) or (2) is no → restructure before enriching.
 - Every vault gotcha callout — keep highest-signal footguns as `<Aside>`
 - Deep edge cases with no primary source in session — link to official docs instead of guessing
 - `// ^?` Twoslash tours and "hover the type" prose
+
+## Anti-patterns (fail S1)
+
+- **Command dumps**: a section heading then a bash fence with no "why" (e.g. pre-flight
+  `sts get-caller-identity` with no explanation that wrong `Account` means you will corrupt the
+  wrong account).
+- **Stripping teaching prose from recipes** while keeping commands: pre-flight checks, KMS
+  dual-policy warnings, share confirmation, copy-before-restore rationale, and cleanup ordering.
+- Pasting vault `.md` with only callout/HTML rewrites — that is not re-authoring.
 
 ## Vault sync
 

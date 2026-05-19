@@ -9,6 +9,8 @@ bun run lint:docs
 bun run docs:build
 ```
 
+Prose style (em-dash, `--`): if Pass 0 flags style, run `bun run autofix:mdx` from repo root (same fixer as vault `cd scripts/audit-notes && bun run autofix`).
+
 | Check | What it catches |
 | --- | --- |
 | `astro check` | MDX/component errors |
@@ -16,9 +18,13 @@ bun run docs:build
 | `lint:mdx-table-wikilinks` | `[[slug\|label]]` inside table rows (pipe breaks cells) |
 | `lint:mdx-link-hygiene --strict` | Full-site URLs in MDX that should be wikilinks |
 | `lint:publish-parity` | Vault note without MDX sibling (or extra MDX) |
+| `lint:mdx-recipe-context` | Recipe MDX: bash fence without teaching prose (advisory; `--strict` blocks orphan/thin only) |
 | `docs:build` | Twoslash failures, Starlight export |
 
-Before push: `bun run lint:ci` (vault wikilinks + publish parity + Pass 0 + Starlight + tests).
+Before push or handoff: `bun run lint:ci` (vault wikilinks + publish parity + vault Pass 0 +
+MDX structural Pass 0 + format + Starlight) and `bun run test:ci` (root scripts + audit-notes tests).
+
+Optional after MDX edits: `bun run audit:mdx-triage -- --base HEAD~1` (LLM; needs `CURSOR_API_KEY`).
 
 ## Nav and cross-page hygiene
 
@@ -39,16 +45,19 @@ Replace with `[[area/foo|Label]]` everywhere under `sites/docs/`.
 Add `test -f sites/docs/dist/<slug>/index.html` in `.github/workflows/deploy.yml` for
 high-traffic paths (paths are under `sites/docs/dist/`).
 
-## Vault source (`content/`)
+## Legacy vault (`content/`)
 
-- [ ] If facts changed: `bun run lint:wikilinks` on touched vault files
+- [ ] **Do not edit** `content/` — stale pre-migration tree; MDX is canonical
 - [ ] Do **not** duplicate vault `related:` into MDX frontmatter
-- [ ] Keep vault and MDX facts in sync when editing either surface
+- [ ] `lint:publish-parity` still passes (slug exists under `content/` for each MDX page)
 
 ## Human sign-off
 
 1. A new reader knows **when** to read this page.
 2. They know **what failure looks like** (status + JSON where relevant).
 3. No link on the published site points at a **full-site URL** for a slug that already has MDX (use `[[slug|label]]`).
+4. **Cold read** in `bun run docs:dev`: every `bash` block still makes sense without opening the vault note.
+
+After recipe MDX edits, scan `bun run lint:mdx-recipe-context` output and fix `orphan-bash-after-heading` / `thin-context-before-bash` before merge.
 
 If any answer is no → back to audit S1 or S2.

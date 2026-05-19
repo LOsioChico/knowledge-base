@@ -1,11 +1,11 @@
 ---
 name: kb-research-author
-description: End-to-end workflow for researching a topic from external courses/docs, verifying every claim against primary sources, and authoring well-categorized, audit-clean notes in this vault.
+description: End-to-end workflow for researching a topic from external courses/docs, verifying every claim against primary sources, and authoring audit-clean vault notes plus matching Starlight MDX when the topic is reader-facing.
 ---
 
 # kb-research-author
 
-Use this when the user asks to write notes about a topic you don't already have firsthand reps in (a new AWS service, a new framework feature, a new pattern). It chains: discovery → source selection → claim extraction → primary-source verification → categorization → drafting → audit → triage → commit.
+Use this when the user asks to write notes about a topic you don't already have firsthand reps in (a new AWS service, a new framework feature, a new pattern). It chains: discovery → source selection → claim extraction → primary-source verification → categorization → drafting → audit → triage → handoff or commit when asked.
 
 AGENTS.md governs the invariants (frontmatter schema, tag vocabulary, linker rules, sourcing rule). This skill governs the **process** of getting from "I want to write about X" to a clean commit. Read AGENTS.md first; this file does not duplicate its rules.
 
@@ -94,12 +94,23 @@ For each finding, **verify before acting** (per AGENTS.md "Audit findings are su
 
 Re-run linters after every fix batch.
 
-## Phase 8 — Commit
+## Phase 8 — Publish on Starlight (reader-facing notes)
 
-Conventional commits, no scope, atomic. One logical change per commit. Examples:
+Skip only for `content/inbox.md` or explicit "vault-only draft" asks.
+
+1. **Re-author** MDX at `sites/docs/src/content/docs/<same-slug>.mdx` — do not paste the vault file ([`kb-author` S1](../kb-author/audits/S1-publish-bar.md)).
+2. Run **S1–S6** and `bun run lint:docs` + `bun run docs:build` ([`kb-author` Workflow 3](../kb-author/SKILL.md)).
+3. Update `sites/docs/astro.config.mjs` sidebar and area MOC CardGrid when the slug is new.
+4. `bun run lint:publish-parity` must stay green (vault path ↔ MDX path).
+
+Facts in vault and MDX must match. Edit vault first for sourcing/audit history; MDX is the public surface.
+
+## Phase 9 — Commit if asked
+
+When the user asks for a commit, use conventional commits, no scope, atomic. One logical change per commit. Examples:
 
 - `feat: aws s3 storage classes concept note`
-- `feat: aws s3 presigned-urls recipe`
+- `feat: publish aws s3 presigned-urls on Starlight`
 - `fix: correct glacier min-billable-size in s3 storage classes`
 
 Do NOT push. The user pushes.

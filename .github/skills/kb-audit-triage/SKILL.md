@@ -23,7 +23,8 @@ finding → act → persist.
 
 - User asks to: run the audit on touched files, triage audit JSON, apply or dismiss findings,
   add to `dismissed.json`, evaluate audit output.
-- After any commit under `content/` (the audit is chat-driven now; CI no longer runs it).
+- After any commit under `content/` when the user asked you to commit. LLM triage is chat-driven now; CI runs deterministic Pass 0 only.
+- After MDX-only edits: kb-author **S1–S6** + `bun run lint:docs`; optional `bun run audit:mdx-triage -- --base HEAD~1` or `vault:check` (runs `mdx-triage` when `CURSOR_API_KEY` is set). This skill's triage loop is for **vault** JSON from `audit-notes`, not `mdx-audit-notes` output.
 - Whenever Pass-1/Pass-2 LLM output appears in `/tmp/audit.json` and needs human classification.
 
 ## The non-negotiables (from AGENTS.md, repeated because they get skipped)
@@ -36,7 +37,7 @@ finding → act → persist.
 3. **Every audit-driven edit must ADD information (URL, line anchor, concrete API name) or
    stay the same length.** Edits that subtract information are regressions even when the
    auditor goes green. Hedging ("may apply", "in some cases", "broadly") is forbidden.
-4. **Never `git push`.** Commit freely; push is the user's call.
+4. **Commit only when the user explicitly asks. Never `git push`.** Push is the user's call.
 
 ## Step 1 — Run the audit
 
@@ -57,7 +58,7 @@ bun start --json --base HEAD~1 --profile=triage > /tmp/audit.json 2> /tmp/audit.
 | `full` | Deep sweep before a major release or when user asks for full audit | All passes including Pass 1, 1a, 1e, 2, 3 |
 | `ci` | CI gate only — no LLM, no API key | Pass 0 only (same as `lint:content`) |
 
-Scripts (from `scripts/audit-notes/`): `bun run audit:triage`, `bun run audit:ci`. Repo-root post-edit gate: `bun run vault:check --base HEAD~1`.
+Scripts (from `scripts/audit-notes/`): `bun run audit:triage`, `bun run audit:ci`. Repo-root gates: `bun run vault:check --base HEAD~1` (publish parity + scoped vault checks + optional audit + `lint:docs` when MDX changed); `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Inventory: [`docs/TOOLING.md`](../../docs/TOOLING.md).
 
 ### Scope variants
 
@@ -231,9 +232,9 @@ and fails on any 404. Local-only (network + 60 req/hr unauth limit). Skipping it
 like `parse-file-pipe-builder.ts` (real: `parse-file-pipe.builder.ts`) ship as silent
 source-list gaps.
 
-## Step 6 — Commit
+## Step 6 — Commit if asked
 
-Group fixes by intent. A typical post-audit batch produces 3–5 commits:
+When the user asks for commits, group fixes by intent. A typical post-audit batch produces 3–5 commits:
 
 1. **Prose fix per cluster of related WRONG-claims** (one commit per topic, even if it spans
    multiple notes — co-locating the corrected claim with its corrected siblings keeps the

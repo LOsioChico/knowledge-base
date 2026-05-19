@@ -2,7 +2,8 @@
 name: kb-author
 description: >
   Authoring and publish workflow for this knowledge base. Published site is Starlight MDX under
-  sites/docs/; content/ is the Obsidian vault mirror (lint + LLM audit). Covers vault discovery
+  sites/docs/ (canonical). content/ is legacy pre-migration (do not edit; parity check only).
+  Covers vault discovery
   (A–P), Starlight MDX authoring (S1–S6), sourcing, and audit triage. Use for any note edit, MDX
   publish, or "write a recipe". Triggers: edit a note, author MDX, sites/docs, MDX, /kb-author.
 ---
@@ -13,6 +14,8 @@ Workflow companion to the repo's `AGENTS.md`. AGENTS.md owns invariants (frontma
 controlled vocabulary, linker rules); this skill owns the **multi-step workflows**.
 
 **Always read `AGENTS.md` first.** On conflict it wins.
+
+Skills and scripts inventory: [`docs/TOOLING.md`](../../docs/TOOLING.md).
 
 This skill uses **progressive disclosure**: the index lives here, full audits live in
 [`audits/`](audits/), full workflows in this file. Read an audit file only when you're about to
@@ -29,9 +32,9 @@ base, Starlight, MDX, MOCs, wikilinks, GitHub Pages publish.
 | Surface | Path | Audits |
 | --- | --- | --- |
 | **Published site** (canonical) | `sites/docs/src/content/docs/**/*.mdx` | **S1–S6** + `bun run lint:docs` + `docs:build` |
-| **Vault** (mirror) | `content/**/*.md` | **A–P** + `bun run lint:wikilinks` + LLM audit |
+| **Legacy vault** (read-only) | `content/**/*.md` | **Do not edit.** Optional A–P only if a file is touched by mistake |
 
-**Published site only:** GitHub Pages serves `sites/docs/dist/`. The vault (`content/`) is not deployed as HTML.
+**Published site only:** GitHub Pages serves `sites/docs/dist/`. The vault (`content/`) is not deployed as HTML and is **stale** relative to MDX.
 
 ## Audit index
 
@@ -125,14 +128,17 @@ Only after these five steps may you draft. Then:
 ### Before writing
 
 1. Read `docs/PUBLISHING.md`.
-2. Read vault source `content/.../*.md` if it exists (facts + audit history); verify claims against
-   primary sources.
+2. Do **not** treat `content/.../*.md` as authoritative (stale pre-migration). Verify every claim
+   against primary sources; use MDX siblings or external docs for context only.
 3. Skim a published sibling (e.g. `nestjs/fundamentals/request-lifecycle.mdx`).
 
 ### While writing
 
 - Pick page kind: area MOC, sub-area MOC, concept, or recipe (see [S2](audits/S2-reader-clarity.md)).
 - Re-author; pass [S1](audits/S1-publish-bar.md). Enrichment per [S4](audits/S4-enrichment-fit.md).
+- **Recipes are not command dumps.** Every fenced `bash` block needs prose directly above it:
+  what the command does, what field in the output to check, and what to do if it looks wrong.
+  Condensing legacy vault prose by deleting the "why" is a publish failure, not a win.
 - Links: `[[slug|label]]` in prose and lists. In **markdown tables**, use
   `[label](/knowledge-base/slug/)` only (`lint:mdx-table-wikilinks`). No full-site URLs in MDX for
   slugs that already have `.mdx` (`lint:mdx-link-hygiene`).
@@ -142,8 +148,14 @@ Only after these five steps may you draft. Then:
 
 1. Run audits **S1–S6** (recipes include **S3**).
 2. `bun run lint:docs` and `bun run docs:build` from repo root.
-3. Update `astro.config.mjs` (sidebar) and area MOC CardGrid; keep vault note in sync (`lint:publish-parity`).
-4. If vault source changed: `bun run lint:wikilinks` on touched `content/` files.
+3. Update `astro.config.mjs` (sidebar) and area MOC CardGrid; confirm `lint:publish-parity` (do **not** edit `content/` to sync).
+4. Optional LLM pass on touched MDX (needs `CURSOR_API_KEY` in repo-root `.env`):
+
+   ```bash
+   bun run audit:mdx-triage -- --base HEAD~1
+   ```
+
+   Or use `bun run vault:check --base HEAD~1` — it runs structural MDX Pass 0, `lint:docs` when `sites/docs/` changed, and `mdx-triage` on changed `.mdx` when the key is set.
 
 ## Workflow 2 — Encode-then-audit (when you discover a repeated bug pattern)
 
@@ -181,7 +193,7 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   middleware.md (which disclaims authz). Run [Audit J](audits/J-demo-names.md).
 - **Marking every qualifier as `[!warning]`** → readers learn to skim past warnings, including
   the real ones. Warnings are for actual footguns (silent failures, security, hangs); everything
-  else is `[!info]` or `[!tip]`. Run [Audit K](audits/K-callout-severity.md).
+  else is `[!info]` or plain prose. Run [Audit K](audits/K-callout-severity.md).
 - **Comparative claims written from memory** ("same union as X", "X also returns Y", "mirrors
   the X convention") → you only verified the subject, not the comparator. The natural failure
   mode is shipping a confident-sounding lie about X. Run [Audit L](audits/L-comparative-claims.md);

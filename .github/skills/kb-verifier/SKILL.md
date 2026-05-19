@@ -4,7 +4,7 @@ description: >
   Adversarial verification pass for findings emitted by `kb-auditor`. Re-reads each finding
   against the source file and decides whether it is a REAL violation. Default verdict is REJECT.
   The verifier MUST quote the literal text at the cited line and explain why it does (or does
-  not) violate the rule. Used as the second LLM pass in `scripts/audit-notes/audit-notes.ts`.
+  not) violate the rule. Vault `content/**/*.md` only. Pass 2 in `scripts/audit-notes/`.
 ---
 
 # kb-verifier
@@ -32,7 +32,7 @@ For every finding, in order:
 1. **Locate the offending block.** Read from `line - 5` through the end of the nearest enclosing fenced code block, callout, or markdown table (whichever the rule targets). The auditor cites the **start of the offending block** (e.g. the opening ` ```typescript ` fence), so do NOT reject merely because the cited line is a delimiter — scan inside the block. Reject only if no plausible offending content exists within ~30 lines below the citation.
 2. **Quote it.** Copy the literal text of the line that actually contains the violation (or the citation line if it's already informative) into the `quote` field. If the cited line is past EOF, `REJECT` with rationale `"line out of range"`.
 3. **Map to the rule.** Confirm the quoted text matches the rule's definition in the kb-auditor skill (and its linked `audits/<X>-*.md` procedure). Be strict:
-   - `code-imports` (audit A): the snippet must actually use a symbol with NO import in the same fenced block AND no prior definition in the SAME note. If the symbol is imported earlier in the file, REJECT. **Bootstrap-fragment exemption**: if the snippet sits inside an `[!example]`/`[!info]`/`[!tip]` callout AND the only undefined symbols are framework wirings (`app`, `module`, `bootstrap`), REJECT — audit A's "single-line illustrative fragments in unambiguous context" carve-out applies.
+   - `code-imports` (audit A): the snippet must actually use a symbol with NO import in the same fenced block AND no prior definition in the SAME note. If the symbol is imported earlier in the file, REJECT. **Bootstrap-fragment exemption**: if the snippet sits inside an `[!example]`/`[!info]`/`[!warning]` callout AND the only undefined symbols are framework wirings (`app`, `module`, `bootstrap`), REJECT — audit A's "single-line illustrative fragments in unambiguous context" carve-out applies.
    - `table-link` (audit B): the row must reference an entity that has a worked example elsewhere in this note OR another note. **First column must be a named entity** (a backtick-wrapped class/decorator/option name like `` `ParseUUIDPipe` `` or `` `@UseGuards` ``). REJECT if the first column is a signature pattern or behavioral comparison (e.g. `` `@Body() dto: CreateUserDto` ``). REJECT if the row is in a "Common errors" / "Symptoms & causes" / troubleshooting table (those are diagnosis tables, not entity-reference tables). REJECT if the example is the very next code block under the same H2 (immediate adjacency exempt). REJECT if you can't locate the example.
    - `express-first`: the snippet must import from `@nestjs/platform-fastify` or use Fastify-only types. If it uses Express imports, REJECT.
 4. **Verdict.** `VERIFIED` only if all checks pass. Otherwise `REJECT` with a one-sentence rationale.
@@ -70,7 +70,7 @@ Include EVERY input finding in the output, with its verdict. The orchestrator fi
   with `REJECTED` and rationale `"anchor-dispute; deterministic pass owns this class"`.
 - **Bootstrap-fragment exemption** (already handled in checklist; restated for symmetry):
   REJECT `code-imports` findings whose only undefined symbols are `app`, `module`, or
-  `bootstrap` inside an `[!example]`/`[!info]`/`[!tip]` callout.
+  `bootstrap` inside an `[!example]`/`[!info]`/`[!warning]` callout.
 
 ## Boundaries
 

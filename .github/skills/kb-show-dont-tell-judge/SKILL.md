@@ -1,6 +1,6 @@
 ---
 name: kb-show-dont-tell-judge
-description: Binary judge for show-dont-tell candidates surfaced by the deterministic candidate finder. Given a single prose claim and the next ~30 lines of context, decides whether the claim is backed by a demonstrable request/response pair. Returns a single JSON verdict per candidate. Use when invoked by `scripts/audit-notes/audit-notes.ts` Pass 1a.
+description: Binary show-dont-tell judge for behavioral-claim candidates. Pass 1a in audit-notes (vault); also mdx-audit-notes mdx-full (MDX). Vault recipes use audit F; MDX recipes use audit S3.
 ---
 
 # kb-show-dont-tell-judge

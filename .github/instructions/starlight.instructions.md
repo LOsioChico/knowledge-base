@@ -6,7 +6,7 @@ applyTo: "sites/docs/**/*.mdx"
 # Starlight MDX
 
 - Load **kb-author** → Workflow 3 + audits **S1–S6** (`.github/skills/kb-author/SKILL.md`, `audits/S*.md`).
-- Read `docs/PUBLISHING.md` before authoring a page.
+- Read `docs/PUBLISHING.md` and `docs/TOOLING.md` (skills/scripts inventory).
 - Re-author for readers; vault paste fails audit S1.
 - Internal links: `[[slug|label]]` in prose; `[label](/knowledge-base/slug/)` in table cells.
 - No `https://losiochico.github.io/knowledge-base/...` in MDX (`lint:mdx-link-hygiene --strict`).
