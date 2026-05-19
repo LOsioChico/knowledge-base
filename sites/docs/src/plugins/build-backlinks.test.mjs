@@ -10,6 +10,7 @@ import {
   filePathToSlug,
 } from "./build-backlinks.mjs";
 import { collectDocSlugs } from "./doc-slugs.mjs";
+import { remarkBacklinks } from "./remark-backlinks.mjs";
 
 describe("build-backlinks", () => {
   it("indexes wikilink and internal markdown links", () => {
@@ -48,6 +49,22 @@ describe("build-backlinks", () => {
     const index = buildBacklinkIndex(root, "/knowledge-base");
     assert.deepEqual(index["area/target"], ["area/source"]);
 
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("remarkBacklinks tolerates missing vfile (MDX rollup build)", () => {
+    const root = mkdtempSync(join(tmpdir(), "backlinks-undef-"));
+    const area = join(root, "area");
+    mkdirSync(area, { recursive: true });
+    writeFileSync(
+      join(area, "target.mdx"),
+      ["---", "title: Target", "description: d", "---", "", "> t", ""].join(
+        "\n",
+      ),
+    );
+    const tree = { type: "root", children: [] };
+    const plugin = remarkBacklinks({ docsRoot: root, base: "/kb" });
+    assert.doesNotThrow(() => plugin(tree, undefined));
     rmSync(root, { recursive: true, force: true });
   });
 

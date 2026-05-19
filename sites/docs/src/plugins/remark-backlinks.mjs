@@ -9,7 +9,7 @@ export function remarkBacklinks({ docsRoot, base = "" }) {
   const basePath = base.replace(/\/$/, "");
 
   return (tree, file) => {
-    const filePath = file.history?.[0];
+    const filePath = file?.history?.[0] ?? file?.path;
     if (!filePath) return;
 
     const slug = filePathToSlug(docsRoot, filePath);
