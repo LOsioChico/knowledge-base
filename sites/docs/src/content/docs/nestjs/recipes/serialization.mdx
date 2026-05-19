@@ -1,0 +1,336 @@
+---
+title: Serialization with class-transformer
+description: Strip secrets and shape API responses with ClassSerializerInterceptor, class-transformer decorators, and ORM-aware plainToInstance.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Strip secrets, rename fields, and expose role-specific views of the same entity. Nest hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classToPlain` on whatever the controller returned ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)).
+
+## When to reach for it
+
+- A `User` entity leaked `password` or `passwordHash` in JSON.
+- You want `email` on the wire but `emailAddress` in the database.
+- Admin-only fields should disappear for normal callers.
+- Dates or masked tokens need consistent formatting on every endpoint.
+
+Pair with [[nestjs/recipes/validation|validation]] on the way in: same `class-transformer` / `class-validator` stack, opposite direction.
+
+## Setup
+
+<Steps>
+
+1. Install the optional peer (npm does not pull it in with `@nestjs/common` alone):
+
+   ```bash
+   npm i class-transformer reflect-metadata
+   ```
+
+2. Register `ClassSerializerInterceptor` globally (next section).
+
+3. Return **class instances** (or use `@SerializeOptions({ type })`) so decorators run — see [Class-instance gotcha](#class-instance-gotcha).
+
+</Steps>
+
+## Global interceptor
+
+Bind once so every endpoint serializes outbound data:
+
+```typescript
+import { ClassSerializerInterceptor, Module } from "@nestjs/common";
+import { APP_INTERCEPTOR, Reflector } from "@nestjs/core";
+
+@Module({
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: (reflector: Reflector) =>
+        new ClassSerializerInterceptor(reflector),
+      inject: [Reflector],
+    },
+  ],
+})
+export class AppModule {}
+```
+
+`ClassSerializerInterceptor` needs `Reflector` to read `@SerializeOptions()` ([source](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)). Shorthand `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` also works when Nest can resolve constructor deps.
+
+<Aside type="note" title="reflect-metadata">
+
+Decorators need metadata. `main.ts` that imports `NestFactory` from `@nestjs/core` already loads `reflect-metadata` transitively ([`@nestjs/core/index.ts`](https://github.com/nestjs/nest/blob/master/packages/core/index.ts)). Custom entry points should `import "reflect-metadata"` first.
+
+</Aside>
+
+## `@Exclude()` — drop fields
+
+```typescript
+import { Controller, Get, Param } from "@nestjs/common";
+import { Exclude } from "class-transformer";
+
+export class UserEntity {
+  id: number;
+  email: string;
+  @Exclude() password: string;
+  @Exclude() passwordResetToken: string;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Controller("users")
+export class UsersController {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserEntity {
+    return new UserEntity({
+      id: Number(id),
+      email: "a@b.c",
+      password: "hunter2",
+      passwordResetToken: "abc123",
+    });
+  }
+}
+```
+
+`GET /users/1`:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+The handler still sees `password` on the instance; stripping happens after `return` in the interceptor.
+
+## `@Expose()` + `excludeAll` — opt in
+
+Hide everything by default; new DB columns stay off the wire until explicitly exposed:
+
+```typescript
+import { Controller, Get, Param } from "@nestjs/common";
+import { Exclude, Expose, plainToInstance } from "class-transformer";
+
+@Exclude()
+export class UserDto {
+  @Expose() id: number;
+  @Expose() email: string;
+  passwordHash: string;
+  internalNote: string;
+}
+
+@Controller("users")
+export class UsersController {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserDto {
+    const row = {
+      id: Number(id),
+      email: "a@b.c",
+      passwordHash: "$2b$...",
+      internalNote: "flagged for review",
+    };
+    return plainToInstance(UserDto, row);
+  }
+}
+```
+
+`GET /users/1`:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+## `@Transform()` — reshape values
+
+```typescript
+import { Controller, Get, Param } from "@nestjs/common";
+import { plainToInstance, Transform } from "class-transformer";
+
+export class UserDto {
+  id: number;
+
+  @Transform(({ value }) => value.toISOString())
+  createdAt: Date;
+
+  @Transform(({ value }) => `${value.slice(0, 2)}***${value.slice(-2)}`)
+  apiKey: string;
+}
+
+@Controller("users")
+export class UsersController {
+  @Get(":id")
+  findOne(@Param("id") id: string): UserDto {
+    return plainToInstance(UserDto, {
+      id: Number(id),
+      createdAt: new Date("2025-01-15T09:30:00Z"),
+      apiKey: "sk_live_abcdef1234567890",
+    });
+  }
+}
+```
+
+`GET /users/1`:
+
+```json
+{
+  "id": 1,
+  "createdAt": "2025-01-15T09:30:00.000Z",
+  "apiKey": "sk***90"
+}
+```
+
+## Class-instance gotcha
+
+Decorators apply when the controller returns a **class instance** or the route sets `@SerializeOptions({ type: ... })`. Plain objects still run through `classToPlain`, but `class-transformer` has no class metadata — every field passes through.
+
+```typescript
+import { Controller, Get } from "@nestjs/common";
+import { Exclude } from "class-transformer";
+
+export class UserEntity {
+  id: number;
+  email: string;
+  @Exclude() password: string;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Controller("users")
+export class UsersController {
+  @Get("plain")
+  leaks() {
+    return { id: 1, email: "a@b.c", password: "secret" };
+  }
+
+  @Get("instance")
+  safe(): UserEntity {
+    return new UserEntity({ id: 1, email: "a@b.c", password: "secret" });
+  }
+}
+```
+
+`GET /users/plain`:
+
+```json
+{ "id": 1, "email": "a@b.c", "password": "secret" }
+```
+
+`GET /users/instance`:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+<Aside type="caution" title="Plain objects bypass @Exclude()">
+
+If `instanceof YourEntity` would be `false` at the `return`, wrap with `plainToInstance(YourEntity, raw)` or annotate `@SerializeOptions({ type: YourEntity })`. This is how most password leaks happen.
+
+</Aside>
+
+### ORM return shapes
+
+| Source | What you get | `@Exclude()` works? | Fix |
+| --- | --- | :---: | --- |
+| TypeORM `@Entity()` `findOne` | Class instance | ✅ | None |
+| Prisma `findUnique` | Plain object | ❌ | `plainToInstance(UserEntity, user)` |
+| Mongoose `.lean()` | Plain object | ❌ | `plainToInstance(UserEntity, doc)` |
+| Raw SQL / `dataSource.query` | Plain row | ❌ | `plainToInstance(UserEntity, row)` |
+| External `fetch()` JSON | Plain object | ❌ | `plainToInstance(UserEntity, body)` |
+
+Arrays: `return rows.map((r) => plainToInstance(UserEntity, r))`.
+
+## Role-based views (groups)
+
+`@Expose({ groups: [...] })` plus `@SerializeOptions({ groups: [...] })` on the route:
+
+```typescript
+import {
+  ClassSerializerInterceptor,
+  Controller,
+  Get,
+  SerializeOptions,
+  UseInterceptors,
+} from "@nestjs/common";
+import { Exclude, Expose } from "class-transformer";
+
+export class UserEntity {
+  @Expose() id: number;
+  @Expose() email: string;
+  @Expose({ groups: ["admin"] }) role: string;
+  @Expose({ groups: ["admin"] }) lastLoginIp: string;
+  @Exclude() password: string;
+}
+
+@Controller("users")
+@UseInterceptors(ClassSerializerInterceptor)
+export class UsersController {
+  @Get("me")
+  @SerializeOptions({ groups: ["user"] })
+  me(): UserEntity {
+    return Object.assign(new UserEntity(), {
+      id: 1,
+      email: "a@b.c",
+      role: "admin",
+      lastLoginIp: "1.2.3.4",
+      password: "secret",
+    });
+  }
+
+  @Get("admin")
+  @SerializeOptions({ groups: ["admin"] })
+  asAdmin(): UserEntity {
+    return Object.assign(new UserEntity(), {
+      id: 1,
+      email: "a@b.c",
+      role: "admin",
+      lastLoginIp: "1.2.3.4",
+      password: "secret",
+    });
+  }
+}
+```
+
+`GET /users/me`:
+
+```json
+{ "id": 1, "email": "a@b.c" }
+```
+
+`GET /users/admin`:
+
+```json
+{
+  "id": 1,
+  "email": "a@b.c",
+  "role": "admin",
+  "lastLoginIp": "1.2.3.4"
+}
+```
+
+Same entity, two payloads, no `if (isAdmin)` in the controller.
+
+## More gotchas
+
+<Aside type="caution" title="Nested objects need @Type()">
+
+For `items: OrderItem[]` or `address: Address`, add `@Type(() => OrderItem)` on the field ([nested objects](https://github.com/typestack/class-transformer#working-with-nested-objects)). Without it, nested plain bags skip nested decorators.
+
+</Aside>
+
+<Aside type="caution" title="@SerializeOptions alone does nothing">
+
+Group metadata is only read by `ClassSerializerInterceptor`. No global or per-route interceptor means admin fields ship to everyone.
+
+</Aside>
+
+<Aside type="note" title="Decorate response DTOs, not entities">
+
+`@Exclude()` on a TypeORM/Prisma entity couples DB renames to your API contract. Map to dedicated response DTOs in non-trivial APIs; entity examples here are for brevity.
+
+</Aside>
+
+## See also
+
+- [[nestjs/recipes/validation|Validation with class-validator]] — inbound twin with parallel `groups`
+- [[nestjs/fundamentals/interceptors|Interceptors]] — where `ClassSerializerInterceptor` sits in the pipeline
+- [Serialization (official)](https://docs.nestjs.com/techniques/serialization)
+- [`class-transformer` README](https://github.com/typestack/class-transformer)

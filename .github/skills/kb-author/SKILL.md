@@ -1,13 +1,10 @@
 ---
 name: kb-author
 description: >
-  Authoring and pre-commit audit workflow for personal markdown knowledge bases (Quartz, Obsidian,
-  or any vault with frontmatter + wikilinks). Covers the pre-flight discovery ritual before drafting
-  a note, the post-edit audit (code examples have all imports, reference tables link to their
-  examples, sourcing is verified against primary sources), and the agents-mirror reminder. Use this
-  skill when editing files under `content/`, `notes/`, `vault/`, or any folder of `.md` notes
-  governed by an `AGENTS.md`. Triggers: "edit a note", "add a note", "audit content", "write a
-  recipe", "update the knowledge base", "/kb-author".
+  Authoring and publish workflow for this knowledge base. Published site is Starlight MDX under
+  sites/docs/; content/ is the Obsidian vault mirror (lint + LLM audit). Covers vault discovery
+  (A–P), Starlight MDX authoring (S1–S6), sourcing, and audit triage. Use for any note edit, MDX
+  publish, or "write a recipe". Triggers: edit a note, author MDX, sites/docs, MDX, /kb-author.
 ---
 
 # kb-author
@@ -23,8 +20,18 @@ run that audit.
 
 ## When to load
 
-User asks to: add/edit/expand a note, write a recipe/fundamental/reference page, audit existing
-notes, or runs `/kb-author`. Also any mention of the knowledge base, vault, MOCs, or wikilinks.
+User asks to: add/edit/expand a note, **author or edit MDX** under `sites/docs/`, write a
+recipe/fundamental/reference page, audit existing notes, or runs `/kb-author`. Also: knowledge
+base, Starlight, MDX, MOCs, wikilinks, GitHub Pages publish.
+
+**One skill, two surfaces:**
+
+| Surface | Path | Audits |
+| --- | --- | --- |
+| **Published site** (canonical) | `sites/docs/src/content/docs/**/*.mdx` | **S1–S6** + `bun run lint:docs` + `docs:build` |
+| **Vault** (mirror) | `content/**/*.md` | **A–P** + `bun run lint:wikilinks` + LLM audit |
+
+**Published site only:** GitHub Pages serves `sites/docs/dist/`. The vault (`content/`) is not deployed as HTML.
 
 ## Audit index
 
@@ -48,6 +55,19 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **N** | Re-fetch every URL in `source:` and diff prose against the live doc; mandatory for recipes, security, auth, error-handling, and version-specific notes | [audits/N-source-verification.md](audits/N-source-verification.md) |
 | **O** | Prose claims about a snippet's runtime behavior (auto-converted, deprecated, throws at startup, emits warning) are mirrored INSIDE the snippet via comments, output, or annotated identifiers | [audits/O-behavior-in-snippet.md](audits/O-behavior-in-snippet.md) |
 | **P** | No assumed-knowledge jargon: every domain term, acronym, or named feature is defined inline at first use, wikilinked to its note, or replaced with the observable behavior it names | [audits/P-no-assumed-jargon.md](audits/P-no-assumed-jargon.md) |
+
+### Starlight MDX audits (published site)
+
+Run on every `.mdx` you add or materially change. Playbook: `docs/PUBLISHING.md`.
+
+| Audit | One-line summary | Full procedure |
+| --- | --- | --- |
+| **S1** | Re-authored for web readers; not a vault paste | [audits/S1-publish-bar.md](audits/S1-publish-bar.md) |
+| **S2** | TL;DR, symptom tables, contrast, MOC CardGrids | [audits/S2-reader-clarity.md](audits/S2-reader-clarity.md) |
+| **S3** | Recipes: request + response JSON for behavioral claims | [audits/S3-show-dont-tell-mdx.md](audits/S3-show-dont-tell-mdx.md) |
+| **S4** | Steps/Tabs/Aside/mermaid only when they teach | [audits/S4-enrichment-fit.md](audits/S4-enrichment-fit.md) |
+| **S5** | Copy-pasteable fences; twoslash when types teach | [audits/S5-code-fences-mdx.md](audits/S5-code-fences-mdx.md) |
+| **S6** | lint:docs, build, publish parity, no stale site URLs | [audits/S6-publish-validate.md](audits/S6-publish-validate.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)
 also run from `scripts/lint-wikilinks.mjs` — see [AGENTS.md "Linking rules"](../../../AGENTS.md).
@@ -90,12 +110,40 @@ Only after these five steps may you draft. Then:
 10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
     `cp AGENTS.md .github/copilot-instructions.md`.
 11. Run the linter: `bun run lint:wikilinks` after vault-only edits; `bun run lint:ci` before push (includes Starlight `lint:docs` when MDX changed).
-12. **Run the LLM audit on touched files** and triage findings. The full step-by-step loop
+12. **Run the LLM audit on touched vault files** and triage findings. The full step-by-step loop
     (run pipeline → classify each finding into TRUE-and-cited / TRUE-but-uncited-inline /
     WRONG-claim / UNVERIFIABLE → apply or persist to `dismissed.json`) lives in the `kb-audit-triage`
     skill at [`.github/skills/kb-audit-triage/SKILL.md`](../kb-audit-triage/SKILL.md). Load
     that skill whenever the user says "run the audit", "triage findings", or invokes
     `/kb-audit-triage`.
+
+## Workflow 3 — Starlight MDX (published site)
+
+**Canonical publish path:** `sites/docs/src/content/docs/<area>/<slug>.mdx`. GitHub Pages serves
+**only** the Starlight build (`sites/docs/dist/`). Topics without MDX are **not on the site**.
+
+### Before writing
+
+1. Read `docs/PUBLISHING.md`.
+2. Read vault source `content/.../*.md` if it exists (facts + audit history); verify claims against
+   primary sources.
+3. Skim a published sibling (e.g. `nestjs/fundamentals/request-lifecycle.mdx`).
+
+### While writing
+
+- Pick page kind: area MOC, sub-area MOC, concept, or recipe (see [S2](audits/S2-reader-clarity.md)).
+- Re-author; pass [S1](audits/S1-publish-bar.md). Enrichment per [S4](audits/S4-enrichment-fit.md).
+- Links: `[[slug|label]]` in prose and lists. In **markdown tables**, use
+  `[label](/knowledge-base/slug/)` only (`lint:mdx-table-wikilinks`). No full-site URLs in MDX for
+  slugs that already have `.mdx` (`lint:mdx-link-hygiene`).
+- Unpublished topics: say "planned" in prose, or omit the link until MDX exists.
+
+### After writing
+
+1. Run audits **S1–S6** (recipes include **S3**).
+2. `bun run lint:docs` and `bun run docs:build` from repo root.
+3. Update `astro.config.mjs` (sidebar) and area MOC CardGrid; keep vault note in sync (`lint:publish-parity`).
+4. If vault source changed: `bun run lint:wikilinks` on touched `content/` files.
 
 ## Workflow 2 — Encode-then-audit (when you discover a repeated bug pattern)
 

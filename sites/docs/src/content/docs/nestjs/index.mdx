@@ -1,0 +1,73 @@
+---
+title: NestJS
+description: Map of content for NestJS — fundamentals, recipes, data, auth, and releases.
+---
+
+import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> TypeScript HTTP framework built on Express (default) or Fastify: modules, DI, and a fixed per-request pipeline.
+
+## TL;DR
+
+- Every HTTP request walks the same **pipeline**: middleware → guards → interceptors → pipes → handler → (filters on error). See [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
+- **Guards** authorize; **pipes** validate one argument; **interceptors** wrap the handler stream; **filters** shape errors.
+- **Globals** register once via `APP_*` (DI) or `useGlobalX()` (manual `new`) — [[nestjs/fundamentals/global-providers|Global enhancers]].
+- **Boot/shutdown** is separate from per-request flow — [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
+- Default dev build in this KB: [[nestjs/recipes/swc-setup|SWC]] + `--type-check`.
+
+## Choose a path
+
+<Tabs>
+  <TabItem label="New to Nest">
+    <Steps>
+
+    1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]] — pipeline order.
+    2. [[nestjs/fundamentals|Fundamentals MOC]] — layer-by-layer notes.
+    3. [[nestjs/recipes/validation|Validation]] — first DTO + `ValidationPipe`.
+    4. [[nestjs/recipes/swc-setup|SWC builder]] — default dev loop.
+
+    </Steps>
+  </TabItem>
+  <TabItem label="Coming from Effect">
+    <Steps>
+
+    1. [[effect-ts/layers-vs-nestjs-di|Effect vs NestJS DI]].
+    2. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
+    3. [[effect-ts/layers-and-di|Effect Layers]] — domain in Effect, HTTP at the edge.
+
+    </Steps>
+  </TabItem>
+</Tabs>
+
+## Start here
+
+<CardGrid>
+  <Card title="Request lifecycle" icon="list-format">
+    <p><a href="/knowledge-base/nestjs/fundamentals/request-lifecycle/">Pipeline order</a></p>
+  </Card>
+  <Card title="Fundamentals" icon="open-book">
+    <p><a href="/knowledge-base/nestjs/fundamentals/">Fundamentals MOC</a></p>
+  </Card>
+  <Card title="Recipes" icon="rocket">
+    <p><a href="/knowledge-base/nestjs/recipes/">Validation, uploads, SWC, tracing, …</a></p>
+  </Card>
+  <Card title="Data" icon="document">
+    <p><a href="/knowledge-base/nestjs/data/">TypeORM, caching</a></p>
+  </Card>
+  <Card title="Auth" icon="setting">
+    <p><a href="/knowledge-base/nestjs/auth/jwt-strategy/">JWT + Passport</a></p>
+  </Card>
+  <Card title="Releases" icon="information">
+    <p><a href="/knowledge-base/nestjs/releases/v11/">v11 / v10 cheat sheets</a></p>
+  </Card>
+</CardGrid>
+
+## Sections
+
+| Section | MOC |
+| --- | --- |
+| Fundamentals | [Fundamentals](/knowledge-base/nestjs/fundamentals/) |
+| Recipes | [Recipes](/knowledge-base/nestjs/recipes/) |
+| Data | [Data](/knowledge-base/nestjs/data/) |
+| Auth | [Auth](/knowledge-base/nestjs/auth/) |
+| Releases | [Releases](/knowledge-base/nestjs/releases/) |

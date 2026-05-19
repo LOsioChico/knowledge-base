@@ -1,0 +1,71 @@
+---
+title: Amplify CLI cheatsheet
+description: Amplify app, branch, zip deployment, domain association, and webhook commands.
+---
+
+> The four [[aws/amplify|Amplify Hosting]] lifecycles (app, branch, deployment, domain) plus inspection during build failures or domain moves.
+
+## App + branch lifecycle
+
+```bash
+aws amplify list-apps \
+  --query 'apps[].{appId:appId,name:name,defaultDomain:defaultDomain,repository:repository}' \
+  --output table
+
+aws amplify get-app --app-id <APP_ID>
+
+aws amplify create-app \
+  --name <name> --platform WEB \
+  --custom-rules '[{"source":"/<*>","target":"/index.html","status":"404-200"}]'
+
+aws amplify list-branches --app-id <APP_ID> \
+  --query 'branches[].{branch:branchName,stage:stage,domain:displayName}' --output table
+
+aws amplify get-branch --app-id <APP_ID> --branch-name <branch> \
+  --query 'branch.environmentVariables'
+
+aws amplify create-branch --app-id <APP_ID> --branch-name main --stage PRODUCTION
+```
+
+## Manual zip deployment (no git)
+
+```bash
+aws amplify create-deployment --app-id <APP_ID> --branch-name main
+# → { "zipUploadUrl": "...", "jobId": "..." }
+
+curl --upload-file ./build.zip "$ZIP_UPLOAD_URL"
+
+aws amplify start-deployment --app-id <APP_ID> --branch-name main --job-id <JOB_ID>
+
+aws amplify get-job --app-id <APP_ID> --branch-name main --job-id <JOB_ID> \
+  --query 'job.{summary:summary,steps:steps[].{stepName:stepName,status:status,statusReason:statusReason,logUrl:logUrl}}'
+```
+
+## Git-connected build
+
+```bash
+aws amplify start-job --app-id <APP_ID> --branch-name main --job-type RELEASE
+```
+
+## Domains
+
+```bash
+aws amplify list-domain-associations  --app-id <APP_ID>
+aws amplify get-domain-association    --app-id <APP_ID> --domain-name <domain>
+
+aws amplify create-domain-association \
+  --app-id <APP_ID> --domain-name <domain> \
+  --sub-domain-settings prefix=app,branchName=main
+
+aws amplify update-domain-association \
+  --app-id <APP_ID> --domain-name <domain> \
+  --sub-domain-settings prefix=app,branchName=main
+
+aws amplify delete-domain-association --app-id <APP_ID> --domain-name <domain>
+```
+
+## Tips
+
+- `WEB_COMPUTE` for Next.js SSR; `WEB` is static-only.
+- Poll `get-job` until `SUCCEED`/`FAILED`.
+- Cross-account sequence: [[aws/amplify/cross-account-migration|Amplify cross-account migration]].

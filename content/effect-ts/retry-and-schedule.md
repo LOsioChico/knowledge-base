@@ -18,9 +18,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/retry-and-schedule.mdx`. Vault note remains audit source.
-
 > Retry a failing effect with `Effect.retry` and a `Schedule`: a value that decides whether to recur and how long to wait between attempts. Schedules compose, so "exponential backoff capped at 5 retries with jitter" is one expression, not a hand-rolled loop.
 
 ## Setup

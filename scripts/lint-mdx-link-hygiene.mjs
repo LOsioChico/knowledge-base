@@ -6,10 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const docsRoot = join(repoRoot, "sites/docs/src/content/docs");
-const migrationPath = join(repoRoot, "sites/docs/migration.json");
 
-const QUARTZ_HREF_RE =
-  /https:\/\/losiochico\.github\.io\/knowledge-base\/([a-z0-9][a-z0-9/-]*[a-z0-9]|[a-z0-9])\/?/gi;
+const SITE_HREF_RE =
+  /https:\/\/losiochico\.github\.io\/knowledge-base\/([a-z0-9][a-z0-9/-]*[a-z0-9]|[a-z0-9])?\/?/gi;
 
 const strict = process.argv.includes("--strict");
 
@@ -29,62 +28,61 @@ function lineOf(text, index) {
 }
 
 /** @returns {Set<string>} */
-async function loadMigratedSlugs() {
-  const raw = await readFile(migrationPath, "utf8");
-  const data = JSON.parse(raw);
+async function loadPublishedSlugs() {
+  const files = await walkMdx(docsRoot);
   /** @type {Set<string>} */
   const slugs = new Set();
-  for (const area of Object.values(data.areas ?? {})) {
-    for (const note of Object.values(area.notes ?? {})) {
-      if (note.status === "migrated" && note.slug) slugs.add(note.slug);
-    }
+  for (const file of files) {
+    let rel = relative(docsRoot, file).replace(/\\/g, "/").replace(/\.mdx$/, "");
+    if (rel === "index") rel = "";
+    else if (rel.endsWith("/index")) rel = rel.slice(0, -6);
+    slugs.add(rel);
   }
   return slugs;
 }
 
-const migratedSlugs = await loadMigratedSlugs();
+const publishedSlugs = await loadPublishedSlugs();
 const files = await walkMdx(docsRoot);
-/** @type {{ file: string, line: number, slug: string, url: string }[]} */
+/** @type {{ file: string, line: number, slug: string, url: string, hasMdx: boolean }[]} */
 const warnings = [];
 
 for (const file of files) {
   const text = await readFile(file, "utf8");
   const rel = relative(docsRoot, file).replace(/\\/g, "/");
 
-  for (const match of text.matchAll(QUARTZ_HREF_RE)) {
-    const slug = match[1].replace(/\/$/, "");
-    if (!migratedSlugs.has(slug)) continue;
-
+  for (const match of text.matchAll(SITE_HREF_RE)) {
+    const slug = (match[1] ?? "").replace(/\/$/, "");
     warnings.push({
       file: rel,
       line: lineOf(text, match.index ?? 0),
       slug,
       url: match[0],
+      hasMdx: publishedSlugs.has(slug),
     });
   }
 }
 
 if (warnings.length === 0) {
   console.log(
-    `✓ mdx link hygiene: ${files.length} file(s), no Quartz URLs pointing at migrated Starlight slugs`,
+    `✓ mdx link hygiene: ${files.length} file(s), no full-site URLs in MDX (use [[slug|label]])`,
   );
   process.exit(0);
 }
 
 console.warn(
-  `⚠ mdx link hygiene: ${warnings.length} Quartz URL(s) should be wikilinks (migrated on Starlight)\n`,
+  `⚠ mdx link hygiene: ${warnings.length} full-site URL(s) in MDX — use wikilinks or remove\n`,
 );
 for (const w of warnings) {
-  console.warn(
-    `  ${w.file}:${w.line}  ${w.url}\n` +
-      `    → prefer [[${w.slug}|…]] or /knowledge-base/${w.slug}/ in prose\n`,
-  );
+  const hint = w.hasMdx
+    ? `→ prefer [[${w.slug || "home"}|…]]`
+    : `→ no MDX at sites/docs/.../${w.slug || ""} — add an MDX page, mark "planned" in prose, or drop the link`;
+  console.warn(`  ${w.file}:${w.line}  ${w.url}\n    ${hint}\n`);
 }
 
 if (strict) {
-  console.error("\nUse wikilinks for migrated slugs (see docs/STARLIGHT-FEATURES.md).");
+  console.error("\nMDX internal links must use [[slug|label]] (see docs/PUBLISHING.md).");
   process.exit(1);
 }
 
-console.warn("\n(advisory only; CI and lint:docs use --strict)");
+console.warn("\n(advisory only; lint:docs uses --strict)");
 process.exit(0);

@@ -1,0 +1,21 @@
+---
+title: AWS recipes
+description: Cross-cutting AWS procedures and pointers to per-service migration recipes.
+---
+
+> Cross-cutting AWS recipes that span more than one service. Per-service recipes live with their service under `aws/<service>/`.
+
+## Cross-cutting recipes
+
+- [[aws/recipes/cross-account-role-pattern|Cross-account IAM role pattern]] — trust policy + scoped permissions for `sts:AssumeRole`. Underlies every other cross-account recipe.
+
+## Per-service recipes
+
+| Recipe | What it covers |
+| --- | --- |
+| [S3 cross-account migration](/knowledge-base/aws/s3/cross-account-migration/) | Recreate bucket + `s3 sync` |
+| [RDS cross-account snapshot](/knowledge-base/aws/rds/cross-account-snapshot/) | Encrypted snapshot share via CMK |
+| [CloudFront alternate-domain ghost claims](/knowledge-base/aws/cloudfront/alternate-domain-claim/) | Stuck alias during Amplify moves |
+| [Amplify cross-account migration](/knowledge-base/aws/amplify/cross-account-migration/) | Zip deploy + domain handoff |
+| [EC2 snapshot every instance](/knowledge-base/aws/ec2/snapshot-all-instances/) | One AMI per instance |
+| [EC2 cross-account AMI copy](/knowledge-base/aws/ec2/ami-cross-account-copy/) | Share + `copy-image` |

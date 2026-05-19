@@ -1,0 +1,31 @@
+---
+title: SNS
+description: Simple Notification Service — topics, fan-out to SQS/Lambda/HTTP, filter policies, Standard vs FIFO.
+---
+
+> Amazon SNS is managed pub/sub: publish to a **topic**, every subscriber gets a copy. Subscribers can be [[aws/sqs|SQS]] queues, [[aws/lambda|Lambda]], HTTP endpoints, email, SMS, or mobile push.
+
+## TL;DR
+
+- **Push, not pull**. SNS delivers to every active subscription with retry.
+- **Standard** = at-least-once, no ordering, high throughput. **FIFO** = strict ordering, exactly-once, FIFO SQS or HTTPS only ([source](https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html)).
+- **Fan-out canonical pattern**: SNS topic → multiple SQS queues, each consumed independently.
+- **Filter policies** scope each subscription to matching message attributes.
+- **256 KB message limit**; HTTP/HTTPS endpoints must confirm subscription once.
+
+## When to use
+
+- **Use SNS** for: fan-out, mobile push, email alerts, simple webhooks.
+- **Use SNS + SQS** when each consumer needs its own buffered queue with retry + DLQ.
+- **Don't use SNS** for: ordered event streams (Kinesis), large payloads, replay on Standard topics (FIFO archiving optional — [source](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html)).
+
+## Pending notes
+
+- SNS → SQS fan-out with raw-message-delivery.
+- Filter policies per subscription.
+- FIFO topics + FIFO queues when ordering is worth the throughput ceiling.
+
+## See also
+
+- [[aws/sqs|SQS]] — queue most often paired with SNS.
+- [Amazon SNS developer guide](https://docs.aws.amazon.com/sns/latest/dg/welcome.html) (official).

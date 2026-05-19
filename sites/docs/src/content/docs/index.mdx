@@ -1,34 +1,36 @@
 ---
 title: Knowledge Base
-description: Effect-TS on Starlight + Twoslash; other areas still on Quartz during migration.
+description: TypeScript backends on Starlight — Effect-TS, NestJS, and AWS.
 ---
 
-> Personal notes on TypeScript backends: NestJS, AWS, and Effect-TS. **Effect-TS** is the first area on Starlight (MDX, typed code blocks, sidebar nav); other areas still publish from the Obsidian vault via Quartz until migrated.
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+> Personal notes on TypeScript backends: Effect-TS, NestJS, and AWS. Everything on this site is Starlight MDX under `sites/docs/`. The `content/` vault remains for Obsidian editing, `related:` symmetry, and LLM audit.
 
 ## Start here
 
-- **Effect-TS** — [[effect-ts]] overview or [[effect-ts/quickstart]] (~10 min).
-- **NestJS** — [Quartz area](https://losiochico.github.io/knowledge-base/nestjs/) (wikilinks, graph, audit).
-- **AWS** — [Quartz area](https://losiochico.github.io/knowledge-base/aws/).
+- **Effect-TS** — [[effect-ts]] or [[effect-ts/quickstart]] (~10 min).
+- **NestJS** — [[nestjs]] → [[nestjs/fundamentals/request-lifecycle|request lifecycle]] → [[nestjs/recipes/validation|validation recipe]].
+- **AWS** — [[aws]] → [[aws/cli|CLI]] → [[aws/s3/quickstart|S3 quickstart]].
 
-## Migration status
+<CardGrid>
+  <Card title="Effect-TS" icon="rocket">
+    <p><a href="/knowledge-base/effect-ts/">11 notes</a> — composition, layers, typed errors, retries.</p>
+  </Card>
+  <Card title="NestJS" icon="open-book">
+    <p><a href="/knowledge-base/nestjs/">28 notes</a> — fundamentals, recipes, data, auth, releases.</p>
+  </Card>
+  <Card title="AWS" icon="setting">
+    <p><a href="/knowledge-base/aws/">41 notes</a> — CLI, S3 deep-dives, cross-account migrations.</p>
+  </Card>
+</CardGrid>
 
-We are moving areas from Quartz (`content/**/*.md`) to Starlight MDX (`sites/docs/src/content/docs/`) **one note at a time**, re-authoring for Twoslash and Starlight components rather than copy-pasting.
+## Maintainer workflow
 
-| Area | Published here | Vault source |
-| --- | --- | --- |
-| Effect-TS | **Migrated** on Starlight (all area notes; vault stays source for audit) | `content/effect-ts/` |
-| NestJS, AWS, … | Quartz only | `content/<area>/` |
-
-Tracker: [`migration.json`](https://github.com/LOsioChico/knowledge-base/blob/main/sites/docs/migration.json) and [STARLIGHT-MIGRATION.md](https://github.com/LOsioChico/knowledge-base/blob/main/docs/STARLIGHT-MIGRATION.md).
-
-## Local development
-
-```bash
-# Starlight (migrated pages)
-cd sites/docs && bun install && bun run dev
-
-# Vault lint + audit (unchanged)
-bun run lint:wikilinks
-bun run vault:check --base HEAD~1
-```
+| Task | Command / doc |
+| --- | --- |
+| Author MDX | `docs/PUBLISHING.md`, kb-author audits **S1–S6** |
+| Vault ↔ MDX parity | `bun run lint:publish-parity` |
+| Local preview | `bun run docs:dev` |
+| CI-quality lint | `bun run lint:docs` / `bun run lint:ci` |
+| Vault notes only | `bun run lint:wikilinks`, `bun run vault:check --base HEAD~1` |

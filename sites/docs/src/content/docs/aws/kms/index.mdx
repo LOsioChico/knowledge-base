@@ -1,0 +1,40 @@
+---
+title: KMS
+description: AWS Key Management Service — customer-managed vs AWS-managed keys, key policies, and cross-account grants.
+---
+
+> AWS Key Management Service (KMS) is the encryption-key broker for encryption-at-rest: S3, [[aws/rds|RDS]], EBS, and [[aws/secrets-manager|Secrets Manager]] call KMS to encrypt and decrypt **data keys** (short-lived symmetric keys that wrap bulk data).
+
+## TL;DR
+
+- **A KMS key is a logical container** for material that never leaves AWS-managed HSMs unencrypted.
+- **Three key flavors**: customer-managed (share cross-account), AWS-managed (`alias/aws/<service>`, locked to one account), AWS-owned (invisible).
+- **Key policies are primary authority.** An [[aws/iam|IAM]] admin cannot use a key unless the key policy allows it.
+- **Aliases (`alias/<name>`) are the stable name**; reference keys by alias in app config.
+- **Default-key encryption locks you in.** Anything on `alias/aws/<service>` cannot be shared cross-account.
+
+## When to use
+
+Reach for KMS implicitly through every service's encryption toggle. Reach for it explicitly when you need cross-account sharing, rotation control, or direct `Encrypt`/`Decrypt`.
+
+## Mental model
+
+| Key kind | Who controls policy | Cross-account? |
+| --- | --- | --- |
+| **Customer-managed** | You | Yes |
+| **AWS-managed** (`alias/aws/<service>`) | AWS (read-only for you) | **No** — the trap |
+| **AWS-owned** | AWS | No |
+
+Cross-account use needs **both** sides: key policy in account A allowing account B, **and** IAM policy on B's principal for the same actions on the key ARN.
+
+## Pending notes
+
+- Key policies vs IAM policies on the same key.
+- Aliases as stable names; key IDs as implementation detail.
+
+## See also
+
+- [[aws/kms/cli|KMS CLI cheatsheet]].
+- [[aws/rds/cross-account-snapshot|Cross-account RDS snapshot]] — canonical KMS cross-account recipe.
+- [[aws/s3/cross-account-migration|Cross-account S3 migration]] — SSE-KMS pattern.
+- [AWS KMS developer guide](https://docs.aws.amazon.com/kms/latest/developerguide/overview.html) (official).

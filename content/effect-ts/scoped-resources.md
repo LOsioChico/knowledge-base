@@ -26,9 +26,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/scoped-resources.mdx`. Vault note remains audit source.
-
 > A scoped resource is one whose cleanup is wired to the lifetime of an `Effect`, so the runtime guarantees release on success, failure, **and interruption**. The four primitives `acquireRelease`, `acquireUseRelease`, `addFinalizer`, and `ensuring` cover the entire space; pick by who owns the lifetime and whether you need access to the exit value.
 
 ## Why this primitive exists

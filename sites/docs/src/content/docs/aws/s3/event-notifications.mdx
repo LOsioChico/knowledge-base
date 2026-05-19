@@ -1,0 +1,82 @@
+---
+title: S3 event notifications
+description: S3 object event notifications to SQS, SNS, Lambda, or EventBridge — filters, semantics, and recursion traps.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> S3 event notifications fire to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge when configured object lifecycle events occur — turning a passive bucket into an event-driven pipeline front.
+
+## Event families
+
+Ten activity types including Intelligent-Tiering auto-tier ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
+
+| Family | Wildcard | Notes |
+| --- | --- | --- |
+| Object created | `s3:ObjectCreated:*` | Put, Post, Copy, CompleteMultipartUpload |
+| Object removed | `s3:ObjectRemoved:*` | **Not fired for lifecycle deletes** — use `LifecycleExpiration:*` |
+| Object restored | `s3:ObjectRestore:*` | Glacier restore lifecycle |
+| Lifecycle expiration | `s3:LifecycleExpiration:*` | Lifecycle-driven deletes |
+| Replication | `s3:Replication:*` | Failures, thresholds |
+
+## Destinations
+
+One destination per configuration; must be **same Region** as bucket. Destination needs policy allowing `s3.amazonaws.com`.
+
+## Minimum config (SQS, prefix filter)
+
+```json
+{
+  "QueueConfigurations": [
+    {
+      "Id": "uploads-to-process",
+      "QueueArn": "arn:aws:sqs:us-east-1:123456789012:uploads-queue",
+      "Events": ["s3:ObjectCreated:*"],
+      "Filter": {
+        "Key": {
+          "FilterRules": [
+            { "Name": "prefix", "Value": "incoming/" },
+            { "Name": "suffix", "Value": ".jpg" }
+          ]
+        }
+      }
+    }
+  ]
+}
+```
+
+```bash
+aws s3api put-bucket-notification-configuration \
+  --bucket my-bucket \
+  --notification-configuration file://notification.json
+```
+
+S3 sends a one-time `s3:TestEvent` on configure — if missing, fix destination policy.
+
+## Delivery semantics
+
+- **At-least-once** — handler must be idempotent.
+- **Not ordered** — use `versionId` / `LastModified`, not delivery order.
+- **Seconds typical**, sometimes minutes ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications)).
+
+## Recursion footgun
+
+Lambda writes back to the same bucket without prefix filter → infinite loop billed by the second. Safe patterns: separate buckets or disjoint prefixes (`in/` trigger, `out/` writes).
+
+<Aside type="caution" title="Overlapping filters rejected">
+
+Two rules cannot match the same object — use disjoint prefixes or fan out via SNS/EventBridge.
+
+</Aside>
+
+## When EventBridge instead
+
+- Content-based filtering beyond prefix/suffix.
+- Multiple downstream consumers without SNS fan-out.
+- SQS FIFO downstream (via EventBridge only).
+- Uniform envelope across services.
+
+## See also
+
+- [[aws/lambda|Lambda]] — common destination.
+- [Using Lambda with S3](https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html) (official).

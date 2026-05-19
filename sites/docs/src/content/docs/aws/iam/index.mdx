@@ -1,0 +1,38 @@
+---
+title: IAM
+description: AWS Identity and Access Management — principals, policies, roles, and cross-account trust.
+---
+
+> AWS Identity and Access Management (IAM) is the authentication and authorization layer for everything else in AWS: every API call is evaluated against IAM before it touches the target service.
+
+## TL;DR
+
+- **Every authenticated API call is signed by a principal** (user, role session, or root) and evaluated against policies; default is deny ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
+- **Identity-based policies** attach to user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). Cross-account: principal needs BOTH allows ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_resource-based)).
+- **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy; B calls AssumeRole for short-lived credentials.
+- **Roles, not users, for code.** Long-lived access keys are the most common leak vector.
+- **SCPs / RCPs / permission boundaries are intersections** with identity policy: they subtract, never add.
+
+## When to use
+
+IAM is non-optional. The relevant question is which **principal kind**: root (rare), IAM user (avoid for new workloads), role (default for code and federated humans).
+
+## Mental model
+
+| Principal kind | Long-lived credentials? | Use for |
+| --- | --- | --- |
+| **Root user** | Yes | Only tasks that require root |
+| **IAM user** | Yes | Avoid; humans federate via IAM Identity Center |
+| **IAM role** | No (STS short-lived) | EC2/ECS/[Lambda](/knowledge-base/aws/lambda/) roles; cross-account AssumeRole |
+
+## Pending notes
+
+- Policy evaluation: explicit deny precedence, SCPs as intersections.
+- Diagnostic mindset for `AccessDenied`: simulate-principal-policy workflow.
+- Confused-deputy defense with `ExternalId` — [[aws/recipes/cross-account-role-pattern|cross-account pattern]].
+
+## See also
+
+- [[aws/iam/cli|IAM CLI cheatsheet]] — read-only triage for `AccessDenied`.
+- [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]].
+- [IAM user guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html) (official).

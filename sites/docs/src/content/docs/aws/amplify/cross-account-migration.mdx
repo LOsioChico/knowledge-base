@@ -1,0 +1,106 @@
+---
+title: Cross-account Amplify app migration
+description: Recreate an Amplify Hosting app in a new account via zip deployment and custom domain handoff.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Recreate [[aws/amplify|Amplify Hosting]] in a new account: `create-app` → branch → zip deployment → move custom domain. CLI-driven and scriptable for dry runs.
+
+<Aside type="caution" title="SPA rewrite on create-app">
+
+Without a `404-200` rule to `/index.html`, hard refreshes on client routes return S3/CloudFront 404s ([redirects docs](https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html)).
+
+</Aside>
+
+<Aside type="caution" title="Custom domain order">
+
+Delete the **source** `domain-association` before attaching the domain in account B. Skipping this step can leave a CloudFront ghost claim — see [[aws/cloudfront/alternate-domain-claim|alternate-domain gotcha]].
+
+</Aside>
+
+## When to use
+
+- Frontend must live in a new AWS account.
+- Source git OAuth is tied to a departing user — push zips from CI instead.
+- Deterministic migration for staging rehearsal.
+
+## Recipe
+
+Profiles: `account-a`, `account-b`. Confirm both profiles target the **same Region** as the source app (domain associations and ACM for custom domains are regional).
+
+## 1. Pre-flight + inventory
+
+```bash
+aws sts get-caller-identity --profile account-a --output json
+aws sts get-caller-identity --profile account-b --output json
+
+aws amplify get-app --profile account-a --region us-east-1 --app-id <SOURCE_APP_ID> \
+--query 'app.{name:name,platform:platform,customRules:customRules,buildSpec:buildSpec}' \
+--output json > source-app.json
+```
+
+## 2. Create app in account B
+
+```bash
+NEW_APP_ID=$(aws amplify create-app \
+--profile account-b --region us-east-1 \
+--name <APP_NAME> --platform WEB \
+--custom-rules '[{"source":"/<*>","target":"/index.html","status":"404-200"}]' \
+--query 'app.appId' --output text)
+
+aws amplify create-branch \
+--profile account-b --region us-east-1 \
+--app-id "$NEW_APP_ID" --branch-name main --stage PRODUCTION
+```
+
+## 3. Zip deployment
+
+```bash
+pnpm install && pnpm build && cd dist && zip -r ../build.zip . && cd ..
+
+DEPLOY=$(aws amplify create-deployment \
+--profile account-b --region us-east-1 \
+--app-id "$NEW_APP_ID" --branch-name main \
+--query '{jobId:jobId,zipUploadUrl:zipUploadUrl}' --output json)
+
+curl -X PUT -T build.zip "$(echo "$DEPLOY" | jq -r .zipUploadUrl)"
+
+aws amplify start-deployment \
+--profile account-b --region us-east-1 \
+--app-id "$NEW_APP_ID" --branch-name main \
+--job-id "$(echo "$DEPLOY" | jq -r .jobId)"
+```
+
+Smoke-test the default Amplify URL (`https://main.<app-id>.amplifyapp.com`) before DNS cutover.
+
+## 4. Move custom domain
+
+```bash
+aws amplify delete-domain-association \
+--profile account-a --region us-east-1 \
+--app-id <SOURCE_APP_ID> --domain-name <DOMAIN>
+```
+
+Recommended: BYO ACM cert in `us-east-1` then:
+
+```bash
+aws amplify create-domain-association \
+--profile account-b --region us-east-1 \
+--app-id "$NEW_APP_ID" --domain-name <DOMAIN> \
+--sub-domain-settings 'prefix=app,branchName=main' \
+--certificate-settings type=CUSTOM,customCertificateArn=$CERT_ARN
+```
+
+Update production CNAMEs to new CloudFront target from `get-domain-association`.
+
+## When NOT to use zip path
+
+- CI already publishes to git — connect new app to remote instead.
+- Secrets should not pass through CI logs — git-connected + `update-branch` env vars.
+
+## See also
+
+- [[aws/amplify/cli|Amplify CLI]].
+- [[aws/cloudfront/alternate-domain-claim|Alternate-domain ghost claims]].
+- [[aws/account-migrations|Account migrations playbook]].

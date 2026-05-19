@@ -1,0 +1,94 @@
+---
+title: S3 lifecycle rules
+description: Per-bucket lifecycle configuration — transitions, expiration, noncurrent version cleanup, and multipart abort.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Up to 1,000 rules per bucket age objects automatically: transition to cheaper [[aws/s3/storage-classes|storage classes]] or delete. Scales without custom code.
+
+## Why you need one
+
+1. **Versioning sprawl** — overwrites bill forever without `NoncurrentVersionExpiration`.
+2. **Stale hot storage** — transition aged logs to Glacier.
+3. **Failed multipart uploads** — `AbortIncompleteMultipartUpload` stops billing orphaned parts.
+
+## Minimum rule
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "expire-temp-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "tmp/" },
+      "Expiration": { "Days": 7 }
+    }
+  ]
+}
+```
+
+```bash
+aws s3api put-bucket-lifecycle-configuration \
+  --bucket my-bucket \
+  --lifecycle-configuration file://lifecycle.json
+```
+
+## Multi-action example (logs)
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "logs-tiering",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "logs/" },
+      "Transitions": [
+        { "Days": 30, "StorageClass": "STANDARD_IA" },
+        { "Days": 90, "StorageClass": "GLACIER" }
+      ],
+      "Expiration": { "Days": 2555 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 30 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+    }
+  ]
+}
+```
+
+## Action elements
+
+| Action | Effect |
+| --- | --- |
+| `Transition` | Move current versions to another class after N days |
+| `Expiration` | Delete current versions (delete marker on versioned buckets) |
+| `NoncurrentVersionTransition` | Tier old versions |
+| `NoncurrentVersionExpiration` | **Deletes overwritten versions — stops versioning bill runaway** |
+| `AbortIncompleteMultipartUpload` | Clean in-progress multipart after N days |
+
+## Filters
+
+Empty `{}` = whole bucket; `{ "Prefix": "logs/" }` most common; combine with `And` for tag + size filters.
+
+<Aside type="caution" title="Default 128 KB transition floor">
+
+Objects under 128 KB skip transitions unless you lower `ObjectSizeGreaterThan` ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html#intro-lifecycle-rules-filter)).
+
+</Aside>
+
+## Versioning interactions
+
+On versioned buckets, `Expiration` on current version inserts a **delete marker** — bytes remain as noncurrent versions until `NoncurrentVersionExpiration` runs.
+
+## Inspect / remove
+
+```bash
+aws s3api get-bucket-lifecycle-configuration --bucket my-bucket
+aws s3api delete-bucket-lifecycle --bucket my-bucket
+```
+
+Lifecycle deletions are not blocked by bucket `Deny` policies ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html)).
+
+## See also
+
+- [[aws/s3/storage-classes|Storage classes]].
+- [Lifecycle configuration examples](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-configuration-examples.html) (official).

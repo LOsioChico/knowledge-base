@@ -1,0 +1,36 @@
+---
+title: RDS
+description: Relational Database Service — instances, snapshots, Multi-AZ, encryption, and migration primitives.
+---
+
+> Amazon RDS is managed relational databases: AWS owns host, OS, engine binaries, backups, patching, and failover. You own schema, queries, and parameter groups.
+
+## TL;DR
+
+- **DB instance = one engine on one host** (PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, Aurora).
+- **DB snapshot = backup primitive.** Encrypted with the same [[aws/kms|KMS]] key as the source ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html#Overview.Encryption.Limitations)). Migrations are snapshot dances.
+- **Multi-AZ** = sync standby for failover (~60–120 s); **read replicas** = async scaling.
+- **Encryption is create-time.** Existing unencrypted instances: snapshot → copy under CMK → restore.
+- **Day-one defaults**: Multi-AZ for production, deletion protection, customer-managed KMS key, Performance Insights.
+
+## When to use
+
+- **Use RDS** for production relational DB without babysitting the host.
+- **Use Aurora** for cluster storage, faster failover, read replicas with low lag.
+- **Don't use RDS** for throwaway dev DBs (container Postgres) or filesystem access ([[aws/ec2|EC2]]).
+
+## Mental model
+
+**DB instance** = "I have a database"; **DB snapshot** = "I have a backup". Snapshots restore as new instances across Region/account/class. Encrypted snapshots on the AWS-managed RDS key cannot be shared cross-account — copy under a CMK first ([source](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html)).
+
+## Pending notes
+
+- Multi-AZ vs read replicas.
+- Encryption-at-rest migration path.
+- Automated backups and retention.
+
+## See also
+
+- [[aws/rds/cli|RDS CLI cheatsheet]].
+- [[aws/rds/cross-account-snapshot|Cross-account RDS snapshot]].
+- [Amazon RDS user guide](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Welcome.html) (official).

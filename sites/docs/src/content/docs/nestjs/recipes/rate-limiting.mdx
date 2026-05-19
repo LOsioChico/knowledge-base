@@ -1,0 +1,340 @@
+---
+title: Rate limiting with @nestjs/throttler
+description: Global ThrottlerGuard, per-route @Throttle and @SkipThrottle, named buckets, proxy trackers, and Redis storage.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Cap how many requests a single client can fire at your API in a time window. `@nestjs/throttler` ships a [[nestjs/fundamentals/guards|guard]] you bind globally; per-route overrides come from two decorators. In-memory store by default, Redis when you scale past one instance.
+
+## Setup
+
+<Steps>
+
+1. Install the package (types ship with the library; requires v5+):
+
+   ```bash
+   npm i --save @nestjs/throttler
+   ```
+
+2. Register the module and global guard:
+
+   ```typescript
+   // app.module.ts
+   import { Module } from "@nestjs/common";
+   import { APP_GUARD } from "@nestjs/core";
+   import { ThrottlerModule, ThrottlerGuard, seconds } from "@nestjs/throttler";
+
+   @Module({
+   imports: [
+   ThrottlerModule.forRoot([
+   {
+   ttl: seconds(60),
+   limit: 10,
+   },
+   ]),
+   ],
+   providers: [
+   {
+   provide: APP_GUARD,
+   useClass: ThrottlerGuard,
+   },
+   ],
+   })
+   export class AppModule {}
+   ```
+
+   - `ThrottlerModule.forRoot([{ ttl, limit }])` — `ttl` is the window in **milliseconds**, `limit` is max requests in that window.
+   - `APP_GUARD` registers `ThrottlerGuard` globally with full DI (`ThrottlerStorage`, `Reflector`, options). `useGlobalGuards(new ThrottlerGuard())` skips the container. See [[nestjs/fundamentals/global-providers|DI-aware globals]].
+
+3. Exceed the limit — the 11th request in the same minute returns **429**:
+
+   ```http
+   HTTP/1.1 429 Too Many Requests
+   Content-Type: application/json
+   ```
+
+   ```json
+   {
+   "statusCode": 429,
+   "message": "ThrottlerException: Too Many Requests"
+   }
+   ```
+
+   `ThrottlerException` extends [`HttpException` with status 429](https://github.com/nestjs/throttler/blob/master/src/throttler.exception.ts), so any [[nestjs/fundamentals/exception-filters|exception filter]] catching `HttpException` sees it.
+
+</Steps>
+
+## Per-route overrides
+
+<Tabs>
+  <TabItem label="@Throttle()">
+    Tighten or loosen the global bucket on one route. The outer key is the **throttler name** — use `default` for a single unnamed bucket:
+
+    ```typescript
+    import { Controller, Post, Body } from "@nestjs/common";
+    import { Throttle, seconds } from "@nestjs/throttler";
+
+    export class LoginDto {
+      email!: string;
+      password!: string;
+    }
+
+    @Controller("auth")
+    export class AuthController {
+      @Throttle({ default: { limit: 5, ttl: seconds(60) } })
+      @Post("login")
+      login(@Body() dto: LoginDto) {
+        return { ok: true };
+      }
+    }
+    ```
+
+    Five login attempts per minute regardless of the global 10/min default.
+  </TabItem>
+  <TabItem label="@SkipThrottle()">
+    Opt out for health checks and webhook bursts:
+
+    ```typescript
+    import { Controller, Get } from "@nestjs/common";
+    import { SkipThrottle } from "@nestjs/throttler";
+
+    @SkipThrottle()
+    @Controller("health")
+    export class HealthController {
+      @Get()
+      check() {
+        return { ok: true };
+      }
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+## Multiple named throttlers
+
+Stack burst + sustained windows:
+
+```typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard, seconds, minutes } from "@nestjs/throttler";
+
+@Module({
+  imports: [
+    ThrottlerModule.forRoot([
+      { name: "short", ttl: seconds(1), limit: 3 },
+      { name: "medium", ttl: seconds(10), limit: 20 },
+      { name: "long", ttl: minutes(1), limit: 100 },
+    ]),
+  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+export class AppModule {}
+```
+
+```typescript
+import { Controller, Get } from "@nestjs/common";
+import { Throttle, SkipThrottle, seconds } from "@nestjs/throttler";
+
+@Controller("reports")
+export class ReportsController {
+  @Throttle({ short: { limit: 1, ttl: seconds(1) } })
+  @Get("expensive")
+  expensive() {
+    return { ok: true };
+  }
+
+  @SkipThrottle({ short: true })
+  @Get("polled-by-dashboard")
+  polled() {
+    return { ok: true };
+  }
+}
+```
+
+<Aside type="danger" title="Bare @SkipThrottle() with named buckets">
+
+With named buckets, `@SkipThrottle()` (no argument) silently skips nothing. Pass `{ <name>: true }` for each bucket you want to skip. Same trap for `@Throttle()` without a matching name key.
+
+</Aside>
+
+## Configuration reference
+
+Each `forRoot` entry (or `throttlers:` array):
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `name` | `string` | `'default'` | Key in `@Throttle({ <name>: ... })` |
+| `ttl` | `number` (ms) | required | Use `seconds()` / `minutes()` helpers |
+| `limit` | `number` | required | Max requests per `ttl` per tracker |
+| `blockDuration` | `number` (ms) | `ttl` | Block time after limit hit |
+| `ignoreUserAgents` | `RegExp[]` | `[]` | Skip matching User-Agent |
+| `skipIf` | `(ctx) => boolean` | none | Programmatic skip |
+| `getTracker` | `(req, ctx) => string` | `req.ip` | Client identity — see proxies below |
+| `generateKey` | `(ctx, tracker, name) => string` | internal | Storage key shape |
+
+Top-level options on `ThrottlerModule.forRoot({ throttlers: [...], ... })`:
+
+| Option | Notes |
+| --- | --- |
+| `storage` | Swap in-memory store — required for multi-instance Redis |
+| `errorMessage` | Override 429 body text |
+
+Helpers: `seconds`, `minutes`, `hours`, `days`, `weeks` — `seconds(5) === 5000`.
+
+## How the storage key is built
+
+Default shape ([`generateKey` in `ThrottlerGuard`](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts)):
+
+```text
+sha256("<ControllerClass>-<handler>-<throttlerName>-<tracker>")
+```
+
+- Counters are **per route, per throttler** — `/users` and `/orders` don't share a bucket.
+- Fix `getTracker` when `req.ip` is wrong; don't tweak `limit`/`ttl` to compensate.
+
+## Proxies and trust proxy
+
+Default tracker is `req.ip`. Behind a load balancer, every client looks like the proxy.
+
+<Steps>
+
+1. Tell Express to trust the proxy:
+
+   ```typescript
+   // main.ts
+   import { NestFactory } from "@nestjs/core";
+   import { NestExpressApplication } from "@nestjs/platform-express";
+   import { AppModule } from "./app.module";
+
+   async function bootstrap() {
+   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+   app.set("trust proxy", "loopback");
+   await app.listen(3000);
+   }
+   bootstrap();
+   ```
+
+2. Override the tracker when you need the leftmost forwarded IP (especially on Fastify):
+
+   ```typescript
+   // throttler-behind-proxy.guard.ts
+   import { Injectable } from "@nestjs/common";
+   import { ThrottlerGuard } from "@nestjs/throttler";
+
+   @Injectable()
+   export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
+   protected async getTracker(req: Record<string, unknown> & { ips?: string[]; ip?: string }): Promise<string> {
+   return req.ips?.length ? req.ips[0] : (req.ip ?? "unknown");
+   }
+   }
+   ```
+
+   Bind `ThrottlerBehindProxyGuard` in the `APP_GUARD` provider instead of `ThrottlerGuard`.
+
+</Steps>
+
+<Aside type="caution" title="Misconfiguring trust proxy">
+
+`trust proxy: true` blindly lets clients spoof `X-Forwarded-For` and bypass throttling. Use the narrowest setting that matches your deployment. [Express — Behind proxies](https://expressjs.com/en/guide/behind-proxies.html).
+
+</Aside>
+
+## Custom tracker (per-user)
+
+```typescript
+// user-throttler.guard.ts
+import { Injectable, ExecutionContext } from "@nestjs/common";
+import { ThrottlerGuard } from "@nestjs/throttler";
+import { Request } from "express";
+
+@Injectable()
+export class UserThrottlerGuard extends ThrottlerGuard {
+  protected async getTracker(req: Request): Promise<string> {
+    const user = (req as Request & { user?: { id: string } }).user;
+    return user?.id ?? req.ip ?? "anonymous";
+  }
+}
+```
+
+When chaining multiple `APP_GUARD` providers, register the auth guard **before** the throttler so `req.user` exists ([`GuardsConsumer.tryActivate`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L8-L34) runs left-to-right).
+
+## Distributed storage (Redis)
+
+In-memory storage is per-process: two pods → `2 × limit` before throttle. Plug in any `ThrottlerStorage` implementation:
+
+```typescript
+// app.module.ts (sketch — install @nest-lab/throttler-storage-redis first)
+import { ThrottlerModule, seconds } from "@nestjs/throttler";
+import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
+import Redis from "ioredis";
+
+ThrottlerModule.forRoot({
+  throttlers: [{ ttl: seconds(60), limit: 10 }],
+  storage: new ThrottlerStorageRedisService(new Redis(process.env.REDIS_URL!)),
+});
+```
+
+<Aside type="note" title="In-memory is fine for one instance">
+
+Single pod, single container: default store is correct. Switch to Redis when you add a second instance.
+
+</Aside>
+
+## Async configuration
+
+```typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard } from "@nestjs/throttler";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get<number>("THROTTLE_TTL_MS")!,
+          limit: config.get<number>("THROTTLE_LIMIT")!,
+        },
+      ],
+    }),
+  ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+})
+export class AppModule {}
+```
+
+## Gotchas
+
+<Aside type="danger" title="ttl is milliseconds in v5+">
+
+Pre-v5, `ttl: 60` meant 60 seconds. In v5+, `ttl: 60` is 60 **milliseconds**. Use `seconds(60)` or write full milliseconds.
+
+</Aside>
+
+<Aside type="caution" title="WebSockets need a custom subclass">
+
+Default `ThrottlerGuard` reads HTTP context. Extend and override `handleRequest` for `switchToWs()`. Cannot use `APP_GUARD` — bind with `@UseGuards()` on the gateway. [Official WebSockets snippet](https://docs.nestjs.com/security/rate-limiting#websockets).
+
+</Aside>
+
+<Aside type="note" title="429 body and rate-limit headers">
+
+Default body is shown in setup step 3. Allowed responses get `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`; blocked 429s get `Retry-After` ([`throttler.guard.ts#L179-L208`](https://github.com/nestjs/throttler/blob/master/src/throttler.guard.ts#L179-L208)). Customize via `errorMessage` or a filter on `ThrottlerException`.
+
+</Aside>
+
+## See also
+
+- [[nestjs/fundamentals/guards|Guards]] — binding rules and DI traps
+- [[nestjs/fundamentals/exception-filters|Exception filters]] — custom 429 body shape
+- [[nestjs/fundamentals/guards|Guards]] — register auth before throttler so `req.user` exists ([[nestjs/auth/jwt-strategy|JWT strategy]])
+- [Rate limiting (official)](https://docs.nestjs.com/security/rate-limiting)
+- [`@nestjs/throttler` repo](https://github.com/nestjs/throttler)

@@ -1,0 +1,57 @@
+---
+title: S3 CLI cheatsheet
+description: aws s3 and aws s3api commands for inventory, bucket config, and bulk data movement.
+---
+
+> Two CLIs: `aws s3` is high-level `cp`/`ls`/`sync`; `aws s3api` maps REST. Use `s3api` for bucket configuration; `s3` for moving bytes.
+
+## Inventory
+
+```bash
+aws s3api list-buckets --query 'Buckets[].{Name:Name,Created:CreationDate}' --output table
+aws s3api head-bucket --bucket <name>
+aws s3api get-bucket-location --bucket <name>
+aws s3api list-objects-v2 --bucket <name> --max-items 5
+aws s3api list-objects-v2 --bucket <name> --query 'KeyCount' --output text
+```
+
+## Configuration inspection
+
+```bash
+aws s3api get-bucket-policy        --bucket <name>
+aws s3api get-bucket-encryption    --bucket <name>
+aws s3api get-bucket-versioning    --bucket <name>
+aws s3api get-public-access-block  --bucket <name>
+aws s3api get-bucket-ownership-controls --bucket <name>
+aws s3api get-bucket-lifecycle-configuration --bucket <name>
+```
+
+## Create + safe defaults
+
+```bash
+aws s3api create-bucket --bucket <name> --region <region> \
+  [--create-bucket-configuration LocationConstraint=<region>]
+
+aws s3api put-public-access-block --bucket <name> \
+  --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3api put-bucket-versioning --bucket <name> --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket <name> \
+  --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+```
+
+## Moving bytes
+
+```bash
+aws s3 ls s3://<bucket>/<prefix>/
+aws s3 cp s3://<src>/<key> s3://<dst>/<key>
+aws s3 sync s3://<src-bucket> s3://<dst-bucket>
+aws s3 sync ./build/ s3://<bucket>/static/ --delete
+```
+
+Cross-account `sync` needs source bucket policy granting target `s3:GetObject` + `s3:ListBucket` — [[aws/s3/cross-account-migration|cross-account migration]].
+
+## Tips
+
+- Add `--profile <name>` when juggling accounts — [[aws/cli/profiles-and-credentials|profiles]].
+- Shape output with [[aws/cli/query-and-output|`--query` / `--output`]].
+- Server-side copies between S3 URIs avoid client bandwidth; run from EC2 in the destination Region for huge transfers.

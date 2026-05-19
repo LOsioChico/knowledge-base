@@ -8,15 +8,12 @@ When a request has plausibly different interpretations (callout severity, callou
 
 ## Companion skill
 
-Before editing any file under `content/`, load the **`kb-author`** skill (lives at
-`.github/skills/kb-author/SKILL.md`). It carries the multi-step workflows that this file only
-summarizes: the pre-flight discovery ritual, the post-edit audit checklist (code examples,
-reference-table linking, sourcing), and the "encode-repeated-patterns" reflex. AGENTS.md remains
-the source of truth for invariants (schema, vocabulary, linter rules); the skill is the playbook
-for executing on them.
+Before editing any note, load **`kb-author`** (`.github/skills/kb-author/SKILL.md`). It covers:
 
-Before editing published docs under `sites/docs/`, load **`kb-starlight-author`**
-(`.github/skills/kb-starlight-author/SKILL.md`) and read `docs/STARLIGHT-MIGRATION.md`.
+- **Vault** (`content/`): pre-flight discovery, audits A–P, `lint:wikilinks`, LLM audit triage.
+- **Published site** (`sites/docs/`): MDX authoring, audits **S1–S6**, `docs/PUBLISHING.md`.
+
+AGENTS.md remains the source of truth for invariants; the skill is the playbook for vault + Starlight MDX.
 
 ## Skills directory
 
@@ -24,12 +21,11 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 **Workflow skills (human/agent-facing, load on demand):**
 
-- [`kb-author`](.github/skills/kb-author/SKILL.md) — authoring workflow + pre-flight discovery + post-edit audits (indexed A–P in [`audits/`](.github/skills/kb-author/audits)).
+- [`kb-author`](.github/skills/kb-author/SKILL.md) — vault + MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
 - [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — eight-phase workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and committing audit-clean notes.
-- [`kb-starlight-author`](.github/skills/kb-starlight-author/SKILL.md) — migrate/enrich vault notes into Starlight MDX (`ts twoslash`, Steps, Aside, migration tracker).
 
-**LLM judges (runtime, invoked by `scripts/audit-notes/`):**
+**LLM judges (runtime, invoked by `scripts/audit-notes/` on vault `content/`):**
 
 - [`kb-auditor`](.github/skills/kb-auditor/SKILL.md) — Pass 1. Structural rules: code-imports, table-link, express-first, callout vocabulary.
 - [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) — Pass 1a. Binary verdict on behavioral-claim candidates surfaced by the deterministic finder.
@@ -44,12 +40,11 @@ When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a 
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
 
-**Dual publish (area-by-area migration):**
+**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/` — enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; vault ↔ MDX parity: `bun run lint:publish-parity`.
 
-- **Vault:** Obsidian markdown under `content/` — wikilinks, frontmatter schema, `bun run lint:wikilinks`, LLM audit in `scripts/audit-notes/`.
-- **Starlight:** Enriched MDX under `sites/docs/src/content/docs/` — Astro Starlight + `expressive-code-twoslash` (TypeScript hovers, Steps, Tabs). CI merges Starlight `dist/` over Quartz `public/` so migrated URLs win. Tracker: `sites/docs/migration.json`, playbooks in `docs/STARLIGHT-MIGRATION.md` and `docs/STARLIGHT-FEATURES.md`.
+**Vault (`content/`):** Obsidian markdown mirror for drafting, `related:` symmetry, and LLM audit (`lint:wikilinks`, `scripts/audit-notes/`). Not deployed as HTML; keep in sync with MDX when facts change.
 
-The Quartz build pipeline lives in a separate repo (`LOsioChico/quartz-fork`, private); CI clones it at build time. Starlight builds from this repo (`sites/docs/`). Edit `.github/workflows/deploy.yml` for deploy changes.
+Edit `.github/workflows/deploy.yml` for deploy changes.
 
 ## Folder layout
 
@@ -61,10 +56,10 @@ content/
     <subarea>/
       index.md                   # sub-area MOC if the subarea has 3+ notes
       <note>.md                  # atomic note, one concept per file
-sites/docs/                      # Starlight app (MDX, migration.json)
-docs/                            # Starlight migration playbooks (STARLIGHT-*.md)
-scripts/                         # wikilink linter, merge-pages, audit tooling
-.github/workflows/deploy.yml     # lint → quartz + starlight build → merge → Pages
+sites/docs/                      # Starlight app (MDX, astro sidebar)
+docs/                            # PUBLISHING.md, STARLIGHT-FEATURES.md, PIPELINE.md
+scripts/                         # wikilink linter, MDX linters, audit tooling
+.github/workflows/deploy.yml     # lint → starlight build → Pages
 ```
 
 Rules:
@@ -158,7 +153,7 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 - `lifecycle`, `events`, `cqrs`, `messaging`, `streaming`, `validation`, `errors`, `gotchas`
 
-`gotchas` is applied to any note that carries a `## Gotchas` (or `## Common gotchas`) section of substantive content — the section is *part of the note*, not a single throwaway bullet. The tag is cross-cutting because gotchas live inside concepts and recipes alike; `type/gotcha` stays reserved for notes whose entire purpose is documenting one specific footgun (e.g. `aws/cloudfront/alternate-domain-claim.md`). The two are not redundant: `type/gotcha` is "this note IS a footgun"; `gotchas` is "this note CONTAINS a footgun section worth finding". Quartz auto-generates `/tags/gotchas/` from the latter.
+`gotchas` is applied to any note that carries a `## Gotchas` (or `## Common gotchas`) section of substantive content — the section is *part of the note*, not a single throwaway bullet. The tag is cross-cutting because gotchas live inside concepts and recipes alike; `type/gotcha` stays reserved for notes whose entire purpose is documenting one specific footgun (e.g. `aws/cloudfront/alternate-domain-claim.md`). The two are not redundant: `type/gotcha` is "this note IS a footgun"; `gotchas` is "this note CONTAINS a footgun section worth finding".
 
 ## Pre-flight discovery ritual (MANDATORY before creating or significantly editing a note)
 
@@ -193,12 +188,12 @@ Skipping any step is a bug.
 
 ## Linking rules
 
-- Body links use Obsidian wikilinks: `[[nestjs/fundamentals/guards|Guards]]`. Quartz renders these and emits backlinks automatically.
+- Body links use Obsidian wikilinks: `[[nestjs/fundamentals/guards|Guards]]`. In the vault, Obsidian renders these and tracks backlinks locally.
 - `related:` frontmatter uses the same wikilink syntax inside quotes: `"[[nestjs/fundamentals/guards]]"`.
 - Bidirectional by default — and **enforced by `bun run lint:wikilinks`**. If A `related:` B, then B `related:` A. The linter resolves partial wikilinks (e.g. `[[guards]]` → `nestjs/fundamentals/guards`) and exempts `index` notes (they're indices, not peers). CI blocks merges on asymmetric `related:` links.
 - **Known limitation of forced symmetry**: `related:` currently collapses three distinct relationships (peer ↔ peer, recipe → fundamental prerequisite, fundamental → recipes-that-use-it) into one symmetric field. This is fine at the current vault size but will cause noise on fundamentals that get many dependents. When that starts to hurt (a fundamental's `related:` block becomes longer than its own content, ~10+ dependents), split the contract: keep `related:` for symmetric peers, add `prerequisites:` for asymmetric "you need to read this first" links (linter would NOT require back-references on `prerequisites:`). Don't pre-emptively split — wait for the friction.
 - **First-mention wikilink rule** (enforced by `bun run lint:wikilinks`): the FIRST time a concept that has its own note appears in the body of another note, it MUST be a wikilink, not plain text. Subsequent mentions in the same note can stay plain. Code identifiers (e.g. `FileInterceptor`, `ParseFilePipe`) are not concepts; the underlying concept (`[[nestjs/fundamentals/interceptors|interceptor]]`, `[[nestjs/fundamentals/pipes|pipe]]`) is. The linter scans every note's title + aliases + filename to build the concept catalog, then checks every other note's body for unlinked first mentions. CI blocks merges on violations.
-- **Wikilink-syntax rule** (enforced by `bun run lint:wikilinks`, BLOCKING): backticks MUST NOT appear inside `[[ ]]`. Quartz renders the wikilink display text as plain text, so backticks show up literally instead of as a code span. Forbidden: `[[exception-filters|`@Catch()` filters]]` (renders as the literal string `` `@Catch()` filters ``). Required: either drop the backticks from the alias (`[[exception-filters|@Catch() filters]]`) or move the code span outside the link (`` `@Catch()` filters (see [[exception-filters|exception filters]]) ``). Same rule applies to `related:` / `unrelated:` entries.
+- **Wikilink-syntax rule** (enforced by `bun run lint:wikilinks`, BLOCKING): backticks MUST NOT appear inside `[[ ]]`. Wikilink display text is plain text, so backticks show up literally instead of as a code span. Forbidden: `[[exception-filters|`@Catch()` filters]]` (renders as the literal string `` `@Catch()` filters ``). Required: either drop the backticks from the alias (`[[exception-filters|@Catch() filters]]`) or move the code span outside the link (`` `@Catch()` filters (see [[exception-filters|exception filters]]) ``). Same rule applies to `related:` / `unrelated:` entries.
 - **Listing-completeness rule** (same linter): every note under an indexed sub-folder (currently `nestjs/recipes/`) MUST appear in the area `index.md`. Add new indexed folders to the `INDEXED_FOLDERS` array in `scripts/lint-wikilinks.mjs`.- **Discoverability rule** (same linter, BLOCKING): every pair of notes whose TF-IDF cosine similarity is ≥ 0.20 MUST be connected — either via `related:` (either direction), a body wikilink (either direction), or an explicit `unrelated:` opt-out (either direction). This is the safety net for "you don't know what you don't know": when you write a new note, the linter compares it against every existing note and flags semantic neighbors you didn't realize existed. Resolution is one of three: (1) add the missing `related:` link both ways, (2) add a body wikilink at first mention, or (3) if the overlap is genuinely coincidental (shared vocabulary, different topic), declare it via `unrelated:` on either side. **You cannot ignore the warning** — every above-threshold pair must be acknowledged. Threshold (0.20) was calibrated against the natural similarity cliff in the current vault; revisit if the false-positive rate grows. Algorithm details: title × 3 + aliases × 2 + masked body × 1, smoothed IDF, ~120 English stopwords, `index` notes excluded.
 - **Agents-mirror rule** (same linter, BLOCKING): `.github/copilot-instructions.md` MUST be a byte-identical copy of `AGENTS.md`. The mirror exists so VS Code Copilot Chat (which reads `.github/copilot-instructions.md` universally) gets the same conventions as agentic flows that read `AGENTS.md`. After any edit to `AGENTS.md`, run `cp AGENTS.md .github/copilot-instructions.md` and commit both. The linter fails CI on drift.
 - **Inline-source-citations rule** (same linter, BLOCKING): every inline link in note bodies pointing at a primary-source URL (currently `https://github.com/<owner>/<repo>/blob/...` and `https://docs.nestjs.com/...`) must have its fragment-stripped form present in the note's frontmatter `source:` list. Fragment (`#L<m>-L<n>`, `#section-anchor`) and trailing slash are stripped before comparison, so inline links keep their precision while `source:` stays file-level. Don't try to remember this rule — the linter catches misses and tells you exactly which URL to add. Add new domain prefixes to `PRIMARY_SOURCE_RE` in `scripts/lint-wikilinks-core.mjs` when the vault grows beyond NestJS sources.
@@ -312,11 +307,10 @@ This rule applies to me (the agent) and to any sub-agent I delegate to. Pass thi
 - NestJS examples assume the **SWC** builder (see [[nestjs/recipes/swc-setup|SWC recipe]]). Show `nest start -b swc --type-check` (or the equivalent `nest-cli.json` config) when build commands appear. Mention `tsc` only as a fallback for known incompatibilities; mention `webpack` only in monorepo contexts where it's the CLI default.
 - Conventional commits: `type: summary`. NO scope. Atomic commits, one logical change each.
 - No commit body unless absolutely necessary. No co-author trailers.
-- Quartz config: `enableSPA: false` (do not flip without testing the explorer redirects).
 
 ## Tagline (MANDATORY for every non-index note)
 
-Every non-index note opens with a single `>` blockquote on the first body line, naming what the note is about in one sentence. No leading "In this note we...", no setup instructions before it, no `## Heading` before it. The tagline is what Quartz renders inside link popovers and what search uses for the result excerpt: it's the reader's first 2-second triage signal.
+Every non-index note opens with a single `>` blockquote on the first body line, naming what the note is about in one sentence. No leading "In this note we...", no setup instructions before it, no `## Heading` before it. The tagline is the reader's first 2-second triage signal (vault Obsidian popovers; Starlight uses `description` frontmatter on MDX).
 
 Forbidden: bare paragraph as the first body line ("How a request flows through a NestJS app..."). Required: prepend `> ` so the same sentence becomes a blockquote.
 
@@ -343,7 +337,7 @@ This applies to existing notes AND to any planned title scoped in `inbox.md` or 
 
 ## Callouts
 
-Quartz renders Obsidian-style callouts (`> [!type]` / `> [!type]-` for collapsed). The vault uses **four types only**, with a defined intent for each. Picking the wrong type is a discoverability bug — the reader scans for visual hooks and learns to associate a color/icon with a kind of information. Inconsistency dilutes that signal.
+Obsidian-style callouts (`> [!type]` / `> [!type]-` for collapsed) apply to vault `.md` only. MDX uses Starlight `<Aside>`. The vault uses **four types only**, with a defined intent for each. Picking the wrong type is a discoverability bug — the reader scans for visual hooks and learns to associate a color/icon with a kind of information. Inconsistency dilutes that signal.
 
 Vocabulary (canonical):
 
@@ -354,7 +348,7 @@ Vocabulary (canonical):
 | `[!example]` | Worked-example snippet — runnable code with a one-line title that names what it demonstrates. The body is mostly a fenced code block. | "Recommended global setup", "Map a domain error to an HTTP status", "Per-route timeout". |
 | `[!todo]` | Open review item the maintainer must revisit. See [Open review items in notes](#open-review-items-in-notes). | "Verify on TypeORM 0.4 release". |
 
-**Forbidden** types (do not use, even though Obsidian/Quartz render them): `[!tip]`, `[!success]`, `[!question]`, `[!failure]`, `[!danger]`, `[!bug]`, `[!quote]`, `[!note]`, `[!abstract]`, `[!cite]`. Most overlap with one of the four above; using them fragments the visual vocabulary. Negative example: `> [!tip]- CommonJS vs ES modules` (this is a comparison, not actionable advice — `> [!info]-` is correct). Negative example: `> [!danger] Don't run migrations in production without a backup` (this is a footgun — `> [!warning]` is correct). If you find yourself reaching for a fifth type, the right move is almost always to split the content across two of the canonical four.
+**Forbidden** types (do not use, even though Obsidian renders them): `[!tip]`, `[!success]`, `[!question]`, `[!failure]`, `[!danger]`, `[!bug]`, `[!quote]`, `[!note]`, `[!abstract]`, `[!cite]`. Most overlap with one of the four above; using them fragments the visual vocabulary. Negative example: `> [!tip]- CommonJS vs ES modules` (this is a comparison, not actionable advice — `> [!info]-` is correct). Negative example: `> [!danger] Don't run schema changes in production without a backup` (this is a footgun — `> [!warning]` is correct). If you find yourself reaching for a fifth type, the right move is almost always to split the content across two of the canonical four.
 
 Open vs collapsed (`[!type]` vs `[!type]-`):
 
@@ -367,7 +361,7 @@ No automated enforcement (callout intent is too subjective for a linter). Audit 
 
 ## Open review items in notes
 
-When a note has a follow-up that is not blocking publication — verify against newer docs, expand once a planned recipe lands, double-check a behavior on the next release — mark it inline with a collapsed `todo` callout instead of leaving a TODO comment or opening an external tracker. Quartz/Obsidian render this natively.
+When a note has a follow-up that is not blocking publication — verify against newer docs, expand once a planned recipe lands, double-check a behavior on the next release — mark it inline with a collapsed `todo` callout instead of leaving a TODO comment or opening an external tracker. Obsidian renders this natively in the vault.
 
 ```markdown
 > [!todo]- Review on next NestJS release
@@ -396,8 +390,9 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 ## When you finish
 
-- To preview **vault** locally, clone `LOsioChico/quartz-fork` somewhere outside this repo and run `npx quartz build --serve -d <path-to-this-repo>/content`. Skip for content-only edits unless requested.
-- To preview **Starlight** (migrated MDX): `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI lint job: `bun run lint:ci` (vault wikilinks + Pass 0 + `lint:docs`). PRs also run `docs:build` (Twoslash). Pipeline map: `docs/PIPELINE.md`. Wikilinks in MDX: `[[slug|label]]` (see `docs/STARLIGHT-FEATURES.md`). Backlinks/graph are not ported yet.
+- To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (vault + Pass 0 + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
+- **MDX links:** `[[slug|label]]` in prose and lists; **never** `[[slug|label]]` inside markdown table rows (the `|` breaks columns). In tables use `[label](/knowledge-base/slug/)`. See `docs/STARLIGHT-FEATURES.md`. Enforced by `bun run lint:mdx-table-wikilinks`.
+- **Vault** preview: Obsidian on `content/` (wikilinks, graph). The vault is never published as HTML; only `sites/docs/dist/` ships to GitHub Pages.
 - **Default post-edit quality gate** (from repo root; diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
@@ -451,4 +446,4 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 - Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
 - LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
 - To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
-- Starlight migration: canonical app `sites/docs/` (base `/knowledge-base`); `effect-ts` area fully migrated in MDX. Vault remains Obsidian + audit source; enriched MDX wins on deploy for migrated slugs.
+- Published site: `sites/docs/` (base `/knowledge-base`). Every vault note except `inbox.md` has a matching MDX page (`lint:publish-parity`). Vault remains Obsidian + audit mirror; MDX is what deploys.

@@ -1,0 +1,110 @@
+---
+title: S3 quickstart
+description: Ten-minute S3 walkthrough — create a bucket, upload, presign, and clean up with safe defaults.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> First-bucket walkthrough: create with safe defaults, upload, share via [[aws/s3/presigned-urls|presigned URL]], clean up. No console clicks.
+
+## Before you start
+
+- AWS CLI profile that resolves to a writable account — [[aws/cli/profiles-and-credentials|profiles and credentials]]:
+
+  ```bash
+  aws --profile <name> sts get-caller-identity
+  ```
+
+- Region pinned forever at bucket creation.
+
+```bash
+export AWS_PROFILE=<your-profile>
+export REGION=us-east-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export BUCKET=quickstart-${ACCOUNT_ID}-${REGION}
+```
+
+The `<purpose>-<account>-<region>` shape avoids global namespace collisions. For account-regional namespace see [[aws/s3|S3]].
+
+## 1. Create the bucket
+
+```bash
+if [ "$REGION" = "us-east-1" ]; then
+aws s3api create-bucket --bucket "$BUCKET" --region "$REGION"
+else
+aws s3api create-bucket --bucket "$BUCKET" --region "$REGION" \
+--create-bucket-configuration LocationConstraint="$REGION"
+fi
+
+aws s3api put-public-access-block --bucket "$BUCKET" \
+--public-access-block-configuration \
+BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+
+aws s3api put-bucket-versioning --bucket "$BUCKET" \
+--versioning-configuration Status=Enabled
+
+aws s3api put-bucket-encryption --bucket "$BUCKET" \
+--server-side-encryption-configuration \
+'{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+```
+
+<Aside type="caution" title="Versioning without lifecycle grows the bill">
+
+Each version is the full object. Add [[aws/s3/lifecycle-rules|lifecycle]] to expire noncurrent versions before real data lands.
+
+</Aside>
+
+## 2. Upload an object
+
+```bash
+echo "hello s3" > hello.txt
+aws s3 cp hello.txt "s3://$BUCKET/hello.txt"
+   # upload: ./hello.txt to s3://quickstart-123456789012-us-east-1/hello.txt
+```
+
+## 3. List and download
+
+```bash
+aws s3 ls "s3://$BUCKET/"
+aws s3 cp "s3://$BUCKET/hello.txt" downloaded.txt
+cat downloaded.txt
+   # hello s3
+```
+
+## 4. Share without making the bucket public
+
+```bash
+aws s3 presign "s3://$BUCKET/hello.txt" --expires-in 3600
+```
+
+Anyone with the link can `curl` it for 3600 seconds.
+
+## 5. Clean up
+
+```bash
+aws s3api delete-objects --bucket "$BUCKET" \
+--delete "$(aws s3api list-object-versions --bucket "$BUCKET" \
+--query '{Objects: [Versions, DeleteMarkers][].{Key:Key,VersionId:VersionId}}' \
+--output json)"
+
+aws s3api delete-bucket --bucket "$BUCKET" --region "$REGION"
+```
+
+<Aside type="caution" title="aws s3 rm --recursive does not remove versions">
+
+On versioned buckets it adds delete markers; bytes remain. Use `delete-objects` + `list-object-versions` to empty truly.
+
+</Aside>
+
+## Where to go next
+
+- [[aws/s3/storage-classes|Storage classes]] — cost/latency tiers.
+- [[aws/s3/lifecycle-rules|Lifecycle rules]] — age objects and expire versions.
+- [[aws/s3/event-notifications|Event notifications]] — Lambda/SQS/SNS on object events.
+- [[aws/s3/static-website|Static website hosting]] — front with [[aws/cloudfront|CloudFront]] for HTTPS.
+- [[aws/s3/cli|S3 CLI cheatsheet]].
+
+## See also
+
+- [[aws/s3|S3 concept note]].
+- [Amazon S3 user guide](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html) (official).

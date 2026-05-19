@@ -1,0 +1,39 @@
+---
+title: Lambda
+description: AWS Lambda — functions, execution roles, triggers, versions/aliases, and scale-to-zero pricing.
+---
+
+> AWS Lambda is on-demand compute: ship code + handler + runtime, AWS scales execution environments per request, you pay per invocation + GB-second.
+
+## TL;DR
+
+- **Function = deployment unit**: code, runtime, memory, timeout, env vars (zip or container image).
+- **Execution role** is the [[aws/iam|IAM]] role every AWS API call from the handler uses.
+- **Triggers**: API Gateway, SQS/SNS/[[aws/s3/event-notifications|S3 events]], EventBridge, Function URL, direct invoke — each with its own permission grant.
+- **Versions immutable; aliases re-pointable.** Wire triggers to aliases (`prod`, `staging`).
+- **Pricing** per invocation + GB-second; CPU scales with `MemorySize` ([source](https://aws.amazon.com/lambda/pricing/)).
+
+## When to use
+
+- **Use Lambda** for: event glue, scheduled jobs, webhooks, scale-to-zero workloads.
+- **Don't use Lambda** for: invocations over 15 minutes ([900 s cap](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)), latency-critical cold-start paths, persistent local state. For long workflows see [durable functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html).
+
+## Mental model
+
+| Piece | What it controls |
+| --- | --- |
+| **Function** | Runtime, handler, code, env vars |
+| **Execution role** | IAM identity for AWS API calls |
+| **Triggers** | What invokes the function |
+| **Versions + aliases** | Immutable snapshots vs re-pointable names |
+
+## Pending notes
+
+- Cross-account migration: repoint event sources, swap aliases.
+- Cold-start triage: Init Duration, provisioned concurrency, SnapStart.
+
+## See also
+
+- [[aws/lambda/cli|Lambda CLI cheatsheet]].
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]].
+- [AWS Lambda developer guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html) (official).

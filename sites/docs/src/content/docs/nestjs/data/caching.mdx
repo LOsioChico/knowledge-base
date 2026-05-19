@@ -1,0 +1,262 @@
+---
+title: Caching with @nestjs/cache-manager
+description: In-memory or Redis caching via cache-manager v6+ and Keyv — CacheInterceptor, TTL in milliseconds, and multi-tier stores.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for keys you control.
+
+## Setup
+
+```bash
+npm i @nestjs/cache-manager cache-manager
+```
+
+`@nestjs/cache-manager` v3+ uses `cache-manager` v6+, which delegates storage to [Keyv](https://keyv.org/docs/). All TTLs are in **milliseconds**.
+
+## Minimal working example
+
+<Steps>
+
+1. Register `CacheModule` globally:
+
+   ```typescript
+   import { Module } from "@nestjs/common";
+   import { CacheModule } from "@nestjs/cache-manager";
+   import { BooksController } from "./books.controller";
+   import { BooksService } from "./books.service";
+
+   @Module({
+   imports: [
+   CacheModule.register({
+   isGlobal: true,
+   ttl: 30_000, // 30 seconds, in MILLISECONDS
+   }),
+   ],
+   controllers: [BooksController],
+   providers: [BooksService],
+   })
+   export class AppModule {}
+   ```
+
+2. Inject `CACHE_MANAGER` in a service:
+
+   ```typescript
+   import { Inject, Injectable } from "@nestjs/common";
+   import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager";
+
+   export interface Book {
+   id: string;
+   title: string;
+   }
+
+   @Injectable()
+   export class BooksService {
+   private readonly key = "books:all";
+
+   constructor(
+   @Inject(CACHE_MANAGER) private readonly cache: Cache,
+   ) {}
+
+   async findAll(): Promise<Book[]> {
+   const hit = await this.cache.get<Book[]>(this.key);
+   if (hit) return hit;
+
+   const books = await this.fetchFromDb();
+   await this.cache.set(this.key, books, 60_000); // 60s override
+   return books;
+   }
+
+   async invalidate(): Promise<void> {
+   await this.cache.del(this.key);
+   }
+
+   private async fetchFromDb(): Promise<Book[]> {
+   return [];
+   }
+   }
+   ```
+
+</Steps>
+
+`get()` on a miss returns **`null` in cache-manager v6** and **`undefined` in v7** ([cacheable change](https://github.com/jaredwray/cacheable/commit/ea37202931e255b0dfd2f62d7121c84671b1f4fd)). `@nestjs/cache-manager@3.x` accepts `cache-manager >= 6` ([package.json](https://github.com/nestjs/cache-manager/blob/master/package.json)), so treat both as falsy and use `?? fallback`. The `set()` third argument is per-key TTL in ms; omit it for the module default; pass `0` to disable expiration.
+
+<Aside type="caution" title="Default ttl is 0 (never expire)">
+
+`CacheModule.register({})` without `ttl` keeps entries until `del()` or `clear()`. Set `ttl` at module level for HTTP response caching.
+
+</Aside>
+
+## Auto-caching GET responses
+
+```typescript
+import { Controller, Get, UseInterceptors } from "@nestjs/common";
+import { CacheInterceptor, CacheKey, CacheTTL } from "@nestjs/cache-manager";
+import { BooksService, type Book } from "./books.service";
+
+@Controller("books")
+@UseInterceptors(CacheInterceptor)
+export class BooksController {
+  constructor(private readonly books: BooksService) {}
+
+  @Get()
+  @CacheTTL(60_000)
+  findAll(): Promise<Book[]> {
+    return this.books.findAll();
+  }
+
+  @Get("featured")
+  @CacheKey("books:featured")
+  @CacheTTL(5 * 60_000)
+  featured(): Promise<Book[]> {
+    return this.books.findFeatured();
+  }
+}
+```
+
+Global binding via [[nestjs/fundamentals/global-providers|APP_INTERCEPTOR]]:
+
+```typescript
+import { Module } from "@nestjs/common";
+import { APP_INTERCEPTOR } from "@nestjs/core";
+import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager";
+
+@Module({
+  imports: [CacheModule.register({ isGlobal: true, ttl: 30_000 })],
+  providers: [{ provide: APP_INTERCEPTOR, useClass: CacheInterceptor }],
+})
+export class AppModule {}
+```
+
+<Aside type="caution" title="CacheInterceptor: GET only, breaks with @Res()">
+
+1. Non-`GET` handlers are passed through with no caching.
+2. Handlers that inject `@Res()` and write directly opt out of Nest's response mapping: the interceptor's `tap()` may store `undefined` while bytes already left via `res.send()` ([cache.interceptor.ts#L62-L86](https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts#L62-L86)). Symptom: endpoint works but cache stays empty. Use `CACHE_MANAGER` directly for write-side caching or `@Res()` routes.
+
+</Aside>
+
+<Aside type="note" title="GraphQL">
+
+Interceptors run per field resolver, not per request. `CacheInterceptor` keys by URL and collides across resolvers. Cache in the resolver or service instead.
+
+</Aside>
+
+## Configuration reference
+
+| Option | Type | Default | Notes |
+| --- | --- | --- | --- |
+| `ttl` | `number` | `0` (never) | Default expiration in **milliseconds** |
+| `isGlobal` | `boolean` | `false` | Skip re-importing in feature modules |
+| `stores` | `Keyv[]` | in-memory | One or more [Keyv](https://keyv.org/docs/) stores |
+
+| Decorator | Scope | Purpose |
+| --- | --- | --- |
+| `@UseInterceptors(CacheInterceptor)` | Controller/method | Enable auto-caching |
+| `@CacheKey(key)` | Method or controller | Override URL-based key |
+| `@CacheTTL(ms)` | Method or controller | Override module TTL (method wins) |
+
+## Distributed cache with Redis
+
+```bash
+npm i @keyv/redis keyv cacheable
+```
+
+```typescript
+import { Module } from "@nestjs/common";
+import { CacheModule } from "@nestjs/cache-manager";
+import { Keyv } from "keyv";
+import KeyvRedis from "@keyv/redis";
+import { KeyvCacheableMemory } from "cacheable";
+
+@Module({
+  imports: [
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: () => ({
+        ttl: 30_000,
+        stores: [
+          new Keyv({ store: new KeyvCacheableMemory({ ttl: 30_000, lruSize: 5_000 }) }),
+          new KeyvRedis(process.env.REDIS_URL ?? "redis://localhost:6379"),
+        ],
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Reads check stores in order; `set`/`del` hit each store (optional `nonBlocking: true` for parallel writes). See [[nestjs/releases/v11|NestJS 11 notes]] for the Keyv wire-format change when upgrading existing Redis data.
+
+<Aside type="note" title="Keyv, not cache-manager-redis-store">
+
+`cache-manager` v6 dropped its own store registry. The v9 pattern `store: redisStore` no longer applies; pass Keyv stores in `stores`.
+
+</Aside>
+
+## Async configuration
+
+```typescript
+import { Module } from "@nestjs/common";
+import { CacheModule } from "@nestjs/cache-manager";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import KeyvRedis from "@keyv/redis";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot(),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        ttl: config.get<number>("CACHE_TTL_MS", 30_000),
+        stores: [new KeyvRedis(config.getOrThrow<string>("REDIS_URL"))],
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+## Custom tracking (per-user keys)
+
+```typescript
+import { ExecutionContext, Injectable } from "@nestjs/common";
+import { CacheInterceptor } from "@nestjs/cache-manager";
+import type { Request } from "express";
+
+@Injectable()
+export class HttpCacheInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const req = context.switchToHttp().getRequest<Request & { user?: { id: string } }>();
+    if (req.method !== "GET") return undefined;
+    const userId = req.user?.id ?? "anon";
+    return `${userId}:${req.originalUrl}`;
+  }
+}
+```
+
+Returning `undefined` skips caching ([cache.interceptor.ts#L50-L52](https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts#L50-L52)).
+
+<Aside type="danger" title="Authenticated GET without trackBy leaks across users">
+
+Default key is the URL. `GET /me` from Alice and Bob shares one entry. Subclass and include the user id, or use imperative keys.
+
+</Aside>
+
+## Gotchas
+
+- **TTL units**: `ttl: 60` is 60 ms, not 60 seconds. `@CacheTTL(60_000)` for one minute on v3+.
+- **No auto-invalidation on writes**: `POST /books` does not bust `GET /books`. Call `cache.del()`, use short TTLs, or accept staleness.
+- **In-memory clears on restart**: use Redis when miss cost matters.
+- **Structured-clone-only in memory**: class instances lose prototypes on read; store plain objects.
+- **`@CacheKey()` is static**: dynamic `:id` keys need imperative `cache.get('book:' + id)` or custom `trackBy()`.
+
+## See also
+
+- [[nestjs/fundamentals/interceptors|Interceptors]] — how `CacheInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
+- [[nestjs/fundamentals/global-providers|Global providers]] — `APP_INTERCEPTOR`
+- [[nestjs/recipes/rate-limiting|Rate limiting]] — same "shared store when multi-instance" story
+- [Official NestJS caching docs](https://docs.nestjs.com/techniques/caching)
+- [cache-manager](https://github.com/jaredwray/cache-manager) and [Keyv](https://keyv.org/docs/)

@@ -1,0 +1,84 @@
+---
+title: Snapshot every EC2 instance with AMIs
+description: Manual point-in-time backup of every EC2 instance via one AMI per instance.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Take a manual backup of every EC2 instance by creating one AMI per instance. AMIs capture root volume, attached EBS, and boot config — redeployable from a single image ID.
+
+## AMI vs raw EBS snapshot
+
+| Primitive | Captures | Restore |
+| --- | --- | --- |
+| AMI (`create-image`) | Root + attached EBS + boot config | `run-instances` new machine |
+| EBS snapshot | Volumes only | Attach volumes manually |
+
+<Aside type="caution" title="--no-reboot and filesystem consistency">
+
+Default `create-image` reboots to quiesce volumes. `--no-reboot` avoids downtime but AWS [does not guarantee filesystem integrity](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html). For databases, stop the instance or use [[aws/rds|RDS]] backup instead.
+
+</Aside>
+
+## Recipe
+
+Replace `PROFILE` and `REGION`.
+
+## 1. Snapshot every instance
+
+```bash
+export AWS_PROFILE=PROFILE
+export AWS_REGION=REGION
+STAMP=$(date +%Y%m%d-%H%M%S)
+
+aws ec2 describe-instances \
+--query 'Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`]|[0].Value]' \
+--output text \
+| while read -r ID NAME; do
+NAME=${NAME:-$ID}
+SAFE=$(echo "$NAME" | tr -c '[:alnum:]-_' '-')
+aws ec2 create-image \
+--instance-id "$ID" \
+--name "backup-${SAFE}-${STAMP}" \
+--description "Manual backup of $NAME ($ID) on $STAMP" \
+--no-reboot \
+--tag-specifications \
+"ResourceType=image,Tags=[{Key=Backup,Value=manual-${STAMP}},{Key=SourceInstance,Value=${ID}},{Key=SourceName,Value=${NAME}}]" \
+"ResourceType=snapshot,Tags=[{Key=Backup,Value=manual-${STAMP}},{Key=SourceInstance,Value=${ID}}]"
+done
+```
+
+## 2. Wait for available
+
+```bash
+aws ec2 wait image-available \
+--filters "Name=tag:Backup,Values=manual-${STAMP}"
+```
+
+## 3. Restore later
+
+```bash
+aws ec2 run-instances \
+--image-id ami-xxxxxxxx \
+--instance-type t3.medium \
+--subnet-id subnet-xxxx \
+--security-group-ids sg-xxxx \
+--key-name your-key
+```
+
+Reattach Elastic IPs, target groups, and DNS — they do not follow the AMI.
+
+Encrypted volumes need `kms:Decrypt` on the key; cross-account: [[aws/ec2/ami-cross-account-copy|AMI cross-account copy]].
+
+## Cleanup
+
+Deregister AMI **and** delete underlying snapshots ([deregister docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/deregister-ami.html)) — deregister alone leaves billable storage.
+
+## When to use AWS Backup
+
+Recurring retention and cross-account copy — same underlying snapshots, managed lifecycle. AWS Backup recovery points delete via Backup API, not `deregister-image`.
+
+## See also
+
+- [[aws/ec2|EC2]].
+- [[aws/ec2/ami-cross-account-copy|Cross-account AMI copy]].

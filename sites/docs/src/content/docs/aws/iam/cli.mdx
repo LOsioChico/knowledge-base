@@ -1,0 +1,63 @@
+---
+title: IAM CLI cheatsheet
+description: Read-only IAM and STS commands for AccessDenied triage and trust-policy debugging.
+---
+
+> Read-only [[aws/iam|IAM]] commands for unexpected `AccessDenied`. Start with "who is the caller?" and "what policies attach?" before destructive changes.
+
+## Identity
+
+```bash
+aws sts get-caller-identity --profile <profile>
+
+aws sts assume-role \
+  --role-arn arn:aws:iam::ACCOUNT_ID:role/<role> \
+  --role-session-name dbg \
+  --external-id <ExternalId>
+```
+
+## What policies attach to a principal?
+
+```bash
+aws iam list-attached-user-policies --user-name <user>
+aws iam list-user-policies          --user-name <user>
+aws iam list-groups-for-user        --user-name <user>
+aws iam list-attached-group-policies --group-name <group>
+
+aws iam list-attached-role-policies --role-name <role>
+aws iam list-role-policies          --role-name <role>
+aws iam get-role                    --role-name <role> --query Role.AssumeRolePolicyDocument
+```
+
+## What does a managed policy allow?
+
+```bash
+aws iam get-policy         --policy-arn <arn>
+aws iam get-policy-version --policy-arn <arn> --version-id v1
+aws iam list-entities-for-policy --policy-arn <arn>
+```
+
+## Will this principal be allowed?
+
+```bash
+aws iam simulate-principal-policy \
+  --policy-source-arn <principal-arn> \
+  --action-names <service:Action> \
+  --resource-arns <resource-arn>
+```
+
+Output names the matched statement — enough to spot missing allow or unexpected deny.
+
+## Access-key hygiene
+
+```bash
+aws iam list-access-keys           --user-name <user>
+aws iam get-access-key-last-used   --access-key-id <AKIA...>
+aws iam update-access-key          --user-name <user> --access-key-id <AKIA...> --status Inactive
+aws iam delete-access-key          --user-name <user> --access-key-id <AKIA...>
+```
+
+## Tips
+
+- Always `aws sts get-caller-identity` first — mismatched `--profile` is the #1 mystery denial. See [[aws/cli/profiles-and-credentials|profiles and credentials]].
+- For cross-account from a profile, use `role_arn` + `source_profile` in `~/.aws/config` — [[aws/recipes/cross-account-role-pattern|cross-account pattern]].

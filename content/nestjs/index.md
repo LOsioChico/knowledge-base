@@ -14,17 +14,17 @@ related:
 source:
 ---
 
-Map of content for NestJS. Links marked planned are pending topics. They will get filled in over time.
+> Map of content for NestJS. Published pages live in `sites/docs/src/content/docs/nestjs/`; this vault tree is the audit and Obsidian mirror.
 
 ## Fundamentals
 
 What you need to master before any advanced pattern. Read in this order:
 
-1. [[nestjs/fundamentals/modules|Modules: feature, shared, core (planned)]]
-2. [[nestjs/fundamentals/di-container|DI container: providers, scopes, custom providers (planned)]]
-3. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: the orchestrator note covering [[nestjs/fundamentals/middleware|middleware]] → [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → [[nestjs/fundamentals/exception-filters|filters]] in execution order.
-4. [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]].
-5. [[nestjs/fundamentals/lifecycle-hooks|Application lifecycle hooks: OnModuleInit, OnApplicationBootstrap, shutdown]].
+1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: orchestrator covering [[nestjs/fundamentals/middleware|middleware]] → [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → [[nestjs/fundamentals/exception-filters|filters]] in execution order.
+2. [[nestjs/fundamentals/global-providers|Global pipes, guards, interceptors, and filters via DI]].
+3. [[nestjs/fundamentals/lifecycle-hooks|Application lifecycle hooks: OnModuleInit, OnApplicationBootstrap, shutdown]].
+
+Pending vault-only topics: modules (feature/shared/core), DI container (providers, scopes, custom providers).
 
 After that, recipes and patterns are independent: jump to whichever fits the task.
 

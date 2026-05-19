@@ -1,0 +1,104 @@
+---
+title: S3 presigned URLs
+description: Time-limited S3 GET and PUT URLs for browser download and direct upload without public buckets.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+> A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials — recipients need no AWS account.
+
+## When to reach for one
+
+- Browser download of a private object without opening the bucket.
+- Browser upload direct to S3 — server signs PUT, client uploads to S3.
+- Temporary share with someone outside your org without [[aws/iam|IAM]] users.
+
+For always-public CDN content, front with [[aws/cloudfront|CloudFront]] instead.
+
+## CLI
+
+```bash
+aws s3 presign s3://my-bucket/path/to/object.pdf --expires-in 3600
+```
+
+`--expires-in` is seconds; max **604800 (7 days)** with SigV4 ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html#ShareObjectPresignedCLI)).
+
+```bash
+curl -o object.pdf "<presigned-url>"
+```
+
+## SDK (NestJS + AWS SDK v3)
+
+```bash
+npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+```
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+@Injectable()
+export class S3PresignService {
+  private readonly s3 = new S3Client({ region: "us-east-1" });
+  private readonly bucket = "my-bucket";
+
+  async downloadUrl(key: string): Promise<string> {
+    const cmd = new GetObjectCommand({ Bucket: this.bucket, Key: key });
+    return getSignedUrl(this.s3, cmd, { expiresIn: 3600 });
+  }
+
+  async uploadUrl(key: string): Promise<string> {
+    const cmd = new PutObjectCommand({ Bucket: this.bucket, Key: key });
+    return getSignedUrl(this.s3, cmd, { expiresIn: 900 });
+  }
+}
+```
+
+## Max expiry depends on signer credentials
+
+| Signer | Effective max |
+| --- | --- |
+| IAM user access key | 7 days (SigV4) |
+| STS role session | Remaining session lifetime (often 1 h) |
+| EC2/ECS/Lambda role | Credential rotation window |
+
+**URL dies when underlying credentials die**, regardless of `--expires-in` ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrl-Expiration)).
+
+<Aside type="caution" title="7-day URL from Lambda expires in ~1 hour">
+
+Runtime roles use short-lived STS creds. For true 7-day links, sign from long-lived keys (dedicated IAM user in [[aws/secrets-manager|Secrets Manager]]).
+
+</Aside>
+
+## Signer permissions
+
+- GET URL → `s3:GetObject` on the key.
+- PUT URL → `s3:PutObject` on the key.
+- URL generates even if signer lacks permission — usage returns `403`.
+
+## Limit blast radius
+
+1. Shortest workable expiry.
+2. Bucket policy `aws:SourceIp` / `aws:SourceVpce`.
+3. `s3:signatureAge` deny for stale signatures ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrlUploadObject-LimitCapabilities)).
+
+## PUT gotchas
+
+- Signed headers must match on upload — or `SignatureDoesNotMatch`.
+- Presigned PUT has no size cap (up to 5 TB per object) — use POST policies to limit size.
+- Same-key PUT overwrites — use UUID prefixes if undesired.
+
+## Common errors
+
+| Error | Likely cause |
+| --- | --- |
+| `403 Forbidden` | Missing IAM/bucket policy; Block Public Access |
+| `SignatureDoesNotMatch` | Clock skew; header mismatch on PUT |
+| `ExpiredToken` | STS session expired between sign and use |
+| Early expiry | Signed with short-lived role creds |
+
+## See also
+
+- [[aws/s3|S3]].
+- [Sharing objects with presigned URLs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html) (official).

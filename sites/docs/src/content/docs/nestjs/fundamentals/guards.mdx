@@ -1,0 +1,168 @@
+---
+title: Guards
+description: Authorization gate before the handler; CanActivate with ExecutionContext and Reflector metadata.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Decide whether a request reaches the route handler. Used for **authorization** (roles, permissions, ownership) — after [[nestjs/fundamentals/middleware|middleware]], before [[nestjs/fundamentals/interceptors|interceptors]] and [[nestjs/fundamentals/pipes|pipes]].
+
+## Contract
+
+```typescript
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Request } from "express";
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    return Boolean(request.headers.authorization);
+  }
+}
+```
+
+| Return | Effect |
+| --- | --- |
+| `true` | Continue to interceptors → pipes → handler |
+| `false` | Nest throws `ForbiddenException` (`403`) |
+| Thrown error | [Exception filters](/knowledge-base/nestjs/fundamentals/exception-filters/) handle it |
+
+`canActivate` returns `false` on a protected route:
+
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource",
+  "error": "Forbidden"
+}
+```
+
+(Exact `message` depends on your exception filter or `ForbiddenException` constructor.)
+
+<Tabs>
+  <TabItem label="boolean">
+    Sync in-memory checks — no extra microtask.
+  </TabItem>
+  <TabItem label="Promise">
+    `async` guards: JWT verify, DB lookup, remote authz service (`Promise<boolean>`).
+  </TabItem>
+  <TabItem label="Observable">
+    Return RxJS streams directly when the source is already Observable ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L62) uses `lastValueFrom`).
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Pass the class, not an instance">
+
+`@UseGuards(RolesGuard)` — DI wires `Reflector`, repos, config. `@UseGuards(new RolesGuard())` skips DI; `this.reflector` is `undefined`. Same rule for interceptors, pipes, and filters.
+
+</Aside>
+
+## Why not middleware?
+
+[[nestjs/fundamentals/middleware|Middleware]] runs on raw HTTP with **no** `ExecutionContext`. Guards read **handler metadata** (`@Roles()`, `@Public()`) via `getHandler()` / `getClass()`. That is what makes route-level authorization declarative ([Guards](https://docs.nestjs.com/guards)).
+
+## ExecutionContext (what guards actually use)
+
+| Method | Returns |
+| --- | --- |
+| `getHandler()` | Handler function about to run |
+| `getClass()` | Controller class (`CatsController`) |
+| `switchToHttp()` | `getRequest()`, `getResponse()`, `getNext()` |
+| `getType()` | `'http' \| 'rpc' \| 'ws'` |
+
+`Reflector` reads metadata from `getHandler()` and `getClass()`. Source: [Execution context](https://docs.nestjs.com/fundamentals/execution-context).
+
+## Bind and run order
+
+<Tabs>
+  <TabItem label="Binding">
+    | Scope | How |
+    | --- | --- |
+    | Global | `APP_GUARD` provider (preferred) or `app.useGlobalGuards()` |
+    | Controller | `@UseGuards(RolesGuard)` on the class |
+    | Route | `@UseGuards(RolesGuard)` on the method |
+
+    Global DI pattern: [[nestjs/fundamentals/global-providers|global enhancers]].
+  </TabItem>
+  <TabItem label="Order">
+    Per request ([`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts)):
+
+    1. Global guards (registration order)
+    2. Controller guards (left-to-right in `@UseGuards()`)
+    3. Route guards (left-to-right)
+
+    **First** `false`, throw, or rejected `Promise` stops the chain — later guards never run.
+  </TabItem>
+</Tabs>
+
+## Roles guard (canonical recipe)
+
+<Steps>
+
+1. **Declare metadata** with `Reflector.createDecorator<string[]>()`.
+2. **Attach** `@Roles(['admin'])` on handlers that need it.
+3. **Implement** `RolesGuard` with `getAllAndOverride` (route overrides class).
+4. **Register** `@UseGuards(RolesGuard)` on controller or `APP_GUARD`.
+
+</Steps>
+
+```typescript
+// roles.decorator.ts
+import { Reflector } from "@nestjs/core";
+
+export const Roles = Reflector.createDecorator<string[]>();
+```
+
+```typescript
+// roles.guard.ts
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { Request } from "express";
+import { Roles } from "./roles.decorator";
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(ctx: ExecutionContext): boolean {
+    const required = this.reflector.getAllAndOverride(Roles, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+    if (!required?.length) return true; // no @Roles() → allow
+
+    const request = ctx.switchToHttp().getRequest<Request & { user?: { roles: string[] } }>();
+    return Boolean(request.user?.roles?.some((r) => required.includes(r)));
+  }
+}
+```
+
+| `Reflector` API | Use when |
+| --- | --- |
+| `getAllAndOverride(d, [handler, class])` | Route metadata **wins** over controller (roles, `@Public()`) |
+| `getAllAndMerge(d, [..])` | Combine arrays from class + route |
+
+## Built-in packages (not in `@nestjs/common`)
+
+| Guard | Package | Link |
+| --- | --- | --- |
+| `AuthGuard('jwt')` | `@nestjs/passport` | [JWT strategy](/knowledge-base/nestjs/auth/jwt-strategy/) |
+| `ThrottlerGuard` | `@nestjs/throttler` | [Rate limiting](/knowledge-base/nestjs/recipes/rate-limiting/) |
+
+Nest core exports `CanActivate` and `@UseGuards` only ([`common/index.ts`](https://github.com/nestjs/nest/blob/master/packages/common/index.ts)) — no shipped guard implementations.
+
+## Common errors
+
+| Symptom | Likely cause |
+| --- | --- |
+| `403` unexpectedly | Guard returned `false` — check order; earlier guard may have failed |
+| `this.reflector` undefined | Passed `new RolesGuard()` instead of `RolesGuard` |
+| `@Roles()` ignored | Wrong reflector method — use `getAllAndOverride` for override semantics |
+| Public route blocked | Global guard runs first — add `@Public()` + `Reflector` skip ([Passport recipe](https://docs.nestjs.com/recipes/passport)) |
+
+## See also
+
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
+- [[nestjs/fundamentals/middleware|Middleware]] — runs before guards
+- [NestJS Guards](https://docs.nestjs.com/guards)

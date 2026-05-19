@@ -23,9 +23,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Data.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/typed-errors.mdx`. Vault note remains audit source.
-
 > Put failure modes in the type signature, not in `try/catch`. `Effect.fail` declares an error in the `E` channel; `Effect.try` / `Effect.tryPromise` lift fallible code; `Effect.catchTag` discriminates by `_tag` and removes the handled tag from the residual error type.
 
 ## Setup

@@ -1,0 +1,166 @@
+---
+title: Interceptors
+description: Wrap the handler before and after; RxJS streams, response mapping, caching, and timeouts.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, caching, and timeouts — not for raw `req` mutation or per-argument validation.
+
+## Contract
+
+```typescript
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+import { Observable, tap } from "rxjs";
+
+@Injectable()
+export class LoggingInterceptor implements NestInterceptor {
+  intercept(_context: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const start = Date.now();
+    return next.handle().pipe(
+      tap(() => console.log(`After ${Date.now() - start}ms`)),
+    );
+  }
+}
+```
+
+`NestInterceptor<T, R>`: `T` is what the handler emits; `R` is what you emit downstream (e.g. wrap as `{ data: T }`).
+
+## Pre / post in one method
+
+<Steps>
+
+1. **Pre** — code before `next.handle()` (auth side effects, cache lookup).
+2. **Handler** — `next.handle()` returns `Observable<T>`; skipping it skips the handler.
+3. **Post** — RxJS operators on that stream (`map`, `tap`, `catchError`, `timeout`).
+
+</Steps>
+
+```text
+intercept(ctx, next) {
+  // PRE
+  return next.handle().pipe(
+    // POST — runs when the handler emits
+  );
+}
+```
+
+<Tabs>
+  <TabItem label="vs middleware">
+    [[nestjs/fundamentals/middleware|Middleware]] has no `ExecutionContext` and cannot see the response. Interceptors wrap the handler.
+  </TabItem>
+  <TabItem label="vs pipes">
+    [[nestjs/fundamentals/pipes|Pipes]] transform **one argument** before the handler. No response access.
+  </TabItem>
+  <TabItem label="vs filters">
+    [[nestjs/fundamentals/exception-filters|Exception filters]] run on **throws**. Success-path mapping belongs here.
+  </TabItem>
+</Tabs>
+
+<Aside type="caution" title="Pass the class, not an instance">
+
+`@UseInterceptors(LoggingInterceptor)` uses DI. `@UseInterceptors(new LoggingInterceptor())` leaves injections `undefined`. Globals: prefer `APP_INTERCEPTOR` over `useGlobalInterceptors(new …)` — [[nestjs/fundamentals/global-providers|global enhancers]].
+
+</Aside>
+
+## FILO order (stacked interceptors)
+
+Inbound **pre**: global → controller → route. Outbound **post**: route → controller → global (first registered, last out).
+
+```mermaid
+flowchart LR
+    GP[Global pre] --> CP[Controller pre] --> RP[Route pre] --> H[Handler]
+    H --> RPo[Route post] --> CPo[Controller post] --> GPo[Global post]
+```
+
+A global logging interceptor sees the **final** response after route-level `map()` transforms.
+
+**Example:** global wraps `{ data }`, route adds `meta` — client sees both transforms; global's post runs last.
+
+## RxJS toolbox (post phase)
+
+| Operator | Use |
+| --- | --- |
+| `tap` | Log/metrics without changing the value |
+| `map` | Transform body (e.g. `{ data }`) |
+| `catchError` | Map handler errors before filters ([exception mapping](https://docs.nestjs.com/interceptors#exception-mapping)) |
+| `timeout` | Cancel slow handlers |
+| `of(value)` | Return cached value — skip `next.handle()` |
+
+## Recipes
+
+### Response envelope
+
+```typescript
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+import { map, Observable } from "rxjs";
+
+@Injectable()
+export class TransformInterceptor<T> implements NestInterceptor<T, { data: T }> {
+  intercept(_ctx: ExecutionContext, next: CallHandler): Observable<{ data: T }> {
+    return next.handle().pipe(map((data) => ({ data })));
+  }
+}
+```
+
+Handler returns `{ id: 1 }` → client receives:
+
+```json
+{ "data": { "id": 1 } }
+```
+
+### Cache short-circuit
+
+```typescript
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
+import { Observable, of, tap } from "rxjs";
+
+const cache = new Map<string, unknown>();
+
+@Injectable()
+export class CacheInterceptor implements NestInterceptor {
+  intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
+    const key = ctx.switchToHttp().getRequest().url;
+    const hit = cache.get(key);
+    if (hit) return of(hit); // handler never runs — second GET returns cached JSON immediately
+    return next.handle().pipe(tap((body) => cache.set(key, body)));
+  }
+}
+```
+
+### Per-route timeout
+
+```typescript
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor, RequestTimeoutException } from "@nestjs/common";
+import { catchError, Observable, throwError, timeout, TimeoutError } from "rxjs";
+
+@Injectable()
+export class TimeoutInterceptor implements NestInterceptor {
+  intercept(_ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
+    return next.handle().pipe(
+      timeout(5000),
+      catchError((err) =>
+        err instanceof TimeoutError
+          ? throwError(() => new RequestTimeoutException())
+          : throwError(() => err),
+      ),
+    );
+  }
+}
+```
+
+Serialization: [[nestjs/recipes/serialization|response serialization]] (`ClassSerializerInterceptor`). Caching: [[nestjs/data/caching|caching with @nestjs/cache-manager]].
+
+## Common errors
+
+| Symptom | Likely cause |
+| --- | --- |
+| Handler never runs | Returned `of(cached)` or threw in pre without `next.handle()` |
+| DI `undefined` | Passed `new Interceptor()` to `@UseInterceptors` |
+| Pre-phase throw not caught by `catchError` on stream | Error never reached `next.handle()` — use `try/catch` or `defer` |
+
+## See also
+
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
+- [[nestjs/fundamentals/guards|Guards]] · [[nestjs/fundamentals/pipes|Pipes]]
+- [NestJS Interceptors](https://docs.nestjs.com/interceptors)

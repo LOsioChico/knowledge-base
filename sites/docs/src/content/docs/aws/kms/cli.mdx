@@ -1,0 +1,63 @@
+---
+title: KMS CLI cheatsheet
+description: KMS key creation, aliases, key-policy edits, and scheduled deletion commands.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Key creation, aliasing, policy edits, and deletion. Most [[aws/kms|KMS]] work is inspection plus occasional cross-account policy edits — services call `encrypt`/`decrypt` for you.
+
+## Create + label
+
+```bash
+aws kms create-key --description "<purpose>" --query KeyMetadata.KeyId --output text
+aws kms create-alias --alias-name alias/<name> --target-key-id <KEY_ID>
+aws kms list-aliases --key-id <KEY_ID> --query 'Aliases[].AliasName' --output json
+```
+
+## Inspect
+
+```bash
+aws kms describe-key --key-id <KEY_ID> \
+  --query 'KeyMetadata.{Arn:Arn,KeyManager:KeyManager,KeyState:KeyState,Description:Description}' \
+  --output json
+
+aws kms get-key-policy --key-id <KEY_ID> --policy-name default
+
+aws cloudtrail lookup-events \
+  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<KEY_ARN> \
+  --max-results 20
+```
+
+`KeyManager` distinguishes `CUSTOMER` (editable, shareable) from `AWS` (locked).
+
+## Edit the key policy
+
+```bash
+aws kms get-key-policy --key-id <KEY_ID> --policy-name default \
+  --query Policy --output text > cmk-policy.json
+# Edit cmk-policy.json (e.g. add Account B Decrypt)
+aws kms put-key-policy --key-id <KEY_ID> --policy-name default --policy file://cmk-policy.json
+```
+
+`put-key-policy` is read-modify-write with no concurrency token — coordinate manually.
+
+## Cleanup
+
+```bash
+aws kms schedule-key-deletion --key-id <KEY_ID> --pending-window-in-days 7
+aws kms cancel-key-deletion   --key-id <KEY_ID>
+aws kms disable-key --key-id <KEY_ID>
+aws kms enable-key  --key-id <KEY_ID>
+```
+
+<Aside type="caution" title="Deletion is permanent">
+
+There's no undo after the pending window. Anything encrypted with that key becomes undecryptable. Prefer `disable-key` when you might need recovery.
+
+</Aside>
+
+## Tips
+
+- Reference keys by **alias** in app config.
+- Cross-account needs key-policy edit **and** [[aws/iam|IAM]] policy on the consumer — [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]] walkthrough.

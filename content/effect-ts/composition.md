@@ -21,9 +21,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/composition.mdx` (Twoslash + Tabs). This vault note stays the audit source until the area is fully migrated.
-
 > Effect ships three ways to compose effects: `pipe` for linear value-to-value transforms, `Effect.gen` for branching/looping control flow, and `Effect.fn` for named callables that auto-instrument tracing (every call becomes a span in the built-in tracer, so distributed-trace timelines show one entry per call without manual `withSpan`). They're complementary, not competing. Picking the right one per call site keeps the type signatures readable and the traces useful.
 
 ## The three idioms in one minute

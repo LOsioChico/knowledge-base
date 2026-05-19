@@ -1,0 +1,326 @@
+---
+title: PostgreSQL setup with TypeORM
+description: Wire @nestjs/typeorm to Postgres with forRootAsync, forFeature repositories, and CLI migrations from a standalone DataSource.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Wire `@nestjs/typeorm` to Postgres via `forRootAsync` + `ConfigService`, register entities per feature, inject repositories, and run migrations from a standalone `DataSource`. One `forRoot` per process; `forFeature` per module.
+
+## Setup
+
+```bash
+npm install @nestjs/typeorm typeorm pg
+npm install --save-dev @types/pg
+```
+
+`pg` is the [Postgres driver](https://node-postgres.com/) TypeORM loads when `type: "postgres"`.
+
+<Steps>
+
+1. **Smoke test with `forRoot` (dev only)**
+
+   ```typescript
+   import { Module } from "@nestjs/common";
+   import { TypeOrmModule } from "@nestjs/typeorm";
+
+   @Module({
+   imports: [
+   TypeOrmModule.forRoot({
+   type: "postgres",
+   host: "localhost",
+   port: 5432,
+   username: "postgres",
+   password: "postgres",
+   database: "app",
+   autoLoadEntities: true,
+   synchronize: true, // dev only
+   }),
+   ],
+   })
+   export class AppModule {}
+   ```
+
+   Local Postgres:
+
+   ```bash
+   docker run --rm -d --name pg \
+   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=app \
+   -p 5432:5432 postgres:16
+   ```
+
+   <Aside type="danger" title="Never ship synchronize: true">
+
+   `synchronize: true` re-derives schema on every boot and can drop columns in production. Disable it and use migrations (step 5).
+
+   </Aside>
+
+2. **`forRootAsync` + `ConfigService`**
+
+   ```typescript
+   import { Module } from "@nestjs/common";
+   import { ConfigModule, ConfigService } from "@nestjs/config";
+   import { TypeOrmModule } from "@nestjs/typeorm";
+   import * as Joi from "joi";
+
+   @Module({
+   imports: [
+   ConfigModule.forRoot({
+   isGlobal: true,
+   validationSchema: Joi.object({
+   DATABASE_HOST: Joi.string().required(),
+   DATABASE_PORT: Joi.number().default(5432),
+   DATABASE_USER: Joi.string().required(),
+   DATABASE_PASSWORD: Joi.string().required(),
+   DATABASE_NAME: Joi.string().required(),
+   DATABASE_SSL: Joi.boolean().default(false),
+   NODE_ENV: Joi.string()
+   .valid("development", "test", "production")
+   .default("development"),
+   }),
+   }),
+   TypeOrmModule.forRootAsync({
+   inject: [ConfigService],
+   useFactory: (config: ConfigService) => ({
+   type: "postgres",
+   host: config.getOrThrow<string>("DATABASE_HOST"),
+   port: config.getOrThrow<number>("DATABASE_PORT"),
+   username: config.getOrThrow<string>("DATABASE_USER"),
+   password: config.getOrThrow<string>("DATABASE_PASSWORD"),
+   database: config.getOrThrow<string>("DATABASE_NAME"),
+   ssl: config.get<boolean>("DATABASE_SSL")
+   ? { rejectUnauthorized: false }
+   : false,
+   autoLoadEntities: true,
+   synchronize: false,
+   migrationsRun: config.get("NODE_ENV") === "production",
+   }),
+   }),
+   ],
+   })
+   export class AppModule {}
+   ```
+
+   [`ConfigService.getOrThrow`](https://github.com/nestjs/config/blob/master/lib/config.service.ts) fails fast at boot when a key is missing.
+
+3. **Entities + `forFeature`**
+
+   ```typescript
+   import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+
+   @Entity({ name: "users" })
+   @Unique("users_email_key", ["email"])
+   export class User {
+   @PrimaryGeneratedColumn("uuid")
+   id!: string;
+
+   @Column()
+   email!: string;
+
+   @Column()
+   name!: string;
+
+   @Column({ default: true })
+   isActive!: boolean;
+   }
+   ```
+
+   ```typescript
+   import { Module } from "@nestjs/common";
+   import { TypeOrmModule } from "@nestjs/typeorm";
+   import { UsersController } from "./users.controller";
+   import { UsersService } from "./users.service";
+   import { User } from "./user.entity";
+
+   @Module({
+   imports: [TypeOrmModule.forFeature([User])],
+   controllers: [UsersController],
+   providers: [UsersService],
+   exports: [UsersService],
+   })
+   export class UsersModule {}
+   ```
+
+   <Aside type="caution" title="autoLoadEntities and relation targets">
+
+   `autoLoadEntities: true` collects entities from every `forFeature` call. If `User` has `@OneToMany(() => Post)` but no module registers `Post`, startup fails with missing metadata. Register `Post` in some `forFeature` or use an explicit `entities` array ([docs](https://docs.nestjs.com/techniques/database#auto-load-entities)).
+
+   </Aside>
+
+4. **Repository CRUD**
+
+   ```typescript
+   import { Injectable, NotFoundException } from "@nestjs/common";
+   import { InjectRepository } from "@nestjs/typeorm";
+   import { Repository } from "typeorm";
+   import { User } from "./user.entity";
+
+   @Injectable()
+   export class UsersService {
+   constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
+
+   create(data: Pick<User, "email" | "name">): Promise<User> {
+   return this.users.save(this.users.create(data));
+   }
+
+   findAll(): Promise<User[]> {
+   return this.users.find();
+   }
+
+   async findOne(id: string): Promise<User> {
+   const user = await this.users.findOneBy({ id });
+   if (!user) throw new NotFoundException(`User ${id} not found`);
+   return user;
+   }
+
+   async update(id: string, data: Partial<User>): Promise<User> {
+   await this.users.update(id, data);
+   return this.findOne(id);
+   }
+
+   async remove(id: string): Promise<void> {
+   const result = await this.users.delete(id);
+   if (!result.affected) throw new NotFoundException(`User ${id} not found`);
+   }
+   }
+   ```
+
+   ```typescript
+   import {
+   Body,
+   Controller,
+   Delete,
+   Get,
+   HttpCode,
+   Param,
+   ParseUUIDPipe,
+   Patch,
+   Post,
+   } from "@nestjs/common";
+   import { UsersService } from "./users.service";
+   import { User } from "./user.entity";
+
+   @Controller("users")
+   export class UsersController {
+   constructor(private readonly users: UsersService) {}
+
+   @Post()
+   create(@Body() body: Pick<User, "email" | "name">): Promise<User> {
+   return this.users.create(body);
+   }
+
+   @Get()
+   findAll(): Promise<User[]> {
+   return this.users.findAll();
+   }
+
+   @Get(":id")
+   findOne(@Param("id", ParseUUIDPipe) id: string): Promise<User> {
+   return this.users.findOne(id);
+   }
+
+   @Patch(":id")
+   update(
+   @Param("id", ParseUUIDPipe) id: string,
+   @Body() body: Partial<User>,
+   ): Promise<User> {
+   return this.users.update(id, body);
+   }
+
+   @Delete(":id")
+   @HttpCode(204)
+   remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
+   return this.users.remove(id);
+   }
+   }
+   ```
+
+   `POST /users` with `{ "email": "ada@example.com", "name": "Ada" }` returns `201` and:
+
+   ```json
+   {
+   "id": "5b1d6f3a-9c1f-4e1e-9a7e-8c6b1f0a2c3d",
+   "email": "ada@example.com",
+   "name": "Ada",
+   "isActive": true
+   }
+   ```
+
+   Duplicate email → Postgres SQLSTATE `23505` in `QueryFailedError`. Map it with [[nestjs/data/typeorm/handle-database-errors|handle database errors]], not per-controller try/catch.
+
+5. **Migrations (standalone `DataSource`)**
+
+   ```typescript
+   import "dotenv/config";
+   import { DataSource } from "typeorm";
+
+   export const AppDataSource = new DataSource({
+   type: "postgres",
+   host: process.env.DATABASE_HOST!,
+   port: Number(process.env.DATABASE_PORT ?? 5432),
+   username: process.env.DATABASE_USER!,
+   password: process.env.DATABASE_PASSWORD!,
+   database: process.env.DATABASE_NAME!,
+   entities: ["src/**/*.entity.{ts,js}"],
+   migrations: ["src/migrations/*.{ts,js}"],
+   synchronize: false,
+   migrationsTableName: "typeorm_migrations",
+   });
+   ```
+
+   ```json
+   {
+   "scripts": {
+   "typeorm": "typeorm-ts-node-commonjs -d src/data-source.ts",
+   "migration:generate": "npm run typeorm -- migration:generate",
+   "migration:run": "npm run typeorm -- migration:run",
+   "migration:revert": "npm run typeorm -- migration:revert"
+   }
+   }
+   ```
+
+   ```bash
+   npm run migration:generate -- src/migrations/AddUsers
+   npm run migration:run
+   ```
+
+   Share connection options via a `dbOptions()` factory used by both `data-source.ts` and `forRootAsync` so CLI and Nest never drift.
+
+</Steps>
+
+## Common configuration options
+
+| Option | Purpose | When to change |
+| --- | --- | --- |
+| `synchronize` | Auto schema from entities | Dev only; never prod |
+| `autoLoadEntities` | Pull from `forFeature` | Almost always `true` |
+| `migrationsRun` | Run pending on boot | `true` in prod if desired |
+| `ssl` | TLS to server | Managed Postgres providers |
+| `extra` | `pg` pool options | `max`, `statement_timeout` ([pool docs](https://node-postgres.com/apis/pool)) |
+
+Full list: [TypeOrmModuleOptions](https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts), [data source options](https://typeorm.io/data-source-options).
+
+<Aside type="caution" title="One forRoot, many forFeature">
+
+Call `TypeOrmModule.forRoot` once. Each feature uses `forFeature([Entity])`. Multiple databases need a `name` on each connection.
+
+</Aside>
+
+<Aside type="caution" title="Repository visibility">
+
+`@InjectRepository(User)` only works in the module that imported `forFeature([User])`, unless that module `exports: [TypeOrmModule]`.
+
+</Aside>
+
+<Aside type="note" title="EntityNotFoundError is not QueryFailedError">
+
+`findOneOrFail()` throws `EntityNotFoundError`. Add `@Catch(EntityNotFoundError)` or use `findOne` + `NotFoundException` as in step 4.
+
+</Aside>
+
+## See also
+
+- [[nestjs/data/typeorm/handle-database-errors|Handle database errors]]
+- [[nestjs/data/typeorm|TypeORM MOC]]
+- [NestJS database techniques](https://docs.nestjs.com/techniques/database)
+- [TypeORM migrations](https://typeorm.io/migrations)

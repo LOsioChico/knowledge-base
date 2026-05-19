@@ -1,0 +1,93 @@
+---
+title: Cross-account AMI copy (EC2)
+description: Share and copy an EC2 AMI to a destination account so the destination owns independent snapshots.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image` — snapshot share is required.
+
+## Launch ≠ copy permission
+
+Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html):
+
+- `modify-image-attribute --launch-permission` → destination can `RunInstances` from shared AMI.
+- `copy-image` requires `modify-snapshot-attribute --create-volume-permission` on **each** underlying EBS snapshot.
+
+| Symptom | Likely cause | Fix |
+| --- | --- | --- |
+| `InvalidSnapshot.NotFound` on `copy-image` | Snapshot not shared, only AMI launch permission | `modify-snapshot-attribute --create-volume-permission` on every EBS snapshot |
+| `AuthFailure` on `copy-image` | KMS key not shared for encrypted snapshots | Share CMK to destination account ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
+| Destination can launch but not copy | Launch permission without snapshot share | Share snapshots, then `copy-image` so B owns the AMI |
+
+## Recipe
+
+Profiles: `source`, `dest`. Replace regions, AMI/snapshot IDs, `DEST_ACCOUNT_ID`.
+
+## 1. Pre-flight
+
+```bash
+aws sts get-caller-identity --profile source --output json
+aws sts get-caller-identity --profile dest   --output json
+```
+
+## 2. List AMIs to share
+
+```bash
+aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
+--filters "Name=tag:Backup,Values=BACKUP_TAG" \
+--query 'Images[].{AMI:ImageId,Snap:BlockDeviceMappings[0].Ebs.SnapshotId,Enc:BlockDeviceMappings[0].Ebs.Encrypted}' \
+--output table
+```
+
+## 3. 1b. KMS path
+
+| Encrypted | KmsKeyId | Action |
+| --- | --- | --- |
+| False | — | Skip KMS section |
+| True | Customer CMK | Share key ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
+| True | `alias/aws/ebs` | Re-encrypt with `copy-snapshot --kms-key-id` first |
+
+## 4. Share AMI (launch permission)
+
+```bash
+aws ec2 modify-image-attribute --profile source --region SOURCE_REGION \
+--image-id AMI_ID \
+--launch-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+```
+
+## 5. Share underlying snapshot(s)
+
+```bash
+aws ec2 modify-snapshot-attribute --profile source --region SOURCE_REGION \
+--snapshot-id SNAPSHOT_ID \
+--create-volume-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+```
+
+Repeat for every block device mapping.
+
+## 6. Copy from destination
+
+```bash
+NEW_AMI=$(aws ec2 copy-image --profile dest --region DEST_REGION \
+--source-region SOURCE_REGION \
+--source-image-id AMI_ID \
+--name "copied-$(date +%Y%m%d)-AMI_ID" \
+--query ImageId --output text)
+
+aws ec2 wait image-available --profile dest --region DEST_REGION --image-ids $NEW_AMI
+```
+
+## 7. Re-tag AMI and snapshots
+
+Tags from other accounts do not copy ([CopyingAMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html)). Tag AMI and each new snapshot ID separately.
+
+## Anti-pattern: share without copy
+
+Destination can launch while A owns the AMI — closing A or revoking share loses access. For "keep forever in B", **copy is mandatory**.
+
+## See also
+
+- [[aws/ec2/snapshot-all-instances|Snapshot every instance]].
+- [[aws/kms|KMS]].
+- [Sharing AMIs explicitly](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html) (official).

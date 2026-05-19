@@ -1,0 +1,65 @@
+---
+title: AWS
+description: Map of content for AWS — CLI fundamentals, service indexes, cross-account recipes, and migration playbooks.
+---
+
+import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Map of content for AWS. Each service lives in `aws/<service>/`: `index` is the concept note, `cli` is the cheatsheet, and deep-dives or recipes sit alongside. Cross-cutting recipes live under [[aws/recipes|AWS recipes]]; CLI fundamentals under [[aws/cli|AWS CLI]].
+
+## TL;DR
+
+- **Start with CLI + IAM**: [[aws/cli/profiles-and-credentials|profiles]], [[aws/iam|IAM]], then a hands-on [[aws/s3/quickstart|S3 quickstart]].
+- **Cross-account pattern recurs everywhere**: [[aws/recipes/cross-account-role-pattern|assume-role + ExternalId]] underlies RDS, S3, KMS, and partial migrations.
+- **Account migrations**: [[aws/account-migrations|playbook]] stitches per-service recipes into one ordered cutover.
+- **Compute choice**: [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — workload shape, not "serverless good".
+
+## Start here
+
+<Tabs>
+  <TabItem label="New to AWS">
+    <Steps>
+
+    1. [[aws/cli|AWS CLI]] — profiles, `sts get-caller-identity`, `--query` / `--output`.
+    2. [[aws/iam|IAM]] — principals, policies, roles for code.
+    3. [[aws/s3/quickstart|S3 quickstart]] — 10-minute first bucket.
+    4. [[aws/recipes/cross-account-role-pattern|Cross-account role pattern]] — trust policy + ExternalId.
+
+    </Steps>
+  </TabItem>
+  <TabItem label="Account migration">
+    <Steps>
+
+    1. [[aws/account-migrations|Account migrations playbook]] — pre-flight and recommended order.
+    2. Data first: [[aws/rds/cross-account-snapshot|RDS snapshot]], [[aws/s3/cross-account-migration|S3 sync]].
+    3. Frontend last: [[aws/amplify/cross-account-migration|Amplify]], [[aws/cloudfront/alternate-domain-claim|CloudFront alias gotcha]].
+
+    </Steps>
+  </TabItem>
+</Tabs>
+
+## Services
+
+| Service | Index | Notes |
+| --- | --- | --- |
+| S3 | [S3](/knowledge-base/aws/s3/) | Deep siblings: storage classes, lifecycle, events, presigned URLs, static site |
+| IAM | [IAM](/knowledge-base/aws/iam/) | Authn/authz for every API call |
+| RDS | [RDS](/knowledge-base/aws/rds/) | Snapshots as the migration primitive |
+| CloudFront | [CloudFront](/knowledge-base/aws/cloudfront/) | CDN; aliases globally unique |
+| Amplify | [Amplify Hosting](/knowledge-base/aws/amplify/) | Managed frontend; CloudFront under the hood |
+| KMS | [KMS](/knowledge-base/aws/kms/) | Encryption keys; cross-account needs both policies |
+| Lambda | [Lambda](/knowledge-base/aws/lambda/) | Event-driven compute |
+| EC2 | [EC2](/knowledge-base/aws/ec2/) | VMs, AMIs, EBS |
+| VPC | [VPC](/knowledge-base/aws/vpc/) | Private network |
+| DynamoDB | [DynamoDB](/knowledge-base/aws/dynamodb/) | Key-value + document |
+| SQS | [SQS](/knowledge-base/aws/sqs/) | Managed queue |
+| SNS | [SNS](/knowledge-base/aws/sns/) | Pub/sub fan-out |
+| ECS | [ECS and Fargate](/knowledge-base/aws/ecs/) | Containers |
+
+## Cross-cutting
+
+- [[aws/recipes|AWS recipes]] — cross-service procedures.
+- [[aws/account-migrations|Account migrations]] — end-to-end playbook.
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — compute decision matrix.
+- [[aws/secrets-manager|Secrets Manager]] — named secrets under KMS.
+

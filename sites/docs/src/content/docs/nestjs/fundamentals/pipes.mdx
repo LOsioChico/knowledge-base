@@ -1,0 +1,171 @@
+---
+title: Pipes
+description: Transform or validate a single handler argument before the route method runs.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Run on **one** argument at a time (`@Body()`, `@Param()`, `@Query()`): coerce types, apply defaults, or reject with `400` before the handler executes.
+
+<Tabs>
+  <TabItem label="Use ValidationPipe when">
+    Whole DTO class on `@Body()` / `@Query()` — decorators, whitelist, nested objects. See [[nestjs/recipes/validation|Validation recipe]].
+  </TabItem>
+  <TabItem label="Use built-in Parse* when">
+    Single route or query param — `@Param('id', ParseIntPipe)`, `@Query('page', ParseIntPipe)`. Fails fast with a clear `400` when coercion is impossible.
+  </TabItem>
+</Tabs>
+
+## Contract
+
+```typescript
+import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
+
+@Injectable()
+export class ParseIntPipe implements PipeTransform<string, number> {
+  transform(value: string, _metadata: ArgumentMetadata): number {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) throw new BadRequestException("Validation failed");
+    return parsed;
+  }
+}
+```
+
+Return a value to continue; throw (usually `BadRequestException`) to stop the pipeline.
+
+## Why pipes exist
+
+| Layer | Sees | Job |
+| --- | --- | --- |
+| [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) | Whole `req` | Raw HTTP |
+| [Guards](/knowledge-base/nestjs/fundamentals/guards/) | `ExecutionContext` | Allow/deny |
+| **Pipe** | One arg + `metatype` | Transform/validate that arg |
+| [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) | Handler stream | Before + after handler |
+
+`ValidationPipe` works because it reads the DTO **class** from `metatype` and runs `class-validator` on that value only ([Pipes](https://docs.nestjs.com/pipes)).
+
+## Built-in pipes (high signal)
+
+| Pipe | Job |
+| --- | --- |
+| `ValidationPipe` | DTO validation + `class-transformer` |
+| `ParseIntPipe` / `ParseFloatPipe` / `ParseBoolPipe` | Coerce route/query params |
+| `ParseUUIDPipe` | UUID shape (optional `version`) |
+| `ParseArrayPipe` | Split `a,b,c` → array |
+| `DefaultValuePipe` | Fallback when `null` / `undefined` / `NaN` |
+| `ParseFilePipe` | Upload validators — [file uploads](/knowledge-base/nestjs/recipes/file-uploads/) |
+
+## Order
+
+<Tabs>
+  <TabItem label="Scopes">
+    Global → controller → route (same direction as guards). **Every** matching pipe in the list runs.
+  </TabItem>
+  <TabItem label="Per parameter">
+    For one handler, Nest runs pipes on each parameter. **Route-parameter pipes run in reverse declaration order** (last `@Param()` pipe first). See [router-execution-context](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts).
+  </TabItem>
+</Tabs>
+
+```typescript
+@Get(":id")
+findOne(
+  @Param("id", ParseIntPipe) id: number,
+  @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+) {}
+```
+
+`DefaultValuePipe` must sit **before** `ParseIntPipe` so `?page=` missing becomes `1`, not `NaN`.
+
+## ValidationPipe (global setup)
+
+<Steps>
+
+1. Install peers: `class-validator` + `class-transformer`.
+2. Register globally (or per-route) with `whitelist` + `transform`.
+3. Define DTOs with decorators; handler receives **class instances**, not plain objects.
+
+</Steps>
+
+```typescript
+// main.ts
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+**Show the behavior** — invalid body:
+
+```json
+POST /cats
+{ "name": "", "extra": "nope" }
+
+→ 400
+{
+  "statusCode": 400,
+  "message": ["name should not be empty", "property extra should not exist"],
+  "error": "Bad Request"
+}
+```
+
+(Exact `message` shape depends on `exceptionFactory` and `disableErrorMessages`.)
+
+<Aside type="caution" title="transform: true changes what the handler receives">
+
+With `whitelist: true`, unknown keys are stripped **before** your method runs. Logging `req.body` elsewhere may not match the DTO instance passed to `@Body()`.
+
+</Aside>
+
+| Option | Default | Why you care |
+| --- | --- | --- |
+| `whitelist` | `false` | Strip non-decorated properties |
+| `forbidNonWhitelisted` | `false` | Throw instead of strip |
+| `transform` | `false` | Instantiate DTO class + implicit coercion |
+| `transformOptions.enableImplicitConversion` | — | `"1"` → `1` when property is `number` |
+
+Deep DTO patterns: [[nestjs/recipes/validation|validation recipe]].
+
+### Zod (not built-in)
+
+```typescript
+import { BadRequestException, PipeTransform } from "@nestjs/common";
+import { ZodSchema } from "zod";
+
+export class ZodValidationPipe implements PipeTransform {
+  constructor(private schema: ZodSchema) {}
+  transform(value: unknown) {
+    const parsed = this.schema.safeParse(value);
+    if (!parsed.success) throw new BadRequestException(parsed.error.format());
+    return parsed.data;
+  }
+}
+```
+
+Bind per param: `@Body(new ZodValidationPipe(createUserSchema))` ([Nest example](https://docs.nestjs.com/pipes#object-schema-validation)).
+
+## Common errors
+
+| Symptom | Likely cause |
+| --- | --- |
+| `400` on optional query | Empty string is not nil — add `DefaultValuePipe` or custom normalize |
+| DTO methods missing | `transform: false` — enable `transform: true` |
+| Wrong pipe order on `@Query` | Put `DefaultValuePipe` before `ParseIntPipe` |
+
+## See also
+
+- [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
+- [[nestjs/fundamentals/exception-filters|Exception filters]] — shape validation errors globally
+- [NestJS Pipes](https://docs.nestjs.com/pipes) · [Validation](https://docs.nestjs.com/techniques/validation)

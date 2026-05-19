@@ -1,16 +1,15 @@
 ---
-description: "Use when creating or editing Starlight MDX under sites/docs/. Twoslash, wikilinks, migration tracker."
+description: "Use when creating or editing Starlight MDX under sites/docs/."
 applyTo: "sites/docs/**/*.mdx"
 ---
 
-# Starlight MDX Guardrails
+# Starlight MDX
 
-- Load **kb-starlight-author** (`.github/skills/kb-starlight-author/SKILL.md`) and `docs/STARLIGHT-MIGRATION.md` before authoring.
-- Read the vault source note under `content/` when migrating or syncing facts.
-- After edits: `bun run lint:docs` and `bun run docs:build` from repo root (install `sites/docs` deps first).
-- Before push (with other areas): `bun run lint:ci` matches CI. See `docs/PIPELINE.md`.
-- Internal links in prose: `[[effect-ts/quickstart|Quickstart]]`. Cards/JSX: `<a href="/knowledge-base/effect-ts/quickstart/">` (include `/knowledge-base` base).
-- Do not use full Quartz URLs for slugs listed as `migrated` in `sites/docs/migration.json`.
-- Do not add per-page Twoslash tutorials (`// ^?`, "hover the type"); state types in prose. See `docs/STARLIGHT-FEATURES.md`.
-- Update `sites/docs/migration.json` when a note graduates from pending to migrated.
-- Vault `content/` remains the Obsidian + audit source until explicitly demoted; edit both when facts change.
+- Load **kb-author** → Workflow 3 + audits **S1–S6** (`.github/skills/kb-author/SKILL.md`, `audits/S*.md`).
+- Read `docs/PUBLISHING.md` before authoring a page.
+- Re-author for readers; vault paste fails audit S1.
+- Internal links: `[[slug|label]]` in prose; `[label](/knowledge-base/slug/)` in table cells.
+- No `https://losiochico.github.io/knowledge-base/...` in MDX (`lint:mdx-link-hygiene --strict`).
+- Topics without MDX yet: say "planned" in prose — no dead site URLs.
+- After edits: `bun run lint:docs` and `bun run docs:build`.
+- New pages: add matching `content/<slug>.md`, update sidebar and area MOC; `bun run lint:publish-parity`.

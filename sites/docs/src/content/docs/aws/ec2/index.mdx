@@ -1,0 +1,31 @@
+---
+title: EC2
+description: Elastic Compute Cloud — instances, AMIs, EBS volumes, security groups, and pricing models.
+---
+
+> Amazon EC2 is rent-a-VM: pick an AMI, instance type, network ([[aws/vpc|VPC]] + subnet + security group), key pair; AWS returns a running machine you can SSH into.
+
+## TL;DR
+
+- **Instance = VM** in one Availability Zone; EBS volumes for persistent storage.
+- **AMI = boot disk template**. Cross-Region needs `copy-image`; cross-account needs share + copy ([[aws/ec2/ami-cross-account-copy|recipe]]).
+- **Whole-machine backups are AMIs**, not raw EBS snapshots alone — [[aws/ec2/snapshot-all-instances|snapshot every instance]].
+- **Networking in VPC**: security groups gate traffic; Elastic IP keeps public address across stop/start.
+- **Per-second billing**; Reserved and Spot for sustained or interruptible workloads.
+
+## When to use
+
+- **Use EC2** for long-running VMs, GPU, custom kernels, lift-and-shift.
+- **Don't use EC2** for stateless request handlers ([[aws/lambda|Lambda]]/containers) or managed databases ([[aws/rds|RDS]]).
+
+## Pending notes
+
+- Minimum viable VPC + subnet + security group for one instance.
+- Spot vs On-Demand vs Savings Plans.
+- IMDSv2 enforcement.
+
+## See also
+
+- [[aws/ec2/snapshot-all-instances|Snapshot every EC2 instance]].
+- [[aws/ec2/ami-cross-account-copy|Cross-account AMI copy]].
+- [Amazon EC2 user guide](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/concepts.html) (official).

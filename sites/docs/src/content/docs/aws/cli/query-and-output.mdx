@@ -1,0 +1,74 @@
+---
+title: AWS CLI query and output
+description: JMESPath --query projections and --output json, table, text for script-friendly CLI output.
+---
+
+> Use `--query` (JMESPath) to project fields and `--output table|json|text` to pick a shape scripts or humans can read.
+
+## Why it matters
+
+Most AWS API responses are large nested JSON. [`--query`](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-filter.html) and [`--output`](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-output-format.html) ship with the CLI — no `jq` required in shared snippets.
+
+## `--query`: JMESPath patterns
+
+```bash
+# Pluck one field
+aws sts get-caller-identity --query Arn --output text
+
+# Project with renamed keys
+aws cloudfront list-distributions \
+  --query 'DistributionList.Items[].{Id:Id,Domain:DomainName,Status:Status}' \
+  --output table
+
+# Filter a list
+aws cloudfront list-distributions \
+  --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, 'app.example.com')].{Id:Id,Domain:DomainName}" \
+  --output table
+
+# Nested drill-down
+aws amplify get-domain-association \
+  --app-id <APP_ID> --domain-name example.com \
+  --query 'domainAssociation.{status:domainStatus,reason:statusReason,verified:subDomains[0].verified}' \
+  --output json
+```
+
+Patterns:
+
+- `Items[?cond]` filters with `==`, `!=`, `&&`, `||`, `contains`, `starts_with`.
+- `[].{a:x,b:y}` projects every element.
+- Backticks wrap JSON literals: `[?Status==\`Active\`]`.
+- Single-quote the whole `--query` in bash.
+
+## `--output`: pick a shape
+
+| Output | When to use |
+| --- | --- |
+| `json` | Default; pipe to tools or save |
+| `table` | Human inspection |
+| `text` | Tab-separated; shell variables and `xargs` |
+| `yaml` | Same as json, fewer braces (CLI v2) |
+
+```bash
+KEY_ID=$(aws kms create-key \
+  --description "..." \
+  --query KeyMetadata.KeyId --output text)
+```
+
+`text` strips field names and sorts columns **alphabetically** by JSON key ([source](https://docs.aws.amazon.com/cli/latest/userguide/cli-usage-output-format.html#cli-usage-output-format-text)). Pin order with list projection:
+
+```bash
+aws lambda list-functions \
+  --query 'Functions[].[FunctionName, Runtime, LastModified]' \
+  --output text
+```
+
+## Pagination
+
+```bash
+aws lambda list-functions \
+  --max-items 5 \
+  --query 'Functions[].{Name:FunctionName,Runtime:Runtime,Last:LastModified}' \
+  --output table
+```
+
+Use `--starting-token` when the API returns `NextToken` and the CLI does not auto-paginate.

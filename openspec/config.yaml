@@ -1,15 +1,15 @@
 strict_tdd: false
 context: |
-  knowledge-base: vault content/ (Quartz/Obsidian) + published sites/docs/ (Starlight MDX). effect-ts area migrated; other areas TBD (sites/docs/migration.json).
-  Operating contract: AGENTS.md; kb-author for content/; kb-starlight-author for sites/docs/.
-  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/vault-check.mjs, scripts/audit-notes/, scripts/merge-pages.mjs.
+  knowledge-base: vault content/ (Obsidian markdown, not deployed) + published sites/docs/ (Starlight MDX). Full vault ↔ MDX parity except inbox.md; enforced by bun run lint:publish-parity.
+  Operating contract: AGENTS.md; kb-author (vault A–P, MDX S1–S6); docs/PUBLISHING.md; Starlight-only deploy.
+  Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/lint-mdx-*.mjs, scripts/vault-check.mjs, scripts/audit-notes/.
   Strict TDD applies only to scripts/** changes. content/ edits use vault lint + audit, not test-first TDD.
   Post-edit gate when content/ changed: bun run vault:check --base HEAD~1 (LLM audit needs CURSOR_API_KEY in repo-root .env).
   vault:check also runs lint:docs when sites/docs/ is in the git diff.
   After sites/docs/ only: bun run lint:docs && bun run docs:build. sites/docs uses Bun (bun.lock).
   Linter-only (no LLM): bun run lint:ci (vault wikilinks + Pass 0 + lint:docs). Matches CI lint job.
   LLM audit profiles: cd scripts/audit-notes && bun run audit:triage (not root package.json).
-  CI (.github/workflows/deploy.yml): lint:ci + test:ci on PR+main; docs:build on PR; Quartz+Starlight merge on main. See docs/PIPELINE.md.
+  CI (.github/workflows/deploy.yml): lint:ci + test:ci on PR+main; docs:build on PR+main; Pages serves sites/docs/dist only. See docs/PIPELINE.md.
   Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, sites/docs/package.json, GitHub Actions.
 rules:
   proposal:
@@ -37,7 +37,7 @@ testing:
     unit:
       - scope: "."
         command: "bun run test:ci"
-        framework: "node:test via tsx (root wikilink/vault-check/merge-pages + audit-notes)"
+        framework: "node:test via tsx (root wikilink/vault-check + audit-notes)"
     integration:
       []
     e2e:

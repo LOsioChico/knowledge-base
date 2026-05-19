@@ -1,0 +1,30 @@
+---
+title: SQS
+description: Simple Queue Service — Standard vs FIFO queues, visibility timeout, dead-letter queues, and Lambda event sources.
+---
+
+> Amazon SQS is the managed message queue: producer enqueues, consumer pulls, processes, and deletes. Two flavors trade ordering against throughput.
+
+## TL;DR
+
+- **Standard** = best-effort ordering, at-least-once, near-unlimited throughput. **FIFO** = strict ordering + exactly-once within a `MessageGroupId`, capped throughput.
+- **Pull, not push**. Consumers call `ReceiveMessage` and must `DeleteMessage` after success.
+- **Visibility timeout** hides a message while one consumer processes it. Tune longer than worst-case handler time.
+- **Dead-letter queue (DLQ)** receives messages that failed too many times. Always wire one.
+- Pairs with [[aws/sns|SNS]] fan-out and [[aws/lambda|Lambda]] event-source mappings.
+
+## When to use
+
+- **Use SQS** for: decoupling producers/consumers, smoothing spikes, retry buffers, [[aws/s3/event-notifications|S3 event]] buffering.
+- **Don't use SQS** for: fan-out to many consumers (SNS/EventBridge); global ordering at high throughput (FIFO caps); stream replay (Kinesis/MSK).
+
+## Pending notes
+
+- DLQ wiring + redrive with `maxReceiveCount`.
+- Visibility-timeout pitfalls when handlers run long.
+- SNS → SQS fan-out with raw message delivery.
+
+## See also
+
+- [[aws/sns|SNS]] — pub/sub that fans out to SQS queues.
+- [Amazon SQS developer guide](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html) (official).

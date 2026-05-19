@@ -1,0 +1,321 @@
+---
+title: JWT strategy with Passport
+description: Sign JWTs on login, verify with passport-jwt, protect routes with JwtAuthGuard, and opt out public routes with @Public().
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.
+
+## The four-layer stack
+
+| Layer | Package | Role |
+| --- | --- | --- |
+| Orchestrator | `passport` | Strategy registry and verify callback |
+| Strategy | `passport-jwt` | Extract and verify JWT from the request |
+| Nest wrapper | `@nestjs/passport` | `PassportStrategy`, `AuthGuard(name)` |
+| Your code | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` |
+
+`AuthGuard('jwt')` runs whatever strategy is registered as `'jwt'`. `@nestjs/jwt` signs at login; `passport-jwt` verifies on later requests. **Same secret in both places.**
+
+## Setup
+
+```bash
+npm install @nestjs/passport passport @nestjs/jwt passport-jwt
+npm install --save-dev @types/passport-jwt
+```
+
+## Login endpoint
+
+```typescript
+// auth/constants.ts
+export const jwtConstants = {
+  secret: process.env.JWT_SECRET ?? "dev-only-change-me",
+};
+```
+
+```typescript
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { PassportModule } from "@nestjs/passport";
+import { AuthController } from "./auth.controller";
+import { AuthService } from "./auth.service";
+import { JwtStrategy } from "./jwt.strategy";
+import { UsersModule } from "../users/users.module";
+import { jwtConstants } from "./constants";
+
+@Module({
+  imports: [
+    UsersModule,
+    PassportModule,
+    JwtModule.register({
+      global: true,
+      secret: jwtConstants.secret,
+      signOptions: { expiresIn: "60s" },
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService],
+})
+export class AuthModule {}
+```
+
+```typescript
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { UsersService } from "../users/users.service";
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async signIn(username: string, pass: string): Promise<{ access_token: string }> {
+    const user = await this.usersService.findOne(username);
+    if (user?.password !== pass) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.userId, username: user.username };
+    return { access_token: await this.jwtService.signAsync(payload) };
+  }
+}
+```
+
+```typescript
+import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { AuthService } from "./auth.service";
+
+@Controller("auth")
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post("login")
+  signIn(@Body() signInDto: { username: string; password: string }) {
+    return this.authService.signIn(signInDto.username, signInDto.password);
+  }
+}
+```
+
+Valid login (`200`):
+
+```json
+{ "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." }
+```
+
+Wrong credentials (`401`):
+
+```json
+{ "statusCode": 401, "message": "Unauthorized" }
+```
+
+## JWT strategy
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { jwtConstants } from "./constants";
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: jwtConstants.secret,
+    });
+  }
+
+  validate(payload: { sub: number; username: string }) {
+    return { userId: payload.sub, username: payload.username };
+  }
+}
+```
+
+| Option | Purpose |
+| --- | --- |
+| `jwtFromRequest` | `Authorization: Bearer …` |
+| `ignoreExpiration` | `false` → expired token → 401 via default `handleRequest` |
+| `secretOrKey` | Must match `JwtModule.register({ secret })` |
+
+<Aside type="note" title="validate runs after signature check">
+
+Do not re-verify the JWT in `validate()`. Use it for revocation lists, active-user checks, role enrichment. Throw `UnauthorizedException` to reject otherwise-valid tokens.
+
+</Aside>
+
+## Protected route
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { AuthGuard } from "@nestjs/passport";
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard("jwt") {}
+```
+
+```typescript
+import { Controller, Get, Request, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "./jwt-auth.guard";
+
+@Controller("auth")
+export class AuthController {
+  @UseGuards(JwtAuthGuard)
+  @Get("profile")
+  getProfile(@Request() req: { user: { userId: number; username: string } }) {
+    return req.user;
+  }
+}
+```
+
+No token (`401`):
+
+```json
+{ "statusCode": 401, "message": "Unauthorized" }
+```
+
+With `Authorization: Bearer <token>` (`200`):
+
+```json
+{ "userId": 1, "username": "john" }
+```
+
+## Global guard + `@Public()`
+
+<Steps>
+
+1. Decorator:
+
+   ```typescript
+   import { SetMetadata } from "@nestjs/common";
+
+   export const IS_PUBLIC_KEY = "isPublic";
+   export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+   ```
+
+2. Guard:
+
+   ```typescript
+   import { ExecutionContext, Injectable } from "@nestjs/common";
+   import { Reflector } from "@nestjs/core";
+   import { AuthGuard } from "@nestjs/passport";
+   import { IS_PUBLIC_KEY } from "./public.decorator";
+
+   @Injectable()
+   export class JwtAuthGuard extends AuthGuard("jwt") {
+   constructor(private readonly reflector: Reflector) {
+   super();
+   }
+
+   canActivate(context: ExecutionContext) {
+   const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+   context.getHandler(),
+   context.getClass(),
+   ]);
+   if (isPublic) return true;
+   return super.canActivate(context);
+   }
+   }
+   ```
+
+3. Register globally:
+
+   ```typescript
+   import { Module } from "@nestjs/common";
+   import { APP_GUARD } from "@nestjs/core";
+   import { JwtAuthGuard } from "./jwt-auth.guard";
+
+   @Module({
+   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+   })
+   export class AuthModule {}
+   ```
+
+4. Mark login public:
+
+   ```typescript
+   import {
+   Body,
+   Controller,
+   Get,
+   HttpCode,
+   HttpStatus,
+   Post,
+   Request,
+   UseGuards,
+   } from "@nestjs/common";
+   import { AuthService } from "./auth.service";
+   import { JwtAuthGuard } from "./jwt-auth.guard";
+   import { Public } from "./public.decorator";
+
+   @Controller("auth")
+   export class AuthController {
+   constructor(private readonly authService: AuthService) {}
+
+   @Public()
+   @HttpCode(HttpStatus.OK)
+   @Post("login")
+   signIn(@Body() signInDto: { username: string; password: string }) {
+   return this.authService.signIn(signInDto.username, signInDto.password);
+   }
+
+   @UseGuards(JwtAuthGuard)
+   @Get("profile")
+   getProfile(@Request() req: { user: { userId: number; username: string } }) {
+   return req.user;
+   }
+   }
+   ```
+
+</Steps>
+
+Without `@Public()` on `/auth/login`, the global guard returns `401` before `signIn` runs. `getAllAndOverride` checks handler then class ([Reflector](https://github.com/nestjs/nest/blob/master/packages/core/services/reflector.service.ts)).
+
+<Aside type="caution" title="Secret mismatch = 401 everywhere">
+
+Hoist `jwtConstants.secret` (or `ConfigService`) into both `JwtModule` and `JwtStrategy`.
+
+</Aside>
+
+<Aside type="caution" title="Global guard without @Public on login">
+
+Every route including login runs through `JwtAuthGuard`. Add `@Public()` to login, signup, and health checks.
+
+</Aside>
+
+## When to use / when not
+
+<Tabs>
+  <TabItem label="Use JWT when">
+    - Stateless API clients (SPA, mobile, service-to-service)
+    - Most routes need auth: global guard + `@Public()`
+    - Multiple strategies (`AuthGuard(['jwt', 'apikey'])`)
+  </TabItem>
+  <TabItem label="Skip JWT when">
+    - Server-rendered apps with first-party cookies (sessions are simpler to revoke)
+    - Long-lived sessions without refresh-token infrastructure
+    - Trivial dev tools: Basic auth [[nestjs/fundamentals/middleware|middleware]] is enough
+  </TabItem>
+</Tabs>
+
+## Common errors
+
+| Symptom | Likely cause |
+| --- | --- |
+| Every authed request `401` | Secret mismatch between `JwtModule` and `JwtStrategy` |
+| `Unknown authentication strategy "jwt"` | `JwtStrategy` not in `providers` or `PassportModule` missing |
+| `req.user` undefined | No guard, falsy `validate()` return, or `@Public()` |
+| `401` on login with global guard | Missing `@Public()` |
+| `super(...) is not a constructor` | Imported `Strategy` from `passport` instead of `passport-jwt` |
+
+## See also
+
+- [[nestjs/fundamentals/guards|Guards]]
+- [[nestjs/fundamentals/global-providers|Global providers]] — `APP_GUARD` vs `useGlobalGuards()`
+- [[nestjs/recipes/validation|Validation]] — replace raw login body with a DTO
+- [Passport recipe](https://docs.nestjs.com/recipes/passport)
+- [@nestjs/jwt](https://github.com/nestjs/jwt)

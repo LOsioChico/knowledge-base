@@ -1,6 +1,3 @@
-# Quartz framework manages its own formatting (see quartz/.prettierrc).
-quartz/
-
 # Generated / vendored.
 node_modules/
 **/node_modules/

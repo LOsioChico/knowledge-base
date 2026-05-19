@@ -1,0 +1,110 @@
+---
+title: Cross-account S3 bucket migration
+description: Move an S3 bucket between accounts — inventory config, grant cross-account read, aws s3 sync, verify, cutover.
+---
+
+ from "@astrojs/starlight/components";
+
+> Move a bucket between accounts by recreating config in the target, granting cross-account read on the source, and using `aws s3 sync` for server-side copies.
+
+## Trade-off vs replication
+
+[S3 replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html) fits ongoing sync. For one-shot migration before cutover, `aws s3 sync` is simpler — re-run to catch up during the window.
+
+## Recipe
+
+Profiles: `account-a` (source), `account-b` (target).
+
+## 1. Pre-flight
+
+```bash
+aws sts get-caller-identity --profile account-a --output json
+aws sts get-caller-identity --profile account-b --output json
+```
+
+## 2. Inventory the source bucket
+
+```bash
+aws s3api head-bucket            --profile account-a --bucket <SRC_BUCKET>
+aws s3api get-bucket-location    --profile account-a --bucket <SRC_BUCKET>
+aws s3api get-bucket-policy      --profile account-a --bucket <SRC_BUCKET> --query Policy --output text > src-bucket-policy.json
+aws s3api get-bucket-encryption  --profile account-a --bucket <SRC_BUCKET> > src-bucket-encryption.json
+aws s3api get-bucket-versioning  --profile account-a --bucket <SRC_BUCKET>
+aws s3api get-public-access-block --profile account-a --bucket <SRC_BUCKET>
+aws s3api list-objects-v2        --profile account-a --bucket <SRC_BUCKET> --query 'KeyCount' --output text
+```
+
+## 3. Create destination in account B
+
+```bash
+aws s3api create-bucket \
+--profile account-b --region us-east-1 \
+--bucket <DST_BUCKET>
+
+aws s3api put-public-access-block \
+--profile account-b --bucket <DST_BUCKET> \
+--public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+
+aws s3api put-bucket-versioning \
+--profile account-b --bucket <DST_BUCKET> \
+--versioning-configuration Status=Enabled
+
+aws s3api put-bucket-encryption \
+--profile account-b --bucket <DST_BUCKET> \
+--server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
+```
+
+If source uses SSE-KMS with a CMK, replicate or share the key — same pattern as [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]].
+
+## 4. Grant account B read on source
+
+Merge into existing policy (`src-bucket-grant.json`):
+
+```json
+{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Sid": "AllowAccountBToReadForMigration",
+"Effect": "Allow",
+"Principal": { "AWS": "arn:aws:iam::ACCOUNT_B_ID:root" },
+"Action": ["s3:GetObject", "s3:GetObjectVersion", "s3:ListBucket"],
+"Resource": ["arn:aws:s3:::<SRC_BUCKET>", "arn:aws:s3:::<SRC_BUCKET>/*"]
+}
+]
+}
+```
+
+For SSE-KMS objects, also grant `kms:Decrypt` on the source CMK.
+
+## 5. Sync
+
+```bash
+aws s3 sync \
+--profile account-b \
+s3://<SRC_BUCKET> \
+s3://<DST_BUCKET>
+```
+
+Re-run at cutover. For huge buckets, run from EC2 in the destination Region.
+
+## 6. Verify
+
+```bash
+aws s3api list-objects-v2 --profile account-a --bucket <SRC_BUCKET> --query 'KeyCount' --output text
+aws s3api list-objects-v2 --profile account-b --bucket <DST_BUCKET> --query 'KeyCount' --output text
+```
+
+## 7. Cut writers over
+
+Point apps at `<DST_BUCKET>`; final sync; keep source read-only for rollback days.
+
+## Cleanup
+
+Restore `src-bucket-policy.json` from step 1; eventually empty and delete source bucket.
+
+## Do not skip
+
+- **Recreate bucket policy** in target — copy source, then audit.
+- **Enable versioning before sync** if source had it.
+- **Public-access block** at account and bucket level.

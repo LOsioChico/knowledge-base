@@ -1,0 +1,256 @@
+---
+title: Handle database errors
+description: Map TypeORM QueryFailedError and Postgres SQLSTATE codes to HTTP responses with a global exception filter or service-level catches.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.
+
+## Setup
+
+```bash
+npm install @nestjs/typeorm typeorm pg
+npm install --save-dev @types/pg
+```
+
+## The shape of `QueryFailedError`
+
+TypeORM copies enumerable driver properties onto the wrapper ([QueryFailedError.ts](https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts)). Prefer **`err.driverError`** with `pg`'s `DatabaseError` type over `err.code` (`any` on the wrapper).
+
+```typescript
+import { DatabaseError } from "pg";
+import { QueryFailedError } from "typeorm";
+
+export const PG = {
+  UNIQUE_VIOLATION: "23505",
+  FOREIGN_KEY_VIOLATION: "23503",
+  NOT_NULL_VIOLATION: "23502",
+  CHECK_VIOLATION: "23514",
+} as const;
+
+export function isPgError(err: unknown): err is QueryFailedError<DatabaseError> {
+  return err instanceof QueryFailedError && err.driverError instanceof DatabaseError;
+}
+
+export function isUniqueViolation(
+  err: unknown,
+  constraint?: string,
+): err is QueryFailedError<DatabaseError> {
+  if (!isPgError(err)) return false;
+  if (err.driverError.code !== PG.UNIQUE_VIOLATION) return false;
+  return constraint === undefined || err.driverError.constraint === constraint;
+}
+```
+
+## Driver codes (Postgres focus)
+
+| Constraint | Postgres SQLSTATE | Mapped in filter below |
+| --- | --- | --- |
+| Unique | `23505` | 409 |
+| Foreign key | `23503` | 409 |
+| Not null | `23502` | 422 |
+| Check | `23514` | 422 |
+
+Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes, not `err.message`.
+
+## Recipe 1: Global exception filter
+
+```typescript
+import {
+  ArgumentsHost,
+  Catch,
+  ConflictException,
+  HttpException,
+  InternalServerErrorException,
+  Logger,
+  UnprocessableEntityException,
+} from "@nestjs/common";
+import { BaseExceptionFilter } from "@nestjs/core";
+import type { DatabaseError } from "pg";
+import { QueryFailedError } from "typeorm";
+import { isPgError, PG } from "./db-errors";
+
+@Catch(QueryFailedError)
+export class TypeOrmExceptionFilter extends BaseExceptionFilter {
+  private readonly logger = new Logger(TypeOrmExceptionFilter.name);
+
+  catch(exception: QueryFailedError, host: ArgumentsHost): void {
+    if (!isPgError(exception)) {
+      super.catch(new InternalServerErrorException(), host);
+      return;
+    }
+    const mapped = this.toHttp(exception.driverError);
+    if (mapped instanceof InternalServerErrorException) {
+      this.logger.error(
+        `Unmapped DB error code=${exception.driverError.code} detail=${exception.driverError.detail}`,
+        exception.stack,
+      );
+    }
+    super.catch(mapped, host);
+  }
+
+  private toHttp(err: DatabaseError): HttpException {
+    switch (err.code) {
+      case PG.UNIQUE_VIOLATION:
+        return new ConflictException({
+          statusCode: 409,
+          error: "DUPLICATE",
+          constraint: err.constraint,
+          detail: err.detail,
+        });
+      case PG.FOREIGN_KEY_VIOLATION:
+        return new ConflictException({
+          statusCode: 409,
+          error: "FK_VIOLATION",
+          constraint: err.constraint,
+          detail: err.detail,
+        });
+      case PG.NOT_NULL_VIOLATION:
+        return new UnprocessableEntityException({
+          statusCode: 422,
+          error: "NOT_NULL",
+          column: err.column,
+        });
+      case PG.CHECK_VIOLATION:
+        return new UnprocessableEntityException({
+          statusCode: 422,
+          error: "CHECK",
+          constraint: err.constraint,
+        });
+      default:
+        return new InternalServerErrorException();
+    }
+  }
+}
+```
+
+```typescript
+import { Module } from "@nestjs/common";
+import { APP_FILTER } from "@nestjs/core";
+import { TypeOrmExceptionFilter } from "./typeorm-exception.filter";
+
+@Module({
+  providers: [{ provide: APP_FILTER, useClass: TypeOrmExceptionFilter }],
+})
+export class AppModule {}
+```
+
+`POST /users` with duplicate email (`users_email_key`):
+
+```json
+{
+  "statusCode": 409,
+  "error": "DUPLICATE",
+  "constraint": "users_email_key",
+  "detail": "Key (email)=(ada@example.com) already exists."
+}
+```
+
+<Aside type="danger" title="detail leaks PII">
+
+Postgres `detail` includes the offending value. Redact before sending to clients; keep full detail in server logs.
+
+</Aside>
+
+## Recipe 2: Service-level domain codes
+
+Use **named** constraints (`@Unique('users_email_key', ['email'])`), not `@Column({ unique: true })` (auto `UQ_<hash>` names).
+
+```typescript
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+
+@Entity()
+@Unique("users_email_key", ["email"])
+@Unique("users_username_key", ["username"])
+export class User {
+  @PrimaryGeneratedColumn("uuid") id!: string;
+  @Column() email!: string;
+  @Column() username!: string;
+}
+```
+
+```typescript
+import { ConflictException, Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { isUniqueViolation } from "./db-errors";
+import { User } from "./user.entity";
+
+const USER_CONFLICTS: Record<string, string> = {
+  users_email_key: "EMAIL_TAKEN",
+  users_username_key: "USERNAME_TAKEN",
+};
+
+@Injectable()
+export class UsersService {
+  constructor(@InjectRepository(User) private readonly users: Repository<User>) {}
+
+  async create(data: Pick<User, "email" | "username">): Promise<User> {
+    try {
+      return await this.users.save(this.users.create(data));
+    } catch (err: unknown) {
+      if (isUniqueViolation(err) && err.driverError.constraint) {
+        const code = USER_CONFLICTS[err.driverError.constraint];
+        if (code) throw new ConflictException({ statusCode: 409, error: code });
+      }
+      throw err;
+    }
+  }
+}
+```
+
+Duplicate email response:
+
+```json
+{ "statusCode": 409, "error": "EMAIL_TAKEN" }
+```
+
+<Aside type="note" title="Object payloads need statusCode">
+
+`new ConflictException({ ... })` sends the object as-is ([base-exception-filter.ts](https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts)); include `statusCode` when you want it in the body.
+
+</Aside>
+
+<Tabs>
+  <TabItem label="When to use which">
+    | Approach | Use when |
+    | --- | --- |
+    | Global filter | Consistent JSON for every DB error |
+    | Service catch | Domain codes (`EMAIL_TAKEN` vs `USERNAME_TAKEN`) |
+    | Both | Service handles named constraints; filter handles the rest |
+  </TabItem>
+</Tabs>
+
+## Gotchas
+
+<Aside type="caution" title="Don't match on err.message">
+
+Driver messages change across versions and locales. Use `driverError.code` (SQLSTATE) or MySQL `errno`.
+
+</Aside>
+
+<Aside type="caution" title="Transactions: re-throw after catch">
+
+Inside `dataSource.transaction()`, catching without re-throwing commits broken state ([EntityManager.transaction](https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts#L161-L167)).
+
+</Aside>
+
+<Aside type="note" title="23502 usually means validation missed">
+
+If NOT NULL reaches the DB, [[nestjs/recipes/validation|ValidationPipe]] should have required the field first.
+
+</Aside>
+
+<Aside type="note" title="EntityNotFoundError is separate">
+
+`findOneOrFail()` is not `QueryFailedError`. Map to 404 with its own `@Catch` or use `findOne` + `NotFoundException`.
+
+</Aside>
+
+## See also
+
+- [[nestjs/fundamentals/exception-filters|Exception filters]]
+- [[nestjs/data/typeorm/postgresql-setup|PostgreSQL setup]]
+- [QueryFailedError source](https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts)
+- [PostgreSQL error codes](https://www.postgresql.org/docs/current/errcodes-appendix.html)

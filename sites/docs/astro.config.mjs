@@ -31,6 +31,197 @@ const effectTsSidebar = [
   { label: "Layers vs NestJS DI", slug: "effect-ts/layers-vs-nestjs-di" },
 ];
 
+/** @type {import('@astrojs/starlight').StarlightUserConfig['sidebar']} */
+const nestjsSidebar = [
+  { label: "Overview", slug: "nestjs" },
+  {
+    label: "Fundamentals",
+    collapsed: false,
+    items: [
+      { label: "Fundamentals overview", slug: "nestjs/fundamentals" },
+      {
+        label: "Request lifecycle",
+        slug: "nestjs/fundamentals/request-lifecycle",
+      },
+      { label: "Middleware", slug: "nestjs/fundamentals/middleware" },
+      { label: "Guards", slug: "nestjs/fundamentals/guards" },
+      { label: "Interceptors", slug: "nestjs/fundamentals/interceptors" },
+      { label: "Pipes", slug: "nestjs/fundamentals/pipes" },
+      { label: "Exception filters", slug: "nestjs/fundamentals/exception-filters" },
+      { label: "Global enhancers", slug: "nestjs/fundamentals/global-providers" },
+      { label: "Lifecycle hooks", slug: "nestjs/fundamentals/lifecycle-hooks" },
+    ],
+  },
+  {
+    label: "Recipes",
+    collapsed: false,
+    items: [
+      { label: "Recipes overview", slug: "nestjs/recipes" },
+      { label: "Validation", slug: "nestjs/recipes/validation" },
+      { label: "SWC builder", slug: "nestjs/recipes/swc-setup" },
+      { label: "File uploads", slug: "nestjs/recipes/file-uploads" },
+      { label: "Serialization", slug: "nestjs/recipes/serialization" },
+      { label: "Trace IDs", slug: "nestjs/recipes/trace-id" },
+      { label: "Rate limiting", slug: "nestjs/recipes/rate-limiting" },
+      { label: "Monorepos", slug: "nestjs/recipes/monorepo" },
+    ],
+  },
+  {
+    label: "Data",
+    collapsed: true,
+    items: [
+      { label: "Data overview", slug: "nestjs/data" },
+      { label: "Caching", slug: "nestjs/data/caching" },
+      { label: "TypeORM overview", slug: "nestjs/data/typeorm" },
+      {
+        label: "PostgreSQL setup",
+        slug: "nestjs/data/typeorm/postgresql-setup",
+      },
+      {
+        label: "Database errors",
+        slug: "nestjs/data/typeorm/handle-database-errors",
+      },
+    ],
+  },
+  {
+    label: "Auth",
+    collapsed: true,
+    items: [
+      { label: "Auth overview", slug: "nestjs/auth" },
+      { label: "JWT strategy", slug: "nestjs/auth/jwt-strategy" },
+    ],
+  },
+  {
+    label: "Releases",
+    collapsed: true,
+    items: [
+      { label: "Releases overview", slug: "nestjs/releases" },
+      { label: "NestJS 11", slug: "nestjs/releases/v11" },
+      { label: "NestJS 10", slug: "nestjs/releases/v10" },
+    ],
+  },
+];
+
+/** @type {import('@astrojs/starlight').StarlightUserConfig['sidebar']} */
+const awsSidebar = [
+  { label: "Overview", slug: "aws" },
+  { label: "Account migrations", slug: "aws/account-migrations" },
+  { label: "Lambda vs EC2 vs Fargate", slug: "aws/lambda-vs-ec2" },
+  { label: "Secrets Manager", slug: "aws/secrets-manager" },
+  {
+    label: "CLI",
+    collapsed: true,
+    items: [
+      { label: "CLI overview", slug: "aws/cli" },
+      { label: "Profiles and credentials", slug: "aws/cli/profiles-and-credentials" },
+      { label: "Query and output", slug: "aws/cli/query-and-output" },
+    ],
+  },
+  {
+    label: "S3",
+    collapsed: false,
+    items: [
+      { label: "S3 overview", slug: "aws/s3" },
+      { label: "Quickstart", slug: "aws/s3/quickstart" },
+      { label: "CLI cheatsheet", slug: "aws/s3/cli" },
+      { label: "Storage classes", slug: "aws/s3/storage-classes" },
+      { label: "Lifecycle rules", slug: "aws/s3/lifecycle-rules" },
+      { label: "Event notifications", slug: "aws/s3/event-notifications" },
+      { label: "Presigned URLs", slug: "aws/s3/presigned-urls" },
+      { label: "Static website", slug: "aws/s3/static-website" },
+      { label: "Cross-account migration", slug: "aws/s3/cross-account-migration" },
+    ],
+  },
+  {
+    label: "IAM",
+    collapsed: true,
+    items: [
+      { label: "IAM overview", slug: "aws/iam" },
+      { label: "IAM CLI", slug: "aws/iam/cli" },
+    ],
+  },
+  {
+    label: "RDS",
+    collapsed: true,
+    items: [
+      { label: "RDS overview", slug: "aws/rds" },
+      { label: "RDS CLI", slug: "aws/rds/cli" },
+      { label: "Cross-account snapshot", slug: "aws/rds/cross-account-snapshot" },
+    ],
+  },
+  {
+    label: "CloudFront",
+    collapsed: true,
+    items: [
+      { label: "CloudFront overview", slug: "aws/cloudfront" },
+      { label: "CloudFront CLI", slug: "aws/cloudfront/cli" },
+      {
+        label: "Alternate domain claim",
+        slug: "aws/cloudfront/alternate-domain-claim",
+      },
+    ],
+  },
+  {
+    label: "Amplify",
+    collapsed: true,
+    items: [
+      { label: "Amplify overview", slug: "aws/amplify" },
+      { label: "Amplify CLI", slug: "aws/amplify/cli" },
+      {
+        label: "Cross-account migration",
+        slug: "aws/amplify/cross-account-migration",
+      },
+    ],
+  },
+  {
+    label: "KMS",
+    collapsed: true,
+    items: [
+      { label: "KMS overview", slug: "aws/kms" },
+      { label: "KMS CLI", slug: "aws/kms/cli" },
+    ],
+  },
+  {
+    label: "Lambda",
+    collapsed: true,
+    items: [
+      { label: "Lambda overview", slug: "aws/lambda" },
+      { label: "Lambda CLI", slug: "aws/lambda/cli" },
+    ],
+  },
+  {
+    label: "EC2",
+    collapsed: true,
+    items: [
+      { label: "EC2 overview", slug: "aws/ec2" },
+      { label: "AMI cross-account copy", slug: "aws/ec2/ami-cross-account-copy" },
+      { label: "Snapshot all instances", slug: "aws/ec2/snapshot-all-instances" },
+    ],
+  },
+  {
+    label: "Other services",
+    collapsed: true,
+    items: [
+      { label: "DynamoDB", slug: "aws/dynamodb" },
+      { label: "SQS", slug: "aws/sqs" },
+      { label: "SNS", slug: "aws/sns" },
+      { label: "VPC", slug: "aws/vpc" },
+      { label: "ECS and Fargate", slug: "aws/ecs" },
+    ],
+  },
+  {
+    label: "Recipes",
+    collapsed: true,
+    items: [
+      { label: "Recipes overview", slug: "aws/recipes" },
+      {
+        label: "Cross-account role pattern",
+        slug: "aws/recipes/cross-account-role-pattern",
+      },
+    ],
+  },
+];
+
 export default defineConfig({
   site: SITE,
   base: BASE,
@@ -47,7 +238,7 @@ export default defineConfig({
     starlight({
       title: "Knowledge Base",
       description:
-        "Personal knowledge base: Effect-TS on Starlight + Twoslash; other areas migrate from Quartz.",
+        "Personal knowledge base on Starlight: Effect-TS, NestJS, and AWS.",
       expressiveCode: {
         plugins: [ecTwoSlash()],
         themes: ["github-light", "github-dark"],
@@ -65,17 +256,14 @@ export default defineConfig({
           items: effectTsSidebar,
         },
         {
-          label: "Other areas (Quartz)",
-          items: [
-            {
-              label: "NestJS",
-              link: `${SITE}${BASE}/nestjs/`,
-            },
-            {
-              label: "AWS",
-              link: `${SITE}${BASE}/aws/`,
-            },
-          ],
+          label: "NestJS",
+          collapsed: false,
+          items: nestjsSidebar,
+        },
+        {
+          label: "AWS",
+          collapsed: false,
+          items: awsSidebar,
         },
       ],
     }),

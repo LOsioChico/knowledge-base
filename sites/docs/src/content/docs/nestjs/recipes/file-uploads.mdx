@@ -1,0 +1,237 @@
+---
+title: File uploads with Multer
+description: Accept multipart uploads on Express, validate size and mime-type with ParseFilePipeBuilder, and avoid proxy and memory pitfalls.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Accept `multipart/form-data` in a NestJS controller, validate size and mime-type, and reject anything sketchy. Express adapter only; on Fastify use [`@fastify/multipart`](https://github.com/fastify/fastify-multipart) instead.
+
+## When to reach for it
+
+- You need a file field on a form, not JSON in `@Body()`.
+- Callers might rename executables as `.jpg` — you want magic-number checks, not client `Content-Type`.
+- Uploads work locally but fail behind nginx with `413` before Nest sees the request.
+- You're on Fastify and `FileInterceptor` does nothing (wrong platform package).
+
+## Setup
+
+<Steps>
+
+1. Install Multer types (runtime ships with Express platform):
+
+   ```bash
+   npm i -D @types/multer
+   ```
+
+   `multer` is a direct dependency of [`@nestjs/platform-express`](https://github.com/nestjs/nest/blob/master/packages/platform-express/package.json); only the types are missing.
+
+2. Add a controller with `FileInterceptor` (next section).
+
+3. For production routes, add `ParseFilePipeBuilder` validators (section below) and module-level `MulterModule` limits.
+
+</Steps>
+
+## Single file
+
+```typescript
+import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+
+@Controller("uploads")
+export class UploadsController {
+  @Post()
+  @UseInterceptors(FileInterceptor("file"))
+  upload(@UploadedFile() file: Express.Multer.File) {
+    return { name: file.originalname, size: file.size, mime: file.mimetype };
+  }
+}
+```
+
+`FileInterceptor("file")` is a built-in [[nestjs/fundamentals/interceptors|interceptor]] that reads the field named `file`. Change the string to match your form field.
+
+Request:
+
+```bash
+curl -F file=@logo.png http://localhost:3000/uploads
+```
+
+Response:
+
+```json
+{ "name": "logo.png", "size": 24580, "mime": "image/png" }
+```
+
+## Uploaded file checks
+
+For body/query DTOs, use the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, use `ParseFilePipeBuilder` — it composes validators and returns a clean error when something fails.
+
+```typescript
+import {
+  Controller,
+  HttpStatus,
+  ParseFilePipeBuilder,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+
+@Controller("uploads")
+export class UploadsController {
+  @Post()
+  @UseInterceptors(FileInterceptor("file"))
+  upload(
+    @UploadedFile(
+      new ParseFilePipeBuilder()
+        .addFileTypeValidator({ fileType: /^(image\/jpeg|image\/png)$/ })
+        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+        .build({
+          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+          fileIsRequired: true,
+        }),
+    )
+    file: Express.Multer.File,
+  ) {
+    return file.originalname;
+  }
+}
+```
+
+| Builder method | What it checks |
+| --- | --- |
+| `addFileTypeValidator({ fileType })` | Mime-type via the file's magic number, not the client header. String or `RegExp`. |
+| `addMaxSizeValidator({ maxSize })` | Bytes. Multer also enforces a hard cap (see module defaults). |
+| `.build({ fileIsRequired: false })` | Makes the upload optional. Default is required. |
+
+12 MB PDF on that route:
+
+```bash
+curl -F file=@huge-report.pdf http://localhost:3000/uploads
+```
+
+`422 Unprocessable Entity` (when the file has a detectable `mimetype`, Nest includes actual vs expected):
+
+```json
+{
+  "statusCode": 422,
+  "message": "Validation failed (current file type is application/pdf, expected type is /^(image\\/jpeg|image\\/png)$/)",
+  "error": "Unprocessable Entity"
+}
+```
+
+The shorter `Validation failed (expected type is …)` form appears when the validator cannot read a `mimetype` (missing file or no detectable type).
+
+<Aside type="caution" title="Magic-number check stops renamed .exe">
+
+`addFileTypeValidator` reads leading bytes, not the `Content-Type` header. Trusting the header alone lets a renamed `.exe` reach disk under a `.jpg` name. Always include this validator on user-upload routes.
+
+</Aside>
+
+## Multiple files
+
+| Decorator | When |
+| --- | --- |
+| `FilesInterceptor("files", maxCount?, opts?)` | Same field name, array. Use `@UploadedFiles()`. |
+| `FileFieldsInterceptor([{ name, maxCount }])` | Different field names (e.g. `avatar` and `cover`). |
+| `AnyFilesInterceptor()` | Accept anything. Use sparingly. |
+| `NoFilesInterceptor()` | Multipart text fields only; reject any file. |
+
+## Module-level defaults
+
+Set caps once so every route inherits them:
+
+```typescript
+import { Module } from "@nestjs/common";
+import { MulterModule } from "@nestjs/platform-express";
+
+@Module({
+  imports: [
+    MulterModule.register({
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 5,
+      },
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Env-driven config:
+
+```typescript
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { MulterModule } from "@nestjs/platform-express";
+
+MulterModule.registerAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: (config: ConfigService) => ({
+    limits: { fileSize: config.get<number>("UPLOAD_MAX_BYTES") },
+  }),
+});
+```
+
+## Where the bytes go
+
+<Tabs>
+  <TabItem label="Memory (default)">
+    Multer keeps the file in `file.buffer` ([MemoryStorage](https://github.com/expressjs/multer#memorystorage)). Fine for small files you stream to S3 immediately.
+
+    <Aside type="note" title="RAM scales with concurrency">
+
+    Default storage holds the whole file in memory. One 1 GB upload pins 1 GB until the request ends; ten concurrent uploads pin ten. Use disk storage or stream to object storage for large files.
+
+    </Aside>
+  </TabItem>
+  <TabItem label="Disk">
+    ```typescript
+    import { MulterModule } from "@nestjs/platform-express";
+    import { diskStorage } from "multer";
+
+    MulterModule.register({
+      storage: diskStorage({
+        destination: "./uploads",
+        filename: (_req, file, cb) =>
+          cb(null, `${Date.now()}-${file.originalname}`),
+      }),
+    });
+    ```
+
+    With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([DiskStorage](https://github.com/expressjs/multer#diskstorage)).
+  </TabItem>
+</Tabs>
+
+## Gotchas
+
+<Aside type="caution" title="Global ValidationPipe does not see the file">
+
+A global `ValidationPipe` validates `@Body()`, `@Query()`, and `@Param()` — not the `Express.Multer.File` behind `@UploadedFile()`. Multer attaches the file to `req.file` before injection. Validate files with `ParseFilePipe` / `ParseFilePipeBuilder`; validate text fields in the same form with a DTO on `@Body()`.
+
+</Aside>
+
+<Aside type="caution" title="Reverse-proxy body limit">
+
+nginx defaults to `client_max_body_size 1m`; oversized uploads return `413 Request Entity Too Large` and never reach Nest. Bump the proxy limit to match your Multer cap. ALB, Cloud Run, and Cloudflare impose their own caps — check provider docs.
+
+</Aside>
+
+<Aside type="caution" title="Fastify needs a different stack">
+
+`FileInterceptor` lives in `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. Use `@fastify/multipart` and Fastify's request API instead.
+
+</Aside>
+
+<Aside type="note" title="OpenAPI file picker">
+
+Without `@ApiConsumes("multipart/form-data")` and a body schema with `type: "string", format: "binary"`, Swagger UI's "Try it out" form won't offer a file input. See [File upload (OpenAPI)](https://docs.nestjs.com/openapi/operations#file-upload).
+
+</Aside>
+
+## See also
+
+- [[nestjs/fundamentals/interceptors|Interceptors]] — how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
+- [[nestjs/fundamentals/pipes|Pipes]] — what `ParseFilePipe` is
+- [[nestjs/recipes/validation|Validation with class-validator]] — DTO fields in the same multipart form
+- [File upload (official)](https://docs.nestjs.com/techniques/file-upload)

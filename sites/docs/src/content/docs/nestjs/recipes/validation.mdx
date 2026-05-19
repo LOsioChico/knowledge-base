@@ -1,0 +1,294 @@
+---
+title: Validation with class-validator
+description: Global ValidationPipe, DTO classes, whitelist security, transform, and validation groups.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Validate bodies, query strings, and route params with one global pipe and declarative DTO classes. Same `class-transformer` / `class-validator` pair as [[nestjs/recipes/serialization|response serialization]].
+
+## When to reach for it
+
+- You assumed `body.email` was a string and it wasn't.
+- Callers must not slip extra fields past your rules (`isAdmin: true` on signup).
+- Query params arrive as strings but handlers want numbers.
+- Create vs update need different rules on the same DTO shape.
+
+## Setup
+
+<Steps>
+
+1. Install packages:
+
+   ```bash
+   npm i class-validator class-transformer
+   ```
+
+2. Register a global pipe in `main.ts` (secure defaults):
+
+   ```typescript
+   import "reflect-metadata";
+   import { NestFactory } from "@nestjs/core";
+   import { ValidationPipe } from "@nestjs/common";
+   import { AppModule } from "./app.module";
+
+   async function bootstrap() {
+   const app = await NestFactory.create(AppModule);
+   app.useGlobalPipes(
+   new ValidationPipe({
+   whitelist: true,
+   forbidNonWhitelisted: true,
+   transform: true,
+   transformOptions: { enableImplicitConversion: true },
+   }),
+   );
+   await app.listen(3000);
+   }
+   bootstrap();
+   ```
+
+3. Define a DTO and use it on a handler (next section).
+
+</Steps>
+
+<Aside type="caution" title="Need DI inside the pipe?">
+
+`useGlobalPipes(new ValidationPipe(...))` builds the pipe **outside** the container. For `ConfigService`, loggers, or request scope, use `APP_PIPE` — [[nestjs/fundamentals/global-providers|global enhancers]].
+
+</Aside>
+
+## First DTO (show the 400)
+
+```typescript
+import { IsEmail, IsString, MinLength } from "class-validator";
+
+export class CreateUserDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+}
+```
+
+```typescript
+import { Body, Controller, Post } from "@nestjs/common";
+import { CreateUserDto } from "./dto/create-user.dto";
+
+@Controller("users")
+export class UsersController {
+  @Post()
+  create(@Body() dto: CreateUserDto) {
+    return { ok: true, email: dto.email };
+  }
+}
+```
+
+`POST /users` with a valid body:
+
+```json
+{ "email": "a@b.c", "password": "hunter2!" }
+```
+
+```json
+{ "ok": true, "email": "a@b.c" }
+```
+
+Invalid input:
+
+```json
+{ "email": "not-an-email", "password": "short" }
+```
+
+`400 Bad Request`:
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 8 characters"
+  ],
+  "error": "Bad Request"
+}
+```
+
+## `whitelist` + `forbidNonWhitelisted`
+
+<Tabs>
+  <TabItem label="Strip unknown fields">
+    `whitelist: true` only — extra keys are removed silently.
+
+    Request:
+
+    ```json
+    { "email": "a@b.c", "password": "hunter2!", "isAdmin": true }
+    ```
+
+    Handler receives:
+
+    ```json
+    { "email": "a@b.c", "password": "hunter2!" }
+    ```
+  </TabItem>
+  <TabItem label="Reject unknown fields">
+    Add `forbidNonWhitelisted: true` — same request returns:
+
+    ```json
+    {
+      "statusCode": 400,
+      "message": ["property isAdmin should not exist"],
+      "error": "Bad Request"
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+Use **both** in production. Strip-only is for migrations where old clients still send deprecated fields.
+
+<Aside type="danger" title="Without whitelist, mass-assignment is real">
+
+`Object.assign(user, dto)` on an un-whitelisted DTO is how `isAdmin: true` reaches the database. The pipe default allows unknown properties until you flip the switch.
+
+</Aside>
+
+## `transform: true`
+
+Without it, `@Body() dto: CreateUserDto` is a plain object: `dto.fullName()` throws if the DTO defines methods.
+
+With `transform: true`, the pipe runs `plainToInstance` so decorators and instance methods work. The pipe only validates when the parameter **metatype** is a custom class ([`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts)); primitives still get coercion via `transformPrimitive`.
+
+`GET /items?page=abc` with `@Query("page") page: number` and only global `ValidationPipe({ transform: true })`:
+
+```json
+{ "page": null }
+```
+
+(`JSON.stringify(NaN)` → `null`.) Prefer `@Query("page", ParseIntPipe)` when bad input should be `400` — see [[nestjs/fundamentals/pipes|Pipes]].
+
+`enableImplicitConversion: true` (in `transformOptions`) coerces whole query objects: `?limit=10` becomes number `10` for `@IsInt()` instead of failing on string `"10"`.
+
+<Tabs>
+  <TabItem label="What gets validated">
+    | Parameter | Metatype | Validation runs? |
+    | --- | --- | --- |
+    | `@Body() dto: CreateUserDto` | Custom class | Yes — full DTO |
+    | `@Query() q: PaginationQuery` | Custom class | Yes — needs `enableImplicitConversion` for numbers |
+    | `@Param('id') id: string` | `String` | No — use `ParseIntPipe` for strict coercion |
+    | `@Body() raw: object` | `Object` | No — plain body from Express |
+
+    Source: [`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts) metatype check.
+  </TabItem>
+  <TabItem label="transform: true and methods">
+    DTO with `fullName()` only works when `transform: true` — the pipe must call `plainToInstance`. Without it:
+
+    ```text
+    TypeError: dto.fullName is not a function
+    ```
+
+    With `transform: true`, handler can return `{ fullName: dto.fullName() }` → `{ "fullName": "Ada Lovelace" }`.
+  </TabItem>
+</Tabs>
+
+## Validation groups
+
+Same DTO, different routes:
+
+```typescript
+import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
+
+export class UserDto {
+  @IsEmail({}, { groups: ["create", "update"] })
+  email: string;
+
+  @IsString({ groups: ["create"] })
+  @MinLength(8, { groups: ["create"] })
+  @IsOptional({ groups: ["update"] })
+  password?: string;
+}
+```
+
+```typescript
+import { Body, Controller, Patch, Post, UsePipes, ValidationPipe } from "@nestjs/common";
+import { UserDto } from "./dto/user.dto";
+
+@Controller("users")
+export class UsersController {
+  @Post()
+  @UsePipes(new ValidationPipe({ groups: ["create"], whitelist: true }))
+  create(@Body() dto: UserDto) {
+    return dto;
+  }
+
+  @Patch(":id")
+  @UsePipes(new ValidationPipe({ groups: ["update"], whitelist: true }))
+  update(@Body() dto: UserDto) {
+    return dto;
+  }
+}
+```
+
+`POST /users` with `{ "email": "a@b.c" }` → `400` (password required). `PATCH /users/1` with the same body → `200` and `{ "email": "a@b.c" }`.
+
+## Nested arrays
+
+Decorators do not recurse without `@ValidateNested()` and `@Type()` from `class-transformer`:
+
+```typescript
+import { Type } from "class-transformer";
+import { IsArray, IsString, ValidateNested } from "class-validator";
+
+export class OrderItemDto {
+  @IsString()
+  sku: string;
+}
+
+export class CreateOrderDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderItemDto)
+  items: OrderItemDto[];
+}
+```
+
+## Custom error shape
+
+```typescript
+import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
+
+new ValidationPipe({
+  exceptionFactory: (errors: ValidationError[]) =>
+    new BadRequestException({
+      statusCode: 400,
+      error: "Validation failed",
+      details: errors.map((e) => ({
+        field: e.property,
+        messages: Object.values(e.constraints ?? {}),
+      })),
+    }),
+});
+```
+
+`POST /signup` with `{ "email": "not-an-email", "password": "x" }`:
+
+```json
+{
+  "statusCode": 400,
+  "error": "Validation failed",
+  "details": [
+    { "field": "email", "messages": ["email must be an email"] },
+    {
+      "field": "password",
+      "messages": ["password must be longer than or equal to 8 characters"]
+    }
+  ]
+}
+```
+
+## See also
+
+- [[nestjs/fundamentals/pipes|Pipes]] — binding scopes and built-ins
+- [[nestjs/recipes|Recipes MOC]]
+- [Validation (official)](https://docs.nestjs.com/techniques/validation)
+- [class-validator decorators](https://github.com/typestack/class-validator#validation-decorators)

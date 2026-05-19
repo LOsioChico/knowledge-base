@@ -20,9 +20,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/fault-tolerant-ingestion.mdx`. Vault note remains audit source.
-
 > Fetching data from a flaky upstream is the canonical "looks fine in the happy path, silently corrupts in production" problem: a missed timeout, a parse failure, or one bad row in a batch all degrade quietly. This recipe composes `Effect.tryPromise`, `Schema`, `Effect.timeout`, `Effect.retry`, and `Effect.forEach` into a pipeline where every failure mode is typed and explicit.
 
 ## Setup

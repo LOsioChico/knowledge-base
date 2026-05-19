@@ -1,0 +1,67 @@
+---
+title: Lambda CLI cheatsheet
+description: Lambda function inventory, create/update, invoke, and version/alias commands.
+---
+
+> Function lifecycle, invoke, and inspection commands for triage. Expand as [[aws/lambda|Lambda]] recipes land.
+
+## Inventory
+
+```bash
+aws lambda list-functions \
+  --query 'Functions[].{Name:FunctionName,Runtime:Runtime,Last:LastModified}' \
+  --output table
+
+aws lambda get-function          --function-name <name>
+aws lambda get-function-configuration --function-name <name>
+aws lambda get-account-settings
+```
+
+## Create + update + delete
+
+```bash
+aws lambda create-function \
+  --function-name <name> \
+  --runtime nodejs20.x \
+  --role <role-arn> \
+  --handler index.handler \
+  --zip-file fileb://function.zip
+
+aws lambda update-function-code \
+  --function-name <name> --zip-file fileb://function.zip
+
+aws lambda update-function-configuration \
+  --function-name <name> --environment 'Variables={KEY=value}'
+
+aws lambda delete-function --function-name <name>
+```
+
+## Invoke
+
+```bash
+aws lambda invoke \
+  --function-name <name> \
+  --payload '{"k":"v"}' \
+  --cli-binary-format raw-in-base64-out \
+  /tmp/out.json
+cat /tmp/out.json
+```
+
+`--cli-binary-format raw-in-base64-out` is required on CLI v2 for JSON payloads.
+
+## Versions + aliases
+
+```bash
+aws lambda publish-version --function-name <name>
+
+aws lambda update-alias \
+  --function-name <name> --name prod --function-version 7 \
+  --routing-config 'AdditionalVersionWeights={"8"=0.10}'
+
+aws lambda list-aliases --function-name <name>
+```
+
+## Tips
+
+- Wire triggers to **aliases**, not bare `$LATEST`.
+- Prefer `update-function-code` + `publish-version` for an audit trail.

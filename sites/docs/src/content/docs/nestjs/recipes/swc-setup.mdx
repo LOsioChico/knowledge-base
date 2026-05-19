@@ -1,0 +1,151 @@
+---
+title: SWC builder
+description: Fast Nest builds with nest start -b swc, type-check pairing, and Jest/Vitest test runners.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since NestJS 10, the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
+
+## Which builder?
+
+| Project shape | Builder | Type-check |
+| --- | --- | --- |
+| Single Nest app (default here) | `swc` | Always `--type-check` or `typeCheck: true` |
+| `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required** — plugins need `tsc` metadata |
+| Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](https://docs.nestjs.com/recipes/swc#monorepo) |
+| SWC circular-metadata / custom transformer bug | `tsc` fallback | Built-in |
+
+## Setup
+
+<Steps>
+
+1. Install dev dependencies (both required — the CLI loads `@swc/cli` and exits with an install hint if either is missing):
+
+   ```bash
+   npm i --save-dev @swc/core @swc/cli
+   ```
+
+2. Run once with type-check:
+
+   ```bash
+   nest start -b swc --type-check
+   ```
+
+3. Pin in `nest-cli.json` so scripts stay short:
+
+   ```jsonc
+   {
+   "$schema": "https://json.schemastore.org/nest-cli",
+   "collection": "@nestjs/schematics",
+   "sourceRoot": "src",
+   "compilerOptions": {
+   "builder": "swc",
+   "typeCheck": true
+   }
+   }
+   ```
+
+   After this, `nest start`, `nest start --watch`, and `nest build` use SWC without repeating flags.
+
+</Steps>
+
+## What `--type-check` does
+
+SWC **does not type-check** — it transpiles only. `--type-check` (or `typeCheck: true`) runs `tsc --noEmit` alongside SWC ([`SwcCompiler#run`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts)):
+
+| Mode | Behavior |
+| --- | --- |
+| Watch (`-w`) | SWC and `tsc` run **in parallel**; type errors print asynchronously |
+| One-shot (`nest build`) | Type-check **awaits** before SWC emit |
+
+<Aside type="danger" title="CLI Plugins require type-check">
+
+`@nestjs/swagger` and `@nestjs/graphql` plugins read TS types at build time. Without `--type-check`, the plugin transformer never runs and generated schemas miss operations while the app still boots ([SWC recipe — CLI Plugins](https://docs.nestjs.com/recipes/swc#cli-plugins-swc)).
+
+</Aside>
+
+## Pick a builder
+
+<Tabs>
+  <TabItem label="swc (default)">
+    **Single-app projects.** Fast dev loop. Always pair with `--type-check` unless you accept shipping without static types.
+  </TabItem>
+  <TabItem label="tsc">
+    Fallback when SWC hits a known incompatibility (legacy decorator emit edge cases, custom transformers).
+  </TabItem>
+  <TabItem label="webpack">
+    **CLI monorepo path** — official guide keeps webpack and uses `swc-loader`. See [[nestjs/recipes/monorepo|Nest CLI monorepos]] for workspace layout.
+  </TabItem>
+</Tabs>
+
+| Builder | Speed | Type-checks alone? | Use when |
+| --- | --- | --- | --- |
+| `swc` | ~20× `tsc` | No | Default single app |
+| `tsc` | Baseline | Yes | SWC incompatibility |
+| `webpack` | Slow | Via loader | Nest CLI monorepo |
+
+Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L19)).
+
+## Tests
+
+<Tabs>
+  <TabItem label="Jest">
+    Replace `ts-jest` with `@swc/jest`:
+
+    ```bash
+    npm i --save-dev @swc/jest
+    ```
+
+    ```json
+    {
+      "jest": {
+        "transform": {
+          "^.+\\.(t|j)s?$": ["@swc/jest"]
+        }
+      }
+    }
+    ```
+
+    `.swcrc` needs `legacyDecorator` + `decoratorMetadata` or DI fails at runtime with unresolved dependencies.
+  </TabItem>
+  <TabItem label="Vitest">
+    ```bash
+    npm i --save-dev vitest unplugin-swc @swc/core
+    ```
+
+    ```typescript
+    // vitest.config.ts
+    import { resolve } from "node:path";
+    import swc from "unplugin-swc";
+    import { defineConfig } from "vitest/config";
+
+    export default defineConfig({
+      test: { globals: true, root: "./" },
+      plugins: [swc.vite({ module: { type: "es6" } })],
+      resolve: {
+        alias: { src: resolve(__dirname, "./src") },
+      },
+    });
+    ```
+
+    E2E: use `import request from "supertest"` (default import), not `import * as request` ([Vitest note](https://docs.nestjs.com/recipes/swc#update-imports-in-e2e-tests)).
+  </TabItem>
+</Tabs>
+
+## Monorepo note
+
+The CLI monorepo schematic sets `compilerOptions.webpack: true` ([`sub-app.factory.ts#L358`](https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts#L358)). Standalone `builder: "swc"` is not wired there — use `swc-loader` in webpack per the [official monorepo section](https://docs.nestjs.com/recipes/swc#monorepo).
+
+<Aside type="caution" title="Circular type imports">
+
+SWC emits decorator metadata for every property type. `@OneToOne(() => Profile)` on `User` plus the reverse on `Profile` can circular-import at runtime even when `tsc` was fine. Wrap with your ORM's `Relation<T>` (or `WrapperType<T>`) to suppress metadata — [SWC common pitfalls](https://docs.nestjs.com/recipes/swc#common-pitfalls).
+
+</Aside>
+
+## See also
+
+- [[nestjs/recipes|Recipes MOC]]
+- [[nestjs/releases/v10|NestJS 10 release notes]] — SWC builder shipped
+- [Official SWC recipe](https://docs.nestjs.com/recipes/swc)
+- [SWC docs](https://swc.rs)

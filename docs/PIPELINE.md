@@ -13,32 +13,26 @@ flowchart LR
     T[test:ci]
   end
   subgraph build [build job — main only]
-    Q[Quartz build]
     S[Starlight build]
-    M[merge-pages.mjs]
   end
   subgraph deploy [deploy job]
     P[GitHub Pages]
   end
   lint --> build
   build --> deploy
-  Q --> M
-  S --> M
-  M --> P
+  S --> P
 ```
 
 | Step | Command / script | What it guards |
 | --- | --- | --- |
 | Vault wikilinks | `bun run lint:wikilinks` | Full `content/` — symmetry, first-mention, discoverability, tagline, agents-mirror |
+| Vault ↔ MDX parity | `bun run lint:publish-parity` | Every vault note (except `inbox.md`) has matching `.mdx` |
 | Pass 0 + format | `cd scripts/audit-notes && bun run lint:content && bun run lint:format` | Em-dash, double-hyphen, Prettier on `content/` |
 | Starlight | `bun run lint:docs` | `astro check`, MDX wikilinks, link hygiene (`--strict`) |
-| Starlight build (PR) | `bun run docs:build` | Twoslash compiles, static export succeeds |
-| Quartz build | `npx quartz build -d content` (fork checkout) | Vault HTML |
-| Merge | `node scripts/merge-pages.mjs quartz/public sites/docs/dist merged-public` | Starlight **overwrites** Quartz on same path |
-| Merge smoke | `test -f merged-public/effect-ts/index.html` (main `build` job) | Catches empty/wrong merge output |
-| Pages | `deploy-pages` | `base: /knowledge-base` |
+| Starlight build (PR + main) | `bun run docs:build` | Twoslash compiles, static export succeeds |
+| Pages | `deploy-pages` | Serves `sites/docs/dist/` at `base: /knowledge-base` |
 
-**Merge rule:** paths present in both trees keep the Starlight file. Migrated Effect-TS URLs serve MDX; unmigrated areas stay Quartz.
+**Published coverage:** every vault note (except `inbox.md`) has a Starlight MDX sibling — enforced by `bun run lint:publish-parity`. `content/` remains the audit/discovery mirror.
 
 ## Local commands (repo root)
 
@@ -46,46 +40,43 @@ flowchart LR
 | --- | --- |
 | Match CI lint job | `bun run lint:ci` |
 | Starlight only | `bun run lint:docs` / `bun run docs:build` / `bun run docs:dev` |
-| Vault post-edit (content/) | `bun run vault:check --base HEAD~1` (needs `CURSOR_API_KEY` for triage audit) |
-| Vault + docs when MDX changed | `vault:check` runs `lint:docs` automatically if `sites/docs/` is in the git diff |
-| Script unit tests | `bun run test:ci` (root + audit-notes + `merge-pages.test.mjs`) |
+| Vault post-edit (`content/`) | `bun run vault:check --base HEAD~1` (needs `CURSOR_API_KEY` for triage audit) |
+| Vault + docs when MDX changed | `vault:check` runs `lint:docs` if `sites/docs/` is in the git diff |
+| Script unit tests | `bun run test:ci` |
 
 ## What each linter owns
 
 | Linter | Scope | Not responsible for |
 | --- | --- | --- |
-| `lint:wikilinks` | `content/**/*.md` | MDX, Starlight |
+| `lint:wikilinks` | `content/**/*.md` | MDX |
 | `lint:mdx-wikilinks` | `sites/docs/src/content/docs/**/*.mdx` | Vault `related:` |
-| `lint:mdx-link-hygiene` | MDX Quartz URLs → migrated slugs | External links |
-| `lint:docs` | Starlight typecheck + both MDX linters | Full vault wikilinks |
+| `lint:mdx-link-hygiene` | No full-site URLs in MDX — use wikilinks or `/knowledge-base/...` paths | External links |
+| `lint:mdx-table-wikilinks` | No `[[slug\|label]]` inside table rows (pipe breaks cells) | Prose wikilinks |
+| `lint:docs` | Starlight typecheck + all MDX linters | Full vault wikilinks |
 | `vault:check` | Diff-scoped `content/*.md` + optional `lint:docs` | Full-vault wikilink pass (use `lint:wikilinks` separately) |
 
 ## Gaps and intentional limits
 
 - **LLM audit** is not in CI (cost + `CURSOR_API_KEY`). CI runs Pass 0 only; triage stays local via `vault:check`.
-- **Unit tests** run in the CI `lint` job (`bun run test:ci`: root wikilink/merge-pages + audit-notes). They do not re-run `docs:build` (that is the PR `docs-build` job).
-- **Untracked files** are invisible to `git diff --name-only <ref>` — `vault:check` will not run `lint:docs` until `sites/docs/` paths are tracked. After MDX edits: `bun run lint:docs` locally, or stage/commit then `vault:check`.
-- **Merged site smoke test** — `main` `build` job checks key paths under `merged-public/` after merge; not a full link crawl.
-- **Backlinks / graph** exist on Quartz only until a Starlight index is built.
-- **`check-source-urls.sh`** is manual (GitHub rate limits); run after touching `source:` URLs.
-- **`merge-pages.mjs`** — covered by `scripts/merge-pages.test.mjs` in `bun run test`.
-- **Quartz fork** is private; PR CI cannot build the merged site without `QUARTZ_FORK_READ_TOKEN` — PRs run Starlight `docs:build` instead.
+- **Unit tests** run in the CI `lint` job (`bun run test:ci`). They do not re-run `docs:build` (separate `docs-build` job).
+- **Untracked files** are invisible to `git diff` — run `bun run lint:docs` locally after MDX edits.
+- **Deploy smoke** — `main` `build` job checks key paths under `sites/docs/dist/`.
+- **Backlinks / graph** — not on Starlight yet (vault-only until an index is built).
+- **`check-source-urls.sh`** is manual (GitHub rate limits); run after touching vault `source:` URLs.
 
-## Doc drift watchlist (keep in sync)
+## Doc drift watchlist
 
 | Location | Role |
 | --- | --- |
+| `docs/PUBLISHING.md` | Starlight authoring + publish validate |
 | `docs/PIPELINE.md` | CI map (this file) |
-| `AGENTS.md` "When you finish" | Canonical vault + Starlight gates; mirror to copilot-instructions |
-| `.github/instructions/content.instructions.md` | Copilot: `content/**/*.md` |
+| `AGENTS.md` | Vault invariants + publish gates; mirror to copilot-instructions |
+| `.github/skills/kb-author/SKILL.md` | Vault audits A–P, MDX audits S1–S6 |
 | `.github/instructions/starlight.instructions.md` | Copilot: `sites/docs/**/*.mdx` |
-| `.github/skills/kb-starlight-author/SKILL.md` | MDX authoring playbook |
-| `openspec/config.yaml` | `lint:ci` + `test:ci` in verify; `vault:check` for content/; audit scripts under `scripts/audit-notes/` |
-| `.cursor/rules/engram.mdc` | Repo overlay: Starlight + vault division of labor |
+| `.github/instructions/content.instructions.md` | Copilot: `content/**/*.md` |
 
 ## Related docs
 
-- [`STARLIGHT-MIGRATION.md`](STARLIGHT-MIGRATION.md) — per-note MDX workflow
 - [`STARLIGHT-FEATURES.md`](STARLIGHT-FEATURES.md) — MDX capabilities and link classes
 - [`AGENTS.md`](../AGENTS.md) — vault authoring contract
 - [`scripts/audit-notes/README.md`](../scripts/audit-notes/README.md) — audit profiles

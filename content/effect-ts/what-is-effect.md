@@ -25,9 +25,6 @@ source:
 
 > Effect's core type is `Effect<Success, Error, Requirements>`: a value that _describes_ a computation. A runtime executes it. Errors and dependencies live in the type, not in `try/catch` and DI containers.
 
-> [!todo]- Starlight publish
-> Enriched MDX (Tabs, Twoslash): `sites/docs/src/content/docs/effect-ts/what-is-effect.mdx`. Edit vault + MDX when facts change until migration completes.
-
 ## The type, three channels
 
 Per the [Effect type docs](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), the three parameters are:

@@ -1,0 +1,32 @@
+---
+title: ECS and Fargate
+description: Elastic Container Service — task definitions, services, Fargate vs EC2 launch types, and ECR pulls.
+---
+
+> Amazon ECS is AWS's container orchestrator: define a **task** (containers + resources), AWS schedules it. **Fargate** is serverless compute; **EC2** launch type means you manage cluster nodes on [[aws/ec2|EC2]].
+
+## TL;DR
+
+- **Task definition = pod-equivalent** — JSON spec of containers, ports, env, [[aws/iam|IAM]] role, CPU/memory. Each revision is immutable.
+- **Service** keeps N copies alive and optionally registers with a load balancer.
+- **Fargate**: pay per task vCPU/memory-second, no nodes. **EC2**: cheaper at scale; you patch nodes.
+- **Networking via [[aws/vpc|VPC]]**. `awsvpc` gives each task its own ENI + security group; required for Fargate ([source](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking-awsvpc.html)).
+- **Images in ECR** by default; cross-account pull needs IAM + repository policy ([source](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html)).
+
+## When to use
+
+- **Fargate** for most container workloads without node management.
+- **ECS on EC2** for large fleets, GPU, or instance-level customization.
+- **EKS** when you need full Kubernetes.
+- **[[aws/lambda|Lambda]]** or App Runner for scale-to-zero ad-hoc compute.
+
+## Pending notes
+
+- Task role vs task execution role.
+- Rolling deploys and circuit-breaker rollback.
+- Service auto-scaling targets.
+
+## See also
+
+- [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]] — when Fargate beats Lambda for long-lived backends.
+- [Amazon ECS developer guide](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) (official).

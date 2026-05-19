@@ -1,31 +1,24 @@
 # Knowledge base
 
-Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base.
+Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base (Starlight on GitHub Pages).
 
 ## Layout
 
-- `content/` — Obsidian vault (markdown, wikilinks, audit).
-- `sites/docs/` — Starlight + MDX publish app (migrated areas; see `sites/docs/README.md`).
-- `scripts/` — wikilink linter, content audit, deploy merge helper.
-- `AGENTS.md` — operating contract for AI editors.
+- `sites/docs/` — **Published site** (Starlight MDX, Twoslash, sidebar). This is what readers see.
+- `content/` — Obsidian vault mirror (discovery, `related:`, LLM audit). Not deployed as HTML; 1:1 with MDX.
+- `scripts/` — Wikilink linter, MDX linters, audit tooling.
+- `AGENTS.md` — Operating contract for AI editors.
 
-- `docs/` — Starlight migration playbooks and [`docs/PIPELINE.md`](docs/PIPELINE.md) (CI / lint map). CI builds Quartz + Starlight and merges for GitHub Pages (`.github/workflows/deploy.yml`).
+- `docs/PUBLISHING.md` — How to author MDX. [`docs/PIPELINE.md`](docs/PIPELINE.md) maps CI.
 
-## Preview Starlight (migrated pages)
+## Preview locally
 
 ```bash
+cd sites/docs && bun install
 bun run docs:dev
 ```
 
-## Preview Quartz (full vault)
-
-Clone the quartz fork somewhere outside this repo, then point it at this `content/`:
-
-```bash
-git clone https://github.com/LOsioChico/quartz-fork.git ~/quartz-fork
-cd ~/quartz-fork && npm ci
-npx quartz build --serve -d <path-to-knowledge-base>/content
-```
+From repo root: `bun run docs:dev`.
 
 ## Lint and audit
 
@@ -33,20 +26,16 @@ npx quartz build --serve -d <path-to-knowledge-base>/content
 bun install   # root
 cd scripts/audit-notes && bun install
 cd sites/docs && bun install
-bun run lint:ci          # matches CI (vault + Pass 0 + Starlight)
-bun run lint:wikilinks   # vault only
+bun run lint:ci          # vault wikilinks + Pass 0 + Starlight + tests
+bun run lint:wikilinks   # content/ only
 bun run lint:docs        # Starlight only
-bun run docs:build       # Twoslash production build
+bun run docs:build
 ```
 
-Default post-edit quality gate (diff-scoped wikilinks, Pass 0, triage audit,
-discoverability hints). Requires `CURSOR_API_KEY` in a repo-root `.env` for the
-LLM portion:
+Post-edit on vault notes (needs `CURSOR_API_KEY` in `.env` for LLM triage):
 
 ```bash
 bun run vault:check --base HEAD~1
 ```
 
-Conventions, sourcing rules, and the full audit triage loop live in
-[`AGENTS.md`](AGENTS.md) and [`.github/skills/kb-audit-triage/SKILL.md`](.github/skills/kb-audit-triage/SKILL.md).
-Audit pipeline details: [`scripts/audit-notes/README.md`](scripts/audit-notes/README.md).
+Conventions: [`AGENTS.md`](AGENTS.md), [`.github/skills/kb-author/SKILL.md`](.github/skills/kb-author/SKILL.md) (vault audits A–P, MDX audits S1–S6).

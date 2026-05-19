@@ -24,4 +24,4 @@ Welcome to my personal knowledge base. Patterns, gotchas, and notes I keep comin
 - [[inbox|Inbox]]: reading queue for future notes
 
 > [!info] How this works
-> Every page here is a Markdown file. Notes link to each other with `[[wikilinks]]`, and the graph view (top right) shows how everything connects.
+> Every page here is a Markdown file in Obsidian. Notes link with `[[wikilinks]]`. The **published site** is Starlight MDX under `sites/docs/` (GitHub Pages at `/knowledge-base/`). Vault notes stay for discovery, `related:` symmetry, and LLM audit; MDX is what readers get.

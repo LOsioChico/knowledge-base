@@ -1,0 +1,63 @@
+---
+title: Account migrations
+description: Cross-account AWS migration playbook — pre-flight, per-service recipes, recommended order, and failure modes.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+> When you move a workload between AWS accounts, the same service-level moves recur. This page is the cross-cutting playbook pointing at each per-service recipe.
+
+## When this playbook applies
+
+- The workload's AWS account is changing (compromise, ownership, billing consolidation, sandbox graduation).
+- One or more services are quarantined and only some can move today.
+- A second account takes over and you need the same DNS, data, and permissions wiring.
+
+## Pre-flight
+
+<Steps>
+
+1. Set up [[aws/cli/profiles-and-credentials|named CLI profiles]] for both accounts. Convention in every recipe: `account-a` (source), `account-b` (target).
+2. Run `aws sts get-caller-identity --profile account-a` and `--profile account-b`; confirm `Account` matches expectations.
+3. Decide which services move today vs stay in `account-a`. Anything staying needs [[aws/recipes/cross-account-role-pattern|cross-account assume-role]] so new compute can reach it.
+
+</Steps>
+
+## Per-service moves
+
+| Service | Recipe | What it covers |
+| --- | --- | --- |
+| [RDS](/knowledge-base/aws/rds/) | [[aws/rds/cross-account-snapshot]] | Encrypted snapshot via CMK re-encrypt + restore |
+| [S3](/knowledge-base/aws/s3/) | [[aws/s3/cross-account-migration]] | Recreate bucket + cross-account `s3 sync` |
+| [Amplify](/knowledge-base/aws/amplify/) | [[aws/amplify/cross-account-migration]] | create-app → zip deploy → domain move |
+| [CloudFront](/knowledge-base/aws/cloudfront/) | [[aws/cloudfront/alternate-domain-claim]] | Ghost-claim gotcha; ACM workaround |
+| [IAM](/knowledge-base/aws/iam/) | [[aws/recipes/cross-account-role-pattern]] | Trust + ExternalId + scoped permissions |
+| [EC2](/knowledge-base/aws/ec2/) | [[aws/ec2/snapshot-all-instances]] + [[aws/ec2/ami-cross-account-copy]] | AMI per instance, share + `copy-image` |
+| [KMS](/knowledge-base/aws/kms/) | [[aws/kms]] | Key policy + IAM pattern for cross-account encrypt |
+
+## Recommended order
+
+<Steps>
+
+1. **CLI + identities** — profiles, `sts get-caller-identity` on both sides.
+2. **IAM cross-account roles** — early, for services staying behind.
+3. **Data** (RDS, S3) — longest copy windows.
+4. **Compute** ([[aws/lambda|Lambda]], [[aws/ecs|ECS]]) — after data validates.
+5. **Frontend + DNS** (Amplify, CloudFront, Route 53) — user-visible cutover last.
+6. **Cleanup** — revoke grants; delete source after rollback window.
+
+</Steps>
+
+## Failure modes up front
+
+- **Encrypted snapshots can't share the default service KMS key** — [[aws/rds/cross-account-snapshot|RDS recipe]] re-encrypt step.
+- **CloudFront alternate-domain claims linger** after distribution deletion — [[aws/cloudfront/alternate-domain-claim|ACM bypass]].
+- **Cross-account KMS needs key policy AND consumer IAM policy** — granting only one fails closed.
+- **`sts:AssumeRole` without `ExternalId`** — confused-deputy risk; [[aws/recipes/cross-account-role-pattern|always set one]].
+- **Wrong `--profile` on a write** — `sts get-caller-identity` every time.
+
+## Not in this playbook (yet)
+
+- API Gateway OpenAPI export + custom domain repoint.
+- Cognito user-pool import (passwords not portable).
+- CloudFormation/SAM stack moves; Lambda alias cutover recipe.

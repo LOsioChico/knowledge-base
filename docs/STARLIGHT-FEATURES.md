@@ -1,8 +1,6 @@
-# What Starlight + MDX adds (vs Quartz vault markdown)
+# Starlight + MDX capabilities
 
-Quartz is a **static site generator for Obsidian vaults**: wikilinks, graph, backlinks, folder MOCs, minimal authoring friction.
-
-Starlight is a **documentation framework on Astro**: opinionated layout, sidebar, search, i18n hooks, and **MDX** (Markdown + React components). This repo uses it for **enriched publish** layers, not as a replacement for Obsidian editing.
+What the **published site** (`sites/docs/`) supports. Vault markdown under `content/` stays Obsidian-safe (wikilinks, callouts, `related:`); it is **not** deployed as HTML. Authoring: [`PUBLISHING.md`](PUBLISHING.md).
 
 ## Already in use
 
@@ -16,7 +14,7 @@ Starlight is a **documentation framework on Astro**: opinionated layout, sidebar
 | Wikilinks in MDX body | `remark-wiki-link` + `src/plugins/remark-wikilinks.mjs` | `[[effect-ts/quickstart\|Quickstart]]` → internal URLs |
 | Wikilink CI | `bun run lint:mdx-wikilinks` | Unresolved `[[ ]]` fail lint |
 | Link styling (visual) | `rehype-kb-link-classes` + `links.css` | **Internal:** accent solid underline. **External:** muted dashed underline + ↗, new tab |
-| Link hygiene lint | `bun run lint:mdx-link-hygiene` | Warns when a Quartz URL targets a **migrated** Starlight slug |
+| Link hygiene lint | `bun run lint:mdx-link-hygiene` | Fails on full-site URLs in MDX when a wikilink should be used |
 | Package manager | Bun (`sites/docs/bun.lock`) | Matches rest of repo tooling |
 
 ## Twoslash authoring
@@ -26,10 +24,10 @@ Starlight is a **documentation framework on Astro**: opinionated layout, sidebar
 - **`// ^?`:** rare; misalignment fails the build. Prefer prose + hovers.
 - **`// @errors:`:** canonical demo on `effect-ts/typed-errors.mdx` (wrong `E` assignment). Also use on layer pages for missing-`R` compile errors. Not on quickstarts or indexes.
 
-## MDX-specific (not available in plain `.md`)
+## MDX-specific (not available in plain vault `.md`)
 
 - **Embed React** in prose: custom components, small interactive widgets (no WebContainers in scope yet).
-- **Composition**: import Starlight components only in MDX; vault `.md` stays Quartz/Obsidian-safe.
+- **Composition**: import Starlight components only in MDX; vault `.md` keeps Obsidian callouts and blockquote taglines.
 - **Per-page frontmatter** (`title`, `description`) for SEO and social cards without vault schema.
 
 ## Starlight ecosystem (optional next)
@@ -39,67 +37,59 @@ Starlight is a **documentation framework on Astro**: opinionated layout, sidebar
 | [`starlight-links-validator`](https://starlight.astro.build/resources/plugins/#starlight-links-validator) | Broken **markdown** link check at build | After more cross-area links |
 | [`starlight-blog`](https://starlight.astro.build/resources/plugins/) | Dated posts / changelog | If you want release notes as a blog |
 | [`starlight-theme-obsidian`](https://github.com/Fevol/starlight-theme-obsidian) | Obsidian Publish–like chrome | Visual parity only; not wikilinks |
-| `@astrojs/starlight` **sidebar autogenerate** | Less hand-maintained sidebar | When an area is fully migrated |
+| `@astrojs/starlight` **sidebar autogenerate** | Less hand-maintained sidebar | If you want to drop hand-maintained sidebars |
 | **Custom remark** (e.g. glossary, callout transform) | Vault callout → `<Aside>` on import | If you automate vault → MDX |
 
 ## Link classes (authoring)
 
-Three kinds of links; pick by **where the page lives**, not by how pretty the URL is.
+Three kinds of links; pick by **whether the topic has MDX on the site**.
 
 | Class | Write | Looks like (in prose) |
 | --- | --- | --- |
 | **Starlight internal** | `[[effect-ts/quickstart\|Quickstart]]` in markdown prose | **Accent solid underline** — stays on this site |
-| **Vault / Quartz (unmigrated)** | `https://losiochico.github.io/knowledge-base/nestjs/` | Same as internal (still this KB deploy) |
+| **Unpublished topic** | Plain text: "planned" in prose (no wikilink) | No link to a page that does not exist yet |
 | **External (sources)** | `https://effect.website/...`, `https://github.com/...` | **Gray dashed underline + ↗** — opens new tab |
 
-Preview any migrated page: internal wikilinks vs `effect.website` / GitHub links should be obvious without hovering.
+Preview any published page: internal wikilinks vs `effect.website` / GitHub links should be obvious without hovering.
 
-**Prose:** wikilinks for any slug listed as `migrated` in `sites/docs/migration.json`.
+**Prose and lists:** wikilinks for any slug that has an `.mdx` under `sites/docs/src/content/docs/`.
+
+**Tables:** do **not** use `[[slug|label]]` inside `| table | rows |` — the alias pipe splits the cell and renders broken `[[slug` text. Use `[label](/knowledge-base/slug/)` instead. `bun run lint:mdx-table-wikilinks` blocks regressions.
 
 **Cards / JSX:** `<a href="/knowledge-base/effect-ts/foo/">` — wikilinks do not run inside Starlight components. Never bare `/effect-ts/foo/` in `href` (missing `base`).
 
-**Lint:** `lint:mdx-link-hygiene` fails if MDX uses a full Quartz URL for a migrated slug; use `[[slug|label]]` instead. `bun run lint:docs` runs it with `--strict`; CI matches.
+**Lint:** `lint:mdx-link-hygiene --strict` fails on `https://losiochico.github.io/knowledge-base/...` in MDX; use `[[slug|label]]` for live pages. `bun run lint:docs` runs it; CI matches.
 
 **Build:** `rehype-kb-link-classes` adds `kb-link-internal` or `kb-link-external` on every prose `<a>`; `links.css` styles them (see `sites/docs/src/styles/links.css`).
 
-## Wikilinks: what we have vs Quartz
+## Wikilinks: vault vs Starlight
 
-| Feature | Vault + Quartz | Starlight MDX (this repo) |
+| Feature | Vault (`content/`) | Starlight MDX (this repo) |
 | --- | --- | --- |
 | `[[path\|alias]]` syntax | Yes | Yes (remark plugin in markdown/MDX prose) |
-| Resolve at build | Quartz | Yes + `lint:mdx-wikilinks` |
-| Backlinks panel | Yes | **Not yet** (needs build-time index + component) |
-| Graph view | Yes | **Not yet** (separate visualization or defer) |
-| First-mention / `related:` / discoverability | `lint:wikilinks` on `content/` | Still vault-only until MDX is canonical |
-| Cross-area link to unmigrated note | Wikilink | Full Quartz URL or sidebar link |
-
-No backticks inside `[[ ]]`. Plain `/effect-ts/foo/` in markdown prose is prefixed by `remark-internal-base-links`.
+| Resolve at build | N/A (not deployed) | Yes + `lint:mdx-wikilinks` |
+| Backlinks panel | Obsidian / local only | **Not yet** (needs build-time index + component) |
+| Graph view | Obsidian / local only | **Not yet** (separate visualization or defer) |
+| First-mention / `related:` / discoverability | `lint:wikilinks` on `content/` | Vault-only until MDX is canonical for a topic |
+| Cross-area link to note without MDX yet | Wikilink in vault | "Planned" in MDX prose; no dead site URLs |
 
 ### Backlinks (future)
 
-Quartz computes inbound links automatically. For Starlight, a practical path:
+A practical path for Starlight:
 
 1. At build time, scan all MDX for `[[...]]` and markdown links → `Map<slug, inbound[]>`.
 2. Expose via `getStaticPaths` data or a small `<Backlinks slug={...} />` component.
-3. Optionally merge vault `content/` links for dual-publish transition.
+3. Optionally merge vault `content/` links while both surfaces exist.
 
-Not implemented yet; track in migration work when a note graduates from stub.
+Not implemented yet.
 
 ## What stays on the vault linter
 
 `bun run lint:wikilinks` still governs `content/`:
 
-- `related:` symmetry, first-mention, discoverability TF-IDF, tagline, agents-mirror, etc.
+- Symmetric `related:`, first-mention wikilinks, discoverability (TF-IDF), tagline blockquotes, agents-mirror.
+- Does **not** validate MDX under `sites/docs/` — use `bun run lint:docs` instead.
 
-MDX uses a **narrower** wikilink lint (targets must exist under `sites/docs/src/content/docs/`). When an area is fully migrated, you can extend rules or share resolver code from `doc-slugs.mjs`.
+## CI map
 
-## Bun commands
-
-```bash
-bun run docs:dev
-bun run lint:ci        # CI lint job (vault + Pass 0 + lint:docs)
-bun run lint:docs      # astro check + lint:mdx-wikilinks + lint:mdx-link-hygiene --strict
-bun run docs:build
-```
-
-CI / deploy map: [`docs/PIPELINE.md`](PIPELINE.md).
+See [`PIPELINE.md`](PIPELINE.md). Summary: `lint:ci` on PR + main; `docs:build` on PR + main; GitHub Pages serves `sites/docs/dist/` only.

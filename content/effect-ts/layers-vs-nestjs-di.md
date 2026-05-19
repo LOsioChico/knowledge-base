@@ -32,9 +32,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/layers-vs-nestjs-di.mdx`. Vault note remains audit source.
-
 > Both Effect's [[effect-ts/layers-and-di|Layer system]] and NestJS's IoC container solve dependency injection: declare a service, declare what it needs, let the runtime wire it up. They differ on _when_ a missing dependency surfaces (compile time vs application bootstrap), how [[effect-ts/composition|composition]] works (typed graph vs module imports), and how cleanup is modeled (scoped layers vs [[nestjs/fundamentals/lifecycle-hooks|lifecycle hooks]]). This note maps the two side-by-side so you can pick the right tool and, when you must, run both in the same process.
 
 ## TL;DR

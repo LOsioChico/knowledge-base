@@ -1,0 +1,55 @@
+---
+title: CloudFront CLI cheatsheet
+description: CloudFront distribution lookup, invalidation, and read-modify-write config updates.
+---
+
+> Distribution discovery, invalidation, and alias inspection. Most [[aws/cloudfront|CloudFront]] work is "find which distribution serves this hostname".
+
+## Find a distribution
+
+```bash
+aws cloudfront list-distributions \
+  --query 'DistributionList.Items[].{Id:Id,Domain:DomainName,Aliases:Aliases.Items,Status:Status}' \
+  --output table
+
+aws cloudfront list-distributions \
+  --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, '<hostname>')].{Id:Id,Domain:DomainName}" \
+  --output table
+
+aws cloudfront get-distribution        --id <ID>
+aws cloudfront get-distribution-config --id <ID>
+```
+
+## Invalidate the CDN
+
+```bash
+aws cloudfront create-invalidation --distribution-id <ID> --paths '/*'
+aws cloudfront create-invalidation --distribution-id <ID> --paths '/index.html' '/static/css/*'
+
+aws cloudfront list-invalidations --distribution-id <ID>
+aws cloudfront get-invalidation   --distribution-id <ID> --id <INVALIDATION_ID>
+```
+
+First 1,000 paths/month free; wildcards count as one path.
+
+## Update a distribution
+
+Read-modify-write with optimistic concurrency:
+
+```bash
+aws cloudfront get-distribution-config --id <ID> > dist.json
+ETAG=$(jq -r .ETag dist.json)
+jq .DistributionConfig dist.json > dist-config.json
+# Edit dist-config.json
+aws cloudfront update-distribution \
+  --id <ID> \
+  --distribution-config file://dist-config.json \
+  --if-match "$ETAG"
+```
+
+Stale `--if-match` rejects the update — refetch and retry.
+
+## Tips
+
+- [[aws/amplify|Amplify]] distributions often appear only via [[aws/amplify/cli|Amplify CLI]].
+- Alias conflicts: [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost claims]].

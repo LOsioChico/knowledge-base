@@ -1,0 +1,36 @@
+---
+title: Auth
+description: Authentication and authorization in NestJS — guards, Passport, and JWT recipes.
+---
+
+import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
+
+> Map of content for authentication and authorization in NestJS. Auth is built on [[nestjs/fundamentals/guards|guards]]; start there if the pipeline order is still fuzzy.
+
+## Recipes
+
+<Steps>
+
+1. [[nestjs/fundamentals/guards|Guards]] — `CanActivate`, Reflector, how enhancers bind.
+2. [[nestjs/auth/jwt-strategy|JWT strategy with Passport]] — login, protected routes, `@Public()` opt-out.
+
+</Steps>
+
+<CardGrid>
+  <Card title="JWT + Passport" icon="approve-check">
+    <p><a href="/knowledge-base/nestjs/auth/jwt-strategy/">Bearer tokens</a> — sign with <code>@nestjs/jwt</code>, verify with <code>passport-jwt</code>, global guard + <code>@Public()</code>.</p>
+  </Card>
+</CardGrid>
+
+## Planned
+
+- Guards vs [[nestjs/fundamentals/middleware|middleware]]: when to use each
+- Role and permission checks (RBAC, claims-based access control)
+- Refresh tokens and rotation
+- Session-based auth (when JWT is the wrong tool)
+
+<Aside type="note" title="Validation at the edge">
+
+Pair JWT routes with [[nestjs/recipes/validation|Validation with class-validator]] so login bodies are DTOs, not raw `Record` shapes.
+
+</Aside>

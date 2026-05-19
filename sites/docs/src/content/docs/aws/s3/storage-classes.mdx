@@ -1,0 +1,64 @@
+---
+title: S3 storage classes
+description: S3 storage class comparison — Standard, Intelligent-Tiering, IA, Glacier tiers, and when retrieval fees bite.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Every S3 object has a storage class controlling per-GB cost, retrieval cost, latency, and AZ count. Pick wrong and you overpay for idle storage or pay surprise retrieval fees on hot data.
+
+## TL;DR
+
+- **Default to Standard** — millisecond latency, no retrieval fee, ≥3 AZs.
+- **Intelligent-Tiering** when access pattern is unknown — auto-tiering; small per-object monitoring fee; objects &lt;128 KB never tier.
+- **Standard-IA / One Zone-IA** only for rarely read data — per-GB **retrieval fee** wipes savings if read more than ~monthly.
+- **Glacier classes** for archives — cheapest storage; Flexible/Deep Archive need `RestoreObject` (minutes to hours).
+- **Don't use Reduced Redundancy** — AWS recommends against; Standard is cheaper ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-freq-data-access)).
+
+## Reference table
+
+From [AWS storage-class comparison](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-compare):
+
+| Class | API name | Availability | AZs | Min duration | Retrieval fee |
+| --- | --- | --- | --- | --- | --- |
+| S3 Standard | `STANDARD` | 99.99% | ≥3 | None | No |
+| Intelligent-Tiering | `INTELLIGENT_TIERING` | 99.9% | ≥3 | None | No (monitoring) |
+| Standard-IA | `STANDARD_IA` | 99.9% | ≥3 | 30 days | Yes |
+| One Zone-IA | `ONEZONE_IA` | 99.5% | 1 | 30 days | Yes |
+| Glacier Instant Retrieval | `GLACIER_IR` | 99.9% | ≥3 | 90 days | Yes |
+| Glacier Flexible Retrieval | `GLACIER` | 99.99% after restore | ≥3 | 90 days | Yes |
+| Glacier Deep Archive | `DEEP_ARCHIVE` | 99.99% after restore | ≥3 | 180 days | Yes |
+
+## When to reach for which
+
+**Standard** — data you plan to read; optimize later with [[aws/s3/lifecycle-rules|lifecycle transitions]].
+
+**Intelligent-Tiering** — unknown access; skip for millions of tiny files (&lt;128 KB always billed at Frequent Access rate).
+
+<Aside type="caution" title="IA read more than ~monthly costs more than Standard">
+
+Per-GB retrieval on every GET. Break-even is roughly one full read per month.
+
+</Aside>
+
+**Glacier** — three patience levels: Instant Retrieval (ms), Flexible (async restore tiers), Deep Archive (cheapest, hours).
+
+<Aside type="note" title="Glacier objects use the S3 API">
+
+Despite the name, GET goes through S3 — not a separate Glacier console.
+
+</Aside>
+
+**Express One Zone** — single-digit-ms, single AZ; directory buckets; ML/analytics co-located with GPU.
+
+## Setting the class
+
+- At **PUT**: `--storage-class STANDARD_IA` on `aws s3 cp` / SDK.
+- Via **lifecycle** `Transition` — most common production pattern.
+- At **copy**: `aws s3 cp s3://b/k s3://b/k --storage-class GLACIER`.
+
+## See also
+
+- [[aws/s3|S3]].
+- [[aws/s3/lifecycle-rules|Lifecycle rules]].
+- [Comparing storage classes](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-compare) (official).

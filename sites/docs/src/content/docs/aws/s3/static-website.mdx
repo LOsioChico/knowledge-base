@@ -1,0 +1,92 @@
+---
+title: S3 static website hosting
+description: Serve a bucket as a public HTTP website — index documents, HTTPS gap, and CloudFront or Amplify front-ends.
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only — production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
+
+## When to reach for it
+
+- **Bare S3 website** — ephemeral/internal/test where HTTP is acceptable.
+- **S3 + CloudFront + ACM** — production static site with HTTPS and custom domain.
+- **Amplify** — AWS's recommended managed path ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
+
+## 1. Enable hosting
+
+```bash
+aws s3api put-public-access-block \
+--bucket my-site \
+--public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+
+aws s3 website s3://my-site/ \
+--index-document index.html \
+--error-document error.html
+
+aws s3api put-bucket-policy --bucket my-site --policy file://policy.json
+```
+
+`policy.json`:
+
+```json
+{
+"Version": "2012-10-17",
+"Statement": [
+{
+"Sid": "PublicReadGetObject",
+"Effect": "Allow",
+"Principal": "*",
+"Action": "s3:GetObject",
+"Resource": "arn:aws:s3:::my-site/*"
+}
+]
+}
+```
+
+Endpoint examples ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html)):
+
+```
+http://my-site.s3-website-us-east-1.amazonaws.com
+http://my-site.s3-website.us-west-2.amazonaws.com
+```
+
+## Website vs REST endpoint
+
+| Behavior | REST | Website |
+| --- | --- | --- |
+| HTTPS | Yes | **No** |
+| Methods | Full S3 API | GET/HEAD only |
+| Errors | XML | HTML (`error.html`) |
+| Bucket root | Object list XML | `index.html` |
+| Redirects | No | Per-object and routing rules |
+
+Use the **website** endpoint for static sites — REST returns XML listings.
+
+<Aside type="caution" title="Website endpoint is HTTP-only">
+
+No HTTPS on `s3-website-*.amazonaws.com`. Front with CloudFront + ACM or Amplify ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteEndpoints.html)). Set CloudFront origin to the **website** endpoint so index/error documents work.
+
+</Aside>
+
+## Custom domain
+
+1. Bucket named **exactly** `www.example.com`.
+2. Website hosting + public-read policy.
+3. DNS CNAME to `www.example.com.s3-website.<region>.amazonaws.com`.
+
+Apex domains: Route 53 alias records (CNAME not allowed at apex).
+
+## SPA error document pattern
+
+Point `error-document` at `index.html` for client-side routing — HTTP status stays `404` (SEO/analytics impact). CloudFront custom error responses can rewrite to `200`.
+
+## Costs
+
+Same as S3 storage + requests + egress. No extra website fee. CloudFront shifts egress to CDN pricing.
+
+## See also
+
+- [[aws/cloudfront|CloudFront]].
+- [[aws/amplify|Amplify Hosting]].
+- [Static website walkthrough with Route 53](https://docs.aws.amazon.com/AmazonS3/latest/userguide/website-hosting-custom-domain-walkthrough.html) (official).

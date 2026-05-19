@@ -1,0 +1,66 @@
+---
+title: Fundamentals
+description: Modules, the DI container, and the request pipeline that ties middleware through exception filters.
+---
+
+import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
+
+> The mental model: `@Module()` classes group providers and controllers; the DI container wires them; the [[nestjs/fundamentals/request-lifecycle|request pipeline]] runs middleware → guards → interceptors → pipes → handler → filters on the way out.
+
+## TL;DR
+
+- **One request** = middleware (Express/Fastify) → enhancers inside Nest's exception zone → handler → response (filters only on throws).
+- **Enhancer order** for guards/pipes/interceptors: global → controller → route. **Exception filters invert**: route → controller → global.
+- **Globals** can be `app.useGlobalX(new …)` (no DI) or `APP_*` providers (DI-aware) — [[nestjs/fundamentals/global-providers|Global enhancers]].
+- **Process lifetime** (DB pool open/close) = [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]], not this pipeline.
+
+## Read in this order
+
+<Steps>
+
+1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]] — **start here** (orchestrator).
+2. [[nestjs/fundamentals/middleware|Middleware]] → [[nestjs/fundamentals/guards|Guards]] → [[nestjs/fundamentals/interceptors|Interceptors]] → [[nestjs/fundamentals/pipes|Pipes]] → [[nestjs/fundamentals/exception-filters|Exception filters]].
+3. [[nestjs/fundamentals/global-providers|Global enhancers]] — `useGlobalX` vs `APP_*`.
+4. [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]] — boot and shutdown, not per-request.
+
+</Steps>
+
+<Aside type="note" title="Modules and DI deep-dives (not on site yet)">
+
+Feature/shared/core module layout and custom providers (`useFactory`, scopes) are still vault-only topics under `content/nestjs/fundamentals/`. When MDX lands, they slot **before** the request pipeline in the reading order above.
+
+</Aside>
+
+## Layer notes
+
+<CardGrid>
+  <Card title="Request lifecycle" icon="list-format">
+    <p><a href="/knowledge-base/nestjs/fundamentals/request-lifecycle/">Orchestrator</a> — mermaid pipeline + decorated route.</p>
+  </Card>
+  <Card title="Middleware" icon="external">
+    <p><a href="/knowledge-base/nestjs/fundamentals/middleware/">Raw req/res</a> — global vs module, body parsers.</p>
+  </Card>
+  <Card title="Guards" icon="approve-check">
+    <p><a href="/knowledge-base/nestjs/fundamentals/guards/">Authorization</a> — <code>CanActivate</code>, Reflector, RolesGuard.</p>
+  </Card>
+  <Card title="Interceptors" icon="seti:typescript">
+    <p><a href="/knowledge-base/nestjs/fundamentals/interceptors/">Around handler</a> — RxJS pre/post, FILO.</p>
+  </Card>
+  <Card title="Pipes" icon="warning">
+    <p><a href="/knowledge-base/nestjs/fundamentals/pipes/">Per-argument</a> — ValidationPipe, ParseIntPipe.</p>
+  </Card>
+  <Card title="Exception filters" icon="error">
+    <p><a href="/knowledge-base/nestjs/fundamentals/exception-filters/">On failure</a> — inverted scope order.</p>
+  </Card>
+  <Card title="Global enhancers" icon="setting">
+    <p><a href="/knowledge-base/nestjs/fundamentals/global-providers/"><code>APP_*</code> vs <code>useGlobalX</code></a>.</p>
+  </Card>
+  <Card title="Lifecycle hooks" icon="rocket">
+    <p><a href="/knowledge-base/nestjs/fundamentals/lifecycle-hooks/">Boot &amp; shutdown</a> — v11 destroy order.</p>
+  </Card>
+</CardGrid>
+
+## Pending topics (vault only)
+
+- Modules: feature, shared, core
+- DI container: providers, scopes, custom providers

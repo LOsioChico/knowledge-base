@@ -1,0 +1,43 @@
+---
+title: Amplify Hosting
+description: Managed frontend hosting — apps, branches, zip deployments, custom domains, and CloudFront under the hood.
+---
+
+> AWS Amplify Hosting is git-push-or-zip-deploy frontend hosting: Amplify builds, ships to an internal [[aws/cloudfront|CloudFront]] distribution, serves on `*.amplifyapp.com` or custom domains. One CLI surface (`aws amplify`).
+
+## TL;DR
+
+- **Four primitives**: App → Branch → Deployment/Job → Domain association.
+- **Two ship paths**: git-connected auto-build or manual zip ([[aws/s3/presigned-urls|presigned upload URL]] + `start-deployment`).
+- **Hosting = CloudFront + ACM (us-east-1) + Route 53** — Amplify owns all three.
+- **Custom domain = `create-domain-association`** — provisions cert and alias.
+- **Amplify Gen 2** co-deploys data/auth/storage from one project.
+
+## When to use
+
+- **Use Amplify** for SPAs/SSR frontends, PR previews, "git push to deploy".
+- **Don't use Amplify** when you need explicit CloudFront behaviors, multiple origins, or Lambda@Edge control — use S3 + CloudFront.
+- **Don't use Amplify** as sole backend compute — use [[aws/lambda|Lambda]], ECS, or App Runner.
+
+## Mental model
+
+```
+App (one per project)
+└── Branch (main, staging, …)
+    └── Deployment / Job (one build)
+        └── Domain association (hostname → branch)
+```
+
+Amplify provisions CloudFront you won't see in `cloudfront list-distributions`. Domain moves hit global CNAME uniqueness — [[aws/cloudfront/alternate-domain-claim|ghost claims]].
+
+## Pending notes
+
+- Git vs zip deployment trade-offs.
+- Amplify Gen 2 full-stack.
+
+## See also
+
+- [[aws/amplify/cli|Amplify CLI cheatsheet]].
+- [[aws/amplify/cross-account-migration|Cross-account Amplify migration]].
+- [[aws/cloudfront/alternate-domain-claim|Alternate-domain ghost claims]].
+- [Amplify Hosting user guide](https://docs.aws.amazon.com/amplify/latest/userguide/welcome.html) (official).

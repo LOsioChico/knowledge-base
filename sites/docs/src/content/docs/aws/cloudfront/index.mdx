@@ -1,0 +1,35 @@
+---
+title: CloudFront
+description: Content delivery network — distributions, origins, aliases, caching, and the Amplify-managed edge story.
+---
+
+> Amazon CloudFront is AWS's global CDN: point a **distribution** at **origins** (S3, ALB, HTTPS endpoint, [[aws/amplify|Amplify]] app), attach domain + certificate, cache at edge locations.
+
+## TL;DR
+
+- **Distribution = CDN endpoint** — origins, path behaviors, aliases.
+- **Aliases (CNAMEs) globally unique** across all AWS accounts ([source](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html)).
+- **Default 24h TTL**; forwarded headers/cookies/query strings fragment the cache key.
+- **ACM certificate in `us-east-1`** required for custom aliases.
+- **Amplify hides its distribution** — manage via `aws amplify`, not `cloudfront list-distributions`.
+
+## When to use
+
+- **Use CloudFront** for static assets (S3 + CloudFront SPA setup), TLS + custom domain in front of ALB, geo-restricted delivery.
+- **Don't use CloudFront** as a load balancer (ALB underneath) or for highly dynamic APIs with tight cache keys.
+
+## Mental model
+
+A **distribution** carries: one or more **origins**, **behaviors** (TTL, forwarded headers, origin routing), **aliases** + auto `dXXX.cloudfront.net` hostname, and **ACM cert in us-east-1** for custom names.
+
+## Pending notes
+
+- Lookup-key trap when forwarding `Authorization`.
+- Alias eviction and cross-account moves — [[aws/cloudfront/alternate-domain-claim|ghost claims]].
+
+## See also
+
+- [[aws/cloudfront/cli|CloudFront CLI cheatsheet]].
+- [[aws/cloudfront/alternate-domain-claim|Alternate-domain ghost claims]].
+- [[aws/amplify|Amplify Hosting]].
+- [Amazon CloudFront developer guide](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Introduction.html) (official).

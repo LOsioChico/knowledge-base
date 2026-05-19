@@ -21,9 +21,6 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts
 ---
 
-> [!todo]- Starlight publish
-> Enriched MDX: `sites/docs/src/content/docs/effect-ts/layers-and-di.mdx` (Steps, Tabs, Twoslash). Vault note remains audit source.
-
 > The `R` channel of `Effect<A, E, R>` is the typed dependency graph. You declare a service with a `Tag`, build an implementation as a `Layer`, and `Effect.provide` it. The compiler refuses to run an effect whose `R` is not `never`, so missing dependencies are compile errors, not runtime crashes.
 
 ## Why "DI in the type"
