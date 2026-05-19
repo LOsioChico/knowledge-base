@@ -20,7 +20,7 @@ Before editing published docs under `sites/docs/`, load **`kb-starlight-author`*
 
 ## Skills directory
 
-All agent skills live under `.github/skills/<name>/SKILL.md`. Three kinds:
+All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 **Workflow skills (human/agent-facing, load on demand):**
 
@@ -44,7 +44,7 @@ When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a 
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
 
-**Dual publish (migration in progress):**
+**Dual publish (area-by-area migration):**
 
 - **Vault:** Obsidian markdown under `content/` — wikilinks, frontmatter schema, `bun run lint:wikilinks`, LLM audit in `scripts/audit-notes/`.
 - **Starlight:** Enriched MDX under `sites/docs/src/content/docs/` — Astro Starlight + `expressive-code-twoslash` (TypeScript hovers, Steps, Tabs). CI merges Starlight `dist/` over Quartz `public/` so migrated URLs win. Tracker: `sites/docs/migration.json`, playbooks in `docs/STARLIGHT-MIGRATION.md` and `docs/STARLIGHT-FEATURES.md`.
@@ -404,7 +404,7 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   bun run vault:check --base HEAD~1
   ```
 
-  Equivalent manual chain when you only need linters without audit: `bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format)`. All three must pass before `git commit`. If formatting fails, run `bun run format` (in `scripts/audit-notes/`) to auto-fix. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. Forbidden: committing after running only a subset. If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
+  Linter-only (no LLM audit), matches CI lint job: `bun run lint:ci` (vault wikilinks + Pass 0 + `lint:docs`). Install deps under `scripts/audit-notes` and `sites/docs` first. If formatting fails, run `bun run format` in `scripts/audit-notes/`. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. Forbidden: committing after running only a subset (e.g. vault wikilinks without `lint:docs` after MDX edits). If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
 - **Corpus regression** (after changing `skip-zones.ts`, `dismissed.json` patterns, or `fixtures/corpus-manifest.json`): `cd scripts/audit-notes && bun test`. Skip-zone rules live in [`skip-zones.ts`](scripts/audit-notes/skip-zones.ts); the manifest lists paths/lines that must stay silent for specific rules ([`corpus-silent.test.ts`](scripts/audit-notes/corpus-silent.test.ts)).
 - **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `bun run autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `bun run autofix` (no args walks `content/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
 - After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
@@ -425,7 +425,7 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   | `triage` | Pass 0 + 0b + 1b + 1c + 1d + source grounding + dismissed filter | required |
   | `full` | All passes (1, 1a, 1e, 2, 3) | required |
 
-  Convenience scripts: `bun run audit:ci`, `bun run audit:triage`. Explicit paths still work: `bun start --json --profile=full ../../content/<path>.md`.
+  Convenience scripts (from `scripts/audit-notes/`): `bun run audit:ci`, `bun run audit:triage`. Explicit paths still work: `bun start --json --profile=full ../../content/<path>.md`.
 
   Diff-aware: `--base <ref>` audits markdown under `content/` changed since `<ref>` (committed + staged + unstaged). Examples: `--base HEAD~1` (last commit), `--base origin/main` (branch delta). Empty diff exits clean.
 

@@ -63,7 +63,7 @@ flowchart LR
 ## Gaps and intentional limits
 
 - **LLM audit** is not in CI (cost + `CURSOR_API_KEY`). CI runs Pass 0 only; triage stays local via `vault:check`.
-- **Unit tests** run in the CI `lint` job (`bun run test` + `scripts/audit-notes` tests). They do not re-run `docs:build` (that is the PR `docs-build` job).
+- **Unit tests** run in the CI `lint` job (`bun run test:ci`: root wikilink/merge-pages + audit-notes). They do not re-run `docs:build` (that is the PR `docs-build` job).
 - **Untracked files** are invisible to `git diff --name-only <ref>` — `vault:check` will not run `lint:docs` until `sites/docs/` paths are tracked. After MDX edits: `bun run lint:docs` locally, or stage/commit then `vault:check`.
 - **Merged site smoke test** — `main` `build` job checks key paths under `merged-public/` after merge; not a full link crawl.
 - **Backlinks / graph** exist on Quartz only until a Starlight index is built.
@@ -80,7 +80,8 @@ flowchart LR
 | `.github/instructions/content.instructions.md` | Copilot: `content/**/*.md` |
 | `.github/instructions/starlight.instructions.md` | Copilot: `sites/docs/**/*.mdx` |
 | `.github/skills/kb-starlight-author/SKILL.md` | MDX authoring playbook |
-| `openspec/config.yaml` | `lint:ci` + `test:ci` in verify |
+| `openspec/config.yaml` | `lint:ci` + `test:ci` in verify; `vault:check` for content/; audit scripts under `scripts/audit-notes/` |
+| `.cursor/rules/engram.mdc` | Repo overlay: Starlight + vault division of labor |
 
 ## Related docs
 

@@ -16,7 +16,6 @@ Official path from Quartz (`content/**/*.md`) to Astro Starlight (`sites/docs/sr
 | `content/<area>/*.md` | Vault: wikilinks, frontmatter, `bun run lint:wikilinks`, LLM audit |
 | `sites/docs/src/content/docs/<area>/*.mdx` | Published: Twoslash, Starlight components |
 | `sites/docs/migration.json` | Machine-readable status per note |
-| `spikes/starlight-twoslash/` | Historical spike; **canonical app is `sites/docs/`** |
 
 ## Per-note workflow
 

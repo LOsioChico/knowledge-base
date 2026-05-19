@@ -1,15 +1,16 @@
 strict_tdd: false
 context: |
-  knowledge-base: vault content/ (Quartz/Obsidian) + published sites/docs/ (Starlight MDX, migration in progress).
+  knowledge-base: vault content/ (Quartz/Obsidian) + published sites/docs/ (Starlight MDX). effect-ts area migrated; other areas TBD (sites/docs/migration.json).
   Operating contract: AGENTS.md; kb-author for content/; kb-starlight-author for sites/docs/.
   Tooling (Bun/Node ESM): scripts/lint-wikilinks.mjs, scripts/vault-check.mjs, scripts/audit-notes/, scripts/merge-pages.mjs.
   Strict TDD applies only to scripts/** changes. content/ edits use vault lint + audit, not test-first TDD.
   Post-edit gate when content/ changed: bun run vault:check --base HEAD~1 (LLM audit needs CURSOR_API_KEY in repo-root .env).
   vault:check also runs lint:docs when sites/docs/ is in the git diff.
   After sites/docs/ only: bun run lint:docs && bun run docs:build. sites/docs uses Bun (bun.lock).
-  Linter-only chain (no LLM): bun run lint:ci (matches CI lint job).
-  CI (.github/workflows/deploy.yml): lint:ci on PR+main; docs:build on PR; Quartz+Starlight merge on main. See docs/PIPELINE.md.
-  Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, GitHub Actions.
+  Linter-only (no LLM): bun run lint:ci (vault wikilinks + Pass 0 + lint:docs). Matches CI lint job.
+  LLM audit profiles: cd scripts/audit-notes && bun run audit:triage (not root package.json).
+  CI (.github/workflows/deploy.yml): lint:ci + test:ci on PR+main; docs:build on PR; Quartz+Starlight merge on main. See docs/PIPELINE.md.
+  Package managers: bun. Markers: package.json, scripts/audit-notes/package.json, sites/docs/package.json, GitHub Actions.
 rules:
   proposal:
     require_problem_statement: true
@@ -20,26 +21,23 @@ rules:
   tasks:
     protect_review_workload: true
   apply:
-    test_command: "bun run test && cd scripts/audit-notes && bun run test"
+    test_command: "bun run test:ci"
   verify:
     test_command: "bun run lint:ci && bun run test:ci"
 testing:
-  detected: "2026-05-19"
+  detected: "2026-05-18"
   runner:
-    command: "bun run test && cd scripts/audit-notes && bun run test"
+    command: "bun run test:ci"
     framework: "package script"
   layers:
-    unit: "package script (root wikilink/vault-check tests), package script (audit-notes)"
+    unit: "bun run test:ci (root scripts/*.test.mjs + audit-notes)"
     integration: ""
     e2e: ""
   commands:
     unit:
       - scope: "."
-        command: "bun run test"
-        framework: "node:test via tsx"
-      - scope: "scripts/audit-notes"
-        command: "cd scripts/audit-notes && bun run test"
-        framework: "node:test via tsx"
+        command: "bun run test:ci"
+        framework: "node:test via tsx (root wikilink/vault-check/merge-pages + audit-notes)"
     integration:
       []
     e2e:

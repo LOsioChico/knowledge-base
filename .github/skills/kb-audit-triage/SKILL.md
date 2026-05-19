@@ -57,7 +57,7 @@ bun start --json --base HEAD~1 --profile=triage > /tmp/audit.json 2> /tmp/audit.
 | `full` | Deep sweep before a major release or when user asks for full audit | All passes including Pass 1, 1a, 1e, 2, 3 |
 | `ci` | CI gate only — no LLM, no API key | Pass 0 only (same as `lint:content`) |
 
-Scripts: `bun run audit:triage`, `bun run audit:ci`.
+Scripts (from `scripts/audit-notes/`): `bun run audit:triage`, `bun run audit:ci`. Repo-root post-edit gate: `bun run vault:check --base HEAD~1`.
 
 ### Scope variants
 
@@ -198,11 +198,13 @@ set -a; source .env; set +a   # when running vault:check (CURSOR_API_KEY)
 bun run vault:check --base HEAD~1
 ```
 
-Manual linter-only chain (no LLM audit):
+Manual linter-only chain (no LLM audit; matches CI lint job):
 
 ```bash
-bun run lint:wikilinks && (cd scripts/audit-notes && bun run lint:content && bun run lint:format)
+bun run lint:ci
 ```
+
+After MDX-only edits, `bun run lint:docs` is enough until you commit; `vault:check` runs `lint:docs` when `sites/docs/` is in the git diff.
 
 All checks must pass. Forbidden: `| tail -N` between any of these — pipe exit status becomes
 the tail's (always 0) and silently masks failures. Forbidden: chaining `&& git commit` after

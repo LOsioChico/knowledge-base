@@ -9,7 +9,7 @@ Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base
 - `scripts/` — wikilink linter, content audit, deploy merge helper.
 - `AGENTS.md` — operating contract for AI editors.
 
-`docs/` — Starlight migration playbooks and [`docs/PIPELINE.md`](docs/PIPELINE.md) (CI / lint map). CI builds Quartz + Starlight and merges for GitHub Pages (`.github/workflows/deploy.yml`).
+- `docs/` — Starlight migration playbooks and [`docs/PIPELINE.md`](docs/PIPELINE.md) (CI / lint map). CI builds Quartz + Starlight and merges for GitHub Pages (`.github/workflows/deploy.yml`).
 
 ## Preview Starlight (migrated pages)
 

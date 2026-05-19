@@ -16,19 +16,21 @@ Global Memory Protocol: `~/.cursor/rules/engram.mdc`. This file is **repo-specif
 | Audit triage, vault habits, session learnings | Engram (`mem_search` at substantive session start) |
 | Symbol structure under `scripts/` | CodeGraph — `.cursor/rules/codegraph.mdc` |
 | Schema, linter rules, sourcing invariants | `AGENTS.md` (read end-to-end before editing `content/`) |
+| Starlight MDX, `lint:docs`, migration tracker | `kb-starlight-author`, `docs/PIPELINE.md`, `sites/docs/migration.json` |
 
 ### When to `mem_search` here
 
-- Start of substantive sessions (after `AGENTS.md` if editing `content/`).
-- Resuming audit tooling, vault conventions, or `effect-ts` notes.
-- Examples: `audit profiles`, `vault:check`, `composer-2.5`, `effect-ts triage`, `commit policy`.
+- Start of substantive sessions (after `AGENTS.md` if editing `content/`, or `kb-starlight-author` if editing `sites/docs/`).
+- Resuming audit tooling, vault conventions, `effect-ts` notes, or Starlight migration.
+- Examples: `audit profiles`, `vault:check`, `lint:docs`, `composer-2.5`, `effect-ts triage`, `starlight migration`, `commit policy`.
 
 ### When to `mem_save` here
 
 - Audit profile usage (`ci` / `triage` / `full`) and default post-edit `vault:check`
 - Verified triage patterns (verify high-tier findings before apply; anchor false-positive rate)
 - User-stated workflow (commit only when asked; verify-first when requested)
-- Tooling defaults (e.g. Composer 2.5 Fast for LLM audit passes)
+- Tooling defaults (e.g. Composer 2.5 Fast for LLM audit passes; `lint:ci` vs `vault:check`)
+- Starlight area status (`sites/docs/migration.json`) when an area graduates
 
 Promote invariants to `AGENTS.md` + `.github/copilot-instructions.md`, not only Engram.
 <!-- ENGRAM_KB_END -->

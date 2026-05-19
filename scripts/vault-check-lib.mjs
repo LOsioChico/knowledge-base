@@ -25,7 +25,7 @@ export function parseVaultCheckArgs(argv) {
   return { baseRef, json }
 }
 
-/** Paths changed since `ref` (committed diff only; same as audit-notes `targetsFromBase`). */
+/** Paths changed since `ref` (git diff vs working tree: commits after ref + staged + unstaged). */
 export function changedPathsFromBase(ref, repoRoot = REPO_ROOT) {
   let raw
   try {

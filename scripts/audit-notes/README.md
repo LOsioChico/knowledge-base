@@ -13,7 +13,7 @@ LLM passes use **Composer 2.5 Fast** (`composer-2.5` with `fast: true` in
 
 ```bash
 cd scripts/audit-notes
-bun install   # or yarn install
+bun install
 ```
 
 `CURSOR_API_KEY` is required only for **`triage`** and **`full`** profiles (source

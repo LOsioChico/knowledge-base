@@ -89,7 +89,7 @@ Only after these five steps may you draft. Then:
 9. **Run the post-edit audits (the index above).**
 10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
     `cp AGENTS.md .github/copilot-instructions.md`.
-11. Run the linter: `bun run lint:wikilinks` (or `bun run lint:ci` before push).
+11. Run the linter: `bun run lint:wikilinks` after vault-only edits; `bun run lint:ci` before push (includes Starlight `lint:docs` when MDX changed).
 12. **Run the LLM audit on touched files** and triage findings. The full step-by-step loop
     (run pipeline → classify each finding into TRUE-and-cited / TRUE-but-uncited-inline /
     WRONG-claim / UNVERIFIABLE → apply or persist to `dismissed.json`) lives in the `kb-audit-triage`
