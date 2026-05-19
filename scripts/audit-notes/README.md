@@ -42,6 +42,23 @@ bun run audit:ci
 bun run audit:triage -- --json --base HEAD~1
 ```
 
+### MDX profiles (`mdx-ci` | `mdx-triage` | `mdx-full`)
+
+Starlight pages under `sites/docs/src/content/docs/**/*.mdx`. Orchestrator:
+[`mdx-audit-notes.ts`](./mdx-audit-notes.ts). Skill: [`kb-mdx-auditor`](../../.github/skills/kb-mdx-auditor/SKILL.md).
+
+| Profile | Passes | In `lint:ci`? |
+| --- | --- | --- |
+| `mdx-ci` (via `lint:mdx-content` / `audit:mdx-ci`) | Pass 0 including em-dash / `--` | **Yes** |
+| `mdx-triage` | Structural + LLM `kb-mdx-auditor` | No |
+| `mdx-full` | + show-dont-tell + verifier on objective rules | No |
+
+```bash
+bun run autofix:mdx                     # em-dash / `--` in MDX prose → `:`
+bun run audit:mdx-ci                    # from repo root (CI)
+bun run audit:mdx-triage -- --base HEAD~1   # after MDX edits (needs CURSOR_API_KEY)
+```
+
 ### Scope
 
 ```bash
@@ -60,9 +77,9 @@ Empty diff exits cleanly (`{ "files": [] }`).
 ### Repo-root quality gate
 
 From the repository root, **`bun run vault:check`** runs wikilinks (diff-scoped),
-Pass 0 on changed files, triage audit, discoverability hints, split suggestions, and
-**`lint:docs`** when `sites/docs/` changed. See [`AGENTS.md`](../../AGENTS.md),
-[`docs/PIPELINE.md`](../../docs/PIPELINE.md), and
+**`lint:publish-parity`**, Pass 0 on changed files, triage audit, discoverability hints,
+split suggestions, and **`lint:docs`** when `sites/docs/` changed. See [`AGENTS.md`](../../AGENTS.md),
+[`docs/TOOLING.md`](../../docs/TOOLING.md), [`docs/PIPELINE.md`](../../docs/PIPELINE.md), and
 [`.github/skills/kb-audit-triage/SKILL.md`](../../.github/skills/kb-audit-triage/SKILL.md).
 
 ```bash

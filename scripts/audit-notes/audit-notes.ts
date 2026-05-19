@@ -1,13 +1,15 @@
 #!/usr/bin/env -S npx tsx
-// Three-pass audit pipeline:
+// Profile-scoped audit pipeline:
 //   Pass 0 — deterministic (no LLM): style + frontmatter
 //   Pass 1 — LLM auditor (kb-auditor skill): code-imports, table-link, express-first
+//   Pass 1b — LLM source verifier, with deterministic Pass 1c/1d filters
 //   Pass 2 — LLM verifier (kb-verifier skill, adversarial): drops unverifiable Pass 1 findings
+//   Pass 3 — LLM fix proposer for surviving high-tier findings
 //
-// Final report = Pass 0 findings ∪ verified(Pass 1).
+// Final report = deterministic findings ∪ profile-enabled LLM findings.
 //
 // Usage:
-//   CURSOR_API_KEY=... yarn start <file.md> [more.md ...]
+//   CURSOR_API_KEY=... bun start <file.md> [more.md ...]
 //
 // Flags:
 //   --profile=ci|triage|full   pass set (default: full for backward compat)
@@ -725,7 +727,7 @@ async function main(): Promise<void> {
   // Merge with tiers: deterministic + verified objective + grounded show-dont-tell => high.
   // Subjective candidates (other than show-dont-tell) => advisory.
   // "Plausible but unsourced" source-verification findings also => advisory
-  // (action is "add a `source:` URL", not "rewrite the prose").
+  // (action is "add an inline citation and let autofix sync `source:`", not "rewrite the prose").
   const allTiered: Array<FlatFinding & { tier: ConfidenceTier }> = [
     ...detFlat.map(
       (f: FlatFinding): FlatFinding & { tier: ConfidenceTier } => ({

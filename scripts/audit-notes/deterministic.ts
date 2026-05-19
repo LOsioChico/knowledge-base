@@ -129,7 +129,7 @@ function checkFrontmatter(text: string): Finding[] {
 
 // Em-dash and double-hyphen detection in body prose only.
 // Skips fenced code blocks, inline code, URLs, and frontmatter.
-function checkProseStyle(text: string): Finding[] {
+export function checkProseStyle(text: string): Finding[] {
   const findings: Finding[] = [];
   const lines: string[] = text.split("\n");
 
@@ -219,7 +219,7 @@ const HEDGE_PATTERNS: ReadonlyArray<{ re: RegExp; phrase: string }> = [
   { re: /\bsomewhat\b/i, phrase: "somewhat" },
 ];
 
-function checkHedges(text: string): Finding[] {
+export function checkHedges(text: string): Finding[] {
   const findings: Finding[] = [];
   const lines: string[] = text.split("\n");
 
