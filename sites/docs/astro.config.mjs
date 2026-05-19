@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "astro/config";
+import mermaid from "astro-mermaid";
 import starlight from "@astrojs/starlight";
 import ecTwoSlash from "expressive-code-twoslash";
 
@@ -237,10 +238,13 @@ export default defineConfig({
     ],
   },
   integrations: [
+    // Must run before Starlight so ```mermaid fences become diagrams.
+    mermaid({ autoTheme: true }),
     starlight({
       title: "Knowledge Base",
       description:
         "Personal knowledge base on Starlight: Effect-TS, NestJS, and AWS.",
+      favicon: "/favicon.svg",
       expressiveCode: {
         plugins: [ecTwoSlash()],
         themes: ["github-light", "github-dark"],

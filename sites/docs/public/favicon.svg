@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Knowledge Base">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ea2845" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#ff9900" />
+    </linearGradient>
+    <linearGradient id="gradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185" />
+      <stop offset="50%" stop-color="#60a5fa" />
+      <stop offset="100%" stop-color="#fbbf24" />
+    </linearGradient>
+  </defs>
+  <style>
+    .edge { stroke: url(#grad); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .node-aws { fill: #ff9900; }
+    .node-nest { fill: #ea2845; }
+    .node-effect { fill: #3b82f6; }
+    .node-center { fill: #6d28d9; }
+    @media (prefers-color-scheme: dark) {
+      .edge { stroke: url(#gradDark); }
+      .node-aws { fill: #fbbf24; }
+      .node-nest { fill: #fb7185; }
+      .node-effect { fill: #60a5fa; }
+      .node-center { fill: #a78bfa; }
+    }
+  </style>
+  
+  <!-- Open book base -->
+  <path
+    class="edge"
+    d="M8 10.5c0-1.7 3.2-3 8-3s8 1.3 8 3V23c0 1.7-3.2 3-8 3s-8-1.3-8-3V10.5Z"
+  />
+  <path class="edge" d="M16 7.5v18.5" />
+  
+  <!-- Middle network curve -->
+  <path class="edge" d="M8 16.75c0-1.7 3.2-3 8-3s8 1.3 8 3" />
+
+  <!-- Nodes -->
+  <circle cx="16" cy="7.5" r="2.5" class="node-effect" />
+  <circle cx="8" cy="16.75" r="2.5" class="node-nest" />
+  <circle cx="24" cy="16.75" r="2.5" class="node-aws" />
+  <circle cx="16" cy="13.75" r="2" class="node-center" />
+  <circle cx="16" cy="26" r="2.5" class="node-center" />
+</svg>

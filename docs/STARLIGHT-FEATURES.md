@@ -6,9 +6,11 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 
 | Capability | Package / feature | Role |
 | --- | --- | --- |
-| Type hovers in code | `expressive-code-twoslash` | `ts twoslash` fences; hovers are implicit (no per-page Twoslash tutorials) |
+| Type hovers in code | `expressive-code-twoslash` | `ts twoslash` fences only (Effect-TS); not all TypeScript blocks |
+| Mermaid diagrams | `astro-mermaid` + `mermaid` | ` ```mermaid ` fences; integration before Starlight |
 | Code themes | Starlight `expressiveCode` | GitHub light/dark |
 | Layout + nav | `@astrojs/starlight` | Sidebar, TOC, mobile nav, 404 |
+| Favicon | `public/favicon.svg` + `favicon` in `astro.config.mjs` | Open-book mark (indigo); served under site `base` |
 | Procedural docs | MDX + Starlight components | `<Steps>`, `<Tabs>`, `<Aside>`, `<CardGrid>` |
 | Site search | Pagefind (Starlight default) | Full-text over built HTML |
 | Wikilinks in MDX body | `remark-wiki-link` + `src/plugins/remark-wikilinks.mjs` | `[[effect-ts/quickstart\|Quickstart]]` → internal URLs |
@@ -19,10 +21,18 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 
 ## Twoslash authoring
 
-- **Default:** ` ```ts twoslash ` on teaching fences. Readers hover identifiers like on effect.website; do not add sections explaining hovers, `// ^?`, or `// @errors:` on every page.
+- **Opt-in per fence:** only ` ```ts twoslash ` (or `typescript twoslash`) gets type hovers. Plain ` ```typescript ` / ` ```ts ` is syntax highlighting only.
+- **Effect-TS area:** teaching fences use `twoslash` (self-contained snippets + `effect` in `package.json`).
+- **NestJS / AWS:** fences stay plain `typescript` / `bash` — snippets are often partial (decorators without full module, shell recipes). Turning on `twoslash` there would fail `docs:build` unless every fence is made a compilable mini-program and Nest/AWS types are added to the docs package.
 - **Types in prose:** write the type or channel change in a sentence (`after provide, R is never`) or a short `// E: Foo | Bar` comment in the fence.
 - **`// ^?`:** rare; misalignment fails the build. Prefer prose + hovers.
 - **`// @errors:`:** canonical demo on `effect-ts/typed-errors.mdx` (wrong `E` assignment). Also use on layer pages for missing-`R` compile errors. Not on quickstarts or indexes.
+
+## Mermaid diagrams
+
+- **Requires** `astro-mermaid` in root `integrations` **before** `starlight()` (see `sites/docs/astro.config.mjs`).
+- Author with a fenced ` ```mermaid ` block (flowchart, sequence, etc.). Used on NestJS lifecycle pages and a few AWS notes.
+- **Not** the same as Starlight `<Steps>` — mermaid is markdown-only.
 
 ## MDX-specific (not available in plain vault `.md`)
 
