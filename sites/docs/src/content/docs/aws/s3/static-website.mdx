@@ -15,6 +15,8 @@ import { Aside } from "@astrojs/starlight/components";
 
 ## 1. Enable hosting
 
+Enable website hosting by allowing a public bucket policy, configuring index/error documents, and applying the policy. `put-public-access-block`, `aws s3 website`, and `put-bucket-policy` print no success body; verify with `get-bucket-website` after the policy step.
+
 ```bash
 aws s3api put-public-access-block \
 --bucket my-site \
@@ -31,16 +33,16 @@ aws s3api put-bucket-policy --bucket my-site --policy file://policy.json
 
 ```json
 {
-"Version": "2012-10-17",
-"Statement": [
-{
-"Sid": "PublicReadGetObject",
-"Effect": "Allow",
-"Principal": "*",
-"Action": "s3:GetObject",
-"Resource": "arn:aws:s3:::my-site/*"
-}
-]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::my-site/*"
+    }
+  ]
 }
 ```
 
@@ -53,13 +55,13 @@ http://my-site.s3-website.us-west-2.amazonaws.com
 
 ## Website vs REST endpoint
 
-| Behavior | REST | Website |
-| --- | --- | --- |
-| HTTPS | Yes | **No** |
-| Methods | Full S3 API | GET/HEAD only |
-| Errors | XML | HTML (`error.html`) |
-| Bucket root | Object list XML | `index.html` |
-| Redirects | No | Per-object and routing rules |
+| Behavior    | REST            | Website                      |
+| ----------- | --------------- | ---------------------------- |
+| HTTPS       | Yes             | **No**                       |
+| Methods     | Full S3 API     | GET/HEAD only                |
+| Errors      | XML             | HTML (`error.html`)          |
+| Bucket root | Object list XML | `index.html`                 |
+| Redirects   | No              | Per-object and routing rules |
 
 Use the **website** endpoint for static sites: REST returns XML listings.
 

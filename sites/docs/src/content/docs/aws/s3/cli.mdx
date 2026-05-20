@@ -53,5 +53,5 @@ Cross-account `sync` needs source bucket policy granting target `s3:GetObject` +
 ## Tips
 
 - Add `--profile <name>` when juggling accounts: [[aws/cli/profiles-and-credentials|profiles]].
-- Shape output with [[aws/cli/query-and-output|`--query` / `--output`]].
+- Shape output with `--query` / `--output`; see [[aws/cli/query-and-output|query and output]].
 - Server-side copies between S3 URIs avoid client bandwidth; run from EC2 in the destination Region for huge transfers.

@@ -37,13 +37,13 @@ aws sts get-caller-identity --profile account-b --output json
 You will recreate every setting on the destination bucket; defaults are not always what you want. Capture policy, encryption, versioning, and a baseline object count (match this after sync):
 
 ```bash
-aws s3api head-bucket            --profile account-a --bucket <SRC_BUCKET>
-aws s3api get-bucket-location    --profile account-a --bucket <SRC_BUCKET>
-aws s3api get-bucket-policy      --profile account-a --bucket <SRC_BUCKET> --query Policy --output text > src-bucket-policy.json
-aws s3api get-bucket-encryption  --profile account-a --bucket <SRC_BUCKET> > src-bucket-encryption.json
-aws s3api get-bucket-versioning  --profile account-a --bucket <SRC_BUCKET>
-aws s3api get-public-access-block --profile account-a --bucket <SRC_BUCKET>
-aws s3api list-objects-v2        --profile account-a --bucket <SRC_BUCKET> --query 'KeyCount' --output text
+aws s3api head-bucket            --profile account-a --bucket "$SRC_BUCKET"
+aws s3api get-bucket-location    --profile account-a --bucket "$SRC_BUCKET"
+aws s3api get-bucket-policy      --profile account-a --bucket "$SRC_BUCKET" --query Policy --output text > src-bucket-policy.json
+aws s3api get-bucket-encryption  --profile account-a --bucket "$SRC_BUCKET" > src-bucket-encryption.json
+aws s3api get-bucket-versioning  --profile account-a --bucket "$SRC_BUCKET"
+aws s3api get-public-access-block --profile account-a --bucket "$SRC_BUCKET"
+aws s3api list-objects-v2        --profile account-a --bucket "$SRC_BUCKET" --query 'KeyCount' --output text
 ```
 
 ## 3. Create destination in `account-b`
@@ -53,20 +53,20 @@ Create the bucket in the target Region, then apply the same defensive defaults t
 ```bash
 aws s3api create-bucket \
   --profile account-b --region us-east-1 \
-  --bucket <DST_BUCKET>
+  --bucket "$DST_BUCKET"
 # For regions other than us-east-1, add:
 #   --create-bucket-configuration LocationConstraint=<REGION>
 
 aws s3api put-public-access-block \
-  --profile account-b --bucket <DST_BUCKET> \
+  --profile account-b --bucket "$DST_BUCKET" \
   --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
 
 aws s3api put-bucket-versioning \
-  --profile account-b --bucket <DST_BUCKET> \
+  --profile account-b --bucket "$DST_BUCKET" \
   --versioning-configuration Status=Enabled
 
 aws s3api put-bucket-encryption \
-  --profile account-b --bucket <DST_BUCKET> \
+  --profile account-b --bucket "$DST_BUCKET" \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
@@ -93,12 +93,15 @@ cat > src-bucket-grant.json <<EOF
 EOF
 ```
 
-Apply the merged policy:
+Merge the grant into the saved policy before applying it. `put-bucket-policy` prints no success body; re-run `get-bucket-policy` if you need to confirm the merged statement is present.
 
 ```bash
+jq -s '.[0].Statement += .[1].Statement | .[0]' \
+  src-bucket-policy.json src-bucket-grant.json > src-bucket-policy-merged.json
+
 aws s3api put-bucket-policy \
-  --profile account-a --bucket <SRC_BUCKET> \
-  --policy file://src-bucket-grant.json
+  --profile account-a --bucket "$SRC_BUCKET" \
+  --policy file://src-bucket-policy-merged.json
 ```
 
 For SSE-KMS objects, also grant `account-b` `kms:Decrypt` on the source CMK ([[aws/kms|KMS]] key policy, same idea as the RDS recipe).
@@ -110,8 +113,8 @@ Server-side copy from source to destination; re-run the same command at cutover 
 ```bash
 aws s3 sync \
   --profile account-b \
-  s3://<SRC_BUCKET> \
-  s3://<DST_BUCKET>
+  "s3://$SRC_BUCKET" \
+  "s3://$DST_BUCKET"
 ```
 
 For very large buckets, run from EC2 in the destination Region so client bandwidth is not the bottleneck.
@@ -121,13 +124,13 @@ For very large buckets, run from EC2 in the destination Region so client bandwid
 Compare `KeyCount` on both buckets; they should match when the sync finished cleanly:
 
 ```bash
-aws s3api list-objects-v2 --profile account-a --bucket <SRC_BUCKET> --query 'KeyCount' --output text
-aws s3api list-objects-v2 --profile account-b --bucket <DST_BUCKET> --query 'KeyCount' --output text
+aws s3api list-objects-v2 --profile account-a --bucket "$SRC_BUCKET" --query 'KeyCount' --output text
+aws s3api list-objects-v2 --profile account-b --bucket "$DST_BUCKET" --query 'KeyCount' --output text
 ```
 
 ## 7. Cut writers over
 
-Point applications at `<DST_BUCKET>`, run a final sync, and keep the source bucket read-only for a rollback window.
+Point applications at `$DST_BUCKET`, run a final sync, and keep the source bucket read-only for a rollback window.
 
 ## Cleanup
 

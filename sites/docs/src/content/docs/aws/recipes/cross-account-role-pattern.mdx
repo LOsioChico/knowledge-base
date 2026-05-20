@@ -36,6 +36,7 @@ export ACCOUNT_A_ID=111122223333
 export ACCOUNT_B_ID=444455556666
 export REGION=us-east-1
 export EXTERNAL_ID=your-external-id
+export EXECUTION_ROLE_NAME=my-new-account-app-role
 ```
 
 ## 1. Pre-flight
@@ -110,25 +111,33 @@ aws iam put-role-policy \
 
 Attach an inline policy on the Lambda/ECS execution role in account B that allows assuming only the account A role ARN:
 
-```json
+```bash
+cat > assume-account-a-policy.json <<EOF
 {
 "Version": "2012-10-17",
 "Statement": [
 {
 "Effect": "Allow",
 "Action": "sts:AssumeRole",
-"Resource": "arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole"
+"Resource": "arn:aws:iam::${ACCOUNT_A_ID}:role/CrossAccountServiceRole"
 }
 ]
 }
+EOF
+
+aws iam put-role-policy \
+--profile account-b \
+--role-name "$EXECUTION_ROLE_NAME" \
+--policy-name AssumeAccountAServiceRole \
+--policy-document file://assume-account-a-policy.json
 ```
 
-Smoke test from account B:
+Smoke test from account B. A healthy response includes a `Credentials` object; `AccessDenied` means the trust policy, external ID, or caller permission is wrong.
 
 ```bash
 aws sts assume-role \
 --profile account-b \
---role-arn arn:aws:iam::ACCOUNT_A_ID:role/CrossAccountServiceRole \
+--role-arn "arn:aws:iam::${ACCOUNT_A_ID}:role/CrossAccountServiceRole" \
 --role-session-name smoke-test \
 --external-id "$EXTERNAL_ID"
 ```
@@ -140,24 +149,25 @@ import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { SESClient } from "@aws-sdk/client-ses";
 
 async function buildSesClient() {
-const sts = new STSClient({});
-const res = await sts.send(
-new AssumeRoleCommand({
-RoleArn: process.env.SES_ROLE_ARN!,
-RoleSessionName: "my-app",
-DurationSeconds: 3600,
-ExternalId: process.env.SES_EXTERNAL_ID!,
-}),
-);
-const c = res.Credentials!;
-return new SESClient({
-region: "us-east-2",
-credentials: {
-accessKeyId: c.AccessKeyId!,
-secretAccessKey: c.SecretAccessKey!,
-sessionToken: c.SessionToken!,
-},
-});
+  // Set SES_ROLE_ARN and SES_EXTERNAL_ID in the runtime environment.
+  const sts = new STSClient({});
+  const res = await sts.send(
+    new AssumeRoleCommand({
+      RoleArn: process.env.SES_ROLE_ARN!,
+      RoleSessionName: "my-app",
+      DurationSeconds: 3600,
+      ExternalId: process.env.SES_EXTERNAL_ID!,
+    }),
+  );
+  const c = res.Credentials!;
+  return new SESClient({
+    region: "us-east-2",
+    credentials: {
+      accessKeyId: c.AccessKeyId!,
+      secretAccessKey: c.SecretAccessKey!,
+      sessionToken: c.SessionToken!,
+    },
+  });
 }
 ```
 
@@ -165,11 +175,11 @@ sessionToken: c.SessionToken!,
 
 ## Permission scope traps
 
-| Service | Obvious resource | Hidden resource |
-| --- | --- | --- |
-| SES `SendEmail` | `identity/example.com` | Configuration set on the identity |
-| S3 `GetObject` | `bucket/key` | Bucket ARN for some operations |
-| [KMS](/knowledge-base/aws/kms/) `Decrypt` | The key | KMS grant for short-lived consumers |
+| Service                                   | Obvious resource       | Hidden resource                                                                                         |
+| ----------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------- |
+| SES `SendEmail`                           | `identity/example.com` | Configuration set on the identity; see the [permission-policy example](#2-in-account-a-create-the-role) |
+| S3 `GetObject`                            | `bucket/key`           | Bucket ARN for some operations                                                                          |
+| [KMS](/knowledge-base/aws/kms/) `Decrypt` | The key                | KMS grant for short-lived consumers                                                                     |
 
 Read the first `AccessDenied`: it names the exact ARN checked.
 

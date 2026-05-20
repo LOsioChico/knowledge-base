@@ -57,13 +57,13 @@ aws s3api put-bucket-lifecycle-configuration \
 
 ## Action elements
 
-| Action | Effect |
-| --- | --- |
-| `Transition` | Move current versions to another class after N days |
-| `Expiration` | Delete current versions (delete marker on versioned buckets) |
-| `NoncurrentVersionTransition` | Tier old versions |
-| `NoncurrentVersionExpiration` | **Deletes overwritten versions: stops versioning bill runaway** |
-| `AbortIncompleteMultipartUpload` | Clean in-progress multipart after N days |
+| Action                           | Effect                                                                                                      |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Transition`                     | Move current versions to another class after N days; [logs example](#multi-action-example-logs)             |
+| `Expiration`                     | Delete current versions (delete marker on versioned buckets); [minimum rule](#minimum-rule)                 |
+| `NoncurrentVersionTransition`    | Tier old versions; [logs example](#multi-action-example-logs)                                               |
+| `NoncurrentVersionExpiration`    | **Deletes overwritten versions: stops versioning bill runaway**; [logs example](#multi-action-example-logs) |
+| `AbortIncompleteMultipartUpload` | Clean in-progress multipart after N days; [logs example](#multi-action-example-logs)                        |
 
 ## Filters
 

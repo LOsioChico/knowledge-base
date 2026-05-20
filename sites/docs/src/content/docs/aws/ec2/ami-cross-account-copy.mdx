@@ -14,11 +14,11 @@ Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGui
 - `modify-image-attribute --launch-permission` → destination can `RunInstances` from shared AMI.
 - `copy-image` requires `modify-snapshot-attribute --create-volume-permission` on **each** underlying EBS snapshot.
 
-| Symptom | Likely cause | Fix |
-| --- | --- | --- |
-| `InvalidSnapshot.NotFound` on `copy-image` | Snapshot not shared, only AMI launch permission | `modify-snapshot-attribute --create-volume-permission` on every EBS snapshot |
-| `AuthFailure` on `copy-image` | KMS key not shared for encrypted snapshots | Share CMK to destination account ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
-| Destination can launch but not copy | Launch permission without snapshot share | Share snapshots, then `copy-image` so B owns the AMI |
+| Symptom                                    | Likely cause                                    | Fix                                                                                                   |
+| ------------------------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `InvalidSnapshot.NotFound` on `copy-image` | Snapshot not shared, only AMI launch permission | [Share every EBS snapshot](#5-share-underlying-snapshots)                                             |
+| `AuthFailure` on `copy-image`              | KMS key not shared for encrypted snapshots      | Share CMK to destination account ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
+| Destination can launch but not copy        | Launch permission without snapshot share        | [Share snapshots](#5-share-underlying-snapshots), then [copy from B](#6-copy-from-destination)        |
 
 ## Recipe
 
@@ -46,11 +46,11 @@ aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
 
 ## 3. KMS path (encrypted AMIs only)
 
-| Encrypted | KmsKeyId | Action |
-| --- | --- | --- |
-| False | n/a | Skip KMS section |
-| True | Customer CMK | Share key ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
-| True | `alias/aws/ebs` | Re-encrypt with `copy-snapshot --kms-key-id` first |
+| Encrypted | KmsKeyId        | Action                                                                         |
+| --------- | --------------- | ------------------------------------------------------------------------------ |
+| False     | n/a             | Skip KMS section                                                               |
+| True      | Customer CMK    | Share key ([RDS KMS pattern](/knowledge-base/aws/rds/cross-account-snapshot/)) |
+| True      | `alias/aws/ebs` | Re-encrypt with `copy-snapshot --kms-key-id` first                             |
 
 ## 4. Share AMI (launch permission)
 

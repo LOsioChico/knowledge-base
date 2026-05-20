@@ -25,15 +25,15 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 ## Per-service moves
 
-| Service | Recipe | What it covers |
-| --- | --- | --- |
-| [RDS](/knowledge-base/aws/rds/) | [[aws/rds/cross-account-snapshot]] | Encrypted snapshot via CMK re-encrypt + restore |
-| [S3](/knowledge-base/aws/s3/) | [[aws/s3/cross-account-migration]] | Recreate bucket + cross-account `s3 sync` |
-| [Amplify](/knowledge-base/aws/amplify/) | [[aws/amplify/cross-account-migration]] | create-app → zip deploy → domain move |
-| [CloudFront](/knowledge-base/aws/cloudfront/) | [[aws/cloudfront/alternate-domain-claim]] | Ghost-claim gotcha; ACM workaround |
-| [IAM](/knowledge-base/aws/iam/) | [[aws/recipes/cross-account-role-pattern]] | Trust + ExternalId + scoped permissions |
-| [EC2](/knowledge-base/aws/ec2/) | [[aws/ec2/snapshot-all-instances]] + [[aws/ec2/ami-cross-account-copy]] | AMI per instance, share + `copy-image` |
-| [KMS](/knowledge-base/aws/kms/) | [[aws/kms]] | Key policy + IAM pattern for cross-account encrypt |
+| Service                                       | Recipe                                                                                                                                  | What it covers                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [RDS](/knowledge-base/aws/rds/)               | [Cross-account snapshot](/knowledge-base/aws/rds/cross-account-snapshot/)                                                               | Encrypted snapshot via CMK re-encrypt + restore    |
+| [S3](/knowledge-base/aws/s3/)                 | [Cross-account migration](/knowledge-base/aws/s3/cross-account-migration/)                                                              | Recreate bucket + cross-account `s3 sync`          |
+| [Amplify](/knowledge-base/aws/amplify/)       | [Cross-account migration](/knowledge-base/aws/amplify/cross-account-migration/)                                                         | create-app → zip deploy → domain move              |
+| [CloudFront](/knowledge-base/aws/cloudfront/) | [Alternate domain claim](/knowledge-base/aws/cloudfront/alternate-domain-claim/)                                                        | Ghost-claim gotcha; ACM workaround                 |
+| [IAM](/knowledge-base/aws/iam/)               | [Cross-account role pattern](/knowledge-base/aws/recipes/cross-account-role-pattern/)                                                   | Trust + ExternalId + scoped permissions            |
+| [EC2](/knowledge-base/aws/ec2/)               | [Snapshot all instances](/knowledge-base/aws/ec2/snapshot-all-instances/) + [AMI copy](/knowledge-base/aws/ec2/ami-cross-account-copy/) | AMI per instance, share + `copy-image`             |
+| [KMS](/knowledge-base/aws/kms/)               | [KMS](/knowledge-base/aws/kms/)                                                                                                         | Key policy + IAM pattern for cross-account encrypt |
 
 ## Recommended order
 
