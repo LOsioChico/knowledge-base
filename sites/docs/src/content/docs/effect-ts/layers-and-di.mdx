@@ -92,9 +92,9 @@ A `Layer<ROut, E, RIn>` constructs services `ROut`, may fail with `E`, and may n
 
 | Constructor | Use when | Typical `RIn` |
 | --- | --- | --- |
-| [`Layer.succeed`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L772) | Static implementation, no construction effects | `never` |
-| [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289) | Construction is an effect (I/O, other services) | From the builder effect's `R` |
-| [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727) | Service owns a resource with cleanup | Inferred; `Scope` excluded |
+| [`Layer.succeed`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L772) | Static implementation, no construction effects; [example below](#building-a-layer) | `never` |
+| [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289) | Construction is an effect (I/O, other services); [example below](#building-a-layer) | From the builder effect's `R` |
+| [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727) | Service owns a resource with cleanup; [cleanup example](#scoped-layers-and-cleanup) | Inferred; `Scope` excluded |
 
 ```ts twoslash
 import { Context, Effect, Layer } from "effect";

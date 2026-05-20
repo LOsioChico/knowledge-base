@@ -19,11 +19,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## Before you start
 
+Install the core `effect` package before building the ingestion pipeline. After the command finishes, confirm `package.json` contains `effect`; this recipe uses only `Effect`, `Schedule`, and `Schema` from that package ([`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts)).
+
 ```bash
 bun add effect
 ```
-
-Core `effect` only: `Effect`, `Schedule`, `Schema` ([`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts)).
 
 ## The brittle version
 
@@ -47,12 +47,12 @@ Core `effect` only: `Effect`, `Schedule`, `Schema` ([`Schema.ts`](https://github
   <TabItem label="What we fix">
     | Problem | Fix in this recipe |
     | --- | --- |
-    | Network `unknown` | `FetchError` via `tryPromise` |
-    | HTTP 4xx/5xx | `HttpError` when `!res.ok` |
-    | Bad JSON / shape | `ParseFailure` via `Schema` |
-    | Hang | `Effect.timeout` + `AbortSignal` |
-    | Transient blip | `Effect.retry` + `Schedule` |
-    | Thundering herd | `Schedule.jittered` + `concurrency` cap |
+    | Network `unknown` | `FetchError` via [`tryPromise`](#1-typed-fetch) |
+    | HTTP 4xx/5xx | `HttpError` when [`!res.ok`](#1-typed-fetch) |
+    | Bad JSON / shape | `ParseFailure` via [`Schema`](#2-schema-at-the-boundary) |
+    | Hang | [`Effect.timeout`](#3-timeout--retry) + `AbortSignal` |
+    | Transient blip | [`Effect.retry`](#3-timeout--retry) + `Schedule` |
+    | Thundering herd | [`Schedule.jittered`](#3-timeout--retry) + [concurrency cap](#4-bounded-concurrency) |
 
   </TabItem>
 </Tabs>

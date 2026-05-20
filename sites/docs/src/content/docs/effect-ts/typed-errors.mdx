@@ -21,11 +21,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## Before you start
 
+Install the core `effect` package first. After the command finishes, confirm your package manager added `effect` to `package.json`; the examples also assume **TypeScript 5.4+** and `strict: true` ([installation](https://effect.website/docs/getting-started/installation/#manual-installation)).
+
 ```bash
 bun add effect
 ```
-
-Typed errors live in the core `effect` package. Examples assume **TypeScript 5.4+** and `strict: true` ([installation](https://effect.website/docs/getting-started/installation/#manual-installation)).
 
 ## 1. Declare a tagged error
 
@@ -115,6 +115,17 @@ class HttpError {
     ```
 
     The `catch` callback is **optional**. Without it, failures become `UnknownException` in `E` ([tryPromise docs](https://effect.website/docs/getting-started/creating-effects/#trypromise)): still typed, but not discriminable with `catchTag("YourTag", ...)`. Pass `catch` when you want a `_tag` you own.
+
+    ```ts twoslash
+    import { Effect } from "effect";
+
+    const withoutCatch = Effect.tryPromise(() => Promise.reject("offline"));
+
+    Effect.runPromise(Effect.either(withoutCatch)).then((result) => {
+      if (result._tag === "Left") console.log(result.left._tag);
+    });
+    // UnknownException
+    ```
 
   </TabItem>
 </Tabs>
@@ -293,9 +304,9 @@ Effect.runPromise(getDisplayName("missing")).then(console.log);
   <TabItem label="catchTag vs mapError">
     | Combinator | Effect on failure | Residual `E` |
     | --- | --- | --- |
-    | `catchTag` | Runs recovery; success replaces failure | Removes matched tag |
-    | `mapError` | Still fails, with a new error type | Replaced wholesale |
-    | `catchAll` | Runs recovery for any expected error | `never` when exhaustive |
+    | [`catchTag`](#4-recover-from-a-specific-error-with-catchtag) | Runs recovery; success replaces failure | Removes matched tag |
+    | [`mapError`](#5-transform-without-handling-maperror) | Still fails, with a new error type | Replaced wholesale |
+    | [`catchAll`](#6-recover-from-anything-with-catchall) | Runs recovery for any expected error | `never` when exhaustive |
   </TabItem>
   <TabItem label="When E must be never">
     Before `runSync` / `runPromise` at the app edge, either handle every expected tag (so `E` is `never`) or use `runPromiseExit` / `Effect.either` and branch on the exit value explicitly.

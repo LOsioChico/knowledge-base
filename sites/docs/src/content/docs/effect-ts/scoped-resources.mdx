@@ -26,13 +26,15 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
 
 | API | Lifetime owner | Reach for |
 | --- | --- | --- |
-| `Effect.acquireUseRelease` | One expression | Acquire → use → release in a single block; `R` stays `never` |
-| `Effect.acquireRelease` | Enclosing `Scope` | Resource reused across steps; needs `Effect.scoped` or `Layer.scoped` |
-| `Effect.addFinalizer` | Enclosing `Scope` | Register cleanup next to the code that needs it; sees `Exit` |
-| `Effect.ensuring` | Wrapped effect | Side-effect cleanup with no resource value; no `Scope` in `R` |
+| `Effect.acquireUseRelease` | One expression | Acquire → use → release in a single block; `R` stays `never`; [example](#acquire-use-release-example) |
+| `Effect.acquireRelease` | Enclosing `Scope` | Resource reused across steps; needs `Effect.scoped` or `Layer.scoped`; [example](#acquire-release-example) |
+| `Effect.addFinalizer` | Enclosing `Scope` | Register cleanup next to the code that needs it; sees `Exit`; [example](#add-finalizer-example) |
+| `Effect.ensuring` | Wrapped effect | Side-effect cleanup with no resource value; no `Scope` in `R`; [example](#ensuring-example) |
 
 <Tabs>
   <TabItem label="acquireUseRelease">
+    <a id="acquire-use-release-example"></a>
+
     ```ts twoslash
     import { Console, Effect } from "effect";
 
@@ -68,6 +70,8 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
 
   </TabItem>
   <TabItem label="acquireRelease + scoped">
+    <a id="acquire-release-example"></a>
+
     ```ts twoslash
     import { Effect } from "effect";
 
@@ -103,6 +107,8 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
 
   </TabItem>
   <TabItem label="addFinalizer">
+    <a id="add-finalizer-example"></a>
+
     ```ts twoslash
     import { Console, Effect, Exit } from "effect";
 
@@ -124,6 +130,8 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
 
   </TabItem>
   <TabItem label="ensuring">
+    <a id="ensuring-example"></a>
+
     ```ts twoslash
     import { Console, Effect } from "effect";
 

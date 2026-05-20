@@ -191,12 +191,12 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
 | Situation | Reach for |
 | --- | --- |
-| Linear chain of operators on one effect (`map`, `tap`, `catchTag`, `timeout`, …) | `pipe` |
-| `if` / `for` / `while` / early `return` between effect steps | `Effect.gen` |
-| Reuse a named intermediate across two later steps | `Effect.gen` |
-| **Named function** that returns an `Effect` and should appear as a span in traces | `Effect.fn` |
+| Linear chain of operators on one effect (`map`, `tap`, `catchTag`, `timeout`, …) | [`pipe`](#pipe-linear-transformations) |
+| `if` / `for` / `while` / early `return` between effect steps | [`Effect.gen`](#effectgen-control-flow) |
+| Reuse a named intermediate across two later steps | [`Effect.gen`](#effectgen-control-flow) |
+| **Named function** that returns an `Effect` and should appear as a span in traces | [`Effect.fn`](#effectfn-named-callables-with-auto-tracing) |
 | Same, but spans are too expensive | `Effect.fnUntraced` |
-| Anonymous helper used once | `pipe` or inline `Effect.gen` |
+| Anonymous helper used once | [`pipe`](#pipe-linear-transformations) or inline [`Effect.gen`](#effectgen-control-flow) |
 
 These are not exclusive. A typical service method is `Effect.fn("createOrder")(function* (input) { ... pipe(...) ... })`: `fn` for the outer name and span, `gen` for branching, `pipe` for inline transforms on a single intermediate effect.
 

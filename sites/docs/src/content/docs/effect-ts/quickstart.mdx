@@ -23,7 +23,7 @@ You need:
 
 - **TypeScript 5.4 or newer** ([install docs](https://effect.website/docs/getting-started/installation/#manual-installation)).
 - A TypeScript runtime: **Node.js, Deno, or Bun** are supported (the `effect` package declares no `engines` field ([package.json](https://github.com/Effect-TS/effect/blob/main/packages/effect/package.json)), so any modern version works; pick whatever your project already uses).
-- A new project. Fastest path with Node + tsx:
+- A new project. The fastest Node path creates a package, installs `effect`, adds `tsx` for direct TypeScript execution, and writes a strict `tsconfig.json`. After the block finishes, check that `package.json` lists `effect` and `tsconfig.json` contains `"strict": true`.
 
   ```bash
   mkdir effect-quickstart && cd effect-quickstart
@@ -84,11 +84,11 @@ const fiber = Effect.runFork(program);
 
 Run: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 
-| Runner | Returns | Reach for |
-| --- | --- | --- |
-| `runSync` | `A` (throws on failure) | Known-synchronous paths only |
-| `runPromise` | `Promise<A>` | App edge: HTTP handlers, tests, `async/await` |
-| `runFork` | `Fiber` | Background or interruptible work |
+| Runner       | Returns                 | Reach for                                                                  |
+| ------------ | ----------------------- | -------------------------------------------------------------------------- |
+| `runSync`    | `A` (throws on failure) | Known-synchronous paths only; [worked example](#2-run-it)                  |
+| `runPromise` | `Promise<A>`            | App edge: HTTP handlers, tests, `async/await`; [worked example](#2-run-it) |
+| `runFork`    | `Fiber`                 | Background or interruptible work; [worked example](#2-run-it)              |
 
 <Aside type="note" title="Which runner to use">
 
@@ -140,20 +140,17 @@ const parseJson = (input: string) =>
     catch: (cause) => new ParseError({ message: `invalid JSON: ${String(cause)}` }),
   });
 
-const program = Effect.gen(function* () {
-  const value = yield* parseJson('{"ok":true}');
-  return value;
-});
+const recover = <A>(effect: Effect.Effect<A, ParseError>) =>
+  effect.pipe(Effect.catchTag("ParseError", (e) => Effect.succeed({ recovered: e.message })));
 
-const main = program.pipe(
-  Effect.catchTag("ParseError", (e) => Effect.succeed({ recovered: e.message })),
-);
-
-console.log(Effect.runSync(main));
+console.log(Effect.runSync(recover(parseJson('{"ok":true}'))));
 // { ok: true }
+
+console.log(Effect.runSync(recover(parseJson("not json"))));
+// { recovered: "invalid JSON: SyntaxError: Unexpected token 'o', \"not json\" is not valid JSON" }
 ```
 
-[`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) narrows on `_tag` and **removes** the handled error from `E`, so `main` is `Effect<unknown, never, never>`.
+[`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) narrows on `_tag` and **removes** the handled error from `E`; after `recover` handles `ParseError`, both examples are safe to pass to `Effect.runSync`.
 
 ## 5. Where to go next
 

@@ -20,11 +20,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## Before you start
 
+Install the core `effect` package before trying the retry examples. After the command finishes, confirm `package.json` contains `effect`; `Effect`, `Schedule`, and `Console` all come from that one package ([`Schedule.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts), [`Effect.retry` L4399+](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4399-L4410)).
+
 ```bash
 bun add effect
 ```
-
-`Effect`, `Schedule`, and `Console` ship in the core package ([`Schedule.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts), [`Effect.retry` L4399+](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4399-L4410)).
 
 ## 1. Retry N times
 
@@ -143,12 +143,12 @@ Effect.runPromise(resilient).then(console.log);
   <TabItem label="Schedules">
     | Schedule | Behavior |
     | --- | --- |
-    | `Schedule.recurs(n)` | At most `n` extra recurrences ([docs](https://effect.website/docs/scheduling/built-in-schedules/#recurs)) |
+    | `Schedule.recurs(n)` | At most `n` extra recurrences ([docs](https://effect.website/docs/scheduling/built-in-schedules/#recurs)); [retry example](#1-retry-n-times) |
     | `Schedule.spaced(d)` | Fixed gap after each run ends |
     | `Schedule.fixed(d)` | Fixed wall-clock interval |
-    | `Schedule.exponential(base, factor?)` | Delays grow `base * factor^n` (default factor 2) |
-    | `Schedule.jittered(s)` | Randomize each interval to 80%–120% |
-    | `Schedule.intersect(a, b)` | Continue while **both** continue; **longer** delay wins |
+    | `Schedule.exponential(base, factor?)` | Delays grow `base * factor^n` (default factor 2); [backoff example](#2-exponential-backoff-cap-it) |
+    | `Schedule.jittered(s)` | Randomize each interval to 80%–120%; [jitter example](#3-jitter) |
+    | `Schedule.intersect(a, b)` | Continue while **both** continue; **longer** delay wins; [backoff example](#2-exponential-backoff-cap-it) |
     | `Schedule.union(a, b)` | Continue while **either** continues; **shorter** delay wins |
   </TabItem>
   <TabItem label="retry vs repeat">
