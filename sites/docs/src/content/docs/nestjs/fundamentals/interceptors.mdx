@@ -81,11 +81,11 @@ A global logging interceptor sees the **final** response after route-level `map(
 
 | Operator | Use |
 | --- | --- |
-| `tap` | Log/metrics without changing the value |
-| `map` | Transform body (e.g. `{ data }`) |
-| `catchError` | Map handler errors before filters ([exception mapping](https://docs.nestjs.com/interceptors#exception-mapping)) |
-| `timeout` | Cancel slow handlers |
-| `of(value)` | Return cached value: skip `next.handle()` |
+| `tap` | Log/metrics without changing the value; [cache example](#cache-short-circuit) |
+| `map` | Transform body (e.g. `{ data }`); [response envelope](#response-envelope) |
+| `catchError` | Map handler errors before filters ([exception mapping](https://docs.nestjs.com/interceptors#exception-mapping)); [timeout example](#per-route-timeout) |
+| `timeout` | Cancel slow handlers; [timeout example](#per-route-timeout) |
+| `of(value)` | Return cached value: skip `next.handle()`; [cache example](#cache-short-circuit) |
 
 ## Recipes
 

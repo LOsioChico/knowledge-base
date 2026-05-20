@@ -138,9 +138,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
 | Option | Purpose |
 | --- | --- |
-| `jwtFromRequest` | `Authorization: Bearer …` |
-| `ignoreExpiration` | `false` → expired token → 401 via default `handleRequest` |
-| `secretOrKey` | Must match `JwtModule.register({ secret })` |
+| `jwtFromRequest` | `Authorization: Bearer …`; [strategy constructor](#jwt-strategy) |
+| `ignoreExpiration` | `false` → expired token → 401 via default `handleRequest`; [strategy constructor](#jwt-strategy) |
+| `secretOrKey` | Must match `JwtModule.register({ secret })`; [setup](#setup) |
 
 <Aside type="note" title="validate runs after signature check">
 

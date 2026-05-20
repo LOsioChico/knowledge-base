@@ -30,9 +30,9 @@ npm install --save-dev @types/pg
    type: "postgres",
    host: "localhost",
    port: 5432,
-   username: "postgres",
-   password: "postgres",
-   database: "app",
+   username: process.env.POSTGRES_USER,
+   password: process.env.POSTGRES_PASSWORD,
+   database: process.env.POSTGRES_DB,
    autoLoadEntities: true,
    synchronize: true, // dev only
    }),
@@ -41,11 +41,17 @@ npm install --save-dev @types/pg
    export class AppModule {}
    ```
 
-   Local Postgres:
+   Local Postgres. The app and container read the same variables, so keep these exports in the shell where you run Nest:
 
    ```bash
+   export POSTGRES_USER=postgres
+   export POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -base64 18)}"
+   export POSTGRES_DB=app
+
    docker run --rm -d --name pg \
-   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=app \
+   -e POSTGRES_USER \
+   -e POSTGRES_PASSWORD \
+   -e POSTGRES_DB \
    -p 5432:5432 postgres:16
    ```
 
@@ -292,11 +298,11 @@ npm install --save-dev @types/pg
 
 | Option | Purpose | When to change |
 | --- | --- | --- |
-| `synchronize` | Auto schema from entities | Dev only; never prod |
-| `autoLoadEntities` | Pull from `forFeature` | Almost always `true` |
-| `migrationsRun` | Run pending on boot | `true` in prod if desired |
-| `ssl` | TLS to server | Managed Postgres providers |
-| `extra` | `pg` pool options | `max`, `statement_timeout` ([pool docs](https://node-postgres.com/apis/pool)) |
+| `synchronize` | Auto schema from entities; [setup](#setup) | Dev only; never prod |
+| `autoLoadEntities` | Pull from `forFeature`; [setup](#setup) | Almost always `true` |
+| `migrationsRun` | Run pending on boot; [setup](#setup) | `true` in prod if desired |
+| `ssl` | TLS to server; [setup](#setup) | Managed Postgres providers |
+| `extra` | `pg` pool options; [setup](#setup) | `max`, `statement_timeout` ([pool docs](https://node-postgres.com/apis/pool)) |
 
 Full list: [TypeOrmModuleOptions](https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts), [data source options](https://typeorm.io/data-source-options).
 

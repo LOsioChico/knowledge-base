@@ -140,7 +140,7 @@ export class RolesGuard implements CanActivate {
 
 | `Reflector` API | Use when |
 | --- | --- |
-| `getAllAndOverride(d, [handler, class])` | Route metadata **wins** over controller (roles, `@Public()`) |
+| `getAllAndOverride(d, [handler, class])` | Route metadata **wins** over controller (roles, `@Public()`); [roles guard](#roles-guard-canonical-recipe) |
 | `getAllAndMerge(d, [..])` | Combine arrays from class + route |
 
 ## Built-in packages (not in `@nestjs/common`)

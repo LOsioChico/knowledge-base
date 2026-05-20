@@ -100,8 +100,8 @@ export class UploadsController {
 
 | Builder method | What it checks |
 | --- | --- |
-| `addFileTypeValidator({ fileType })` | Mime-type via the file's magic number, not the client header. String or `RegExp`. |
-| `addMaxSizeValidator({ maxSize })` | Bytes. Multer also enforces a hard cap (see module defaults). |
+| `addFileTypeValidator({ fileType })` | Mime-type via the file's magic number, not the client header. String or `RegExp`; [example above](#uploaded-file-checks). |
+| `addMaxSizeValidator({ maxSize })` | Bytes; [example above](#uploaded-file-checks). Multer also enforces a hard cap (see module defaults). |
 | `.build({ fileIsRequired: false })` | Makes the upload optional. Default is required. |
 
 12 MB PDF on that route:

@@ -167,12 +167,12 @@ Each `forRoot` entry (or `throttlers:` array):
 | Option | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `name` | `string` | `'default'` | Key in `@Throttle({ <name>: ... })` |
-| `ttl` | `number` (ms) | required | Use `seconds()` / `minutes()` helpers |
-| `limit` | `number` | required | Max requests per `ttl` per tracker |
+| `ttl` | `number` (ms) | required | Use `seconds()` / `minutes()` helpers; [setup](#setup) |
+| `limit` | `number` | required | Max requests per `ttl` per tracker; [setup](#setup) |
 | `blockDuration` | `number` (ms) | `ttl` | Block time after limit hit |
 | `ignoreUserAgents` | `RegExp[]` | `[]` | Skip matching User-Agent |
 | `skipIf` | `(ctx) => boolean` | none | Programmatic skip |
-| `getTracker` | `(req, ctx) => string` | `req.ip` | Client identity: see proxies below |
+| `getTracker` | `(req, ctx) => string` | `req.ip` | Client identity: see [proxies](#proxies-and-trust-proxy) |
 | `generateKey` | `(ctx, tracker, name) => string` | internal | Storage key shape |
 
 Top-level options on `ThrottlerModule.forRoot({ throttlers: [...], ... })`:

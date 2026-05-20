@@ -152,9 +152,9 @@ Interceptors run per field resolver, not per request. `CacheInterceptor` keys by
 
 | Decorator | Scope | Purpose |
 | --- | --- | --- |
-| `@UseInterceptors(CacheInterceptor)` | Controller/method | Enable auto-caching |
-| `@CacheKey(key)` | Method or controller | Override URL-based key |
-| `@CacheTTL(ms)` | Method or controller | Override module TTL (method wins) |
+| `@UseInterceptors(CacheInterceptor)` | Controller/method | Enable auto-caching; [example](#auto-caching-get-responses) |
+| `@CacheKey(key)` | Method or controller | Override URL-based key; [example](#auto-caching-get-responses) |
+| `@CacheTTL(ms)` | Method or controller | Override module TTL (method wins); [example](#auto-caching-get-responses) |
 
 ## Distributed cache with Redis
 

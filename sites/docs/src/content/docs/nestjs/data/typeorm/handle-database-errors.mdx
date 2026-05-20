@@ -47,7 +47,7 @@ export function isUniqueViolation(
 
 | Constraint | Postgres SQLSTATE | Mapped in filter below |
 | --- | --- | --- |
-| Unique | `23505` | 409 |
+| Unique | `23505` | [409](#recipe-1-global-exception-filter) |
 | Foreign key | `23503` | 409 |
 | Not null | `23502` | 422 |
 | Check | `23514` | 422 |
