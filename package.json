@@ -36,6 +36,7 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
+    "playwright": "^1.60.0",
     "tsx": "^4.21.0"
   }
 }

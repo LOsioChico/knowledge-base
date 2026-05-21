@@ -7,6 +7,28 @@ import { fileURLToPath } from "node:url";
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 const defaultOutDir = join(repoRoot, "tmp/algomaster-intake");
 
+let globalBrowser = null;
+let globalBrowserContext = null;
+
+// Automatically load private/algomaster.cookie if env is not set
+if (!process.env.ALGOMASTER_COOKIE) {
+  try {
+    const cookiePath = join(repoRoot, "private/algomaster.cookie");
+    const content = await readFile(cookiePath, "utf8");
+    const trimmed = content
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .join("")
+      .trim();
+    if (trimmed) {
+      process.env.ALGOMASTER_COOKIE = trimmed;
+    }
+  } catch {
+    // Ignore if file doesn't exist
+  }
+}
+
 const args = parseArgs(process.argv.slice(2));
 
 if (
@@ -19,6 +41,7 @@ if (
 
 if (args.courseUrl) {
   await runCourseIntake(args);
+  await closeBrowser();
   process.exit(0);
 }
 
@@ -34,7 +57,7 @@ if (args.listFile) {
 const pages = [];
 
 for (const url of args.urls) {
-  pages.push(await fetchPage(url));
+  pages.push(await fetchPage(url, args.browser));
 }
 
 for (const input of args.inputs) {
@@ -47,6 +70,7 @@ await mkdir(dirname(outPath), { recursive: true });
 await writeFile(outPath, markdown, "utf8");
 
 console.log(`wrote ${relative(repoRoot, outPath)}`);
+await closeBrowser();
 
 function parseArgs(argv) {
   const parsed = {
@@ -61,6 +85,7 @@ function parseArgs(argv) {
     force: false,
     limit: 0,
     delayMs: 250,
+    browser: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -76,6 +101,7 @@ function parseArgs(argv) {
     else if (arg === "--force") parsed.force = true;
     else if (arg === "--limit") parsed.limit = Number(requireValue(argv, (i += 1), arg)) || 0;
     else if (arg === "--delay-ms") parsed.delayMs = Number(requireValue(argv, (i += 1), arg)) || 0;
+    else if (arg === "--browser") parsed.browser = true;
     else if (arg.startsWith("http://") || arg.startsWith("https://")) parsed.urls.push(arg);
     else if (arg) parsed.inputs.push(arg);
   }
@@ -105,7 +131,11 @@ Course mode (--course <any-lesson-url>):
   Reads the sidebar from one lesson page, then writes every chapter to:
     tmp/algomaster-intake/<course-slug>/<NN>-<section-id>/<MM>-<chapter-slug>.md
   plus an _index.md per section and one at the course root.
-  Flags: --free-only, --force, --limit <N>, --delay-ms <ms>, --course-out <dir>.
+  Flags: --free-only, --force, --limit <N>, --delay-ms <ms>, --course-out <dir>, --browser.
+
+Browser intake (--browser):
+  Launches a headless browser (Playwright Chromium) to bypass Vercel Bot Defense.
+  Use when raw fetch returns incomplete/intro-only extracts (thin files).
 
 Authorized paid access:
   ALGOMASTER_COOKIE='name=value; ...' bun run algomaster:intake -- --url <paid-url>
@@ -119,7 +149,12 @@ Rules:
 `);
 }
 
-async function fetchPage(url) {
+async function fetchPage(url, useBrowser = false) {
+  if (useBrowser) {
+    const pageData = await fetchBrowser(url);
+    return extractPage(pageData);
+  }
+
   const initialUrl = parseFetchUrl(url);
   const hasCredentials = Boolean(
     process.env.ALGOMASTER_COOKIE || process.env.ALGOMASTER_AUTHORIZATION,
@@ -234,8 +269,9 @@ function guessContentType(path) {
 function extractPage({ source, status, contentType, raw }) {
   const isHtml =
     contentType.includes("html") || /<html[\s>]/i.test(raw) || /<article[\s>]/i.test(raw);
-  const payload = isHtml ? extractCanonicalPayload(raw) : null;
-  const title = payload?.title || (isHtml ? extractTitle(raw) : titleFromSource(source));
+  const pageTitle = isHtml ? extractTitle(raw) : "";
+  const payload = isHtml ? extractCanonicalPayload(raw, pageTitle) : null;
+  const title = pageTitle || payload?.title || titleFromSource(source);
   const canonicalMarkdown = payload ? normalizePayloadMarkdown(payload.content) : "";
   const hydrationText = isHtml ? extractHydrationText(raw) : "";
   const text = normalizeText(isHtml ? `${htmlToText(raw)}\n${hydrationText}` : raw);
@@ -263,7 +299,7 @@ function extractPage({ source, status, contentType, raw }) {
   };
 }
 
-function extractCanonicalPayload(html) {
+function extractCanonicalPayload(html, expectedTitle) {
   // AlgoMaster ships the rendered lesson as canonical Markdown inside a
   // React Flight chunk: self.__next_f.push([1, "..."]).
   // Two shapes seen in the wild:
@@ -310,8 +346,27 @@ function extractCanonicalPayload(html) {
     }
   }
   if (candidates.length === 0) return null;
-  candidates.sort((a, b) => b.content.length - a.content.length);
-  return candidates[0];
+
+  const matching = candidates.filter((c) => isTitleMatch(c.title, expectedTitle));
+  if (matching.length > 0) {
+    matching.sort((a, b) => b.content.length - a.content.length);
+    return matching[0];
+  }
+
+  if (!expectedTitle || expectedTitle === "Untitled AlgoMaster page") {
+    candidates.sort((a, b) => b.content.length - a.content.length);
+    return candidates[0];
+  }
+
+  return null;
+}
+
+function isTitleMatch(candTitle, expectedTitle) {
+  if (!expectedTitle) return true;
+  const clean = (t) => t.toLowerCase().replace(/[^a-z0-9]/g, "");
+  const c = clean(candTitle);
+  const e = clean(expectedTitle);
+  return c === e || c.includes(e) || e.includes(c);
 }
 
 function tryPushCandidate(input, candidates) {
@@ -787,7 +842,7 @@ async function runCourseIntake(args) {
   if (!courseSlug) throw new Error(`could not derive course slug from ${courseUrl.href}`);
 
   console.log(`reading sidebar from ${courseUrl.href}`);
-  const seedHtml = await fetchRaw(courseUrl);
+  const seedHtml = await fetchRaw(courseUrl, args.browser);
   const structure = extractCourseStructure(seedHtml);
   if (!structure || structure.sections.length === 0) {
     throw new Error(`no sidebar sections found in ${courseUrl.href}`);
@@ -840,7 +895,7 @@ async function runCourseIntake(args) {
       }
 
       try {
-        const page = await fetchPage(chapterUrl.href);
+        const page = await fetchPage(chapterUrl.href, args.browser);
         const md = buildMarkdown([{ ...page, title: chapter.title }]);
         await mkdir(sectionDir, { recursive: true });
         await writeFile(filePath, md, "utf8");
@@ -871,7 +926,12 @@ async function runCourseIntake(args) {
   );
 }
 
-async function fetchRaw(url) {
+async function fetchRaw(url, useBrowser = false) {
+  if (useBrowser) {
+    const pageData = await fetchBrowser(url.href);
+    return pageData.raw;
+  }
+
   const hasCredentials = Boolean(
     process.env.ALGOMASTER_COOKIE || process.env.ALGOMASTER_AUTHORIZATION,
   );
@@ -998,4 +1058,78 @@ function slugify(text) {
 
 function pad2(n) {
   return n < 10 ? `0${n}` : `${n}`;
+}
+
+async function closeBrowser() {
+  if (globalBrowser) {
+    await globalBrowser.close();
+    globalBrowser = null;
+    globalBrowserContext = null;
+  }
+}
+
+async function getBrowserContext() {
+  if (globalBrowserContext) return globalBrowserContext;
+
+  const { chromium } = await import("playwright");
+  globalBrowser = await chromium.launch({ headless: true });
+
+  const extraHTTPHeaders = {};
+  if (process.env.ALGOMASTER_AUTHORIZATION) {
+    extraHTTPHeaders["authorization"] = process.env.ALGOMASTER_AUTHORIZATION;
+  }
+
+  globalBrowserContext = await globalBrowser.newContext({
+    extraHTTPHeaders,
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    viewport: { width: 1280, height: 800 },
+  });
+
+  if (process.env.ALGOMASTER_COOKIE) {
+    const cookies = process.env.ALGOMASTER_COOKIE.split(";")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .map((part) => {
+        const idx = part.indexOf("=");
+        if (idx === -1) return null;
+        const name = part.slice(0, idx).trim();
+        const value = part.slice(idx + 1).trim();
+        if (!name) return null;
+        return { name, value, domain: "algomaster.io", path: "/", secure: true };
+      })
+      .filter(Boolean);
+
+    await globalBrowserContext.addCookies(cookies);
+  }
+
+  return globalBrowserContext;
+}
+
+async function fetchBrowser(url) {
+  const context = await getBrowserContext();
+  const page = await context.newPage();
+  try {
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    if (!response) {
+      throw new Error(`no response received for ${url}`);
+    }
+    const status = response.status();
+    const statusText = response.statusText();
+    const contentType = response.headers()["content-type"] || "";
+
+    if (status >= 400) {
+      console.warn(`warning: browser fetched ${url} with status ${status} ${statusText}`);
+    }
+
+    const raw = await response.text();
+    return {
+      source: url,
+      status: `${status} ${statusText}`.trim(),
+      contentType,
+      raw,
+    };
+  } finally {
+    await page.close();
+  }
 }
