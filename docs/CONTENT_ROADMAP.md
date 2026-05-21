@@ -2,6 +2,12 @@
 
 Short-lived planning map for the published Starlight knowledge base. This file keeps the useful decisions from the Dia-generated prompt packs without preserving large prompt artifacts as source of truth.
 
+## When agents should consult this file
+
+Consult this roadmap when the user asks what to work on next, asks for one of the roadmap-listed topics, or gives a broad area request where priority and scope are ambiguous. Do not load it as mandatory preflight for small targeted edits, typo fixes, or already-scoped page changes.
+
+This file is a planning aid, not a fact source. User instructions and the authoring source-of-truth docs below win. Before writing, verify every technical claim against current primary sources during the session.
+
 Authoring source of truth remains:
 
 - [`AGENTS.md`](../AGENTS.md)

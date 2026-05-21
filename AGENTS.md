@@ -23,7 +23,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 - [`kb-author`](.github/skills/kb-author/SKILL.md) — vault + MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
-- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean vault + MDX notes.
+- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX; legacy vault content is read-only context.
 
 **LLM judges (runtime, invoked by `scripts/audit-notes/` on vault `content/`):**
 
@@ -37,7 +37,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md). `kb-starlight-author` was removed; Starlight MDX guidance lives in `kb-author` audits S1–S6.
 
-**LLM judges** (`kb-auditor`, `kb-source-verifier`, etc.) run on **vault** `content/**/*.md` only. **MDX** uses deterministic `lint:docs` + kb-author audits **S1–S6** (no LLM pass on `.mdx` yet).
+**Vault LLM judges** (`kb-auditor`, `kb-source-verifier`, etc.) run on **vault** `content/**/*.md` only. **MDX** uses deterministic `lint:docs`, kb-author audits **S1–S6**, and optional `kb-mdx-auditor` via `mdx-audit-notes.ts` (`bun run audit:mdx-triage`).
 
 ## What this repo is
 

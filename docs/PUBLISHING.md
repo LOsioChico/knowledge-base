@@ -18,7 +18,7 @@ Load **kb-author** (`.github/skills/kb-author/SKILL.md`):
 - Vault edits: audits **A–P**, `bun run lint:wikilinks`, optional LLM audit on `content/`
 - Published MDX: audits **S1–S6**, `bun run lint:docs`, `bun run docs:build`
 
-There is no separate Starlight skill. LLM judges (`kb-auditor`, etc.) still run on vault markdown only.
+There is no separate Starlight skill. Vault LLM judges (`kb-auditor`, etc.) run on vault markdown only. MDX has optional `kb-mdx-auditor` via `bun run audit:mdx-triage`; S1-S6 and `lint:docs` remain the required checks.
 
 ## Per-page workflow (MDX)
 
