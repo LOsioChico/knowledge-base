@@ -24,6 +24,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 - [`kb-author`](.github/skills/kb-author/SKILL.md) — vault + MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
 - [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX; legacy vault content is read-only context.
+- [`kb-algomaster-intake`](.github/skills/kb-algomaster-intake/SKILL.md) — safe extraction of authorized AlgoMaster system-design pages into local Markdown before `kb-research-author` verification.
 
 **LLM judges (runtime, invoked by `scripts/audit-notes/` on vault `content/`):**
 

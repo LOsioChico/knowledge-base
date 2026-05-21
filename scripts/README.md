@@ -7,6 +7,7 @@ Repo-root tooling for the knowledge base. **Inventory:** [`docs/TOOLING.md`](../
 | `bun run lint:wikilinks`          | Vault wikilink linter (`lint-wikilinks.mjs`)                                              |
 | `bun run lint:publish-parity`     | Legacy vault slugs covered by MDX; MDX-only pages allowed (`check-publish-parity.mjs`)    |
 | `bun run lint:mdx-recipe-context` | Recipe MDX teaching prose before bash (advisory; `--strict` fails orphan/thin only)       |
+| `bun run algomaster:intake`       | Extract authorized AlgoMaster/local exports into Markdown files under `tmp/`              |
 | `bun run lint:docs`               | Starlight check + MDX wikilinks + table + link hygiene                                    |
 | `bun run lint:ci`                 | Full CI lint chain (see TOOLING.md)                                                       |
 | `bun run vault:check`             | Publish parity + diff-scoped vault/MDX Pass 0 + optional vault/`mdx-triage` + `lint:docs` |

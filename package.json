@@ -11,6 +11,7 @@
     "lint:docs": "bun run --cwd sites/docs check && bun run lint:mdx-wikilinks && bun run lint:mdx-table-wikilinks && bun run lint:mdx-link-hygiene --strict",
     "lint:publish-parity": "node scripts/check-publish-parity.mjs",
     "lint:aws-profile-consistency": "node scripts/lint-aws-profile-consistency.mjs",
+    "algomaster:intake": "node scripts/algomaster-intake.mjs",
     "lint:mdx-recipe-context": "node scripts/lint-mdx-recipe-context.mjs",
     "lint:mdx-recipe-context:strict": "node scripts/lint-mdx-recipe-context.mjs --strict",
     "autofix:mdx": "bun run --cwd scripts/audit-notes autofix:mdx",
