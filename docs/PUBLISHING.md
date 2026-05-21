@@ -5,11 +5,11 @@ GitHub Pages serves **Starlight only** (`sites/docs/dist/`). The vault is not pu
 
 ## Layout
 
-| Path | Role |
-| --- | --- |
-| `sites/docs/src/content/docs/**/*.mdx` | **Canonical published pages** |
-| `content/**/*.md` | **Legacy** (pre-migration; **do not edit**). Parity check only: each MDX slug must have a matching vault path (`lint:publish-parity`) |
-| `sites/docs/astro.config.mjs` | Sidebar |
+| Path                                   | Role                                                                                                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `sites/docs/src/content/docs/**/*.mdx` | **Canonical published pages**                                                                                                              |
+| `content/**/*.md`                      | **Legacy** (pre-migration; **do not edit**). Parity check only: every legacy vault slug must have an MDX page; MDX-only pages are allowed. |
+| `sites/docs/astro.config.mjs`          | Sidebar                                                                                                                                    |
 
 ## Skills (one workflow)
 
@@ -27,18 +27,18 @@ There is no separate Starlight skill. LLM judges (`kb-auditor`, etc.) still run 
 3. Run audits **S1–S6** ([index](../.github/skills/kb-author/SKILL.md#starlight-mdx-audits-published-site)).
 4. `bun run lint:docs` and `bun run docs:build`.
 5. Update sidebar and area MOC CardGrid; fix any `[[wikilinks]]` on other MDX pages.
-6. `lint:publish-parity` must still pass (MDX slug has a matching `content/` path; **do not** edit vault body to sync).
+6. `lint:publish-parity` must still pass. It verifies every legacy `content/` slug has a published MDX page; new MDX-only pages are allowed. **Do not** edit vault body to sync.
 
-**Sign-off:** a reader can answer *where this fits*, *when to use it*, and *what failure looks like* from the published page alone.
+**Sign-off:** a reader can answer _where this fits_, _when to use it_, and _what failure looks like_ from the published page alone.
 
 ## Links in MDX
 
-| Use | Syntax |
-| --- | --- |
-| Another published page (prose, lists) | `[[nestjs/fundamentals/pipes\|Pipes]]` |
+| Use                                     | Syntax                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Another published page (prose, lists)   | `[[nestjs/fundamentals/pipes\|Pipes]]`                                                      |
 | Another published page (**table cell**) | `[Pipes](/knowledge-base/nestjs/fundamentals/pipes/)` — table `\|` breaks `[[slug\|label]]` |
-| Official / GitHub primary source | `https://docs.nestjs.com/...` |
-| **Forbidden** for on-site topics | `https://losiochico.github.io/knowledge-base/...` |
+| Official / GitHub primary source        | `https://docs.nestjs.com/...`                                                               |
+| **Forbidden** for on-site topics        | `https://losiochico.github.io/knowledge-base/...`                                           |
 
 `bun run lint:mdx-link-hygiene --strict` and `bun run lint:mdx-table-wikilinks` enforce this.
 

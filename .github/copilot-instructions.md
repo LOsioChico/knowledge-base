@@ -43,9 +43,9 @@ When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a 
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
 
-**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/` — enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; vault ↔ MDX parity: `bun run lint:publish-parity`.
+**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/`: enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; legacy vault coverage check: `bun run lint:publish-parity`.
 
-**Vault (`content/`):** Legacy Obsidian tree from pre-Starlight migration. **Do not edit** — stale relative to published MDX. Still used by `lint:publish-parity` (slug coverage) and optional vault LLM audit if you touch a file by mistake; new work is **MDX-only** under `sites/docs/`.
+**Vault (`content/`):** Legacy Obsidian tree from pre-Starlight migration. **Do not edit**: stale relative to published MDX. Still used by `lint:publish-parity` to ensure old vault slugs remain published, and optional vault LLM audit if you touch a file by mistake; new work is **MDX-only** under `sites/docs/`, and MDX-only pages are allowed.
 
 Edit `.github/workflows/deploy.yml` for deploy changes.
 
@@ -452,6 +452,6 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 - Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
 - LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
 - To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
-- Published site: `sites/docs/` (base `/knowledge-base`) is canonical. `lint:publish-parity` still requires a matching `content/` slug per MDX page (legacy tree; do not refresh vault body to match MDX).
+- Published site: `sites/docs/` (base `/knowledge-base`) is canonical. `lint:publish-parity` requires every legacy `content/` slug to have an MDX page, but MDX-only pages are allowed; do not refresh vault body to match MDX.
 - `lint:mdx-recipe-context` is advisory in `lint:ci`; `lint:mdx-recipe-context:strict` blocks orphan/thin bash fences on recipe-shaped MDX.
 - `lint:aws-profile-consistency` in `lint:ci` fails cross-account recipes whose tables use bare `A`/`B` when `account-a`/`account-b` profiles are declared.

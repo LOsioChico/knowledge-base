@@ -12,6 +12,9 @@ replit.nix
 # Local Pi runtime state
 .atl/
 
+# Local agent scratch artifacts
+tmp/
+
 # Starlight site build artifacts
 sites/docs/node_modules/
 sites/docs/.astro/
