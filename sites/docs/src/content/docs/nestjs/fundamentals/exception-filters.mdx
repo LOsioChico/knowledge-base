@@ -5,7 +5,7 @@ description: Map thrown errors to HTTP responses; route-first resolution, opposi
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Last-chance handlers when something throws in [[nestjs/fundamentals/middleware|middleware]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], or the controller. Filters run **only on failure**.
+> Last-chance handlers when something throws in [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the controller, or service code reached from that request path. Filters run **only on failure inside Nest's exception zone**.
 
 ## Default behavior
 
@@ -15,6 +15,70 @@ Nest ships a global filter:
 - Anything else → `500` with `{ "statusCode": 500, "message": "Internal server error" }`.
 
 Write a custom filter when you need a stable JSON shape, domain-error mapping, or logging to Sentry/Datadog.
+
+<Aside type="caution" title="Filters do not catch middleware errors">
+
+[[nestjs/fundamentals/middleware|Middleware]] runs before Nest's exception zone. If middleware throws or calls `next(err)`, the platform handler deals with it: not your `@Catch()` filters. Keep route authorization, DTO validation, and handler response shaping inside Nest layers when you want filter behavior.
+
+</Aside>
+
+## What filters catch vs what they do not
+
+<Tabs>
+  <TabItem label="Inside Nest">
+    Controller or service throws with a custom filter registered:
+
+    ```typescript
+    @Get(":id")
+    findOne(@Param("id") id: string) {
+      throw new UserNotFoundError(id);
+    }
+    ```
+
+    Request:
+
+    ```bash
+    curl -i http://localhost:3000/users/missing-id
+    ```
+
+    Response:
+
+    ```json
+    {
+      "error": "USER_NOT_FOUND",
+      "userId": "missing-id"
+    }
+    ```
+
+    This is the normal filter path: the exception bubbles through Nest, the filter matches, and the filter owns the HTTP body.
+
+  </TabItem>
+  <TabItem label="Outside Nest">
+    Middleware throws before Nest reaches guards, pipes, or the controller:
+
+    ```typescript
+    app.use("/webhooks", (_req, _res, next) => {
+      next(new Error("bad signature"));
+    });
+    ```
+
+    Request:
+
+    ```bash
+    curl -i http://localhost:3000/webhooks
+    ```
+
+    Observable result:
+
+    ```text
+    Your custom Nest filter does not run.
+    The response shape now comes from Express/Fastify error handling or your adapter-level setup.
+    ```
+
+    That is the boundary: middleware failures do not pass through `@Catch()`.
+
+  </TabItem>
+</Tabs>
 
 ## Contract
 
@@ -41,9 +105,9 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
 
 `@Catch(A, B)` registers types; `@Catch()` with **no args** is catch-all.
 
-<Aside type="caution" title="Pass the class, not an instance">
+<Aside type="caution" title="Prefer the class when the filter needs DI">
 
-`@UseFilters(HttpExceptionFilter)` uses DI. `new HttpExceptionFilter()` skips injected `HttpAdapterHost` and crashes on Express/Fastify adapters. Same rule as [[nestjs/fundamentals/guards|guards]].
+`@UseFilters(HttpExceptionFilter)` lets Nest reuse the filter and inject dependencies. `@UseFilters(new HttpExceptionFilter())` is valid for dependency-free filters, but it skips DI. Same rule as [[nestjs/fundamentals/guards|guards]].
 
 </Aside>
 
@@ -53,8 +117,8 @@ Every other layer: **global → controller → route**. Filters: **route → con
 
 <Steps>
 
-1. Exception bubbles out of handler / pipe / guard / interceptor.
-2. Nest builds filter list for that route and **reverses** metadata so route filters are tried first.
+1. Exception bubbles out of handler / pipe / guard / interceptor inside Nest's exception zone.
+2. Nest builds the filter list for that route and **reverses** metadata so route filters are tried first.
 3. **One** filter handles it; no second filter at the same scope runs.
 4. To "always log, then format", extend `BaseExceptionFilter` and call `super.catch()`.
 
@@ -68,6 +132,7 @@ Every other layer: **global → controller → route**. Filters: **route → con
     | Controller / route | `@UseFilters(MyFilter)` |
 
     [[nestjs/fundamentals/global-providers|Global enhancers]] for `APP_FILTER` vs `useGlobalFilters`.
+
   </TabItem>
   <TabItem label="Catch-all ordering">
     `@UseFilters` array is **reversed** before search. Put catch-all **first** in the decorator so typed filters win:
@@ -83,25 +148,26 @@ Every other layer: **global → controller → route**. Filters: **route → con
     ```
 
     [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything)
+
   </TabItem>
 </Tabs>
 
 <Aside type="caution" title="Throwing inside a filter">
 
-`catch()` is not wrapped in try/catch. A throw can hit a **second** global-only handler; per-route filters do not re-run. Prefer `super.catch(exception, host)` when extending `BaseExceptionFilter`.
+Sibling filters do not chain. If your `catch()` method throws, the filter that already matched is the one that failed. Prefer `super.catch(exception, host)` when extending `BaseExceptionFilter` instead of rethrowing from a custom filter.
 
 </Aside>
 
 ## Built-in HTTP exceptions
 
-| Class | Status |
-| --- | --- |
-| `BadRequestException` | 400 |
-| `UnauthorizedException` | 401 |
-| `ForbiddenException` | 403 |
-| `NotFoundException` | 404 |
-| `ConflictException` | 409 |
-| `InternalServerErrorException` | 500 |
+| Class                          | Status |
+| ------------------------------ | ------ |
+| `BadRequestException`          | 400    |
+| `UnauthorizedException`        | 401    |
+| `ForbiddenException`           | 403    |
+| `NotFoundException`            | 404    |
+| `ConflictException`            | 409    |
+| `InternalServerErrorException` | 500    |
 
 Throw these from services/controllers; filters map domain errors when you want stable `error` codes.
 
@@ -158,14 +224,15 @@ Use `HttpAdapterHost` instead of `response.json()` so the same filter works on E
 
 ## Common errors
 
-| Symptom | Likely cause |
-| --- | --- |
-| Typed filter never runs | Catch-all listed after typed filter in `@UseFilters` |
-| "No HTTP adapter" | `new Filter()` instead of class binding |
+| Symptom                     | Likely cause                                                       |
+| --------------------------- | ------------------------------------------------------------------ |
+| Typed filter never runs     | Catch-all listed after typed filter in `@UseFilters`               |
+| "No HTTP adapter"           | `new Filter()` instead of class binding                            |
 | Empty response after filter | `async catch()` rejected without await: use sync or handle promise |
 
 ## See also
 
 - [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]
+- [[nestjs/fundamentals/middleware|Middleware]]: runs outside the exception zone
 - [[nestjs/fundamentals/pipes|Pipes]]: throws that filters catch
 - [NestJS Exception filters](https://docs.nestjs.com/exception-filters)

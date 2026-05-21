@@ -19,13 +19,13 @@ Reach for KMS implicitly through every service's encryption toggle. Reach for it
 
 ## Mental model
 
-| Key kind | Who controls policy | Cross-account? |
-| --- | --- | --- |
-| **Customer-managed** | You | Yes |
+| Key kind                                | Who controls policy     | Cross-account?   |
+| --------------------------------------- | ----------------------- | ---------------- |
+| **Customer-managed**                    | You                     | Yes              |
 | **AWS-managed** (`alias/aws/<service>`) | AWS (read-only for you) | **No**: the trap |
-| **AWS-owned** | AWS | No |
+| **AWS-owned**                           | AWS                     | No               |
 
-Cross-account use needs **both** sides: key policy in account A allowing account B, **and** IAM policy on B's principal for the same actions on the key ARN.
+Cross-account use needs **both** sides: key policy in account A allowing account B, **and** IAM policy on B's principal for the same actions on the key ARN. The same two-sided allow model is the core [[aws/iam/policy-evaluation|IAM policy evaluation]] rule.
 
 ## Pending notes
 
@@ -34,6 +34,7 @@ Cross-account use needs **both** sides: key policy in account A allowing account
 
 ## See also
 
+- [[aws/iam/policy-evaluation|IAM policy evaluation]]: why key policy and IAM policy both matter.
 - [[aws/kms/cli|KMS CLI cheatsheet]].
 - [[aws/rds/cross-account-snapshot|Cross-account RDS snapshot]]: canonical KMS cross-account recipe.
 - [[aws/s3/cross-account-migration|Cross-account S3 migration]]: SSE-KMS pattern.

@@ -9,12 +9,12 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## The four-layer stack
 
-| Layer | Package | Role |
-| --- | --- | --- |
-| Orchestrator | `passport` | Strategy registry and verify callback |
-| Strategy | `passport-jwt` | Extract and verify JWT from the request |
-| Nest wrapper | `@nestjs/passport` | `PassportStrategy`, `AuthGuard(name)` |
-| Your code | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` |
+| Layer        | Package                        | Role                                           |
+| ------------ | ------------------------------ | ---------------------------------------------- |
+| Orchestrator | `passport`                     | Strategy registry and verify callback          |
+| Strategy     | `passport-jwt`                 | Extract and verify JWT from the request        |
+| Nest wrapper | `@nestjs/passport`             | `PassportStrategy`, `AuthGuard(name)`          |
+| Your code    | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` |
 
 `AuthGuard('jwt')` runs whatever strategy is registered as `'jwt'`. `@nestjs/jwt` signs at login; `passport-jwt` verifies on later requests. **Same secret in both places.**
 
@@ -136,11 +136,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 }
 ```
 
-| Option | Purpose |
-| --- | --- |
-| `jwtFromRequest` | `Authorization: Bearer …`; [strategy constructor](#jwt-strategy) |
+| Option             | Purpose                                                                                          |
+| ------------------ | ------------------------------------------------------------------------------------------------ |
+| `jwtFromRequest`   | `Authorization: Bearer …`; [strategy constructor](#jwt-strategy)                                 |
 | `ignoreExpiration` | `false` → expired token → 401 via default `handleRequest`; [strategy constructor](#jwt-strategy) |
-| `secretOrKey` | Must match `JwtModule.register({ secret })`; [setup](#setup) |
+| `secretOrKey`      | Must match `JwtModule.register({ secret })`; [setup](#setup)                                     |
 
 <Aside type="note" title="validate runs after signature check">
 
@@ -207,18 +207,18 @@ With `Authorization: Bearer <token>` (`200`):
 
    @Injectable()
    export class JwtAuthGuard extends AuthGuard("jwt") {
-   constructor(private readonly reflector: Reflector) {
-   super();
-   }
+     constructor(private readonly reflector: Reflector) {
+       super();
+     }
 
-   canActivate(context: ExecutionContext) {
-   const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-   context.getHandler(),
-   context.getClass(),
-   ]);
-   if (isPublic) return true;
-   return super.canActivate(context);
-   }
+     canActivate(context: ExecutionContext) {
+       const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+         context.getHandler(),
+         context.getClass(),
+       ]);
+       if (isPublic) return true;
+       return super.canActivate(context);
+     }
    }
    ```
 
@@ -230,7 +230,7 @@ With `Authorization: Bearer <token>` (`200`):
    import { JwtAuthGuard } from "./jwt-auth.guard";
 
    @Module({
-   providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
+     providers: [{ provide: APP_GUARD, useClass: JwtAuthGuard }],
    })
    export class AuthModule {}
    ```
@@ -238,36 +238,25 @@ With `Authorization: Bearer <token>` (`200`):
 4. Mark login public:
 
    ```typescript
-   import {
-   Body,
-   Controller,
-   Get,
-   HttpCode,
-   HttpStatus,
-   Post,
-   Request,
-   UseGuards,
-   } from "@nestjs/common";
+   import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request } from "@nestjs/common";
    import { AuthService } from "./auth.service";
-   import { JwtAuthGuard } from "./jwt-auth.guard";
    import { Public } from "./public.decorator";
 
    @Controller("auth")
    export class AuthController {
-   constructor(private readonly authService: AuthService) {}
+     constructor(private readonly authService: AuthService) {}
 
-   @Public()
-   @HttpCode(HttpStatus.OK)
-   @Post("login")
-   signIn(@Body() signInDto: { username: string; password: string }) {
-   return this.authService.signIn(signInDto.username, signInDto.password);
-   }
+     @Public()
+     @HttpCode(HttpStatus.OK)
+     @Post("login")
+     signIn(@Body() signInDto: { username: string; password: string }) {
+       return this.authService.signIn(signInDto.username, signInDto.password);
+     }
 
-   @UseGuards(JwtAuthGuard)
-   @Get("profile")
-   getProfile(@Request() req: { user: { userId: number; username: string } }) {
-   return req.user;
-   }
+     @Get("profile")
+     getProfile(@Request() req: { user: { userId: number; username: string } }) {
+       return req.user;
+     }
    }
    ```
 
@@ -277,7 +266,7 @@ Without `@Public()` on `/auth/login`, the global guard returns `401` before `sig
 
 <Aside type="caution" title="Secret mismatch = 401 everywhere">
 
-Hoist `jwtConstants.secret` (or `ConfigService`) into both `JwtModule` and `JwtStrategy`.
+Hoist the secret into [[nestjs/recipes/configuration|Configuration with @nestjs/config]] and inject the same value into both `JwtModule` and `JwtStrategy`.
 
 </Aside>
 
@@ -291,31 +280,37 @@ Every route including login runs through `JwtAuthGuard`. Add `@Public()` to logi
 
 <Tabs>
   <TabItem label="Use JWT when">
-    - Stateless API clients (SPA, mobile, service-to-service)
-    - Most routes need auth: global guard + `@Public()`
-    - Multiple strategies (`AuthGuard(['jwt', 'apikey'])`)
+    <ul>
+      <li>Stateless API clients: SPA, mobile, service-to-service.</li>
+      <li>Most routes need auth: global guard plus <code>@Public()</code> opt-outs.</li>
+      <li>Multiple strategies can share the same guard shape: <code>AuthGuard(['jwt', 'apikey'])</code>.</li>
+    </ul>
   </TabItem>
   <TabItem label="Skip JWT when">
-    - Server-rendered apps with first-party cookies (sessions are simpler to revoke)
-    - Long-lived sessions without refresh-token infrastructure
-    - Trivial dev tools: Basic auth [[nestjs/fundamentals/middleware|middleware]] is enough
+    <ul>
+      <li>Server-rendered apps with first-party cookies: sessions are simpler to revoke.</li>
+      <li>Long-lived sessions without refresh-token infrastructure.</li>
+      <li>Trivial dev tools: Basic auth <a href="/knowledge-base/nestjs/fundamentals/middleware/">middleware</a> is enough.</li>
+    </ul>
   </TabItem>
 </Tabs>
 
 ## Common errors
 
-| Symptom | Likely cause |
-| --- | --- |
-| Every authed request `401` | Secret mismatch between `JwtModule` and `JwtStrategy` |
-| `Unknown authentication strategy "jwt"` | `JwtStrategy` not in `providers` or `PassportModule` missing |
-| `req.user` undefined | No guard, falsy `validate()` return, or `@Public()` |
-| `401` on login with global guard | Missing `@Public()` |
-| `super(...) is not a constructor` | Imported `Strategy` from `passport` instead of `passport-jwt` |
+| Symptom                                 | Likely cause                                                  |
+| --------------------------------------- | ------------------------------------------------------------- |
+| Every authed request `401`              | Secret mismatch between `JwtModule` and `JwtStrategy`         |
+| `Unknown authentication strategy "jwt"` | `JwtStrategy` not in `providers` or `PassportModule` missing  |
+| `req.user` undefined                    | No guard, falsy `validate()` return, or `@Public()`           |
+| `401` on login with global guard        | Missing `@Public()`                                           |
+| `super(...) is not a constructor`       | Imported `Strategy` from `passport` instead of `passport-jwt` |
 
 ## See also
 
 - [[nestjs/fundamentals/guards|Guards]]
 - [[nestjs/fundamentals/global-providers|Global providers]]: `APP_GUARD` vs `useGlobalGuards()`
+- [[nestjs/recipes/configuration|Configuration with @nestjs/config]]: one secret source for signing and verification
+- [[nestjs/recipes/testing|Testing with @nestjs/testing]]: protected-route tests and guard overrides
 - [[nestjs/recipes/validation|Validation]]: replace raw login body with a DTO
 - [Passport recipe](https://docs.nestjs.com/recipes/passport)
 - [@nestjs/jwt](https://github.com/nestjs/jwt)

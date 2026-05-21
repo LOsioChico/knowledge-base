@@ -1,6 +1,6 @@
 ---
 title: Global enhancers
-description: useGlobalPipes vs APP_PIPE (and the same split for guards, interceptors, filters) — DI-aware globals.
+description: "useGlobalPipes vs APP_PIPE (and the same split for guards, interceptors, filters): DI-aware globals."
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
@@ -19,13 +19,13 @@ flowchart TD
   C --> F[Can use useClass, useValue, or useFactory]
 ```
 
-| You need | Pick |
-| --- | --- |
-| Static `ValidationPipe({ whitelist: true })` | Either: `useGlobalPipes` is simplest |
-| `ConfigService` drives pipe options | `APP_PIPE` + `useFactory` |
-| Guard reads `x-tenant-id` per request | `APP_GUARD` + request scope |
-| Throttler / JWT guard from a package | `APP_GUARD` (they inject deps) |
-| Same filter on HTTP + microservice | `APP_FILTER`, not `useGlobalFilters` alone |
+| You need                                     | Pick                                       |
+| -------------------------------------------- | ------------------------------------------ |
+| Static `ValidationPipe({ whitelist: true })` | Either: `useGlobalPipes` is simplest       |
+| `ConfigService` drives pipe options          | `APP_PIPE` + `useFactory`                  |
+| Guard reads `x-tenant-id` per request        | `APP_GUARD` + request scope                |
+| Throttler / JWT guard from a package         | `APP_GUARD` (they inject deps)             |
+| Same filter on HTTP + microservice           | `APP_FILTER`, not `useGlobalFilters` alone |
 
 ## Two registration styles
 
@@ -48,6 +48,7 @@ flowchart TD
     ```
 
     Whatever you pass to `new` is what runs. No constructor injection, no request scope.
+
   </TabItem>
   <TabItem label="APP_* provider">
     Register in **any** module's `providers` array; Nest builds the instance:
@@ -64,18 +65,19 @@ flowchart TD
     ```
 
     Same global effect on the wire ([pipes binding](https://docs.nestjs.com/pipes#binding-pipes), [guards](https://docs.nestjs.com/guards#binding-guards), [interceptors](https://docs.nestjs.com/interceptors#binding-interceptors), [filters](https://docs.nestjs.com/exception-filters#binding-filters): "regardless of the module where this construction is employed", the enhancer is global).
+
   </TabItem>
 </Tabs>
 
 ## Pick one
 
-| Concern | `app.useGlobalX(new T())` | `{ provide: APP_X, useClass: T }` |
-| --- | --- | --- |
-| Inject providers (`ConfigService`, repos, loggers) | No | Yes |
-| Request scope | No | Yes |
-| Hybrid app gateways / microservices | No (unless `inheritAppConfig: true`) | Yes (provider registries on every transport) |
-| Where it lives | `main.ts` | Any module `providers` |
-| Literal options object | Trivial | `useValue` or `useFactory` |
+| Concern                                            | `app.useGlobalX(new T())`            | `{ provide: APP_X, useClass: T }`            |
+| -------------------------------------------------- | ------------------------------------ | -------------------------------------------- |
+| Inject providers (`ConfigService`, repos, loggers) | No                                   | Yes                                          |
+| Request scope                                      | No                                   | Yes                                          |
+| Hybrid app gateways / microservices                | No (unless `inheritAppConfig: true`) | Yes (provider registries on every transport) |
+| Where it lives                                     | `main.ts`                            | Any module `providers`                       |
+| Literal options object                             | Trivial                              | `useValue` or `useFactory`                   |
 
 **Rule of thumb:** stateless + static config → either works. Needs DI or request scope → `APP_*`.
 
@@ -122,19 +124,13 @@ import { validationPipeProvider } from "./validation.config";
 export class AppModule {}
 ```
 
-With `useGlobalPipes` in `main.ts`, `ConfigService` is not on the app instance yet in a clean way: you'd hand-resolve with `app.get(ConfigService)`. `APP_PIPE` lets Nest wire it.
+With `useGlobalPipes` in `main.ts`, you can hand-resolve `app.get(ConfigService)`, but `APP_PIPE` keeps the wiring inside DI and easier to test.
 
 ### Request-scoped `APP_GUARD`
 
 ```typescript
 // tenant.guard.ts
-import {
-  CanActivate,
-  ExecutionContext,
-  Inject,
-  Injectable,
-  Scope,
-} from "@nestjs/common";
+import { CanActivate, ExecutionContext, Inject, Injectable, Scope } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import type { Request } from "express";
 import { TenantService } from "./tenant.service";
@@ -170,11 +166,11 @@ export class AppModule {}
 
 ## Provider shapes
 
-| Form | When |
-| --- | --- |
-| `useClass` | Nest resolves every constructor dep |
-| `useValue` | Pre-built instance, e.g. `new ValidationPipe({ … })` |
-| `useFactory` | Async setup, env, or manual `inject: [...]` |
+| Form         | When                                                 |
+| ------------ | ---------------------------------------------------- |
+| `useClass`   | Nest resolves every constructor dep                  |
+| `useValue`   | Pre-built instance, e.g. `new ValidationPipe({ … })` |
+| `useFactory` | Async setup, env, or manual `inject: [...]`          |
 
 ```typescript
 // Typical imports:
@@ -208,11 +204,13 @@ export class AppModule {}
 - **Multiple `APP_*` registrations stack**: e.g. logging + timeout interceptors both run.
 - **Mixing `useGlobalPipes` and `APP_PIPE`**: both land in the same global list ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62), [`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695)). Pick one style per enhancer kind so order stays predictable.
 - **No `exports` needed**: official binding examples never export the `APP_*` token; Nest scans `providers` from any module.
-- **Testing overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)).
+- **Testing overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). See [[nestjs/recipes/testing|Testing with @nestjs/testing]] for the full pattern.
 
 ## See also
 
 - [[nestjs/fundamentals/pipes|Pipes]] · [[nestjs/fundamentals/guards|Guards]] · [[nestjs/fundamentals/interceptors|Interceptors]] · [[nestjs/fundamentals/exception-filters|Exception filters]]
+- [[nestjs/recipes/configuration|Configuration with @nestjs/config]]: config-driven `APP_*` factories
+- [[nestjs/recipes/testing|Testing with @nestjs/testing]]: override patterns for globals
 - [[nestjs/recipes/validation|Validation recipe]]: common `APP_PIPE` use case
 - [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]]: parallel composition model
 - [Hybrid application](https://docs.nestjs.com/faq/hybrid-application) (official)

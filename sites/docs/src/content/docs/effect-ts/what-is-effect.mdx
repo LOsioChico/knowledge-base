@@ -11,22 +11,18 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Per the [Effect type docs](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), the three parameters are:
 
-| Channel | Name in docs | What it tracks |
-| --- | --- | --- |
-| `A` | Success | The value the effect yields when it succeeds. |
-| `E` | Error | The expected, recoverable errors that can occur. |
-| `R` | Requirements | Services and config the effect needs (`Context.Tag`, layers). |
+| Channel | Name in docs | What it tracks                                                |
+| ------- | ------------ | ------------------------------------------------------------- |
+| `A`     | Success      | The value the effect yields when it succeeds.                 |
+| `E`     | Error        | The expected, recoverable errors that can occur.              |
+| `R`     | Requirements | Services and config the effect needs (`Context.Tag`, layers). |
 
 Read `Effect<User, NotFound, UserRepo>` as: when you run this, you get a `User`, or it fails with `NotFound`, and you must provide a `UserRepo`:
 
 ```ts twoslash
 import { Effect } from "effect";
 
-type FindUser = (id: string) => Effect.Effect<
-  { name: string },
-  { _tag: "NotFound" },
-  never
->;
+type FindUser = (id: string) => Effect.Effect<{ name: string }, { _tag: "NotFound" }, never>;
 ```
 
 ## Lazy descriptions, not running code
@@ -57,11 +53,11 @@ A `Promise<T>` is an in-flight computation that already started and resolves to 
 
 Effect ships three [runners](https://effect.website/docs/getting-started/running-effects/) you reach for first:
 
-| Runner | Returns | When |
-| --- | --- | --- |
-| `Effect.runSync` | `A` (throws on failure) | Known-synchronous paths only; [example above](#lazy-descriptions-not-running-code) |
-| `Effect.runPromise` | `Promise<A>` | Bridge to `async/await` at the edge; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it) |
-| `Effect.runFork` | `Fiber<A, E>` | Background work you may interrupt; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it) |
+| Runner              | Returns                 | When                                                                                                      |
+| ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
+| `Effect.runSync`    | `A` (throws on failure) | Known-synchronous paths only; [example above](#lazy-descriptions-not-running-code)                        |
+| `Effect.runPromise` | `Promise<A>`            | Bridge to `async/await` at the edge; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it) |
+| `Effect.runFork`    | `Fiber<A, E>`           | Background work you may interrupt; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it)   |
 
 Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; pick a runner only at the **entry point**. [[effect-ts/quickstart|Quickstart]] walks all three with runnable code.
 
@@ -137,14 +133,14 @@ Calling `Effect.runSync(program)` while `R` still includes `UserRepo` fails the 
 
 ## Promise vs Effect at a glance
 
-| Dimension | `Promise<T>` | `Effect<A, E, R>` |
-| --- | --- | --- |
-| Error type | `unknown` | Generic `E` |
-| Dependencies | Implicit | Explicit `R` |
-| Execution | Eager | Lazy until a runner |
-| Cancellation | Manual `AbortController` | Structured fibers |
-| Resources | `try/finally` | `acquireRelease`, `Scope` |
-| Retry | Hand-rolled loops | `Schedule` |
+| Dimension    | `Promise<T>`             | `Effect<A, E, R>`         |
+| ------------ | ------------------------ | ------------------------- |
+| Error type   | `unknown`                | Generic `E`               |
+| Dependencies | Implicit                 | Explicit `R`              |
+| Execution    | Eager                    | Lazy until a runner       |
+| Cancellation | Manual `AbortController` | Structured fibers         |
+| Resources    | `try/finally`            | `acquireRelease`, `Scope` |
+| Retry        | Hand-rolled loops        | `Schedule`                |
 
 Because `Effect` is a description, the runtime can replay (retry), attach cleanup (scope), or stop mid-flight (interrupt) in ways that are awkward on an already-running `Promise`.
 
@@ -158,7 +154,7 @@ Effect is a normal npm package: no forked `tsc`. An earlier **TS+** experiment a
 
 Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)): platform, CLI, SQL, AI, workflow, RPC, OpenTelemetry, Vitest, and more.
 
-`Schema` lives in core [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts); standalone `@effect/schema` on npm is deprecated (merged into `effect`). Full lookup: [[effect-ts/ecosystem-map|Ecosystem map]].
+[[effect-ts/schema|Schema]] lives in core [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts); standalone `@effect/schema` on npm is deprecated (merged into `effect`). Full lookup: [[effect-ts/ecosystem-map|Ecosystem map]].
 
 ## Relationship to fp-ts
 

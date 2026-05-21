@@ -1,6 +1,6 @@
 ---
 title: Caching with @nestjs/cache-manager
-description: In-memory or Redis caching via cache-manager v6+ and Keyv — CacheInterceptor, TTL in milliseconds, and multi-tier stores.
+description: "In-memory or Redis caching via cache-manager v6+ and Keyv: CacheInterceptor, TTL in milliseconds, and multi-tier stores."
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
@@ -28,14 +28,14 @@ npm i @nestjs/cache-manager cache-manager
    import { BooksService } from "./books.service";
 
    @Module({
-   imports: [
-   CacheModule.register({
-   isGlobal: true,
-   ttl: 30_000, // 30 seconds, in MILLISECONDS
-   }),
-   ],
-   controllers: [BooksController],
-   providers: [BooksService],
+     imports: [
+       CacheModule.register({
+         isGlobal: true,
+         ttl: 30_000, // 30 seconds, in MILLISECONDS
+       }),
+     ],
+     controllers: [BooksController],
+     providers: [BooksService],
    })
    export class AppModule {}
    ```
@@ -47,34 +47,36 @@ npm i @nestjs/cache-manager cache-manager
    import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager";
 
    export interface Book {
-   id: string;
-   title: string;
+     id: string;
+     title: string;
    }
 
    @Injectable()
    export class BooksService {
-   private readonly key = "books:all";
+     private readonly key = "books:all";
 
-   constructor(
-   @Inject(CACHE_MANAGER) private readonly cache: Cache,
-   ) {}
+     constructor(@Inject(CACHE_MANAGER) private readonly cache: Cache) {}
 
-   async findAll(): Promise<Book[]> {
-   const hit = await this.cache.get<Book[]>(this.key);
-   if (hit) return hit;
+     async findAll(): Promise<Book[]> {
+       const hit = await this.cache.get<Book[]>(this.key);
+       if (hit) return hit;
 
-   const books = await this.fetchFromDb();
-   await this.cache.set(this.key, books, 60_000); // 60s override
-   return books;
-   }
+       const books = await this.fetchFromDb();
+       await this.cache.set(this.key, books, 60_000); // 60s override
+       return books;
+     }
 
-   async invalidate(): Promise<void> {
-   await this.cache.del(this.key);
-   }
+     async findFeatured(): Promise<Book[]> {
+       return this.findAll();
+     }
 
-   private async fetchFromDb(): Promise<Book[]> {
-   return [];
-   }
+     async invalidate(): Promise<void> {
+       await this.cache.del(this.key);
+     }
+
+     private async fetchFromDb(): Promise<Book[]> {
+       return [];
+     }
    }
    ```
 
@@ -144,17 +146,17 @@ Interceptors run per field resolver, not per request. `CacheInterceptor` keys by
 
 ## Configuration reference
 
-| Option | Type | Default | Notes |
-| --- | --- | --- | --- |
-| `ttl` | `number` | `0` (never) | Default expiration in **milliseconds** |
-| `isGlobal` | `boolean` | `false` | Skip re-importing in feature modules |
-| `stores` | `Keyv[]` | in-memory | One or more [Keyv](https://keyv.org/docs/) stores |
+| Option     | Type      | Default     | Notes                                             |
+| ---------- | --------- | ----------- | ------------------------------------------------- |
+| `ttl`      | `number`  | `0` (never) | Default expiration in **milliseconds**            |
+| `isGlobal` | `boolean` | `false`     | Skip re-importing in feature modules              |
+| `stores`   | `Keyv[]`  | in-memory   | One or more [Keyv](https://keyv.org/docs/) stores |
 
-| Decorator | Scope | Purpose |
-| --- | --- | --- |
-| `@UseInterceptors(CacheInterceptor)` | Controller/method | Enable auto-caching; [example](#auto-caching-get-responses) |
-| `@CacheKey(key)` | Method or controller | Override URL-based key; [example](#auto-caching-get-responses) |
-| `@CacheTTL(ms)` | Method or controller | Override module TTL (method wins); [example](#auto-caching-get-responses) |
+| Decorator                            | Scope                | Purpose                                                                   |
+| ------------------------------------ | -------------------- | ------------------------------------------------------------------------- |
+| `@UseInterceptors(CacheInterceptor)` | Controller/method    | Enable auto-caching; [example](#auto-caching-get-responses)               |
+| `@CacheKey(key)`                     | Method or controller | Override URL-based key; [example](#auto-caching-get-responses)            |
+| `@CacheTTL(ms)`                      | Method or controller | Override module TTL (method wins); [example](#auto-caching-get-responses) |
 
 ## Distributed cache with Redis
 
@@ -195,6 +197,8 @@ Reads check stores in order; `set`/`del` hit each store (optional `nonBlocking: 
 </Aside>
 
 ## Async configuration
+
+Use [[nestjs/recipes/configuration|Configuration with @nestjs/config]] when TTLs, Redis URLs, or other cache options come from environment-driven app settings.
 
 ```typescript
 import { Module } from "@nestjs/common";
@@ -257,6 +261,7 @@ Default key is the URL. `GET /me` from Alice and Bob shares one entry. Subclass 
 
 - [[nestjs/fundamentals/interceptors|Interceptors]]: how `CacheInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
 - [[nestjs/fundamentals/global-providers|Global providers]]: `APP_INTERCEPTOR`
+- [[nestjs/recipes/configuration|Configuration with @nestjs/config]]: env-driven TTL and Redis configuration
 - [[nestjs/recipes/rate-limiting|Rate limiting]]: same "shared store when multi-instance" story
 - [Official NestJS caching docs](https://docs.nestjs.com/techniques/caching)
 - [cache-manager](https://github.com/jaredwray/cache-manager) and [Keyv](https://keyv.org/docs/)

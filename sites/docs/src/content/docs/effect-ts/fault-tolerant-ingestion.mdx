@@ -10,7 +10,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 <Steps>
 
 1. **Wrap** `fetch` with [[effect-ts/typed-errors|typed errors]] (`tryPromise` + status check).
-2. **Parse** with `Schema.decodeUnknown`, not `as`.
+2. **Parse** with [[effect-ts/schema|Schema.decodeUnknown]], not `as`.
 3. **Bound** latency with `Effect.timeout` (abort in-flight `fetch`).
 4. **Retry** only transient tags with a capped jittered schedule.
 5. **Ingest** with `Effect.forEach` and `{ concurrency: n }`.
@@ -49,7 +49,7 @@ bun add effect
     | --- | --- |
     | Network `unknown` | `FetchError` via [`tryPromise`](#1-typed-fetch) |
     | HTTP 4xx/5xx | `HttpError` when [`!res.ok`](#1-typed-fetch) |
-    | Bad JSON / shape | `ParseFailure` via [`Schema`](#2-schema-at-the-boundary) |
+    | Bad JSON / shape | `ParseFailure` via [Schema](/knowledge-base/effect-ts/schema/) at [the boundary](#2-schema-at-the-boundary) |
     | Hang | [`Effect.timeout`](#3-timeout--retry) + `AbortSignal` |
     | Transient blip | [`Effect.retry`](#3-timeout--retry) + `Schedule` |
     | Thundering herd | [`Schedule.jittered`](#3-timeout--retry) + [concurrency cap](#4-bounded-concurrency) |
@@ -75,9 +75,7 @@ const fetchRaw = (url: string) =>
     catch: (cause) => new FetchError({ cause }),
   }).pipe(
     Effect.flatMap((res) =>
-      res.ok
-        ? Effect.succeed(res)
-        : Effect.fail(new HttpError({ status: res.status })),
+      res.ok ? Effect.succeed(res) : Effect.fail(new HttpError({ status: res.status })),
     ),
   );
 ```
@@ -103,8 +101,7 @@ const Todo = Schema.Struct({
 const parseTodo = (res: Response) =>
   Effect.tryPromise({
     try: () => res.json(),
-    catch: (cause) =>
-      new ParseFailure({ issues: `bad JSON: ${String(cause)}` }),
+    catch: (cause) => new ParseFailure({ issues: `bad JSON: ${String(cause)}` }),
   }).pipe(
     Effect.flatMap((unknown) =>
       Schema.decodeUnknown(Todo)(unknown).pipe(
@@ -114,7 +111,7 @@ const parseTodo = (res: Response) =>
   );
 ```
 
-Use `decodeUnknown` for `res.json()` output; use `decode` only between known-encoded layers. Compose with `fetchRaw` in the next section.
+Use `decodeUnknown` for `res.json()` output; use `decode` only between known-encoded layers. [[effect-ts/schema|Schema]] covers the boundary pattern in isolation; this recipe composes it with fetch, retry, and concurrency.
 
 ## 3. Timeout + retry
 
@@ -167,8 +164,7 @@ const fetchTodoResilient = (id: number) =>
     Effect.timeout("5 seconds"),
     Effect.retry({
       schedule: retryPolicy,
-      while: (err) =>
-        err._tag === "FetchError" || err._tag === "TimeoutException",
+      while: (err) => err._tag === "FetchError" || err._tag === "TimeoutException",
     }),
   );
 ```
@@ -220,8 +216,7 @@ const fetchTodo = (id: number) =>
         Schedule.jittered(Schedule.exponential("200 millis")),
         Schedule.recurs(3),
       ),
-      while: (err) =>
-        err._tag === "FetchError" || err._tag === "TimeoutException",
+      while: (err) => err._tag === "FetchError" || err._tag === "TimeoutException",
     }),
   );
 

@@ -1,0 +1,325 @@
+---
+title: Configuration with @nestjs/config
+description: Load config once, validate required env at startup, inject typed settings into modules, and avoid stringly-typed process.env drift.
+---
+
+import { Aside, Steps } from "@astrojs/starlight/components";
+
+> Load configuration once, fail fast on missing or malformed env, and inject typed settings where Nest resolves dependencies.
+
+## When to reach for it
+
+- The same secret or URL is showing up in multiple modules.
+- A missing env key should fail at startup, not on the first request.
+- A module option depends on DI, such as JWT secrets, cache TTL, or upload limits.
+- You are tired of stringly-typed `process.env` reads scattered across feature files.
+
+## Choose in 30 seconds
+
+| Need                                                               | Use                                     |
+| ------------------------------------------------------------------ | --------------------------------------- |
+| Read one shell variable during bootstrap or in a standalone script | `process.env` directly                  |
+| Read config inside a Nest provider or `registerAsync()` factory    | `ConfigService`                         |
+| Reuse parsed settings in multiple places                           | `registerAs(...)` + one central factory |
+| Reject bad or missing env before the app binds a port              | `validationSchema`                      |
+
+<Aside type="note" title="Why the examples use exported shell vars">
+
+This page uses exported shell variables so the load path stays explicit. If you prefer `.env` files, keep the same rule: one app entry point loads config, and the rest of the app reads through Nest config instead of reaching into `process.env` everywhere.
+
+</Aside>
+
+## Setup
+
+<Steps>
+
+1. Install the config package plus Joi for startup validation. After the command finishes, verify both packages land in `dependencies`.
+
+   ```bash
+   npm i @nestjs/config joi
+   ```
+
+2. Paste the minimal example below into a fresh Nest app.
+
+3. Export `APP_NAME` before you start the app. If the app boots cleanly, `GET /config` should echo the same value.
+
+</Steps>
+
+## Minimal working example
+
+Use one global `ConfigModule` at the app entry point, then read required values through `ConfigService`.
+
+```typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+
+@Module({
+  imports: [ConfigModule.forRoot({ isGlobal: true })],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+```
+
+```typescript
+// app.service.ts
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+
+@Injectable()
+export class AppService {
+  private readonly appName: string;
+
+  constructor(private readonly config: ConfigService) {
+    this.appName = this.config.getOrThrow<string>("APP_NAME");
+  }
+
+  getConfig(): { appName: string } {
+    return { appName: this.appName };
+  }
+}
+```
+
+```typescript
+// app.controller.ts
+import { Controller, Get } from "@nestjs/common";
+import { AppService } from "./app.service";
+
+@Controller("config")
+export class AppController {
+  constructor(private readonly app: AppService) {}
+
+  @Get()
+  getConfig(): { appName: string } {
+    return this.app.getConfig();
+  }
+}
+```
+
+Start the app with one required value exported first. In the startup output, verify Nest binds normally. Then call the route and verify the JSON matches the exported value.
+
+```bash
+export APP_NAME=kb-api
+nest start -b swc --type-check
+```
+
+Call the route to verify the controller receives config through DI. The response body should contain the `appName` field with the exported value.
+
+```bash
+curl http://localhost:3000/config
+```
+
+Response:
+
+```json
+{ "appName": "kb-api" }
+```
+
+Now remove the required key and start again. This proves the required-read path fails fast; verify the terminal error includes `Configuration key "APP_NAME" does not exist` before Nest starts serving requests.
+
+```bash
+unset APP_NAME
+nest start -b swc --type-check
+```
+
+Startup failure:
+
+```text
+TypeError: Configuration key "APP_NAME" does not exist
+```
+
+`getOrThrow()` makes missing required config a startup bug instead of a request-time surprise.
+
+## Parse once, inject many times
+
+`ConfigService.get<T>(...)` gives type information to your TypeScript code. It does **not** magically parse runtime strings into numbers or booleans. If a value should behave like a number or boolean, parse it once in the factory that owns it.
+
+```typescript
+// app.config.ts
+import { registerAs } from "@nestjs/config";
+
+function parsePort(value: string | undefined): number {
+  const port = Number(value ?? "3000");
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error("PORT must be an integer between 1 and 65535");
+  }
+  return port;
+}
+
+function parseBoolean(name: string, value: string | undefined, defaultValue: boolean): boolean {
+  if (value === undefined) return defaultValue;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  throw new Error(`${name} must be \"true\" or \"false\"`);
+}
+
+export default registerAs("app", () => ({
+  name: process.env.APP_NAME ?? "kb-api",
+  port: parsePort(process.env.PORT),
+  enableDocs: parseBoolean("ENABLE_DOCS", process.env.ENABLE_DOCS, false),
+  auth: {
+    jwtSecret: process.env.JWT_SECRET ?? "dev-only-change-me",
+  },
+}));
+```
+
+```typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import appConfig from "./app.config";
+import { AppController } from "./app.controller";
+import { AppSettingsService } from "./app-settings.service";
+
+@Module({
+  imports: [ConfigModule.forRoot({ isGlobal: true, load: [appConfig] })],
+  controllers: [AppController],
+  providers: [AppSettingsService],
+})
+export class AppModule {}
+```
+
+```typescript
+// app-settings.service.ts
+import { Inject, Injectable } from "@nestjs/common";
+import { ConfigType } from "@nestjs/config";
+import appConfig from "./app.config";
+
+@Injectable()
+export class AppSettingsService {
+  constructor(
+    @Inject(appConfig.KEY)
+    private readonly app: ConfigType<typeof appConfig>,
+  ) {}
+
+  getDebug(): { name: string; port: number; enableDocs: boolean } {
+    return {
+      name: this.app.name,
+      port: this.app.port,
+      enableDocs: this.app.enableDocs,
+    };
+  }
+}
+```
+
+That is the payoff: every consumer sees a real `number` for `port` and a real `boolean` for `enableDocs`, because the factory already decided how raw strings should be interpreted.
+
+## Validate env at startup
+
+Use `validationSchema` for required env keys and basic shape checks.
+
+```typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import * as Joi from "joi";
+import appConfig from "./app.config";
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [appConfig],
+      validationSchema: Joi.object({
+        APP_NAME: Joi.string().required(),
+        PORT: Joi.number().port().required(),
+        ENABLE_DOCS: Joi.string().valid("true", "false").default("false"),
+        JWT_SECRET: Joi.string().min(32).required(),
+      }),
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+Start the app with one required key missing. Verify Nest exits immediately with `Config validation error:` instead of starting a half-configured server.
+
+```bash
+export APP_NAME=kb-api
+export PORT=3000
+export ENABLE_DOCS=false
+unset JWT_SECRET
+nest start -b swc --type-check
+```
+
+Startup failure:
+
+```text
+Error: Config validation error: "JWT_SECRET" is required
+```
+
+That is the production win: bad config becomes a boot-time error, not a surprise `401`, `ECONNREFUSED`, or `undefined` two requests later.
+
+## Use the same config source in async module registration
+
+This is where `ConfigService` pays for itself: module options stay inside Nest DI instead of reaching for top-level constants.
+
+```typescript
+// auth.module.ts
+import { Module } from "@nestjs/common";
+import { JwtModule } from "@nestjs/jwt";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { JwtStrategy } from "./jwt.strategy";
+
+@Module({
+  imports: [
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>("app.auth.jwtSecret"),
+        signOptions: { expiresIn: "15m" },
+      }),
+    }),
+  ],
+  providers: [JwtStrategy],
+})
+export class AuthModule {}
+```
+
+Use the same pattern when a module's options depend on env or other app settings:
+
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]: one secret source for signing and verification.
+- [[nestjs/data/caching|Caching with @nestjs/cache-manager]]: TTL and Redis URL belong in DI-driven config.
+- [[nestjs/recipes/file-uploads|File uploads with Multer]]: upload size limits should come from config, not magic numbers in the module.
+- [[nestjs/data/typeorm/postgresql-setup|PostgreSQL setup with TypeORM]]: database connection options belong in `forRootAsync()`.
+
+## Gotchas
+
+<Aside type="caution" title="NestJS 11 changed ConfigService lookup order">
+
+NestJS 11 changed `ConfigService#get()` lookup order. If you are upgrading, check [[nestjs/releases/v11|NestJS 11]] before assuming shell variables win over loaded config.
+
+</Aside>
+
+<Aside type="caution" title="validationSchema does not validate your custom config object">
+
+`validationSchema` checks the env-derived input passed through `ConfigModule.forRoot()`. Keep range checks and string-to-boolean parsing inside the factory that builds your custom object too.
+
+</Aside>
+
+<Aside type="caution" title="Do not scatter required keys across feature files">
+
+If `JWT_SECRET`, `REDIS_URL`, and upload limits are each read from `process.env` in their own feature folder, the app no longer has one place that can fail fast. Centralize required keys in config and inject them into the features that need them.
+
+</Aside>
+
+<Aside type="note" title="Need DI inside a global pipe, guard, interceptor, or filter?">
+
+If config drives a global enhancer, register it with `APP_PIPE`, `APP_GUARD`, `APP_INTERCEPTOR`, or `APP_FILTER` so Nest can inject `ConfigService`. See [[nestjs/fundamentals/global-providers|Global enhancers]].
+
+</Aside>
+
+## See also
+
+- [[nestjs/fundamentals/global-providers|Global enhancers]]
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]
+- [[nestjs/data/caching|Caching with @nestjs/cache-manager]]
+- [[nestjs/recipes/file-uploads|File uploads with Multer]]
+- [[nestjs/recipes/validation|Validation with class-validator]]
+- [[nestjs/data/typeorm/postgresql-setup|PostgreSQL setup with TypeORM]]
+- [[nestjs/releases/v11|NestJS 11]]
+- [Configuration](https://docs.nestjs.com/techniques/configuration)

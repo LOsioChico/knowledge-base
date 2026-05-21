@@ -22,6 +22,7 @@ const effectTsSidebar = [
   { label: "What is Effect", slug: "effect-ts/what-is-effect" },
   { label: "Composition", slug: "effect-ts/composition" },
   { label: "Typed errors", slug: "effect-ts/typed-errors" },
+  { label: "Schema", slug: "effect-ts/schema" },
   { label: "Layers and DI", slug: "effect-ts/layers-and-di" },
   { label: "Retry and Schedule", slug: "effect-ts/retry-and-schedule" },
   { label: "Scoped resources", slug: "effect-ts/scoped-resources" },
@@ -59,8 +60,10 @@ const nestjsSidebar = [
     collapsed: true,
     items: [
       { label: "Recipes overview", slug: "nestjs/recipes" },
+      { label: "Configuration", slug: "nestjs/recipes/configuration" },
       { label: "Validation", slug: "nestjs/recipes/validation" },
       { label: "SWC builder", slug: "nestjs/recipes/swc-setup" },
+      { label: "Testing", slug: "nestjs/recipes/testing" },
       { label: "File uploads", slug: "nestjs/recipes/file-uploads" },
       { label: "Serialization", slug: "nestjs/recipes/serialization" },
       { label: "Trace IDs", slug: "nestjs/recipes/trace-id" },
@@ -139,6 +142,7 @@ const awsSidebar = [
     collapsed: true,
     items: [
       { label: "IAM overview", slug: "aws/iam" },
+      { label: "Policy evaluation", slug: "aws/iam/policy-evaluation" },
       { label: "IAM CLI", slug: "aws/iam/cli" },
     ],
   },
@@ -233,17 +237,14 @@ export default defineConfig({
       remarkInternalBaseLinks({ base: BASE }),
       remarkBacklinks({ docsRoot, base: BASE }),
     ],
-    rehypePlugins: [
-      rehypeKbLinkClasses({ siteOrigin: SITE, basePath: BASE }),
-    ],
+    rehypePlugins: [rehypeKbLinkClasses({ siteOrigin: SITE, basePath: BASE })],
   },
   integrations: [
     // Must run before Starlight so ```mermaid fences become diagrams.
     mermaid({ autoTheme: true }),
     starlight({
       title: "Knowledge Base",
-      description:
-        "Personal knowledge base on Starlight: Effect-TS, NestJS, and AWS.",
+      description: "Personal knowledge base on Starlight: Effect-TS, NestJS, and AWS.",
       favicon: "/favicon.svg",
       expressiveCode: {
         plugins: [ecTwoSlash()],
@@ -251,8 +252,7 @@ export default defineConfig({
       },
       customCss: ["./src/styles/twoslash.css", "./src/styles/links.css"],
       editLink: {
-        baseUrl:
-          "https://github.com/LOsioChico/knowledge-base/edit/main/sites/docs/",
+        baseUrl: "https://github.com/LOsioChico/knowledge-base/edit/main/sites/docs/",
       },
       sidebar: [
         { label: "Home", link: "/" },

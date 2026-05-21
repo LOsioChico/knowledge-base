@@ -39,11 +39,11 @@ flowchart LR
 
 ## Versioning
 
-| State | Behavior |
-| --- | --- |
-| Unversioned | PUT overwrites; DELETE removes |
-| Enabled | PUT creates new version; DELETE adds delete marker |
-| Suspended | New writes null version ID; old versions kept |
+| State       | Behavior                                           |
+| ----------- | -------------------------------------------------- |
+| Unversioned | PUT overwrites; DELETE removes                     |
+| Enabled     | PUT creates new version; DELETE adds delete marker |
+| Suspended   | New writes null version ID; old versions kept      |
 
 Once enabled, cannot return to unversioned: only suspend.
 
@@ -55,14 +55,14 @@ Pair versioning with [[aws/s3/lifecycle-rules|NoncurrentVersionExpiration]] or c
 
 ## Access defaults
 
-| Mechanism | When |
-| --- | --- |
-| [IAM](/knowledge-base/aws/iam/) identity policy | Same-account principals |
-| Bucket policy | Cross-account, public reads (rare) |
-| S3 Access Points | Per-app endpoints at scale |
-| ACLs | Avoid: keep Object Ownership bucket-owner-enforced |
+| Mechanism                                       | When                                               |
+| ----------------------------------------------- | -------------------------------------------------- |
+| [IAM](/knowledge-base/aws/iam/) identity policy | Same-account principals                            |
+| Bucket policy                                   | Cross-account, public reads (rare)                 |
+| S3 Access Points                                | Per-app endpoints at scale                         |
+| ACLs                                            | Avoid: keep Object Ownership bucket-owner-enforced |
 
-Block Public Access at account + bucket ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)).
+Block Public Access at account + bucket ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html)). If a request still gets `AccessDenied`, debug the identity policy, bucket policy, and guardrail layers with [[aws/iam/policy-evaluation|IAM policy evaluation]].
 
 ## What you pay for
 
@@ -72,16 +72,16 @@ Common traps: versioning without lifecycle; IA/Glacier on frequently read data.
 
 ## Deep dives
 
-| Topic | Page |
-| --- | --- |
-| Hands-on first bucket | [Quickstart](/knowledge-base/aws/s3/quickstart/) |
-| Storage classes | [Storage classes](/knowledge-base/aws/s3/storage-classes/) |
-| Lifecycle automation | [Lifecycle rules](/knowledge-base/aws/s3/lifecycle-rules/) |
-| Event-driven pipelines | [Event notifications](/knowledge-base/aws/s3/event-notifications/) |
-| Temporary share links | [Presigned URLs](/knowledge-base/aws/s3/presigned-urls/) |
-| Static HTTP site | [Static website](/knowledge-base/aws/s3/static-website/) |
-| Cross-account move | [Cross-account migration](/knowledge-base/aws/s3/cross-account-migration/) |
-| CLI | [S3 CLI cheatsheet](/knowledge-base/aws/s3/cli/) |
+| Topic                  | Page                                                                       |
+| ---------------------- | -------------------------------------------------------------------------- |
+| Hands-on first bucket  | [Quickstart](/knowledge-base/aws/s3/quickstart/)                           |
+| Storage classes        | [Storage classes](/knowledge-base/aws/s3/storage-classes/)                 |
+| Lifecycle automation   | [Lifecycle rules](/knowledge-base/aws/s3/lifecycle-rules/)                 |
+| Event-driven pipelines | [Event notifications](/knowledge-base/aws/s3/event-notifications/)         |
+| Temporary share links  | [Presigned URLs](/knowledge-base/aws/s3/presigned-urls/)                   |
+| Static HTTP site       | [Static website](/knowledge-base/aws/s3/static-website/)                   |
+| Cross-account move     | [Cross-account migration](/knowledge-base/aws/s3/cross-account-migration/) |
+| CLI                    | [S3 CLI cheatsheet](/knowledge-base/aws/s3/cli/)                           |
 
 ## See also
 

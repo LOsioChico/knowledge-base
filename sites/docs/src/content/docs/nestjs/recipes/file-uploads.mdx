@@ -98,11 +98,11 @@ export class UploadsController {
 }
 ```
 
-| Builder method | What it checks |
-| --- | --- |
+| Builder method                       | What it checks                                                                                                            |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | `addFileTypeValidator({ fileType })` | Mime-type via the file's magic number, not the client header. String or `RegExp`; [example above](#uploaded-file-checks). |
-| `addMaxSizeValidator({ maxSize })` | Bytes; [example above](#uploaded-file-checks). Multer also enforces a hard cap (see module defaults). |
-| `.build({ fileIsRequired: false })` | Makes the upload optional. Default is required. |
+| `addMaxSizeValidator({ maxSize })`   | Bytes; [example above](#uploaded-file-checks). Multer also enforces a hard cap (see module defaults).                     |
+| `.build({ fileIsRequired: false })`  | Makes the upload optional. Default is required.                                                                           |
 
 12 MB PDF on that route:
 
@@ -122,20 +122,20 @@ curl -F file=@huge-report.pdf http://localhost:3000/uploads
 
 The shorter `Validation failed (expected type is …)` form appears when the validator cannot read a `mimetype` (missing file or no detectable type).
 
-<Aside type="caution" title="Magic-number check stops renamed .exe">
+<Aside type="caution" title="Magic-number check needs the file buffer">
 
-`addFileTypeValidator` reads leading bytes, not the `Content-Type` header. Trusting the header alone lets a renamed `.exe` reach disk under a `.jpg` name. Always include this validator on user-upload routes.
+`addFileTypeValidator` reads leading bytes from `file.buffer`, not the `Content-Type` header. Trusting the header alone lets a renamed `.exe` reach disk under a `.jpg` name, but disk storage removes the buffer before Nest's pipe sees the file. Keep validation in memory for this route, validate before moving to disk, or use a custom scanner for disk-backed uploads.
 
 </Aside>
 
 ## Multiple files
 
-| Decorator | When |
-| --- | --- |
-| `FilesInterceptor("files", maxCount?, opts?)` | Same field name, array. Use `@UploadedFiles()`. |
+| Decorator                                     | When                                               |
+| --------------------------------------------- | -------------------------------------------------- |
+| `FilesInterceptor("files", maxCount?, opts?)` | Same field name, array. Use `@UploadedFiles()`.    |
 | `FileFieldsInterceptor([{ name, maxCount }])` | Different field names (e.g. `avatar` and `cover`). |
-| `AnyFilesInterceptor()` | Accept anything. Use sparingly. |
-| `NoFilesInterceptor()` | Multipart text fields only; reject any file. |
+| `AnyFilesInterceptor()`                       | Accept anything. Use sparingly.                    |
+| `NoFilesInterceptor()`                        | Multipart text fields only; reject any file.       |
 
 ## Module-level defaults
 
@@ -158,7 +158,7 @@ import { MulterModule } from "@nestjs/platform-express";
 export class AppModule {}
 ```
 
-Env-driven config:
+Env-driven config: use [[nestjs/recipes/configuration|Configuration with @nestjs/config]] so upload limits come from the same validated settings as the rest of the app.
 
 ```typescript
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -184,6 +184,7 @@ MulterModule.registerAsync({
     Default storage holds the whole file in memory. One 1 GB upload pins 1 GB until the request ends; ten concurrent uploads pin ten. Use disk storage or stream to object storage for large files.
 
     </Aside>
+
   </TabItem>
   <TabItem label="Disk">
     ```typescript
@@ -199,7 +200,8 @@ MulterModule.registerAsync({
     });
     ```
 
-    With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([DiskStorage](https://github.com/expressjs/multer#diskstorage)).
+    With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([DiskStorage](https://github.com/expressjs/multer#diskstorage)). Built-in magic-number validation needs the buffer, so disk-backed upload routes need an earlier validation step or a custom scanner.
+
   </TabItem>
 </Tabs>
 

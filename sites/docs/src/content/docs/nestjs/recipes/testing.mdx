@@ -1,0 +1,315 @@
+---
+title: Testing with @nestjs/testing
+description: "Choose the smallest NestJS test that proves the behavior: compile a TestingModule for units, boot a Nest app for HTTP, and override globals without fighting APP_GUARD."
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> Testing in NestJS is mostly choosing how much of the DI container and HTTP pipeline to boot.
+
+## When to reach for it
+
+- A service test needs DI-friendly mocks, not `new Service(...)` by hand.
+- A route works in the app but your spec misses behavior from a global pipe, guard, or interceptor.
+- A protected route should ignore auth in most tests, but the real JWT flow still matters in auth tests.
+- Your suite hangs because the app never closes.
+
+## Choose the smallest test that proves the behavior
+
+| Test shape        | Boot                                                            | Mock                     | Best for                                                               | Too small when                                                                 | Too large when                                             |
+| ----------------- | --------------------------------------------------------------- | ------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| Unit              | `Test.createTestingModule(...).compile()`                       | Collaborators only       | Business logic in one provider or controller method                    | The behavior depends on the HTTP pipeline, route metadata, or global enhancers | You only need one return value or thrown error             |
+| Integration slice | Small feature module + `createNestApplication()` + `app.init()` | Expensive edges only     | One route with real pipes, guards, interceptors, and controller wiring | You need the whole production graph or cross-module behavior                   | The route behavior is just a thin wrapper over one service |
+| E2E               | `AppModule` or close to it                                      | External boundaries only | Production-like HTTP behavior across multiple modules                  | You still do not know which layer is failing                                   | One feature can be proved with a smaller slice             |
+
+`Test.createTestingModule()` gives you a Nest testing container. `compile()` builds the module graph and lets you retrieve providers with `get()` or `resolve()` ([testing docs](https://docs.nestjs.com/fundamentals/testing)). Once the behavior lives in the HTTP pipeline, Nest's own docs switch to `createNestApplication()` and require `await app.init()` before requests ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
+
+**Rule of thumb:** if the failure would show up in Postman, write an HTTP test. If it would only show up inside one method body, stop at a unit test.
+
+## Example 1: unit-test one provider with mocked collaborators
+
+If the behavior is pure business logic, stop at `compile()`. This is the same auth flow explained in [[nestjs/auth/jwt-strategy|JWT strategy with Passport]], but reduced to one provider test.
+
+```typescript
+// auth.service.ts
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+
+export interface UserRecord {
+  userId: number;
+  username: string;
+  password: string;
+}
+
+export abstract class UsersService {
+  abstract findOne(username: string): Promise<UserRecord | undefined>;
+}
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly users: UsersService,
+    private readonly jwt: JwtService,
+  ) {}
+
+  async signIn(username: string, password: string): Promise<{ access_token: string }> {
+    const user = await this.users.findOne(username);
+    if (!user || user.password !== password) {
+      throw new UnauthorizedException();
+    }
+
+    return {
+      access_token: await this.jwt.signAsync({
+        sub: user.userId,
+        username: user.username,
+      }),
+    };
+  }
+}
+```
+
+```typescript
+// auth.service.spec.ts
+import { UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { Test } from "@nestjs/testing";
+import { AuthService, type UserRecord, UsersService } from "./auth.service";
+
+describe("AuthService", () => {
+  let service: AuthService;
+
+  const matchingCredential = "demo-match";
+  const differentCredential = "demo-miss";
+
+  const users = {
+    findOne: jest.fn<Promise<UserRecord | undefined>, [string]>(),
+  };
+
+  const jwt = {
+    signAsync: jest.fn<Promise<string>, [Record<string, unknown>]>(),
+  };
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        AuthService,
+        { provide: UsersService, useValue: users },
+        { provide: JwtService, useValue: jwt },
+      ],
+    }).compile();
+
+    service = moduleRef.get(AuthService);
+    users.findOne.mockReset();
+    jwt.signAsync.mockReset();
+  });
+
+  it("returns an access token for valid credentials", async () => {
+    users.findOne.mockResolvedValue({
+      userId: 1,
+      username: "john",
+      password: matchingCredential,
+    });
+    jwt.signAsync.mockResolvedValue("signed.jwt.token");
+
+    await expect(service.signIn("john", matchingCredential)).resolves.toEqual({
+      access_token: "signed.jwt.token",
+    });
+
+    expect(jwt.signAsync).toHaveBeenCalledWith({
+      sub: 1,
+      username: "john",
+    });
+  });
+
+  it("throws for wrong credentials", async () => {
+    users.findOne.mockResolvedValue({
+      userId: 1,
+      username: "john",
+      password: matchingCredential,
+    });
+
+    await expect(service.signIn("john", differentCredential)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+});
+```
+
+Assertion output:
+
+```text
+PASS  auth.service.spec.ts
+  AuthService
+    ✓ returns an access token for valid credentials
+    ✓ throws for wrong credentials
+```
+
+This is the sweet spot for provider logic: real Nest DI, cheap mocks, no HTTP boot.
+
+## Example 2: integration slice over HTTP
+
+If the behavior lives in validation, guards, interceptors, or controller wiring, `compile()` is too small. Nest's testing docs call out the next step clearly: create a real app with `createNestApplication()` and manually initialize it with `app.init()` before sending requests ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
+
+This example assumes the same DTO validation setup as [[nestjs/recipes/validation|Validation with class-validator]].
+
+```typescript
+// users.module.ts
+import { Body, Controller, Module, Post } from "@nestjs/common";
+import { IsString, MinLength } from "class-validator";
+
+export class CreateUserDto {
+  @IsString()
+  @MinLength(8)
+  passphrase!: string;
+}
+
+@Controller("users")
+export class UsersController {
+  @Post()
+  create(@Body() body: CreateUserDto) {
+    return { id: 1, passphraseLength: body.passphrase.length };
+  }
+}
+
+@Module({
+  controllers: [UsersController],
+})
+export class UsersModule {}
+```
+
+```typescript
+// users.integration.spec.ts
+import { INestApplication, ValidationPipe } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+import request from "supertest";
+import { UsersModule } from "./users.module";
+
+describe("Users (integration)", () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [UsersModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it("accepts a valid body", () => {
+    return request(app.getHttpServer())
+      .post("/users")
+      .send({ passphrase: "long-enough" })
+      .expect(201)
+      .expect({ id: 1, passphraseLength: 11 });
+  });
+
+  it("rejects an invalid body", () => {
+    return request(app.getHttpServer())
+      .post("/users")
+      .send({ passphrase: "123" })
+      .expect(400)
+      .expect({
+        statusCode: 400,
+        message: ["passphrase must be longer than or equal to 8 characters"],
+        error: "Bad Request",
+      });
+  });
+});
+```
+
+The same behavior as raw HTTP:
+
+Valid request body:
+
+```json
+{ "passphrase": "long-enough" }
+```
+
+`201 Created`:
+
+```json
+{ "id": 1, "passphraseLength": 11 }
+```
+
+Invalid request body:
+
+```json
+{ "passphrase": "123" }
+```
+
+`400 Bad Request`:
+
+```json
+{
+  "statusCode": 400,
+  "message": ["passphrase must be longer than or equal to 8 characters"],
+  "error": "Bad Request"
+}
+```
+
+That is why HTTP-level tests exist: the assertion is about Nest wiring, not just a method return value.
+
+## Focused override pattern: global auth guard without fighting `APP_GUARD`
+
+Most route tests are **not** auth tests. When the route behavior matters more than JWT verification, bypass the guard cleanly.
+
+Nest's testing docs document the footgun here: a global enhancer registered as `{ provide: APP_GUARD, useClass: JwtAuthGuard }` is a multi-provider slot, so the override target should be the concrete guard class instead. The fix is to register the guard with `useExisting`, then override `JwtAuthGuard` in the test module ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers), [[nestjs/fundamentals/global-providers|Global enhancers]]).
+
+```typescript
+// auth.module.ts
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { JwtAuthGuard } from "./jwt-auth.guard";
+
+@Module({
+  providers: [
+    JwtAuthGuard,
+    {
+      provide: APP_GUARD,
+      useExisting: JwtAuthGuard,
+    },
+  ],
+})
+export class AuthModule {}
+```
+
+```typescript
+const moduleRef = await Test.createTestingModule({
+  imports: [AppModule],
+})
+  .overrideProvider(JwtAuthGuard)
+  .useValue({ canActivate: () => true })
+  .compile();
+```
+
+<Aside type="caution" title="Do not mock away the thing you are trying to prove">
+
+Use the guard override when the test is about the controller, pipe, or response shape behind auth. If the behavior under test **is** authentication, keep the real guard and send a real `Authorization: Bearer ...` token through the flow from [[nestjs/auth/jwt-strategy|JWT strategy with Passport]].
+
+</Aside>
+
+If the expensive boundary is a whole imported module rather than one guard, Nest's testing API also supports `overrideModule().useModule()` for larger E2E replacements ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing), [[nestjs/releases/v10|NestJS 10]]). Keep that move for mailers, payments, or other heavy edges: do not start there.
+
+## Common gotchas
+
+- **`compile()` does not create an HTTP server.** If the test needs `app.getHttpServer()` or `HttpAdapterHost#httpAdapter`, boot an app first ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
+- **`get()` is for static providers.** Request-scoped and transient providers need `resolve()` instead ([testing docs](https://docs.nestjs.com/fundamentals/testing)).
+- **Always `await app.close()`.** Nest's lifecycle docs note that `app.close()` triggers the shutdown hooks, but it does not terminate the Node process if timers or other work are still alive ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
+- **One app instance means one shared in-memory state.** If a test mutates caches or other singleton state, reset that state or boot a fresh app for the next case; see [[nestjs/data/caching|Caching with @nestjs/cache-manager]].
+
+## See also
+
+- [[nestjs/recipes/swc-setup|SWC builder]]: `@swc/jest`, Vitest, and runner wiring
+- [[nestjs/recipes/validation|Validation with class-validator]]: DTO setup behind the HTTP example
+- [[nestjs/fundamentals/global-providers|Global enhancers]]: `APP_*` registration and testing overrides
+- [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]]: what `app.init()` and `app.close()` trigger
+- [[nestjs/auth/jwt-strategy|JWT strategy with Passport]]: real login flow and protected routes
+- [[nestjs/data/caching|Caching with @nestjs/cache-manager]]: stateful test doubles and cache leakage
+- [Testing](https://docs.nestjs.com/fundamentals/testing)
+- [Lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)

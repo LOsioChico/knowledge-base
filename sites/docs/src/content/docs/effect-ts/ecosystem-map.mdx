@@ -9,7 +9,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 ## How packages are laid out
 
-`effect` holds `Effect<A, E, R>`, runners, `Schema`, `Layer`, `Stream`, `Schedule`, `Fiber`, `Scope`, and combinators ([`packages/effect`](https://github.com/Effect-TS/effect/tree/main/packages/effect)). Everything else adds a runtime adapter, domain (HTTP, SQL, AI), or tooling.
+`effect` holds `Effect<A, E, R>`, runners, [[effect-ts/schema|Schema]], `Layer`, `Stream`, `Schedule`, `Fiber`, `Scope`, and combinators ([`packages/effect`](https://github.com/Effect-TS/effect/tree/main/packages/effect)). Everything else adds a runtime adapter, domain (HTTP, SQL, AI), or tooling.
 
 `@effect/sql`, `@effect/ai`, and `@effect/platform` fan out into driver/provider sub-packages (tables below).
 
@@ -17,38 +17,38 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 
 ## Core packages
 
-| Package | What it is | Reach for | Skip when |
-| --- | --- | --- | --- |
-| `effect` | Core types, runtime, `Schema`, `Layer`, `Stream`, … | Always | Never |
+| Package            | What it is                                                                                                                                     | Reach for          | Skip when                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
+| `effect`           | Core types, runtime, [Schema](/knowledge-base/effect-ts/schema/), `Layer`, `Stream`, …                                                         | Always             | Never                                        |
 | `@effect/platform` | Platform-agnostic HTTP, FS, terminal, workers ([`package.json`](https://github.com/Effect-TS/effect/blob/main/packages/platform/package.json)) | Cross-runtime apps | Single-runtime-only scripts with native APIs |
 
 **Runtime adapters** (pick one):
 
-| Adapter | Runtime |
-| --- | --- |
-| `@effect/platform-node` | Node.js |
-| `@effect/platform-bun` | Bun |
+| Adapter                    | Runtime |
+| -------------------------- | ------- |
+| `@effect/platform-node`    | Node.js |
+| `@effect/platform-bun`     | Bun     |
 | `@effect/platform-browser` | Browser |
 
 ## Domain packages
 
-| Package | Reach for | Skip when |
-| --- | --- | --- |
-| `@effect/cli` | Typed CLI with subcommands ([`cli` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cli/package.json)) | One-off `process.argv` scripts |
-| `@effect/sql` + one driver | Type-safe SQL + `Layer` clients ([`sql` README](https://github.com/Effect-TS/effect/blob/main/packages/sql/README.md)) | Heavy ORM investment you will not migrate |
-| `@effect/ai` + one provider | Provider-swappable LLM apps ([AI intro](https://effect.website/docs/ai/introduction/)) | Single SDK call with no abstraction need |
-| `@effect/workflow` | Durable multi-step processes ([workflow README](https://github.com/Effect-TS/effect/blob/main/packages/workflow/README.md)) | In-memory sub-second tasks |
-| `@effect/rpc` | Typed TS↔TS RPC ([rpc README](https://github.com/Effect-TS/effect/blob/main/packages/rpc/README.md)) | Cross-language interop (gRPC/OpenAPI) |
-| `@effect/cluster` | Sharded entities, runners ([`cluster` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cluster/package.json)) | Single-node apps |
+| Package                     | Reach for                                                                                                                         | Skip when                                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `@effect/cli`               | Typed CLI with subcommands ([`cli` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cli/package.json))        | One-off `process.argv` scripts            |
+| `@effect/sql` + one driver  | Type-safe SQL + `Layer` clients ([`sql` README](https://github.com/Effect-TS/effect/blob/main/packages/sql/README.md))            | Heavy ORM investment you will not migrate |
+| `@effect/ai` + one provider | Provider-swappable LLM apps ([AI intro](https://effect.website/docs/ai/introduction/))                                            | Single SDK call with no abstraction need  |
+| `@effect/workflow`          | Durable multi-step processes ([workflow README](https://github.com/Effect-TS/effect/blob/main/packages/workflow/README.md))       | In-memory sub-second tasks                |
+| `@effect/rpc`               | Typed TS↔TS RPC ([rpc README](https://github.com/Effect-TS/effect/blob/main/packages/rpc/README.md))                              | Cross-language interop (gRPC/OpenAPI)     |
+| `@effect/cluster`           | Sharded entities, runners ([`cluster` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cluster/package.json)) | Single-node apps                          |
 
 ## Tooling packages
 
-| Package | Reach for |
-| --- | --- |
-| `@effect/opentelemetry` | Export `Effect.withSpan` / `Effect.fn` traces ([`opentelemetry` package.json](https://github.com/Effect-TS/effect/blob/main/packages/opentelemetry/package.json)) |
-| `@effect/vitest` | Effect-native test bodies ([vitest README](https://github.com/Effect-TS/effect/blob/main/packages/vitest/README.md)) |
-| `@effect/printer` / `@effect/printer-ansi` | Wadler-style pretty printing for CLIs |
-| `@effect/typeclass` | `Semigroup`, `Functor`, … ([typeclass README](https://github.com/Effect-TS/effect/blob/main/packages/typeclass/README.md)) |
+| Package                                    | Reach for                                                                                                                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@effect/opentelemetry`                    | Export `Effect.withSpan` / `Effect.fn` traces ([`opentelemetry` package.json](https://github.com/Effect-TS/effect/blob/main/packages/opentelemetry/package.json)) |
+| `@effect/vitest`                           | Effect-native test bodies ([vitest README](https://github.com/Effect-TS/effect/blob/main/packages/vitest/README.md))                                              |
+| `@effect/printer` / `@effect/printer-ansi` | Wadler-style pretty printing for CLIs                                                                                                                             |
+| `@effect/typeclass`                        | `Semigroup`, `Functor`, … ([typeclass README](https://github.com/Effect-TS/effect/blob/main/packages/typeclass/README.md))                                        |
 
 ## Experimental
 
@@ -56,16 +56,16 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 
 ## SQL drivers
 
-| Package | Database |
-| --- | --- |
-| `@effect/sql-pg` | PostgreSQL |
-| `@effect/sql-mysql2` | MySQL |
-| `@effect/sql-mssql` | SQL Server |
-| `@effect/sql-clickhouse` | ClickHouse |
-| `@effect/sql-libsql` | libSQL / Turso |
-| `@effect/sql-d1` | Cloudflare D1 |
-| `@effect/sql-sqlite-node` / `-bun` / `-wasm` / … | SQLite variants |
-| `@effect/sql-drizzle` / `@effect/sql-kysely` | ORM/query-builder bridges |
+| Package                                          | Database                  |
+| ------------------------------------------------ | ------------------------- |
+| `@effect/sql-pg`                                 | PostgreSQL                |
+| `@effect/sql-mysql2`                             | MySQL                     |
+| `@effect/sql-mssql`                              | SQL Server                |
+| `@effect/sql-clickhouse`                         | ClickHouse                |
+| `@effect/sql-libsql`                             | libSQL / Turso            |
+| `@effect/sql-d1`                                 | Cloudflare D1             |
+| `@effect/sql-sqlite-node` / `-bun` / `-wasm` / … | SQLite variants           |
+| `@effect/sql-drizzle` / `@effect/sql-kysely`     | ORM/query-builder bridges |
 
 ## AI providers
 

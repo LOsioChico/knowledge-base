@@ -25,7 +25,7 @@ sequenceDiagram
     Svc-->>B: response
 ```
 
-Per the [IAM cross-account tutorial](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), the **role lives in the account that owns the resource**; the trust policy names account B's principal.
+Per the [IAM cross-account tutorial](https://docs.aws.amazon.com/IAM/latest/UserGuide/tutorial_cross-account-with-roles.html), the **role lives in the account that owns the resource**; the trust policy names account B's principal. [[aws/iam/policy-evaluation|IAM policy evaluation]] explains why the caller policy and target trust policy both have to allow the handoff.
 
 ## Recipe
 

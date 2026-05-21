@@ -1,9 +1,9 @@
 ---
 title: Recipes
-description: Task-oriented NestJS how-tos — validation, uploads, SWC, tracing, and more.
+description: "Task-oriented NestJS how-tos: validation, uploads, SWC, tracing, and more."
 ---
 
-import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
+import { Card, CardGrid, Steps } from "@astrojs/starlight/components";
 
 > Concrete problems with working snippets and the gotchas that showed up in practice. Fundamentals explain **where** in the pipeline; recipes show **how** to wire a library.
 
@@ -12,34 +12,69 @@ import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
 <Steps>
 
 1. [[nestjs/recipes/swc-setup|SWC builder]]: default dev loop for this knowledge base.
-2. [[nestjs/recipes/validation|Validation with class-validator]]: global `ValidationPipe` + DTOs.
-3. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: map middleware → filters when something misbehaves.
+2. [[nestjs/recipes/configuration|Configuration with @nestjs/config]]: one place for env loading, validation, and typed settings.
+3. [[nestjs/recipes/validation|Validation with class-validator]]: global `ValidationPipe` + DTOs.
+4. [[nestjs/recipes/testing|Testing with @nestjs/testing]]: choose unit vs HTTP vs E2E before the suite sprawls.
+5. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: map middleware → filters when something misbehaves.
 
 </Steps>
 
 ## All recipes
 
 <CardGrid>
+  <Card title="Configuration" icon="setting">
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/configuration/">@nestjs/config</a>: startup
+      validation, typed factories, async registration.
+    </p>
+  </Card>
   <Card title="Validation" icon="warning">
-    <p><a href="/knowledge-base/nestjs/recipes/validation/">class-validator</a>: global pipe, whitelist, groups, 400 bodies.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/validation/">class-validator</a>: global pipe,
+      whitelist, groups, 400 bodies.
+    </p>
   </Card>
   <Card title="SWC builder" icon="rocket">
-    <p><a href="/knowledge-base/nestjs/recipes/swc-setup/">Fast builds</a>: <code>nest start -b swc</code>, type-check, Jest/Vitest.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/swc-setup/">Fast builds</a>:{" "}
+      <code>nest start -b swc</code>, type-check, Jest/Vitest.
+    </p>
+  </Card>
+  <Card title="Testing" icon="open-book">
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/testing/">@nestjs/testing</a>: unit vs HTTP vs E2E,
+      globals, guard overrides.
+    </p>
   </Card>
   <Card title="File uploads" icon="document">
-    <p><a href="/knowledge-base/nestjs/recipes/file-uploads/">Multer</a>: <code>ParseFilePipeBuilder</code>, size and mime checks.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/file-uploads/">Multer</a>:{" "}
+      <code>ParseFilePipeBuilder</code>, size and mime checks.
+    </p>
   </Card>
   <Card title="Serialization" icon="setting">
-    <p><a href="/knowledge-base/nestjs/recipes/serialization/">class-transformer</a>: strip secrets on the way out.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/serialization/">class-transformer</a>: strip secrets
+      on the way out.
+    </p>
   </Card>
   <Card title="Trace IDs" icon="list-format">
-    <p><a href="/knowledge-base/nestjs/recipes/trace-id/">AsyncLocalStorage</a>: logs, errors, outbound HTTP.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/trace-id/">AsyncLocalStorage</a>: logs, errors,
+      outbound HTTP.
+    </p>
   </Card>
   <Card title="Rate limiting" icon="warning">
-    <p><a href="/knowledge-base/nestjs/recipes/rate-limiting/">@nestjs/throttler</a>: global guard, 429 behavior.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/rate-limiting/">@nestjs/throttler</a>: global guard,
+      429 behavior.
+    </p>
   </Card>
   <Card title="Monorepos" icon="open-book">
-    <p><a href="/knowledge-base/nestjs/recipes/monorepo/">Nest CLI workspaces</a>: apps, libraries, <code>@app/*</code> aliases.</p>
+    <p>
+      <a href="/knowledge-base/nestjs/recipes/monorepo/">Nest CLI workspaces</a>: apps, libraries,{" "}
+      <code>@app/*</code> aliases.
+    </p>
   </Card>
 </CardGrid>
 
