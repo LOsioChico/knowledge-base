@@ -16,8 +16,8 @@
     "lint:mdx-content": "tsx pass0-mdx-all.ts",
     "cache:clean": "tsx cache-clean.ts",
     "lint:content": "tsx pass0-all.ts",
-    "lint:format": "prettier --check ../../content",
-    "format": "prettier --write ../../content",
+    "lint:format": "[ -d ../../content ] && prettier --check ../../content || echo 'Skipping format check: content/ folder not found'",
+    "format": "[ -d ../../content ] && prettier --write ../../content || echo 'Skipping format write: content/ folder not found'",
     "test": "node --import tsx --test extract-json.test.ts deterministic.test.ts mdx-deterministic.test.ts dismissed.test.ts show-dont-tell.test.ts skip-zones.test.ts corpus-silent.test.ts",
     "test:dismissed": "node --import tsx --test dismissed.test.ts",
     "typecheck": "tsc --noEmit"

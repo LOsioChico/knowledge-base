@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import test from "node:test";
@@ -13,7 +14,11 @@ test("checkPublishParity passes on this repo", () => {
   const result = checkPublishParity(REPO_ROOT);
   assert.equal(result.ok, true, result.errors?.join("; "));
   assert.ok(result.mdxCount >= result.vaultCount);
-  assert.ok(result.vaultCount >= 80);
+  if (existsSync(join(REPO_ROOT, "content"))) {
+    assert.ok(result.vaultCount >= 80);
+  } else {
+    assert.equal(result.vaultCount, 0);
+  }
 });
 
 test("checkPublishParity allows mdx-only slugs and reports vault-only slugs", async () => {

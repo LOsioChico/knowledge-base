@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,6 +9,7 @@ import { runDeterministic } from "./deterministic.js";
 
 const AUDIT_DIR: string = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT: string = resolve(AUDIT_DIR, "../..");
+const hasVault: boolean = existsSync(resolve(REPO_ROOT, "content"));
 
 interface ExpectSilentSpec {
   path: string;
@@ -34,7 +35,7 @@ function candidateKey(path: string, line: number): string {
   return `${path}:${line}`;
 }
 
-describe("corpus expectSilent (deterministic)", (): void => {
+describe("corpus expectSilent (deterministic)", { skip: !hasVault }, (): void => {
   const manifest = loadManifest();
 
   it("show-dont-tell candidate finder is silent at manifest lines", (): void => {

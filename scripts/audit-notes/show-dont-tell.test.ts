@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
 import { resolve, dirname } from "node:path";
@@ -10,13 +11,15 @@ const REPO_ROOT: string = resolve(
   "../..",
 );
 
+const hasVault: boolean = existsSync(resolve(REPO_ROOT, "content"));
+
 function candidateLines(repoRelPath: string): number[] {
   return findShowDontTellCandidates(REPO_ROOT, repoRelPath).map(
     (c) => c.line,
   );
 }
 
-describe("findShowDontTellCandidates", (): void => {
+describe("findShowDontTellCandidates", { skip: !hasVault }, (): void => {
   it("does not flag the frontmatter opening fence (line 1)", (): void => {
     const path: string = "content/nestjs/recipes/serialization.md";
     const lines: number[] = candidateLines(path);

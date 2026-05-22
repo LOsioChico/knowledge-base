@@ -4,7 +4,7 @@
 //
 // Used as a blocking CI gate alongside `npm run lint:wikilinks`.
 
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,7 +27,9 @@ function walkMarkdown(dir: string, out: string[]): void {
 
 function main(): void {
   const files: string[] = [];
-  walkMarkdown(CONTENT_ROOT, files);
+  if (existsSync(CONTENT_ROOT)) {
+    walkMarkdown(CONTENT_ROOT, files);
+  }
   files.sort();
 
   const reports: FileReport[] = files.map(

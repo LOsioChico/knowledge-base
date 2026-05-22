@@ -19,7 +19,7 @@
 //
 // Exits 0 always. The list of changed files (possibly empty) is the contract.
 
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -317,14 +317,22 @@ function main(): void {
     targets = fileArgs.map((a: string) => resolve(process.cwd(), a));
   } else if (walkAll) {
     targets = [];
-    walkMarkdown(VAULT_ROOT, targets);
-    walkMdxFiles(MDX_ROOT, targets);
+    if (existsSync(VAULT_ROOT)) {
+      walkMarkdown(VAULT_ROOT, targets);
+    }
+    if (existsSync(MDX_ROOT)) {
+      walkMdxFiles(MDX_ROOT, targets);
+    }
   } else if (walkMdx) {
     targets = [];
-    walkMdxFiles(MDX_ROOT, targets);
+    if (existsSync(MDX_ROOT)) {
+      walkMdxFiles(MDX_ROOT, targets);
+    }
   } else {
     targets = [];
-    walkMarkdown(VAULT_ROOT, targets);
+    if (existsSync(VAULT_ROOT)) {
+      walkMarkdown(VAULT_ROOT, targets);
+    }
   }
   const changed: string[] = [];
   for (const abs of targets) {

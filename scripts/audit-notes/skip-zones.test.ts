@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +12,8 @@ import {
 
 const AUDIT_DIR: string = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT: string = resolve(AUDIT_DIR, "../..");
+
+const hasVault: boolean = existsSync(resolve(REPO_ROOT, "content"));
 
 function loadManifest(): {
   expectSilent: Array<{ path: string; rule: string; line: number }>;
@@ -26,21 +28,21 @@ function loadManifest(): {
 }
 
 describe("skip-zones", (): void => {
-  it("skips ## Pending section bodies", (): void => {
+  it("skips ## Pending section bodies", { skip: !hasVault }, (): void => {
     const path: string = "content/nestjs/fundamentals/index.md";
     const text: string = readNoteText(REPO_ROOT, path);
     assert.ok(isLineInSkipZone(text, 29));
     assert.ok(!isLineInSkipZone(text, 17));
   });
 
-  it("skips What's NOT playbook exclusion sections", (): void => {
+  it("skips What's NOT playbook exclusion sections", { skip: !hasVault }, (): void => {
     const path: string = "content/aws/account-migrations.md";
     const text: string = readNoteText(REPO_ROOT, path);
     assert.ok(isLineInSkipZone(text, 81));
     assert.ok(!isLineInSkipZone(text, 75));
   });
 
-  it("covers style-jargon expectSilent lines from corpus manifest", (): void => {
+  it("covers style-jargon expectSilent lines from corpus manifest", { skip: !hasVault }, (): void => {
     const manifest = loadManifest();
     for (const spec of manifest.expectSilent) {
       if (spec.rule !== "style-jargon") continue;

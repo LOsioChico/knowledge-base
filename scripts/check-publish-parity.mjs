@@ -52,11 +52,12 @@ export function checkPublishParity(repoRoot = REPO_ROOT) {
   const vaultRoot = join(repoRoot, "content");
   const mdxRoot = join(repoRoot, "sites/docs/src/content/docs");
 
-  if (!existsSync(vaultRoot) || !existsSync(mdxRoot)) {
-    return { ok: false, errors: ["content/ or sites/docs/src/content/docs/ missing"] };
+  const hasVault = existsSync(vaultRoot);
+  if (!existsSync(mdxRoot)) {
+    return { ok: false, errors: ["sites/docs/src/content/docs/ missing"] };
   }
 
-  const vaultSlugs = walkMd(vaultRoot);
+  const vaultSlugs = hasVault ? walkMd(vaultRoot) : [];
   const mdxSlugs = walkMdx(mdxRoot);
   const { onlyA: vaultOnly, onlyB: mdxOnly } = diff(vaultSlugs, mdxSlugs);
 

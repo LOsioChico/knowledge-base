@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs"
 import { readFile, readdir } from "node:fs/promises"
 import { join, relative, sep } from "node:path"
 
@@ -1221,8 +1222,9 @@ export async function lintVault({
     warnings: [],
   }
 
-  const files = await walkFiles(contentRoot)
-  const dirs = await walkDirs(contentRoot)
+  const hasVault = existsSync(contentRoot)
+  const files = hasVault ? await walkFiles(contentRoot) : []
+  const dirs = hasVault ? await walkDirs(contentRoot) : []
   const fileSet = new Set(files)
   const notes = []
 

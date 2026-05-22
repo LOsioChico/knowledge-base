@@ -3,7 +3,7 @@
 // Fail when the same file uses bare "A" / "B" in markdown table Account columns
 // (common MDX condensation bug).
 
-import { readFileSync, readdirSync, statSync } from "node:fs"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -11,7 +11,7 @@ const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url))
 const ROOTS = [
   join(REPO_ROOT, "sites/docs/src/content/docs/aws"),
   join(REPO_ROOT, "content/aws"),
-]
+].filter(existsSync)
 
 /** @type {Array<{ file: string, line: number, text: string }>} */
 const violations = []
