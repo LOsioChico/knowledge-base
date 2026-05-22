@@ -1,36 +1,36 @@
 ---
 title: Dynamic Modules with ConfigurableModuleBuilder
-description: Async configuration, dependency injection, ConfigurableModuleBuilder, custom providers, and common gotchas in NestJS.
+description: Async configuration, dependency injection, ConfigurableModuleBuilder, custom S3 bucket storage providers, and multi-instance registration in NestJS.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Dynamic modules allow you to configure modules dynamically at registration time. Primitives like `register`, `forRoot`, and `registerAsync` map custom options (like API keys, timeouts, and connection pools) into the dependency injection (DI) container so services can consume them asynchronously.
+> Dynamic modules allow you to configure modules dynamically at registration time. Primitives like `register`, `forRoot`, and `registerAsync` map custom options (like S3 bucket names, regions, and credentials) into the dependency injection (DI) container so services can consume them asynchronously.
 
-## When to reach for it
+## Why do we need dynamic modules?
 
-- You are writing a shared client library (e.g., Stripe, database client, email sender) that needs different credentials per application.
-- Configuration values must be loaded asynchronously (e.g., from an external secret manager or database) before the service boots.
-- You want to reuse a module structure without hardcoding environment variables directly inside the service.
+To understand why we need dynamic modules, consider a **static module**. A static module is hardcoded; every time you import it, it behaves exactly the same way.
+
+However, what happens if your application needs a **reusable service** whose behavior must be customized depending on where it is imported? 
+*   **The Bucket Example**: You write a `StorageModule` that uploads files to Amazon S3. In a single application, you need to upload user avatars to a **public bucket** (`my-public-avatars`) and export PDF invoices to a **secure private bucket** (`my-private-invoices`).
+*   **Why not just use environment variables inside the service?** If your service directly reads `process.env.S3_BUCKET` or injects `ConfigService` directly, it is locked to **one single bucket**. You cannot reuse the uploading logic for two different buckets inside the same application.
+
+Dynamic modules solve this by acting as a **configurable factory**. When you import the module, you pass the options in, and NestJS instantiates the providers customized with those exact options.
+
+---
 
 ## Setup
 
 <Steps>
 
-1. Install dependencies (we will build a custom Stripe module as a worked example):
-
-   ```bash
-   npm i stripe
-   ```
-
-2. Define the configuration options interface that our module will accept:
+1. Define the configuration options interface that our storage module will accept:
 
    ```typescript
-   // stripe-options.interface.ts
-   export interface StripeOptions {
-     readonly apiKey: string;
-     readonly timeoutMs?: number;
-     readonly apiVersion?: string;
+   // storage-options.interface.ts
+   export interface StorageOptions {
+     readonly bucket: string;
+     readonly region?: string;
+     readonly accessKeyId?: string;
    }
    ```
 
@@ -40,56 +40,50 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## The Modern Way: `ConfigurableModuleBuilder`
 
-Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the boilerplate types (`register`, `registerAsync`, `inject`, `useFactory`) for dynamic modules, reducing boilerplate by ~70%.
+Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the boilerplate types (`register`, `registerAsync`, `inject`, `useFactory`) for dynamic modules, reducing code overhead by ~70%.
 
 ### 1. Build the Module Definitions
 
 ```typescript
-// stripe.module-definition.ts
+// storage.module-definition.ts
 import { ConfigurableModuleBuilder } from "@nestjs/common";
-import { StripeOptions } from "./stripe-options.interface";
+import { StorageOptions } from "./storage-options.interface";
 
 // ConfigurableModuleBuilder generates standard dynamic module patterns
 export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
-  new ConfigurableModuleBuilder<StripeOptions>()
+  new ConfigurableModuleBuilder<StorageOptions>()
     .setClassMethodName("register") // Defines "register" and "registerAsync" methods
     .build();
 ```
 
 ### 2. Implement the Injectable Service
 
-Inject `MODULE_OPTIONS_TOKEN` directly to access the options configured at startup:
+Inject the auto-generated `MODULE_OPTIONS_TOKEN` directly to access the options configured at startup:
 
 ```typescript
-// stripe.service.ts
+// storage.service.ts
 import { Inject, Injectable } from "@nestjs/common";
-import Stripe from "stripe";
-import { MODULE_OPTIONS_TOKEN } from "./stripe.module-definition";
-import { StripeOptions } from "./stripe-options.interface";
+import { MODULE_OPTIONS_TOKEN } from "./storage.module-definition";
+import { StorageOptions } from "./storage-options.interface";
 
 @Injectable()
-export class StripeService {
-  private readonly stripe: Stripe;
-
+export class StorageService {
   constructor(
     @Inject(MODULE_OPTIONS_TOKEN)
-    private readonly options: StripeOptions,
-  ) {
-    this.stripe = new Stripe(this.options.apiKey, {
-      timeout: this.options.timeoutMs ?? 5000,
-      apiVersion: (this.options.apiVersion as "2025-04-10") ?? "2025-04-10",
-    });
-  }
+    private readonly options: StorageOptions,
+  ) {}
 
-  async createCharge(amount: number, currency: string): Promise<{ id: string; amount: number; status: string }> {
-    // stripe-side simulation for this recipe
-    if (!this.options.apiKey.startsWith("sk_")) {
-      throw new Error("Invalid Stripe secret key");
+  async uploadFile(fileName: string, content: string): Promise<{ url: string; bucket: string; sizeBytes: number }> {
+    if (!this.options.bucket) {
+      throw new Error("S3 bucket configuration is missing");
     }
+    
+    // Simulate S3 client upload
+    const region = this.options.region ?? "us-east-1";
     return {
-      id: `ch_${Math.random().toString(36).substring(2, 10)}`,
-      amount,
-      status: "succeeded",
+      url: `https://s3.${region}.amazonaws.com/${this.options.bucket}/${fileName}`,
+      bucket: this.options.bucket,
+      sizeBytes: Buffer.byteLength(content),
     };
   }
 }
@@ -100,16 +94,16 @@ export class StripeService {
 By extending `ConfigurableModuleClass`, NestJS automatically adds the `register` and `registerAsync` methods under the hood:
 
 ```typescript
-// stripe.module.ts
+// storage.module.ts
 import { Module } from "@nestjs/common";
-import { ConfigurableModuleClass } from "./stripe.module-definition";
-import { StripeService } from "./stripe.service";
+import { ConfigurableModuleClass } from "./storage.module-definition";
+import { StorageService } from "./storage.service";
 
 @Module({
-  providers: [StripeService],
-  exports: [StripeService],
+  providers: [StorageService],
+  exports: [StorageService],
 })
-export class StripeModule extends ConfigurableModuleClass {}
+export class StorageModule extends ConfigurableModuleClass {}
 ```
 
 ---
@@ -125,13 +119,13 @@ You can register the module inside your root application module in one of two wa
     ```typescript
     // app.module.ts
     import { Module } from "@nestjs/common";
-    import { StripeModule } from "./stripe.module";
+    import { StorageModule } from "./storage.module";
 
     @Module({
       imports: [
-        StripeModule.register({
-          apiKey: "sk_test_12345",
-          timeoutMs: 3000,
+        StorageModule.register({
+          bucket: "my-public-avatars",
+          region: "us-west-2",
         }),
       ],
     })
@@ -145,17 +139,17 @@ You can register the module inside your root application module in one of two wa
     // app.module.ts
     import { Module } from "@nestjs/common";
     import { ConfigModule, ConfigService } from "@nestjs/config";
-    import { StripeModule } from "./stripe.module";
+    import { StorageModule } from "./storage.module";
 
     @Module({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
-        StripeModule.registerAsync({
+        StorageModule.registerAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
           useFactory: (config: ConfigService) => ({
-            apiKey: config.getOrThrow<string>("STRIPE_API_KEY"),
-            timeoutMs: config.get<number>("STRIPE_TIMEOUT_MS", 5000),
+            bucket: config.getOrThrow<string>("AWS_S3_BUCKET"),
+            region: config.get<string>("AWS_REGION", "us-east-1"),
           }),
         }),
       ],
@@ -169,30 +163,30 @@ You can register the module inside your root application module in one of two wa
 
 ## The Classic Way: Manual Dynamic Module
 
-Understanding the classic manual way is crucial for handling complex scenarios (such as dynamic provider generation or custom factory structures).
+Understanding the classic manual way is crucial for handling complex scenarios, such as when you need custom provider generation or complex multi-module wiring.
 
 ```typescript
-// stripe.module.ts (Manual Pattern)
+// storage.module.ts (Manual Pattern)
 import { DynamicModule, Module, Provider } from "@nestjs/common";
-import { StripeService } from "./stripe.service";
-import { StripeOptions } from "./stripe-options.interface";
+import { StorageService } from "./storage.service";
+import { StorageOptions } from "./storage-options.interface";
 
-export const STRIPE_OPTIONS = "STRIPE_OPTIONS";
+export const STORAGE_OPTIONS = "STORAGE_OPTIONS";
 
 @Module({})
-export class StripeModule {
+export class StorageModule {
   // Static options registration
-  static register(options: StripeOptions): DynamicModule {
+  static register(options: StorageOptions): DynamicModule {
     return {
-      module: StripeModule,
+      module: StorageModule,
       providers: [
         {
-          provide: STRIPE_OPTIONS,
+          provide: STORAGE_OPTIONS,
           useValue: options,
         },
-        StripeService,
+        StorageService,
       ],
-      exports: [StripeService],
+      exports: [StorageService],
     };
   }
 
@@ -200,19 +194,19 @@ export class StripeModule {
   static registerAsync(options: {
     imports?: any[];
     inject?: any[];
-    useFactory: (...args: any[]) => Promise<StripeOptions> | StripeOptions;
+    useFactory: (...args: any[]) => Promise<StorageOptions> | StorageOptions;
   }): DynamicModule {
     const optionsProvider: Provider = {
-      provide: STRIPE_OPTIONS,
+      provide: STORAGE_OPTIONS,
       useFactory: options.useFactory,
       inject: options.inject || [],
     };
 
     return {
-      module: StripeModule,
+      module: StorageModule,
       imports: options.imports || [],
-      providers: [optionsProvider, StripeService],
-      exports: [StripeService],
+      providers: [optionsProvider, StorageService],
+      exports: [StorageService],
     };
   }
 }
@@ -222,23 +216,23 @@ export class StripeModule {
 
 ## Show, Don't Tell: Runtime Demonstration
 
-Let's inspect how the `StripeModule` behaves when wired into a controller.
+Let's inspect how the dynamic `StorageModule` behaves when wired into a controller.
 
 ### 1. Injected Controller
 
 ```typescript
-// payments.controller.ts
+// files.controller.ts
 import { Body, Controller, Post, InternalServerErrorException } from "@nestjs/common";
-import { StripeService } from "./stripe.service";
+import { StorageService } from "./storage.service";
 
-@Controller("payments")
-export class PaymentsController {
-  constructor(private readonly stripeService: StripeService) {}
+@Controller("files")
+export class FilesController {
+  constructor(private readonly storageService: StorageService) {}
 
-  @Post("charge")
-  async charge(@Body() body: { amount: number; currency: string }) {
+  @Post("upload")
+  async upload(@Body() body: { fileName: string; content: string }) {
     try {
-      return await this.stripeService.createCharge(body.amount, body.currency);
+      return await this.storageService.uploadFile(body.fileName, body.content);
     } catch (error) {
       throw new InternalServerErrorException((error as Error).message);
     }
@@ -248,12 +242,12 @@ export class PaymentsController {
 
 ### 2. Concrete Payloads
 
-`POST /payments/charge` with a valid body:
+`POST /files/upload` with a valid body:
 
 ```json
 {
-  "amount": 5000,
-  "currency": "usd"
+  "fileName": "avatar.png",
+  "content": "base64encodedimagedata"
 }
 ```
 
@@ -261,18 +255,18 @@ Successful `201 Created` response payload:
 
 ```json
 {
-  "id": "ch_7a9f82d",
-  "amount": 5000,
-  "status": "succeeded"
+  "url": "https://s3.us-west-2.amazonaws.com/my-public-avatars/avatar.png",
+  "bucket": "my-public-avatars",
+  "sizeBytes": 22
 }
 ```
 
-If the dynamic options load an invalid API key, the service throws, and the controller yields `500 Internal Server Error`:
+If the dynamic options load an empty bucket name, the service throws, and the controller yields `500 Internal Server Error`:
 
 ```json
 {
   "statusCode": 500,
-  "message": "Invalid Stripe secret key",
+  "message": "S3 bucket configuration is missing",
   "error": "Internal Server Error"
 }
 ```
@@ -281,11 +275,30 @@ If the dynamic options load an invalid API key, the service throws, and the cont
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="Generic Token Collisions">
+<Aside type="danger" title="Dynamic Module Deduplication Collision">
 
-If you write multiple manual dynamic modules and register options using a generic token name (e.g. `OPTIONS` or `CONFIG`), Nest's IoC (Inversion of Control) container will overwrite providers with matching tokens. 
+If you import the same module class twice in the same `imports` list with different configurations, NestJS will **deduplicate** the imports, meaning only the first module configuration will take effect:
 
-**Rule of thumb**: Always prefix/namespace option tokens specifically (`STRIPE_OPTIONS`, `REDIS_OPTIONS`) to avoid startup-time conflicts. `ConfigurableModuleBuilder` handles this automatically by generating a unique object identity token.
+```typescript
+// DANGER: NestJS will only instantiate ONE StorageModule and overwrite the other!
+@Module({
+  imports: [
+    StorageModule.register({ bucket: "avatars" }),
+    StorageModule.register({ bucket: "invoices" }), 
+  ],
+})
+export class AppModule {}
+```
+
+**How to solve this**: To run multiple instances of the same service with different configurations, you must wrap them in **separate wrapper modules** (e.g., `AvatarsStorageModule` and `InvoicesStorageModule`) or use the manual custom provider pattern to register them with unique injection tokens.
+
+</Aside>
+
+<Aside type="caution" title="Generic Token Collisions">
+
+If you write multiple manual dynamic modules and register options using a generic token name (e.g. `OPTIONS` or `CONFIG`), Nest's IoC container will overwrite providers with matching tokens. 
+
+**Rule of thumb**: Always prefix/namespace option tokens specifically (`STORAGE_OPTIONS`, `REDIS_OPTIONS`) to avoid startup-time conflicts. `ConfigurableModuleBuilder` handles this automatically by generating a unique object identity token.
 
 </Aside>
 
@@ -297,7 +310,7 @@ If using `ConfigurableModuleBuilder`, you can dynamically support optional globa
 
 ```typescript
 export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
-  new ConfigurableModuleBuilder<StripeOptions>()
+  new ConfigurableModuleBuilder<StorageOptions>()
     .setClassMethodName("register")
     .setExtras(
       { isGlobal: false }, // Default extras value
@@ -309,13 +322,7 @@ export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
     .build();
 ```
 
-Which allows the consumer to specify: `StripeModule.register({ apiKey: '...', isGlobal: true })`.
-
-</Aside>
-
-<Aside type="note" title="ConfigurableModuleBuilder and Factory memoization">
-
-NestJS memoizes providers. If you define a custom `useFactory` callback, it will run exactly once when the application bootstraps and cached for all future injections. Avoid fetching request-scoped values inside your module's boot factories.
+Which allows the consumer to specify: `StorageModule.register({ bucket: '...', isGlobal: true })`.
 
 </Aside>
 
