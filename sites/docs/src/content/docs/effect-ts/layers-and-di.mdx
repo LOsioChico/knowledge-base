@@ -99,6 +99,8 @@ Here is a side-by-side comparison of declaring the boundary:
 <Tabs>
   <TabItem label="NestJS (Abstract Class Token)">
     ```typescript
+    import { Injectable, Module } from "@nestjs/common";
+
     // 1. Declare the boundary (Token + API shape)
     export abstract class RandomService {
       abstract readonly next: Promise<number>;
@@ -113,6 +115,21 @@ Here is a side-by-side comparison of declaring the boundary:
         return await this.random.next;
       }
     }
+
+    // 3. Concrete implementation
+    @Injectable()
+    export class MathRandomService implements RandomService {
+      readonly next = Promise.resolve(Math.random());
+    }
+
+    // 4. Bind the token to implementation in a Module
+    @Module({
+      providers: [
+        GameService,
+        { provide: RandomService, useClass: MathRandomService },
+      ],
+    })
+    export class AppModule {}
     ```
   </TabItem>
   <TabItem label="Effect (Context.Tag)">

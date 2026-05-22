@@ -175,7 +175,7 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
     | --- | --- | --- |
     | `@Body() dto: CreateUserDto` | Custom class | Yes: full DTO |
     | `@Query() q: PaginationQuery` | Custom class | Yes: needs `enableImplicitConversion` for numbers |
-    | `@Param('id') id: string` | `String` | No: use `ParseIntPipe` for strict coercion |
+    | `@Param('id') id: string` | `String` | No: use [ParseIntPipe](/knowledge-base/nestjs/fundamentals/request-lifecycle/#one-route-all-layers) for strict coercion |
     | `@Body() raw: object` | `Object` | No: plain body from Express |
 
     Source: [`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts) metatype check.

@@ -19,14 +19,14 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 | Concept | Effect | NestJS |
 | --- | --- | --- |
-| Declaration | `Context.Tag` / `Effect.Service` | `@Injectable()` |
-| Implementation | `Layer.succeed` / `effect` / `scoped` | `providers: [...]` |
-| Wiring | `Effect.provide` narrows `R` | Module `imports` / `providers` |
-| Missing dep | Compile error | Bootstrap exception |
-| Default lifetime | Per provision graph | Singleton |
+| [Declaration](#the-same-graph-logger--greeter) | `Context.Tag` / `Effect.Service` | `@Injectable()` |
+| [Implementation](#the-same-graph-logger--greeter) | `Layer.succeed` / `effect` / `scoped` | `providers: [...]` |
+| [Wiring](#the-same-graph-logger--greeter) | `Effect.provide` narrows `R` | Module `imports` / `providers` |
+| [Missing dep](#the-same-graph-logger--greeter) | Compile error | Bootstrap exception |
+| [Default lifetime](#the-same-graph-logger--greeter) | Per provision graph | Singleton |
 | Per-request | Fresh layer per handler | `Scope.REQUEST` |
-| Cleanup | `Layer.scoped` / `acquireRelease` | Lifecycle hooks |
-| Tests | Swap `Layer` | `overrideProvider` |
+| [Cleanup](#the-same-graph-logger--greeter) | `Layer.scoped` / `acquireRelease` | Lifecycle hooks |
+| [Tests](#the-same-graph-logger--greeter) | Swap `Layer` | `overrideProvider` |
 
 ## The same graph: Logger + Greeter
 
@@ -144,6 +144,8 @@ In NestJS, provider identity defaults to the class itself, but you can decouple 
 
 ```typescript
 // NestJS: Decouple boundary using an injection token
+import { Injectable, Inject } from "@nestjs/common";
+
 export const LOGGER_TOKEN = Symbol("LOGGER_TOKEN");
 
 export interface ILogger {
@@ -155,8 +157,11 @@ export class ConsoleLogger implements ILogger {
   log(msg: string) { console.log(msg); }
 }
 
-// Injecting the boundary
-constructor(@Inject(LOGGER_TOKEN) private readonly logger: ILogger) {}
+@Injectable()
+export class GameService {
+  // Injecting the boundary
+  constructor(@Inject(LOGGER_TOKEN) private readonly logger: ILogger) {}
+}
 ```
 
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
@@ -183,6 +188,13 @@ NestJS uses **Dynamic Modules** (`register()`, `forRoot()`) to construct provide
 
 ```typescript
 // NestJS: Dynamic Module configuration
+import { Module, DynamicModule } from "@nestjs/common";
+
+export const DB_CONNECTION = Symbol("DB_CONNECTION");
+export class DatabaseConnection {
+  constructor(public readonly url: string) {}
+}
+
 @Module({})
 export class DatabaseModule {
   static forRoot(dbUrl: string): DynamicModule {
@@ -329,23 +341,22 @@ Nest: `Test.createTestingModule({...}).overrideProvider(Logger).useValue(...)`.
 ## Using both together
 
 ```ts twoslash
-import { Context, Effect, Layer, ManagedRuntime } from "effect";
+import { Context, Data, Effect, Layer, ManagedRuntime } from "effect";
 
 class Http extends Context.Tag("Http")<
   Http,
   { readonly get: (url: string) => Effect.Effect<string, HttpError> }
 >() {}
 
-class HttpError {
-  readonly _tag = "HttpError";
-  constructor(readonly cause: unknown) {}
-}
+class HttpError extends Data.TaggedError("HttpError")<{
+  readonly cause: unknown;
+}> {}
 
 const HttpLive = Layer.succeed(Http, {
   get: (url) =>
     Effect.tryPromise({
       try: () => fetch(url).then((r) => r.text()),
-      catch: (e) => new HttpError(e),
+      catch: (e) => new HttpError({ cause: e }),
     }),
 });
 

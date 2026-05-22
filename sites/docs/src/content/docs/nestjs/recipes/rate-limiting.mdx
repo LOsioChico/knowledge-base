@@ -212,22 +212,62 @@ Always use a narrow setting:
 
 ### 2. Custom Secure Proxy Guard
 
-If you are using Fastify or need to extract the client IP reliably from a chained proxy list, create a custom `ThrottlerBehindProxyGuard` class:
+If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Nginx), you must extract the real client IP address securely. Since `ThrottlerGuard` relies on the request object injected by your underlying HTTP platform adapter, you should implement an adapter-specific guard depending on whether you use Express or Fastify.
 
-```typescript
-// trace/throttler-behind-proxy.guard.ts
-import { Injectable } from "@nestjs/common";
-import { ThrottlerGuard } from "@nestjs/throttler";
-import { Request } from "express";
+<Tabs>
+  <TabItem label="Express HTTP Adapter">
+    For the default Express HTTP adapter, type the request as `Request` from `"express"` and extract the leftmost address from `req.ips`:
 
-@Injectable()
-export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
-  protected async getTracker(req: Request): Promise<string> {
-    // req.ips contains the array of downstream proxy hops. The leftmost IP is the client.
-    return req.ips?.length ? req.ips[0] : (req.ip ?? "unknown");
-  }
-}
-```
+    ```typescript
+    // trace/throttler-behind-proxy.guard.ts
+    import { Injectable } from "@nestjs/common";
+    import { ThrottlerGuard } from "@nestjs/throttler";
+    import { Request } from "express";
+
+    @Injectable()
+    export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
+      protected async getTracker(req: Request): Promise<string> {
+        // req.ips contains the array of downstream proxy hops. The leftmost IP is the client.
+        return req.ips?.length ? req.ips[0] : (req.ip ?? "unknown");
+      }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Fastify HTTP Adapter">
+    For the Fastify HTTP adapter, type the request as `FastifyRequest` from `"fastify"` and retrieve the IP address as follows:
+
+    ```typescript
+    // trace/throttler-behind-proxy.guard.ts
+    import { Injectable } from "@nestjs/common";
+    import { ThrottlerGuard } from "@nestjs/throttler";
+    import { FastifyRequest } from "fastify";
+
+    @Injectable()
+    export class ThrottlerBehindProxyGuard extends ThrottlerGuard {
+      protected async getTracker(req: FastifyRequest): Promise<string> {
+        // req.ips contains proxy hops if Fastify is configured to trust proxies.
+        return req.ips?.length ? req.ips[0] : (req.ip ?? "unknown");
+      }
+    }
+    ```
+
+    Ensure you have enabled proxy trusting in your Fastify bootstrap adapter setup:
+    ```typescript
+    // main.ts
+    import { NestFactory } from "@nestjs/core";
+    import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+    import { AppModule } from "./app.module";
+
+    async function bootstrap() {
+      const app = await NestFactory.create<NestFastifyApplication>(
+        AppModule,
+        new FastifyAdapter({ trustProxy: true }), // Enable proxy trust in Fastify
+      );
+      await app.listen(3000);
+    }
+    ```
+  </TabItem>
+</Tabs>
 
 Register your custom guard as the global guard in your module:
 

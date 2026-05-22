@@ -195,6 +195,15 @@ const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
 If we pass invalid data, the formatted error output clearly highlights the failing nested fields:
 
 ```typescript
+import { Data, Effect } from "effect";
+
+class ParseFailure extends Data.TaggedError("ParseFailure")<{
+  readonly issues: string;
+}> {}
+
+// Declared helper for demonstration
+declare const parseTodo: (input: unknown) => Effect.Effect<any, ParseFailure>;
+
 const badInput: unknown = {
   id: "not-a-number",
   title: "Write docs",

@@ -24,6 +24,19 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 In standard JavaScript and TypeScript, exceptions thrown synchronously or rejected asynchronously via `Promise` are completely untyped:
 
 ```typescript
+interface User {
+  id: string;
+  name: string;
+}
+
+class NotFoundError extends Error {
+  constructor(id: string) {
+    super(`User not found: ${id}`);
+  }
+}
+
+declare const fetchUser: (id: string) => Promise<User>;
+
 // Standard TS: The return type is Promise<User>, but it might throw anything at runtime!
 async function getUser(id: string): Promise<User> {
   if (id === "missing") {
@@ -38,7 +51,14 @@ Any calling code has to wrap the call in a generic `try/catch` block where the e
 Effect solves this by elevating expected errors into a dedicated, type-checked **error channel `E`** in the triple `Effect<SuccessType, ErrorType, Requirements>`:
 
 ```typescript
-import { Effect } from "effect";
+import { Data, Effect } from "effect";
+
+interface User {
+  id: string;
+  name: string;
+}
+class NotFoundError extends Data.TaggedError("NotFoundError")<{}> {}
+class NetworkError extends Data.TaggedError("NetworkError")<{}> {}
 
 // Effect TS: The signature declares BOTH success and failure channels!
 declare const getUser: (id: string) => Effect.Effect<User, NotFoundError | NetworkError>;

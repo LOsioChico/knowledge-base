@@ -231,10 +231,10 @@ If `instanceof YourEntity` would be `false` at the `return`, wrap with `plainToI
 | Source | What you get | `@Exclude()` works? | Fix |
 | --- | --- | :---: | --- |
 | TypeORM `@Entity()` `findOne` | Class instance | ✅ | None |
-| Prisma `findUnique` | Plain object | ❌ | `plainToInstance(UserEntity, user)` |
-| Mongoose `.lean()` | Plain object | ❌ | `plainToInstance(UserEntity, doc)` |
-| Raw SQL / `dataSource.query` | Plain row | ❌ | `plainToInstance(UserEntity, row)` |
-| External `fetch()` JSON | Plain object | ❌ | `plainToInstance(UserEntity, body)` |
+| Prisma `findUnique` | Plain object | ❌ | [`plainToInstance`](#expose--excludeall-opt-in)`(UserEntity, user)` |
+| Mongoose `.lean()` | Plain object | ❌ | [`plainToInstance`](#expose--excludeall-opt-in)`(UserEntity, doc)` |
+| Raw SQL / `dataSource.query` | Plain row | ❌ | [`plainToInstance`](#expose--excludeall-opt-in)`(UserEntity, row)` |
+| External `fetch()` JSON | Plain object | ❌ | [`plainToInstance`](#expose--excludeall-opt-in)`(UserEntity, body)` |
 
 Arrays: `return rows.map((r) => plainToInstance(UserEntity, r))`.
 

@@ -17,7 +17,7 @@ When developers think of "file upload," they usually think of a browser sending 
 
 ### Architectural Comparison
 
-| Metric | Tier 1: Local Multer (RAM/Disk) | Tier 2: Stream-to-Cloud Middleware | Tier 3: Direct S3 Presigned PUT |
+| Metric | [Tier 1: Local Multer (RAM/Disk)](#the-three-architectural-tiers) | [Tier 2: Stream-to-Cloud Middleware](#the-three-architectural-tiers) | [Tier 3: Direct S3 Presigned PUT](#the-three-architectural-tiers) |
 | :--- | :--- | :--- | :--- |
 | **RAM Impact** | High (N × File Size) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
 | **Disk Lifetime** | Ephemeral (Lost on restart) | **Cloud-Safe** (Saves directly) | **Cloud-Safe** (Saves directly) |
@@ -133,6 +133,12 @@ When developers think of "file upload," they usually think of a browser sending 
     import { S3Client } from "@aws-sdk/client-s3";
     import * as multerS3 from "multer-s3";
 
+    // Extend Express.Multer.File to capture S3-specific metadata
+    interface MulterS3File extends Express.Multer.File {
+      key: string;
+      location: string;
+    }
+
     // Initialize the AWS S3 client
     const s3Client = new S3Client({ region: "us-east-1" });
 
@@ -155,7 +161,7 @@ When developers think of "file upload," they usually think of a browser sending 
           }),
         }),
       )
-      uploadStream(@UploadedFile() file: any) {
+      uploadStream(@UploadedFile() file: MulterS3File) {
         // file.location is injected by the multerS3 engine pointing to the final S3 URL.
         // file.buffer is completely undefined because the bytes were streamed, not buffered in RAM.
         return {
