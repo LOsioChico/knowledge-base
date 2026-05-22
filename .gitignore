@@ -23,3 +23,7 @@ merged-public/
 
 # Local experiments (canonical publish app is sites/docs/)
 spikes/
+
+# OpenSpec specifications and changes local cache
+openspec/
+
