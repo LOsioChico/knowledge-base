@@ -25,19 +25,14 @@ IAM is non-optional. The relevant question is which **principal kind**: root (ra
 | **IAM user**   | Yes                     | Avoid; humans federate via IAM Identity Center                                |
 | **IAM role**   | No (STS short-lived)    | EC2/ECS/[Lambda](/knowledge-base/aws/lambda/) roles; cross-account AssumeRole |
 
-## Deep dives
-
-| Topic             | Start here                                                                                                                                               |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Policy evaluation | [IAM policy evaluation](/knowledge-base/aws/iam/policy-evaluation/): explicit deny, guardrail policies, simulator diagnostics, and `AccessDenied` triage |
-
 ## Pending notes
 
-- Confused-deputy defense with `ExternalId`: [[aws/recipes/cross-account-role-pattern|cross-account pattern]].
+- Permission boundaries and session policies.
+- Service-linked roles and service principal control.
 
 ## See also
 
-- [[aws/iam/policy-evaluation|IAM policy evaluation]]: why an API call is allowed or denied.
+- [[aws/iam/policy-evaluation|IAM policy evaluation]]: explicit deny, guardrail policies, and `AccessDenied` triage.
 - [[aws/iam/cli|IAM CLI cheatsheet]]: read-only triage for `AccessDenied`.
-- [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]].
+- [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]]: trust policy + `ExternalId` confused-deputy defense.
 - [IAM user guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction.html) (official).

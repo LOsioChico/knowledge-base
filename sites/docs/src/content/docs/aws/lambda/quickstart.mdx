@@ -1,0 +1,142 @@
+---
+title: Lambda quickstart
+description: "Ten-minute Lambda walkthrough: package a function, deploy via CLI, invoke, and clean up."
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> CLI walkthrough: write a Node.js function, create an execution role, zip the bundle, deploy, invoke, and clean up. No console clicks.
+
+## Before you start
+
+- AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:
+
+  ```bash
+  aws --profile <name> sts get-caller-identity
+  ```
+
+Shared variables for every command below:
+
+```bash
+export AWS_PROFILE=<your-profile>
+export REGION=us-east-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ROLE_NAME=quickstart-lambda-role-${ACCOUNT_ID}
+export FUNCTION_NAME=quickstart-lambda-${ACCOUNT_ID}
+```
+
+## 1. Create the execution role
+
+A Lambda function needs an execution role to assume. We create a basic trust policy allowing the Lambda service to assume the role, and attach the basic execution policy so it can write logs to CloudWatch:
+
+```bash
+# 1. Create trust policy file
+cat << 'EOF' > trust-policy.json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+
+# 2. Create IAM role
+aws iam create-role --role-name "$ROLE_NAME" \
+  --assume-role-policy-document file://trust-policy.json
+
+# 3. Attach basic execution policy
+aws iam attach-role-policy --role-name "$ROLE_NAME" \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+```
+
+<Aside type="caution" title="IAM replication takes time">
+IAM role creation is eventually consistent across global AWS regions. You must wait a few seconds (typically 5 to 10 seconds) for the role to replicate before calling `create-function`, or the deployment will fail with an `InvalidParameterValueException`:
+
+```bash
+sleep 10
+```
+</Aside>
+
+## 2. Package the handler
+
+Write a simple ESM Node.js handler (`index.mjs`) returning a mocked HTTP response, and package it into a standard zip archive:
+
+```bash
+cat << 'EOF' > index.mjs
+export const handler = async (event) => {
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: "Hello from Lambda!" })
+  };
+};
+EOF
+
+zip function.zip index.mjs
+```
+
+## 3. Deploy the function
+
+Upload the zip archive using the command below. Note that we must use the `fileb://` prefix to pass binary contents to the `--zip-file` flag:
+
+```bash
+aws lambda create-function \
+  --function-name "$FUNCTION_NAME" \
+  --runtime nodejs20.x \
+  --role "arn:aws:iam::${ACCOUNT_ID}:role/${ROLE_NAME}" \
+  --handler index.handler \
+  --zip-file fileb://function.zip \
+  --region "$REGION"
+```
+
+<Aside type="tip" title="Use fileb:// for binary data">
+The standard `file://` prefix tells the AWS CLI to parse the target file as text (e.g. JSON). You must specify `fileb://` (file binary) to transmit the raw zipped bytes.
+</Aside>
+
+## 4. Invoke the function
+
+Execute the function synchronously and write the response to a local file. We pass the `--cli-binary-format raw-in-base64-out` flag to send raw JSON payload arguments (required in AWS CLI v2):
+
+```bash
+aws lambda invoke \
+  --function-name "$FUNCTION_NAME" \
+  --payload '{"key": "value"}' \
+  --cli-binary-format raw-in-base64-out \
+  --region "$REGION" \
+  response.json
+
+cat response.json
+# Output:
+# {
+#   "statusCode": 200,
+#   "headers": { "Content-Type": "application/json" },
+#   "body": "{\"message\":\"Hello from Lambda!\"}"
+# }
+```
+
+## 5. Clean up
+
+Tear down all resources created during this walkthrough:
+
+```bash
+aws lambda delete-function --function-name "$FUNCTION_NAME" --region "$REGION"
+
+aws iam detach-role-policy --role-name "$ROLE_NAME" \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+aws iam delete-role --role-name "$ROLE_NAME"
+
+rm trust-policy.json index.mjs function.zip response.json
+```
+
+## Where to go next
+
+- [[aws/lambda|Lambda concept note]]: function configuration, event mapping, triggers, and cold starts.
+- [[aws/lambda/cli|Lambda CLI cheatsheet]]: updating function code and environment variables.
+- [AWS Lambda developer guide](https://docs.aws.amazon.com/lambda/latest/dg/welcome.html) (official).

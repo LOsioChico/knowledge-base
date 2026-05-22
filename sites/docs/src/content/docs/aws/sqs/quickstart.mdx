@@ -1,0 +1,118 @@
+---
+title: SQS quickstart
+description: "Ten-minute SQS walkthrough: create a queue, send a message, consume it, and clean up."
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> CLI walkthrough: stand up a standard SQS queue, send a message payload, pull/receive, delete message, and clean up. No console clicks.
+
+## Before you start
+
+- AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:
+
+  ```bash
+  aws --profile <name> sts get-caller-identity
+  ```
+
+Shared variables for every command below:
+
+```bash
+export AWS_PROFILE=<your-profile>
+export REGION=us-east-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export QUEUE_NAME=quickstart-queue-${ACCOUNT_ID}
+```
+
+## 1. Create the queue
+
+We initialize a standard SQS queue with an explicit visibility timeout of 30 seconds. Standard queues offer maximum throughput and best-effort ordering:
+
+```bash
+aws sqs create-queue \
+  --queue-name "$QUEUE_NAME" \
+  --attributes VisibilityTimeout=30 \
+  --region "$REGION"
+```
+
+The CLI returns a JSON payload containing the unique `QueueUrl`. Store this URL programmatically in a variable so it can be referenced in all subsequent commands:
+
+```bash
+export QUEUE_URL=$(aws sqs get-queue-url --queue-name "$QUEUE_NAME" --query QueueUrl --output text --region "$REGION")
+
+echo "$QUEUE_URL"
+# Output:
+# https://sqs.us-east-1.amazonaws.com/123456789012/quickstart-queue-123456789012
+```
+
+## 2. Send a message
+
+Push a structured JSON transaction event payload onto the queue using the high-level `send-message` command:
+
+```bash
+aws sqs send-message \
+  --queue-url "$QUEUE_URL" \
+  --message-body '{"event": "ORDER_CREATED", "orderId": 1024}' \
+  --region "$REGION"
+```
+
+The command returns a `MessageId` and a MD5 checksum of the body, validating that the queue successfully ingested the message.
+
+## 3. Receive the message
+
+Pull messages from the queue. SQS is a pull-based service, meaning consumers must invoke `receive-message` to retrieve available payloads:
+
+```bash
+aws sqs receive-message \
+  --queue-url "$QUEUE_URL" \
+  --region "$REGION"
+```
+
+Expected JSON response:
+
+```json
+{
+    "Messages": [
+        {
+            "MessageId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+            "ReceiptHandle": "AQEBwJGYu...very-long-base64-string...",
+            "MD5OfBody": "9e107d9d372bb6826bd81d3542a419d6",
+            "Body": "{\"event\": \"ORDER_CREATED\", \"orderId\": 1024}"
+        }
+    ]
+}
+```
+
+<Aside type="caution" title="Visibility timeout hides the message">
+When a message is received, SQS starts the **Visibility Timeout** clock (30 seconds in our setup). During this period, the message is hidden from all other consumers pulling from the queue. If you do not delete the message before the timeout expires, SQS assumes the consumer failed, and the message automatically reappears in the queue.
+</Aside>
+
+## 4. Acknowledge (delete) the message
+
+To confirm successful processing and prevent other consumers from receiving the message again after the visibility timeout expires, you must delete it using its unique `ReceiptHandle`:
+
+```bash
+# 1. Retrieve the latest ReceiptHandle programmatically
+export RECEIPT_HANDLE=$(aws sqs receive-message --queue-url "$QUEUE_URL" \
+  --query "Messages[0].ReceiptHandle" --output text --region "$REGION")
+
+# 2. Delete the message
+aws sqs delete-message \
+  --queue-url "$QUEUE_URL" \
+  --receipt-handle "$RECEIPT_HANDLE" \
+  --region "$REGION"
+```
+
+## 5. Clean up
+
+Tear down the queue to delete all remaining/pending messages and release resources:
+
+```bash
+aws sqs delete-queue --queue-url "$QUEUE_URL" --region "$REGION"
+```
+
+## Where to go next
+
+- [[aws/sqs|SQS concept note]]: Standard vs FIFO, dead-letter queues, and Lambda event sources.
+- [[aws/sns|SNS index page]]: Pub/sub messaging commonly fanned out to multiple SQS queues.
+- [Amazon SQS developer guide](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html) (official).
