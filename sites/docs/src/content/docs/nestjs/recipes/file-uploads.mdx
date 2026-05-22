@@ -1,239 +1,327 @@
 ---
-title: File uploads with Multer
-description: Accept multipart uploads on Express, validate size and mime-type with ParseFilePipeBuilder, and avoid proxy and memory pitfalls.
+title: "File uploads: Local, Streaming, and Direct Cloud"
+description: Accept multipart form-data uploads, prevent memory exhaustion and ephemeral disk loss gotchas, stream directly to cloud storage, and implement secure direct S3 presigned PUT uploads.
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Accept `multipart/form-data` in a NestJS controller, validate size and mime-type, and reject anything sketchy. Express adapter only; on Fastify use [`@fastify/multipart`](https://github.com/fastify/fastify-multipart) instead.
+> Composing secure, high-performance file uploads in NestJS. We contrast traditional local buffering against modern cloud-native streaming and direct-to-cloud presigned uploads to protect API event loops from RAM starvation and Ephemeral Disk loss.
 
-## When to reach for it
+## The Cloud-Native Upload Dilemma
 
-- You need a file field on a form, not JSON in `@Body()`.
-- Callers might rename executables as `.jpg`: you want magic-number checks, not client `Content-Type`.
-- Uploads work locally but fail behind nginx with `413` before Nest sees the request.
-- You're on Fastify and `FileInterceptor` does nothing (wrong platform package).
+When developers think of "file upload," they usually think of a browser sending raw bytes to NestJS, which buffers the file and saves it locally. However, in modern containerized (Docker, Kubernetes) or serverless (AWS ECS, Lambda) environments, this simple approach introduces severe production bottlenecks:
+
+1. **Ephemeral Local Disk**: Cloud containers have ephemeral filesystems. If a container restarts or autoscales, files written to local disk (like `/tmp` or `./uploads`) disappear forever.
+2. **RAM Exhaustion & Out-Of-Memory (OOM) Crashes**: Standard in-memory Multer buffering stores the entire file in RAM. If $10$ users simultaneously upload $100\text{ MB}$ files, the server consumes an extra $1\text{ GB}$ of RAM. Under load, this triggers an immediate OOM crash.
+3. **Event Loop & Bandwidth Saturation**: Streaming heavy binary payloads directly through a single-threaded Node.js API process blocks the CPU event loop, degrading the response time for all other API consumers.
+
+### Architectural Comparison
+
+| Metric | Tier 1: Local Multer (RAM/Disk) | Tier 2: Stream-to-Cloud Middleware | Tier 3: Direct S3 Presigned PUT |
+| :--- | :--- | :--- | :--- |
+| **RAM Impact** | High ($N \times \text{FileSize}$) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
+| **Disk Lifetime** | Ephemeral (Lost on restart) | **Cloud-Safe** (Saves directly) | **Cloud-Safe** (Saves directly) |
+| **Bandwidth Cost** | Heavy (Server routes raw bytes) | Heavy (Server routes raw bytes) | **Zero** (Saves directly from client) |
+| **File Validation** | High (Magic-number support) | Harder (Needs inline parsing) | Pre-validated via signed POST policy |
+| **Best Used For** | Small files, local admin tools | Dynamic zip creation, virus scans | **Production gold standard** |
+
+---
 
 ## Setup
 
 <Steps>
 
-1. Install Multer types (runtime ships with Express platform):
+1. Install Multer typings (the Express platform adapter includes the runtime dependency; only typescript types are needed):
 
    ```bash
    npm i -D @types/multer
    ```
 
-   `multer` is a direct dependency of [`@nestjs/platform-express`](https://github.com/nestjs/nest/blob/master/packages/platform-express/package.json); only the types are missing.
+2. To support Tier 2 (S3 streaming) or Tier 3 (direct presigned URLs), install the AWS SDK v3 client and helper packages:
 
-2. Add a controller with `FileInterceptor` (next section).
-
-3. For production routes, add `ParseFilePipeBuilder` validators (section below) and module-level `MulterModule` limits.
+   ```bash
+   npm i @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/lib-storage multer-s3
+   ```
 
 </Steps>
 
-## Single file
+---
 
-```typescript
-import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
-
-@Controller("uploads")
-export class UploadsController {
-  @Post()
-  @UseInterceptors(FileInterceptor("file"))
-  upload(@UploadedFile() file: Express.Multer.File) {
-    return { name: file.originalname, size: file.size, mime: file.mimetype };
-  }
-}
-```
-
-`FileInterceptor("file")` is a built-in [[nestjs/fundamentals/interceptors|interceptor]] that reads the field named `file`. Change the string to match your form field.
-
-Request:
-
-```bash
-curl -F file=@logo.png http://localhost:3000/uploads
-```
-
-Response:
-
-```json
-{ "name": "logo.png", "size": 24580, "mime": "image/png" }
-```
-
-## Uploaded file checks
-
-For body/query DTOs, use the [[nestjs/recipes/validation|validation recipe]]. For uploaded files, use `ParseFilePipeBuilder`: it composes validators and returns a clean error when something fails.
-
-```typescript
-import {
-  Controller,
-  HttpStatus,
-  ParseFilePipeBuilder,
-  Post,
-  UploadedFile,
-  UseInterceptors,
-} from "@nestjs/common";
-import { FileInterceptor } from "@nestjs/platform-express";
-
-@Controller("uploads")
-export class UploadsController {
-  @Post()
-  @UseInterceptors(FileInterceptor("file"))
-  upload(
-    @UploadedFile(
-      new ParseFilePipeBuilder()
-        .addFileTypeValidator({ fileType: /^(image\/jpeg|image\/png)$/ })
-        .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
-        .build({
-          errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-          fileIsRequired: true,
-        }),
-    )
-    file: Express.Multer.File,
-  ) {
-    return file.originalname;
-  }
-}
-```
-
-| Builder method                       | What it checks                                                                                                            |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| `addFileTypeValidator({ fileType })` | Mime-type via the file's magic number, not the client header. String or `RegExp`; [example above](#uploaded-file-checks). |
-| `addMaxSizeValidator({ maxSize })`   | Bytes; [example above](#uploaded-file-checks). Multer also enforces a hard cap (see module defaults).                     |
-| `.build({ fileIsRequired: false })`  | Makes the upload optional. Default is required.                                                                           |
-
-12 MB PDF on that route:
-
-```bash
-curl -F file=@huge-report.pdf http://localhost:3000/uploads
-```
-
-`422 Unprocessable Entity` (when the file has a detectable `mimetype`, Nest includes actual vs expected):
-
-```json
-{
-  "statusCode": 422,
-  "message": "Validation failed (current file type is application/pdf, expected type is /^(image\\/jpeg|image\\/png)$/)",
-  "error": "Unprocessable Entity"
-}
-```
-
-The shorter `Validation failed (expected type is …)` form appears when the validator cannot read a `mimetype` (missing file or no detectable type).
-
-<Aside type="caution" title="Magic-number check needs the file buffer">
-
-`addFileTypeValidator` reads leading bytes from `file.buffer`, not the `Content-Type` header. Trusting the header alone lets a renamed `.exe` reach disk under a `.jpg` name, but disk storage removes the buffer before Nest's pipe sees the file. Keep validation in memory for this route, validate before moving to disk, or use a custom scanner for disk-backed uploads.
-
-</Aside>
-
-## Multiple files
-
-| Decorator                                     | When                                               |
-| --------------------------------------------- | -------------------------------------------------- |
-| `FilesInterceptor("files", maxCount?, opts?)` | Same field name, array. Use `@UploadedFiles()`.    |
-| `FileFieldsInterceptor([{ name, maxCount }])` | Different field names (e.g. `avatar` and `cover`). |
-| `AnyFilesInterceptor()`                       | Accept anything. Use sparingly.                    |
-| `NoFilesInterceptor()`                        | Multipart text fields only; reject any file.       |
-
-## Module-level defaults
-
-Set caps once so every route inherits them:
-
-```typescript
-import { Module } from "@nestjs/common";
-import { MulterModule } from "@nestjs/platform-express";
-
-@Module({
-  imports: [
-    MulterModule.register({
-      limits: {
-        fileSize: 10 * 1024 * 1024,
-        files: 5,
-      },
-    }),
-  ],
-})
-export class AppModule {}
-```
-
-Env-driven config: use [[nestjs/recipes/configuration|Configuration with @nestjs/config]] so upload limits come from the same validated settings as the rest of the app.
-
-```typescript
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { MulterModule } from "@nestjs/platform-express";
-
-MulterModule.registerAsync({
-  imports: [ConfigModule],
-  inject: [ConfigService],
-  useFactory: (config: ConfigService) => ({
-    limits: { fileSize: config.get<number>("UPLOAD_MAX_BYTES") },
-  }),
-});
-```
-
-## Where the bytes go
+## The Three Architectural Tiers
 
 <Tabs>
-  <TabItem label="Memory (default)">
-    Multer keeps the file in `file.buffer` ([MemoryStorage](https://github.com/expressjs/multer#memorystorage)). Fine for small files you stream to S3 immediately.
+  <TabItem label="Tier 1: Local Multer & Pipe Validation">
+    ### Standard Multipart Upload with Magic-Number Check
+    
+    Use this tier only for small files where NestJS serves as the final storage controller. To secure your app against hackers renaming an executable (`malicious.exe` to `safe.jpg`), use a `ParseFilePipeBuilder` to run **magic-number validation** (inspecting the actual binary header bytes of the file, rather than trusting the client-supplied `Content-Type` header).
 
-    <Aside type="note" title="RAM scales with concurrency">
+    ```typescript
+    import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFilePipeBuilder } from "@nestjs/common";
+    import { FileInterceptor } from "@nestjs/platform-express";
 
-    Default storage holds the whole file in memory. One 1 GB upload pins 1 GB until the request ends; ten concurrent uploads pin ten. Use disk storage or stream to object storage for large files.
+    @Controller("uploads")
+    export class LocalUploadsController {
+      @Post("local")
+      @UseInterceptors(FileInterceptor("file"))
+      uploadLocal(
+        @UploadedFile(
+          new ParseFilePipeBuilder()
+            // Checks the first few bytes (magic numbers) of the file buffer
+            // to ensure it matches a real JPEG or PNG.
+            .addFileTypeValidator({ fileType: /^(image\/jpeg|image\/png)$/ })
+            // Hard limit of 5 MB to prevent server RAM saturation
+            .addMaxSizeValidator({ maxSize: 5 * 1024 * 1024 })
+            .build({
+              errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+              fileIsRequired: true,
+            }),
+        )
+        file: Express.Multer.File,
+      ) {
+        // file.buffer contains the binary payload. If validation fails,
+        // NestJS throws a 422 Unprocessable Entity and skips this handler.
+        return {
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          sizeBytes: file.size,
+        };
+      }
+    }
+    ```
 
+    #### Show, Don't Tell: Local Upload Payload
+
+    **Request:**
+    ```bash
+    curl -i -X POST -F file=@logo.png http://localhost:3000/uploads/local
+    ```
+
+    **Successful Response (HTTP 201):**
+    ```json
+    {
+      "originalName": "logo.png",
+      "mimeType": "image/png",
+      "sizeBytes": 24580
+    }
+    ```
+
+    **Failed Validation Response (HTTP 422 - e.g. a PDF uploaded):**
+    ```json
+    {
+      "statusCode": 422,
+      "message": "Validation failed (current file type is application/pdf, expected type is /^(image\\/jpeg|image\\/png)$/)",
+      "error": "Unprocessable Entity"
+    }
+    ```
+
+    <Aside type="caution" title="Magic-number validation requires file.buffer">
+      `addFileTypeValidator` scans the binary stream inside `file.buffer`. If you configure Multer to write directly to disk, the file is streamed out before the pipeline's [[nestjs/fundamentals/pipes|pipe]] runs, making `file.buffer` undefined and breaking this validator. Keep uploads in memory or write a custom validator if using disk storage.
     </Aside>
 
   </TabItem>
-  <TabItem label="Disk">
-    ```typescript
-    import { MulterModule } from "@nestjs/platform-express";
-    import { diskStorage } from "multer";
 
-    MulterModule.register({
-      storage: diskStorage({
-        destination: "./uploads",
-        filename: (_req, file, cb) =>
-          cb(null, `${Date.now()}-${file.originalname}`),
-      }),
-    });
+  <TabItem label="Tier 2: Stream-to-Cloud Middleware">
+    ### Bypassing RAM Buffering using S3 Streaming
+    
+    When NestJS *must* intercept the file, such as to authorize the user via a [[nestjs/fundamentals/guards|guard]], scan it for viruses, or perform on-the-fly zip creation, avoid buffering the whole file in RAM by using a streaming storage adapter.
+    
+    The code below configures `multer-s3` so that incoming chunks are piped directly to S3 as they arrive on the network socket. NestJS never keeps more than a small chunk buffer in memory.
+
+    ```typescript
+    import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+    import { FileInterceptor } from "@nestjs/platform-express";
+    import { S3Client } from "@aws-sdk/client-s3";
+    import * as multerS3 from "multer-s3";
+
+    // Initialize the AWS S3 client
+    const s3Client = new S3Client({ region: "us-east-1" });
+
+    @Controller("uploads")
+    export class StreamingUploadsController {
+      @Post("stream")
+      @UseInterceptors(
+        FileInterceptor("file", {
+          storage: multerS3({
+            s3: s3Client,
+            bucket: "my-production-bucket",
+            metadata: (_req, file, cb) => {
+              // Custom metadata saved alongside the object in S3
+              cb(null, { fieldName: file.fieldname });
+            },
+            key: (_req, file, cb) => {
+              // Generates a unique, collision-proof filename key
+              cb(null, `uploads/${Date.now()}-${file.originalname}`);
+            },
+          }),
+        }),
+      )
+      uploadStream(@UploadedFile() file: any) {
+        // file.location is injected by the multerS3 engine pointing to the final S3 URL.
+        // file.buffer is completely undefined because the bytes were streamed, not buffered in RAM.
+        return {
+          fileName: file.key,
+          cloudUrl: file.location,
+        };
+      }
+    }
     ```
 
-    With disk storage `file.buffer` is `undefined` and `file.path` points at the saved file ([DiskStorage](https://github.com/expressjs/multer#diskstorage)). Built-in magic-number validation needs the buffer, so disk-backed upload routes need an earlier validation step or a custom scanner.
+    #### Show, Don't Tell: Streaming Upload Payload
+
+    **Request:**
+    ```bash
+    curl -i -X POST -F file=@avatar.jpg http://localhost:3000/uploads/stream
+    ```
+
+    **Successful Response (HTTP 201):**
+    ```json
+    {
+      "fileName": "uploads/1716335900-avatar.jpg",
+      "cloudUrl": "https://my-production-bucket.s3.amazonaws.com/uploads/1716335900-avatar.jpg"
+    }
+    ```
+
+  </TabItem>
+
+  <TabItem label="Tier 3: Direct-to-S3 Presigned URLs">
+    ### The Production Gold Standard
+    
+    The most secure, performant, and scalable way to upload files in modern cloud architectures is **Direct-to-S3 uploading**. 
+    
+    Rather than uploading files *through* NestJS, the client makes a fast metadata request to NestJS. NestJS uses the [[nestjs/recipes/configuration|ConfigService]] to verify authorization and generates a temporary, secure **presigned PUT URL**. The client then uploads the raw file bytes directly to Amazon S3. 
+    
+    *NestJS never touches the file bytes!* This frees up 100% of your server's RAM and network bandwidth.
+
+    ```typescript
+    import { Controller, Post, Body, Injectable } from "@nestjs/common";
+    import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+    import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+    import { IsString, IsNotEmpty, Matches } from "class-validator";
+
+    // Request DTO to validate the incoming file metadata
+    export class GeneratePresignedUrlDto {
+      @IsString()
+      @IsNotEmpty()
+      fileName: string;
+
+      @IsString()
+      @IsNotEmpty()
+      @Matches(/^(image\/jpeg|image\/png|application\/pdf)$/, {
+        message: "Only JPEG, PNG, and PDF files are allowed.",
+      })
+      contentType: string;
+    }
+
+    @Injectable()
+    export class S3SignerService {
+      // S3Client is configured using standard IAM environment variables.
+      // For dynamic, multi-instance setups (like public vs private buckets),
+      // inject a custom dynamic module instead.
+      private readonly s3 = new S3Client({ region: "us-east-1" });
+      private readonly bucketName = "my-production-bucket";
+
+      async createUploadUrl(fileName: string, contentType: string): Promise<string> {
+        const uniqueKey = `uploads/${Date.now()}-${fileName}`;
+        const command = new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: uniqueKey,
+          ContentType: contentType,
+        });
+
+        // Generates a time-limited secure URL. The signature is derived from
+        // the server's IAM credentials, so the client does not need AWS credentials.
+        return getSignedUrl(this.s3, command, { expiresIn: 900 }); // Expires in 15 mins
+      }
+    }
+
+    @Controller("uploads")
+    export class PresignController {
+      constructor(private readonly signerService: S3SignerService) {}
+
+      @Post("presign")
+      async generateUrl(@Body() body: GeneratePresignedUrlDto) {
+        // Enforces strict class-validator DTO check first
+        const uploadUrl = await this.signerService.createUploadUrl(
+          body.fileName,
+          body.contentType,
+        );
+        
+        return { uploadUrl };
+      }
+    }
+    ```
+
+    #### Show, Don't Tell: Presigned URL Generation & PUT Payload
+
+    **Step 1: Request a Presigned URL from NestJS**
+    
+    ```bash
+    curl -i -X POST \
+      -H "Content-Type: application/json" \
+      -d '{"fileName": "invoice.pdf", "contentType": "application/pdf"}' \
+      http://localhost:3000/uploads/presign
+    ```
+
+    **Response (HTTP 201 - contains the signed endpoint):**
+    ```json
+    {
+      "uploadUrl": "https://my-production-bucket.s3.amazonaws.com/uploads/1716335900-invoice.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20260522%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260522T032200Z&X-Amz-Expires=900&X-Amz-SignedHeaders=host&X-Amz-Signature=8f5b..."
+    }
+    ```
+
+    **Step 2: Upload the File directly from the Client to AWS S3**
+    
+    Using the returned `uploadUrl`, the client performs a standard HTTP PUT request. Note that the client must specify the exact `Content-Type` matching the signature:
+    
+    ```bash
+    curl -i -X PUT \
+      -H "Content-Type: application/pdf" \
+      -T invoice.pdf \
+      "https://my-production-bucket.s3.amazonaws.com/uploads/1716335900-invoice.pdf?X-Amz-Algorithm=..."
+    ```
+
+    **S3 Response (HTTP 200 OK):**
+    ```http
+    HTTP/1.1 200 OK
+    Date: Fri, 22 May 2026 03:22:05 GMT
+    ETag: "fb3b7d14..."
+    Content-Length: 0
+    Server: AmazonS3
+    ```
+
+    <Aside type="tip" title="Integrate with Dynamic Modules">
+      If your application needs to connect to multiple S3 buckets depending on the module domain (e.g. public avatars vs. secure private invoices), combine this service with the custom provider pattern outlined in the [[nestjs/recipes/dynamic-modules|Dynamic Modules recipe]].
+    </Aside>
 
   </TabItem>
 </Tabs>
 
+---
+
 ## Gotchas
 
-<Aside type="caution" title="Global ValidationPipe does not see the file">
-
-A global `ValidationPipe` validates `@Body()`, `@Query()`, and `@Param()`: not the `Express.Multer.File` behind `@UploadedFile()`. Multer attaches the file to `req.file` before injection. Validate files with `ParseFilePipe` / `ParseFilePipeBuilder`; validate text fields in the same form with a DTO on `@Body()`.
-
+<Aside type="caution" title="Global ValidationPipe skips files">
+  A global `ValidationPipe` validates `@Body()`, `@Query()`, and `@Param()`, but it **does not inspect** `Express.Multer.File` objects. File validation MUST be handled via `ParseFilePipe` or `ParseFilePipeBuilder`. Validate text inputs in the same form by defining a standard class-validator DTO on `@Body()`.
 </Aside>
 
-<Aside type="caution" title="Reverse-proxy body limit">
-
-nginx defaults to `client_max_body_size 1m`; oversized uploads return `413 Request Entity Too Large` and never reach Nest. Bump the proxy limit to match your Multer cap. ALB, Cloud Run, and Cloudflare impose their own caps: check provider docs.
-
+<Aside type="caution" title="Reverse-Proxy Upload Caps">
+  Nginx defaults to a `client_max_body_size` limit of `1m`. If an upload exceeds this, Nginx returns a `413 Request Entity Too Large` error, and the request **never reaches NestJS**. You must configure Nginx, AWS ALB, or Cloudflare upload limits to match your NestJS Multer configuration size constraints.
 </Aside>
 
-<Aside type="caution" title="Fastify needs a different stack">
-
-`FileInterceptor` lives in `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. Use `@fastify/multipart` and Fastify's request API instead.
-
+<Aside type="caution" title="Fastify requires `@fastify/multipart`">
+  `FileInterceptor` lives in `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. If you are using Fastify, install and register `@fastify/multipart` and use Fastify's native request parsing APIs instead.
 </Aside>
 
-<Aside type="note" title="OpenAPI file picker">
-
-Without `@ApiConsumes("multipart/form-data")` and a body schema with `type: "string", format: "binary"`, Swagger UI's "Try it out" form won't offer a file input. See [File upload (OpenAPI)](https://docs.nestjs.com/openapi/operations#file-upload).
-
+<Aside type="note" title="OpenAPI / Swagger File Pickers">
+  To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a schema with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
 </Aside>
 
-## See also
+---
 
-- [[nestjs/fundamentals/interceptors|Interceptors]]: how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request pipeline]]
-- [[nestjs/fundamentals/pipes|Pipes]]: what `ParseFilePipe` is
-- [[nestjs/recipes/validation|Validation with class-validator]]: DTO fields in the same multipart form
-- [File upload (official)](https://docs.nestjs.com/techniques/file-upload)
+## See Also
+
+- [[nestjs/fundamentals/interceptors|Interceptors]]: how `FileInterceptor` plugs into the [[nestjs/fundamentals/request-lifecycle|request lifecycle]]
+- [[nestjs/fundamentals/pipes|Pipes]]: how `ParseFilePipe` performs input transformation and filtering
+- [[nestjs/recipes/validation|Validation with class-validator]]: validating text fields inside multipart forms
+- [[nestjs/recipes/dynamic-modules|Dynamic Modules]]: setting up dynamic bucket storage configurations
+- [[aws/s3/presigned-urls|S3 Presigned URLs]]: AWS SDK v3 presigned URL limits, safety rules, and details
