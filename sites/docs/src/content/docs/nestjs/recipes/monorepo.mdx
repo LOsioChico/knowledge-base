@@ -1,378 +1,428 @@
 ---
-title: Monorepos with the Nest CLI
-description: nest g app workspace conversion, per-app build/start, concurrently for dev, and @app/* shared libraries.
+title: Monorepos with Turborepo
+description: Build high-performance NestJS monorepos using Turborepo, pnpm workspaces, and cached task pipelines.
+area: nestjs
+status: evergreen
+tags: [type/recipe, tech/aws, tech/typescript]
+related:
+  - "[[nestjs/recipes/serialization]]"
+  - "[[nestjs/fundamentals/request-lifecycle]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Host multiple Nest applications and shared libraries in one repo using the Nest CLI's built-in monorepo mode. No `nx`, no `turborepo`, no extra config: one command (`nest g app`) flips a standard project into a workspace, and `nest g library` lets you share modules across apps via `@app/*` path aliases.
+> Scale multiple NestJS applications and shared libraries in a high-performance monorepo workspace. By combining Turborepo with pnpm workspaces, you eliminate dependency bleed, leverage local and remote build caches, and orchestrate parallel development servers with native task pipelines.
 
-## When to reach for it
+## Why Turborepo over simple scripts
 
-- Two or more Nest services that share auth, DB models, or config.
-- A team that wants one `package.json`, one lint config, one CI pipeline.
-- You're considering `nx` or `turborepo` and want to know what Nest gives you out of the box.
+Standard NestJS monorepo mode shares a single `package.json` file at the root, which forces every microservice to inherit all dependencies. If a single background worker requires a heavy library, every other service in your cluster must download it in its production container.
 
-## When not to
+Turborepo, paired with pnpm workspaces, resolves this dependency bleed by keeping package boundaries strict. It analyzes your dependency graph and accelerates your pipelines:
 
-- Single application, single deploy: stick with standard mode.
-- Multi-language repo (Nest API + Go service): use `nx`, `turborepo`, or `pnpm` workspaces.
-- You need task graphs, remote cache, or affected-only test runs: that's `nx`/`turborepo` territory.
+*   **Scoped dependencies**: Each Nest application and shared library maintains its own `package.json` manifest.
+*   **Pipeline intelligence**: Turborepo schedules builds, tests, and lints in the correct topological order.
+*   **Zero-effort caching**: Unchanged applications skip compiles and tests entirely, resolving instant feedback loops.
+*   **Native dev servers**: Replaces brittle tools with native parallel task execution and clean, color-prefixed logging.
 
-## Setup
+## Monorepo architecture
+
+A standard high-performance NestJS monorepo uses the following structure:
+
+```text
+.
+├── apps/
+│   ├── api/                            # NestJS REST/GraphQL Application
+│   │   ├── src/
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   ├── package.json
+│   │   └── tsconfig.json
+│   └── worker/                         # NestJS Background Worker
+│       ├── src/
+│       │   ├── worker.module.ts
+│       │   └── main.ts
+│       ├── package.json
+│       └── tsconfig.json
+├── packages/                           # Shared Workspace Libraries
+│   └── logger/                         # NestJS Shared Logging Module
+│       ├── src/
+│       │   ├── logger.module.ts
+│       │   ├── logger.service.ts
+│       │   └── index.ts
+│       ├── package.json
+│       └── tsconfig.json
+├── pnpm-workspace.yaml                 # Defines workspace packages
+├── turbo.json                          # Turborepo task pipeline configuration
+├── package.json                        # Root monorepo manifest
+└── tsconfig.json                       # Shared base TypeScript configuration
+```
+
+---
+
+## Setup walkthrough
 
 <Steps>
 
-1. **Scaffold a standard project**
+1.  **Initialize the workspace**
 
-   ```bash
-   npm i -g @nestjs/cli@latest
-   nest new my-app
-   cd my-app
-   ```
+    Create a new directory and initialize a workspace using pnpm, which is highly recommended for its symlink speed and strict dependency checks:
 
-   Single-project layout: `src/`, `test/`, `package.json`, `nest-cli.json`.
+    ```bash
+    mkdir nest-turbo-workspace
+    cd nest-turbo-workspace
+    pnpm init
+    ```
 
-2. **Convert to monorepo**: add a second app:
+    Create the `pnpm-workspace.yaml` file in the root to define your application and package folders:
 
-   ```bash
-   nest g app my-app-2
-   ```
+    ```yaml
+    packages:
+      - "apps/*"
+      - "packages/*"
+    ```
 
-   The schematic moves the original `src/` and `test/` under `apps/<name>/` ([Workspaces](https://docs.nestjs.com/cli/monorepo#workspaces)):
+2.  **Configure shared base configurations**
 
-   ```text
-   .
-   ├── apps/
-   │   ├── my-app/                          # MOVED: was the project root
-   │   │   ├── src/                         # MOVED from ./src (files keep app.* prefix)
-   │   │   │   ├── app.controller.ts
-   │   │   │   ├── app.controller.spec.ts
-   │   │   │   ├── app.module.ts
-   │   │   │   ├── app.service.ts
-   │   │   │   └── main.ts
-   │   │   ├── test/                        # MOVED from ./test
-   │   │   │   ├── app.e2e-spec.ts
-   │   │   │   └── jest-e2e.json
-   │   │   └── tsconfig.app.json            # NEW: extends root tsconfig.json
-   │   └── my-app-2/                        # NEW: filenames use my-app-2.*
-   │       ├── src/
-   │       │   ├── my-app-2.controller.ts
-   │       │   ├── my-app-2.controller.spec.ts
-   │       │   ├── my-app-2.module.ts
-   │       │   ├── my-app-2.service.ts
-   │       │   └── main.ts
-   │       ├── test/
-   │       │   ├── app.e2e-spec.ts
-   │       │   └── jest-e2e.json
-   │       └── tsconfig.app.json
-   ├── nest-cli.json                        # CHANGED: "monorepo": true
-   ├── package.json                         # unchanged (shared)
-   ├── tsconfig.json                        # unchanged (root)
-   ├── tsconfig.build.json
-   ├── eslint.config.mjs
-   ├── .prettierrc
-   ├── .gitignore
-   └── README.md
-   ```
+    Define a shared base `tsconfig.json` at the root that both applications and packages can extend to ensure compiler alignment:
 
-   The first app keeps `app.*` filenames; the second uses `my-app-2.*`: not a typo.
+    ```json
+    {
+      "compilerOptions": {
+        "module": "commonjs",
+        "declaration": true,
+        "removeComments": true,
+        "emitDecoratorMetadata": true,
+        "experimentalDecorators": true,
+        "allowSyntheticDefaultImports": true,
+        "target": "es2021",
+        "sourceMap": true,
+        "incremental": true,
+        "skipLibCheck": true,
+        "strictNullChecks": true,
+        "noImplicitAny": true,
+        "strictBindCallApply": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true
+      }
+    }
+    ```
 
-   After conversion, `nest-cli.json` looks roughly like:
+3.  **Scaffold a shared library**
 
-   ```jsonc
-   {
-   "collection": "@nestjs/schematics",
-   "sourceRoot": "apps/my-app/src",
-   "monorepo": true,
-   "root": "apps/my-app",
-   "compilerOptions": {
-   "webpack": true,
-   "tsConfigPath": "apps/my-app/tsconfig.app.json"
-   },
-   "projects": {
-   "my-app": {
-   "type": "application",
-   "root": "apps/my-app",
-   "entryFile": "main",
-   "sourceRoot": "apps/my-app/src",
-   "compilerOptions": { "tsConfigPath": "apps/my-app/tsconfig.app.json" }
-   },
-   "my-app-2": {
-   "type": "application",
-   "root": "apps/my-app-2",
-   "entryFile": "main",
-   "sourceRoot": "apps/my-app-2/src",
-   "compilerOptions": { "tsConfigPath": "apps/my-app-2/tsconfig.app.json" }
-   }
-   }
-   }
-   ```
+    Create the shared logger package inside `packages/logger/`:
 
-   - `"webpack": true` is the monorepo default ([specified compiler](https://docs.nestjs.com/cli/monorepo#specified-compiler)); flip to `tsc` or `swc` via `builder` if you prefer not to bundle.
-   - Top-level `"root"` is the **default project** for commands without a name.
+    ```bash
+    mkdir -p packages/logger/src
+    ```
 
-   <Aside type="caution" title="Both apps default to port 3000">
+    Create the shared logger's `packages/logger/package.json` manifest:
 
-   `nest g app` does not auto-increment ports. Boot both at once → `EADDRINUSE :::3000`. Set `process.env.PORT` in `apps/my-app-2/src/main.ts` before you forget.
+    ```json
+    {
+      "name": "@repo/logger",
+      "version": "1.0.0",
+      "main": "dist/index.js",
+      "types": "dist/index.d.ts",
+      "scripts": {
+        "build": "tsc"
+      },
+      "dependencies": {
+        "@nestjs/common": "^11.0.0"
+      },
+      "devDependencies": {
+        "typescript": "^5.0.0"
+      }
+    }
+    ```
 
-   </Aside>
+    Write the library's TypeScript configuration in `packages/logger/tsconfig.json`:
 
-   <Aside type="note" title="Conversion needs canonical layouts">
+    ```json
+    {
+      "extends": "../../tsconfig.json",
+      "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src"
+      },
+      "include": ["src/**/*"]
+    }
+    ```
 
-   The schematic relocates `src/` and `test/`. Custom layouts fail or produce unreliable results. Re-source from `nest new` if yours diverged. [Monorepo mode warning](https://docs.nestjs.com/cli/monorepo#monorepo-mode).
+    Create the module classes:
 
-   </Aside>
+    ```typescript
+    // packages/logger/src/logger.service.ts
+    import { Injectable, Logger } from "@nestjs/common";
 
-3. **Target a specific app**
+    @Injectable()
+    export class SharedLoggerService {
+      private readonly logger = new Logger("SharedWorkspace");
 
-   ```bash
-   nest build              # default project (my-app)
-   nest start
-   nest start --watch
+      logAction(action: string): void {
+        this.logger.log(`Action recorded: ${action}`);
+      }
+    }
+    ```
 
-   nest build my-app-2
-   nest start my-app-2
-   nest start --watch my-app-2
-   ```
+    ```typescript
+    // packages/logger/src/logger.module.ts
+    import { Module } from "@nestjs/common";
+    import { SharedLoggerService } from "./logger.service";
 
-   `dist/` per project:
+    @Module({
+      providers: [SharedLoggerService],
+      exports: [SharedLoggerService],
+    })
+    export class SharedLoggerModule {}
+    ```
 
-   ```text
-   dist/
-   └── apps/
-   ├── my-app/
-   │   └── main.js
-   └── my-app-2/
-   └── main.js
-   ```
+    ```typescript
+    // packages/logger/src/index.ts
+    export * from "./logger.module";
+    export * from "./logger.service";
+    ```
 
-   <Aside type="note" title="package.json scripts target the default only">
+4.  **Create the NestJS application**
 
-   `start`, `start:dev`, `build` from `nest new` still hit the default project. Add per-app scripts (step 4).
+    Scaffold a standard NestJS application under `apps/api/`:
 
-   </Aside>
+    ```bash
+    mkdir -p apps/api/src
+    ```
 
-4. **Run multiple apps in one terminal**: no built-in `start all`; use [`concurrently`](https://github.com/open-cli-tools/concurrently):
+    Define the application's manifest in `apps/api/package.json`. Notice how it explicitly imports our shared workspace module `@repo/logger`:
 
-   ```bash
-   npm i -D concurrently
-   ```
+    ```json
+    {
+      "name": "api",
+      "version": "1.0.0",
+      "scripts": {
+        "build": "nest build",
+        "start:dev": "nest start -w"
+      },
+      "dependencies": {
+        "@nestjs/common": "^11.0.0",
+        "@nestjs/core": "^11.0.0",
+        "@nestjs/platform-express": "^11.0.0",
+        "@repo/logger": "workspace:*",
+        "reflect-metadata": "^0.2.0",
+        "rxjs": "^7.8.0"
+      },
+      "devDependencies": {
+        "@nestjs/cli": "^11.0.0",
+        "@nestjs/schematics": "^11.0.0",
+        "typescript": "^5.0.0"
+      }
+    }
+    ```
 
-   ```json
-   {
-   "scripts": {
-   "start:dev:my-app": "nest start my-app --watch",
-   "start:dev:my-app-2": "nest start my-app-2 --watch",
-   "start:dev": "concurrently -c auto 'npm:start:dev:*'"
-   }
-   }
-   ```
+    Create the standard application Nest config files.
+    
+    ```json
+    // apps/api/tsconfig.json
+    {
+      "extends": "../../tsconfig.json",
+      "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src"
+      },
+      "include": ["src/**/*"]
+    }
+    ```
 
-   ```bash
-   npm run start:dev
-   ```
+    ```json
+    // apps/api/nest-cli.json
+    {
+      "$schema": "https://json.schemastore.org/nest-cli",
+      "collection": "@nestjs/schematics",
+      "sourceRoot": "src",
+      "compilerOptions": {
+        "deleteOutDir": true
+      }
+    }
+    ```
 
-   ```text
-   [my-app] [Nest] LOG [NestApplication] Nest application successfully started
-   [my-app-2] [Nest] LOG [NestApplication] Nest application successfully started
-   [my-app] GET /cats 200 4ms
-   [my-app-2] GET /orders 200 7ms
-   ```
+    Now build the core entrypoint code for `apps/api/src/app.module.ts`:
 
-   `npm:start:dev:*` expands to every matching script ([Command Shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md)). `-c auto` colors prefixes per process.
+    ```typescript
+    // apps/api/src/app.module.ts
+    import { Module } from "@nestjs/common";
+    import { SharedLoggerModule } from "@repo/logger";
 
-   <Tabs>
-     <TabItem label="yarn / pnpm / bun">
-       | Shortcut | Install + run |
-       | --- | --- |
-       | `yarn:start:dev:*` | `yarn add -D concurrently` / `yarn start:dev` |
-       | `pnpm:start:dev:*` | `pnpm add -D concurrently` / `pnpm start:dev` |
-       | `bun:start:dev:*` | `bun add -d concurrently` / `bun run start:dev` |
+    @Module({
+      imports: [SharedLoggerModule],
+    })
+    export class AppModule {}
+    ```
 
-       `nest new -p` accepts only `npm`, `yarn`, `pnpm` ([`PackageManagerFactory`](https://github.com/nestjs/nest-cli/blob/master/lib/package-managers/package-manager.factory.ts#L9-L20)). For bun, scaffold with npm then `bun install`.
-     </TabItem>
-     <TabItem label="-c prefix colors">
-       | Form | Behavior |
-       | --- | --- |
-       | `-c auto` | Distinct color per process |
-       | `-c "cyan.bold,red.bold"` | Explicit list in spawn order |
-       | omitted | Plain `[name]` prefix |
-     </TabItem>
-   </Tabs>
+    ```typescript
+    // apps/api/src/main.ts
+    import { NestFactory } from "@nestjs/core";
+    import { AppModule } from "./app.module";
+    import { SharedLoggerService } from "@repo/logger";
 
-5. **Share code with libraries**
+    async function bootstrap() {
+      const app = await NestFactory.create(AppModule);
+      
+      const logger = app.get(SharedLoggerService);
+      logger.logAction("API server bootstrap complete");
+      
+      await app.listen(3000);
+    }
+    bootstrap();
+    ```
 
-   ```bash
-   nest g library popcorn
-   ```
+5.  **Configure Turborepo pipelines**
 
-   Accept the default prefix `@app`:
+    Now install Turborepo as a root dev dependency:
 
-   ```text
-   libs/
-   └── popcorn/
-   ├── src/
-   │   ├── index.ts                # barrel: what @app/popcorn resolves to
-   │   ├── popcorn.module.ts
-   │   └── popcorn.service.ts
-   └── tsconfig.lib.json
-   ```
+    ```bash
+    pnpm add -wD turbo
+    ```
 
-   Root `tsconfig.json` gains paths:
+    Create a `turbo.json` configuration file at the root of your workspace to model task pipelines:
 
-   ```json
-   {
-   "compilerOptions": {
-   "paths": {
-   "@app/popcorn": ["libs/popcorn/src"],
-   "@app/popcorn/*": ["libs/popcorn/src/*"]
-   }
-   }
-   }
-   ```
+    ```json
+    {
+      "$schema": "https://turbo.build/schema.json",
+      "tasks": {
+        "build": {
+          "dependsOn": ["^build"],
+          "outputs": ["dist/**"]
+        },
+        "start:dev": {
+          "cache": false,
+          "persistent": true
+        }
+      }
+    }
+    ```
 
-   ```typescript
-   // libs/popcorn/src/popcorn.module.ts
-   import { Module } from "@nestjs/common";
-   import { PopcornService } from "./popcorn.service";
+    *   **`dependsOn: ["^build"]`**: Ensures that if application `A` depends on shared library `B`, library `B` is built before application `A` executes its compilation.
+    *   **`outputs: ["dist/**"]`**: Instructs Turborepo to cache the generated output directory. Running `turbo build` a second time restores this directory instantly.
+    *   **`persistent: true`**: Tells Turborepo that this is a long-running watch command so it does not block subsequent operations or crash under parallel executions.
 
-   @Module({
-   providers: [PopcornService],
-   exports: [PopcornService],
-   })
-   export class PopcornModule {}
-   ```
+6.  **Run parallel tasks with Turborepo**
 
-   ```typescript
-   // libs/popcorn/src/popcorn.service.ts
-   import { Injectable, Logger } from "@nestjs/common";
+    Update your root `package.json` to orchestrate workspace-wide tasks:
 
-   @Injectable()
-   export class PopcornService {
-   private readonly logger = new Logger(PopcornService.name);
+    ```json
+    {
+      "name": "nest-turbo-workspace",
+      "private": true,
+      "scripts": {
+        "build": "turbo build",
+        "dev": "turbo start:dev"
+      }
+    }
+    ```
 
-   getPopcorn(): string {
-   this.logger.log("🍿");
-   return "🍿";
-   }
-   }
-   ```
+    Run the dev task to start all Nest applications and watch local dependency changes simultaneously:
 
-   ```typescript
-   // libs/popcorn/src/index.ts
-   export * from "./popcorn.module";
-   export * from "./popcorn.service";
-   ```
+    ```bash
+    pnpm dev
+    ```
 
-   Consume from any app:
-
-   ```typescript
-   // apps/my-app/src/app.module.ts
-   import { Module } from "@nestjs/common";
-   import { PopcornModule } from "@app/popcorn";
-   import { AppController } from "./app.controller";
-   import { AppService } from "./app.service";
-
-   @Module({
-   imports: [PopcornModule],
-   controllers: [AppController],
-   providers: [AppService],
-   })
-   export class AppModule {}
-   ```
-
-   ```typescript
-   // apps/my-app/src/app.service.ts
-   import { Injectable } from "@nestjs/common";
-   import { PopcornService } from "@app/popcorn";
-
-   @Injectable()
-   export class AppService {
-   constructor(private readonly popcorn: PopcornService) {}
-
-   getHello(): string {
-   return this.popcorn.getPopcorn();
-   }
-   }
-   ```
-
-   ```bash
-   curl http://localhost:3000
-   ```
-
-   ```text
-   🍿
-   ```
-
-   (Plus a `🍿` log line in the terminal.)
+    When you save changes to your shared module `@repo/logger`, the dev pipeline detects the updates, triggers rebuilds in topological order, and reboots the corresponding Nest servers.
 
 </Steps>
 
-<Aside type="note" title="Libraries have no main.ts">
+---
 
-`"type": "library"` with `"entryFile": "index"`: libraries only run when an app imports them. `nest build popcorn` compiles a library standalone for CI gates. [Creating libraries](https://docs.nestjs.com/cli/libraries#creating-libraries).
+## Production multi-stage Docker builds
 
+Building container images for monorepos typically leads to bloated context sizes and slow build loops because of copy instructions invalidating cache layers. Turborepo addresses this with `turbo prune`, which isolates the target application's code and exact dependency workspace subset.
+
+Here is the production-ready `Dockerfile` optimized for building the `api` app inside the monorepo:
+
+```dockerfile
+# Stage 1: Pruning step
+FROM node:22-alpine AS pruner
+WORKDIR /usr/src/app
+RUN npm install -g turbo
+COPY . .
+# Isolates only the files required to build the 'api' application
+RUN turbo prune api --out=json
+
+# Stage 2: Workspace dependency setup
+FROM node:22-alpine AS installer
+WORKDIR /usr/src/app
+
+# Install pnpm for package resolution
+RUN npm install -g pnpm
+
+# Copy package manifests from the isolated prune output
+COPY --from=pruner /usr/src/app/out/json/ .
+
+# Install dependencies based on pnpm lockfiles
+RUN pnpm install --frozen-lockfile
+
+# Stage 3: Builder step
+FROM node:22-alpine AS builder
+WORKDIR /usr/src/app
+RUN npm install -g pnpm
+
+# Copy installer dependencies and isolated source code
+COPY --from=installer /usr/src/app/ .
+COPY --from=pruner /usr/src/app/out/full/ .
+
+# Compile the target application
+RUN pnpm run build --filter=api
+
+# Stage 4: Runner step
+FROM node:22-alpine AS runner
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=production
+
+# Copy compiled resources and production-grade workspace configurations
+COPY --from=builder /usr/src/app/package.json ./package.json
+COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/apps/api ./apps/api
+COPY --from=builder /usr/src/app/packages ./packages
+
+EXPOSE 3000
+
+CMD ["node", "apps/api/dist/main"]
+```
+
+### Build cache optimization highlights
+
+1.  **Pruning Isolation**: The `turbo prune` utility constructs a subset containing only the targets and local dependency packages, guaranteeing changes to non-related workspace packages do not invalidate our Docker build cache.
+2.  **Deterministic Dependency Installation**: Pnpm uses hard links to populate node folders quickly. In multi-stage container builds, copying only manifest files and lockfiles before source files ensures package layer compilation is cached.
+3.  **Ultra-Slim Execution Layer**: The runner stage inherits only the compiled outputs and active dependencies, ensuring minimal footprint sizes while resolving internal module resolution rules cleanly.
+
+---
+
+## Workspace tooling comparison
+
+| Tooling Feature | Native Nest CLI Monorepo | Turborepo Workspaces (pnpm) | Nx Platform |
+| :--- | :--- | :--- | :--- |
+| **Dependency Bleed** | High (Single shared root manifest) | None (Strictly isolated packages) | None (Enforced modular boundaries) |
+| **Build Caching** | None | Full Local and Remote caching | Advanced caching with remote store |
+| **Orchestration** | Brittle manual script triggers | Automated DAG-based pipeline graph | Advanced execution graph and analyzers |
+| **Code Generation** | Native `nest g` schematics | Manually configured or raw templates | Rich, extensible code generators |
+| **Ideal Use Case** | Single-team, highly uniform Nest servers | High-performance, multi-service workspaces | Enterprise multi-stack monorepos |
+
+---
+
+## Common gotchas
+
+<Aside type="caution" title="Do not forget to define dependencies in app manifests">
+If application `api` imports a service from `@repo/logger` but misses declaring `"@repo/logger": "workspace:*"` inside its own `package.json`, pnpm will not link the packages correctly. The app will fail to compile under `turbo build` because the dependency path resolution fails.
 </Aside>
 
-## What gets shared, what stays per-app
-
-| Item | Scope | Where |
-| --- | --- | --- |
-| `package.json` + lockfile | Workspace | Root |
-| `node_modules/` | Workspace | Root |
-| Lint, prettier | Workspace | Root |
-| Root `tsconfig.json` | Workspace | Root |
-| `tsconfig.app.json` | Per app | `apps/<name>/` |
-| `tsconfig.lib.json` | Per library | `libs/<name>/` |
-| `main.ts` | Per app | `apps/<name>/src/main.ts` |
-| `index.ts` barrel | Per library | `libs/<name>/src/index.ts` |
-| `@app/<lib>` alias | Workspace | `tsconfig.json#paths` |
-
-Single `node_modules`: two apps cannot pin different versions of the same package.
-
-## Pros and cons
-
-**Pros**
-
-- Zero extra tooling beyond the Nest CLI.
-- Shared `node_modules`, lint, CI, and types.
-- `@app/<name>` path aliases in every editor.
-- Convert with one command.
-
-**Cons**
-
-- No task graph or affected-only rebuilds.
-- Single `package.json`: every app gets every dependency.
-- No built-in `start all` (`nest build --all` exists; `nest start` does not).
-
-<Aside type="caution" title="Webpack is the default compiler in monorepos">
-
-Standard mode uses `tsc`; monorepo mode defaults to webpack. Set `"compilerOptions": { "builder": { "type": "tsc" } }` or `"builder": "swc"` if you need a specific emit pipeline ([`get-builder.ts`](https://github.com/nestjs/nest-cli/blob/master/lib/compiler/helpers/get-builder.ts#L17-L29)). Pair SWC with [[nestjs/recipes/swc-setup|SWC builder]] for single-app defaults.
-
+<Aside type="caution" title="Ensure workspace imports are built first">
+When compiling a NestJS app that imports local workspace dependencies, make sure that library packages are built before application compilation starts. If your workspace builds fail at startup, check that your `turbo.json` config has `"build": { "dependsOn": ["^build"] }` active.
 </Aside>
 
-<Aside type="note" title="Layer nx or turborepo on top">
-
-Nest monorepo mode is folder layout + `nest-cli.json`. You can add `nx.json` or `turbo.json` and orchestrate `nest build <name>` without conflict.
-
-</Aside>
-
-## Common errors
-
-| Symptom | Likely cause |
-| --- | --- |
-| `EADDRINUSE :::3000` | Both apps on port 3000: change one or use `PORT` |
-| `nest build` compiles one app | Default project only: pass `--all` or per-app names |
-| `Cannot find module '@app/<lib>'` | Broken `tsconfig.json#paths`: regenerate library |
-| Library changes not visible | Restart dev server / clear webpack cache |
-| `concurrently 'npm:start:dev:*'` runs nothing | No matching scripts: check exact prefix |
+---
 
 ## See also
 
-- [[nestjs/recipes|Recipes MOC]]
-- [[nestjs/recipes/swc-setup|SWC builder]]: single-app default; monorepo often uses webpack + swc-loader
-- [[nestjs/fundamentals|Fundamentals]]: building blocks per app
-- [Workspaces (monorepo)](https://docs.nestjs.com/cli/monorepo)
-- [Libraries](https://docs.nestjs.com/cli/libraries)
-- [`concurrently` shortcuts](https://github.com/open-cli-tools/concurrently/blob/main/docs/cli/shortcuts.md)
+*   [[nestjs/recipes|Recipes MOC]]
+*   [[nestjs/recipes/serialization|Dynamic serialization schemas]]
+*   [[nestjs/fundamentals/request-lifecycle|Nest Request Lifecycle dynamics]]
+*   [Turborepo pipelines documentation](https://turbo.build/repo/docs/core-concepts/pipelines)
+*   [pnpm workspaces documentation](https://pnpm.io/workspaces)

@@ -19,6 +19,33 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 </Steps>
 
+## The E channel vs. standard JavaScript throws
+
+In standard JavaScript and TypeScript, exceptions thrown synchronously or rejected asynchronously via `Promise` are completely untyped:
+
+```typescript
+// Standard TS: The return type is Promise<User>, but it might throw anything at runtime!
+async function getUser(id: string): Promise<User> {
+  if (id === "missing") {
+    throw new NotFoundError(id); // Thrown as 'any' or 'unknown'
+  }
+  return fetchUser(id);
+}
+```
+
+Any calling code has to wrap the call in a generic `try/catch` block where the error is statically typed as `any` or `unknown`. The developer is forced to guess what error classes could be thrown or perform runtime type assertions (like `instanceof`).
+
+Effect solves this by elevating expected errors into a dedicated, type-checked **error channel `E`** in the triple `Effect<SuccessType, ErrorType, Requirements>`:
+
+```typescript
+import { Effect } from "effect";
+
+// Effect TS: The signature declares BOTH success and failure channels!
+declare const getUser: (id: string) => Effect.Effect<User, NotFoundError | NetworkError>;
+```
+
+The compiler enforces that calling code must handle every declared error type in the union `NotFoundError | NetworkError`. If you attempt to execute the program without either recovering from these errors or explicitly routing them, the compiler will refuse to compile, guaranteeing complete error safety at compile time.
+
 ## Before you start
 
 Install the core `effect` package first. After the command finishes, confirm your package manager added `effect` to `package.json`; the examples also assume **TypeScript 5.4+** and `strict: true` ([installation](https://effect.website/docs/getting-started/installation/#manual-installation)).

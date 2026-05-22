@@ -151,6 +151,77 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   </TabItem>
 </Tabs>
 
+## Deep-dive: Intuition-first resource lifecycle
+
+To understand how scopes operate in production, consider a multi-step database transaction. If any step fails or is timed out by an orchestrator, we must guarantee that the database connection is cleanly returned to the pool, preventing connection leaks.
+
+By wrapping our resource initialization in `Effect.acquireRelease`, the Effect runtime automatically tracks the resource and wires its release logic to the enclosing `Scope` context.
+
+```ts
+import { Effect, Console } from "effect";
+
+class DbConnection {
+  constructor(readonly id: number) {}
+  
+  query(sql: string): Effect.Effect<string, Error> {
+    return Effect.succeed(`Success: '${sql}' executed on connection ${this.id}`);
+  }
+  
+  close(): Effect.Effect<void> {
+    return Console.log(`Connection ${this.id} cleanly closed.`);
+  }
+}
+
+let connectionCounter = 0;
+
+// Factory function simulating high-overhead resource creation
+const connect = (): Effect.Effect<DbConnection, Error> =>
+  Effect.gen(function* () {
+    const id = ++connectionCounter;
+    yield* Console.log(`Initializing connection ${id} handshake...`);
+    return new DbConnection(id);
+  });
+
+// acquireRelease couples the resource acquisition with its release/close finalizer
+const managedConnection = Effect.acquireRelease(
+  connect(),
+  (connection) => connection.close()
+);
+
+const executeTransaction = Effect.gen(function* () {
+  yield* Console.log("Starting transactional work...");
+  
+  // Yielding the managed resource pulls the Scope requirement into the environment type
+  const conn = yield* managedConnection;
+  
+  const res1 = yield* conn.query("SELECT * FROM products");
+  yield* Console.log(res1);
+  
+  const res2 = yield* conn.query("UPDATE inventory SET stock = 10");
+  yield* Console.log(res2);
+  
+  yield* Console.log("Transaction successfully completed.");
+});
+
+// We discharge the Scope dependency using Effect.scoped at the execution boundary
+Effect.runPromise(Effect.scoped(executeTransaction));
+```
+
+### Visualizing execution output
+
+When executing the above program, the terminal output demonstrates that the finalizer runs **automatically** after the scope of the program terminates, guaranteeing no leaked resources:
+
+```text
+Starting transactional work...
+Initializing connection 1 handshake...
+Success: 'SELECT * FROM products' executed on connection 1
+Success: 'UPDATE inventory SET stock = 10' executed on connection 1
+Transaction successfully completed.
+Connection 1 cleanly closed.
+```
+
+If any query in the block had thrown a runtime failure or timed out, the `Connection 1 cleanly closed.` log would still print, illustrating the bulletproof guarantees of the Effect resource runtime.
+
 ## Finalizer ordering
 
 Finalizers run **LIFO** when the scope closes ([Scope docs](https://effect.website/docs/resource-management/scope/)):

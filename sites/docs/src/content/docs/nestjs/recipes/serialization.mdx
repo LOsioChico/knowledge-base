@@ -240,73 +240,156 @@ Arrays: `return rows.map((r) => plainToInstance(UserEntity, r))`.
 
 ## Role-based views (groups)
 
-`@Expose({ groups: [...] })` plus `@SerializeOptions({ groups: [...] })` on the route:
+While `@Expose({ groups: [...] })` coupled with `@SerializeOptions({ groups: [...] })` on individual handlers allows static serialization filtering, production environments often demand dynamic role resolution. Defining static `@SerializeOptions()` decorator groups fails when a single endpoint must dynamically serialize differently depending on the authenticated caller's roles.
+
+### Authoring a custom dynamic serializer interceptor
+
+By extending `ClassSerializerInterceptor`, we can intercept the outgoing response context, extract the request object, and dynamically inject user roles from context directly into the active serialization groups.
 
 ```typescript
 import {
+  CallHandler,
   ClassSerializerInterceptor,
-  Controller,
-  Get,
-  SerializeOptions,
-  UseInterceptors,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
 } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ClassTransformOptions } from "class-transformer";
+
+@Injectable()
+export class DynamicSerializerInterceptor
+  extends ClassSerializerInterceptor
+  implements NestInterceptor
+{
+  constructor(reflector: Reflector) {
+    super(reflector);
+  }
+
+  override getSerializationOptions(
+    context: ExecutionContext,
+  ): ClassTransformOptions | undefined {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    // Retrieve default options configured statically via @SerializeOptions()
+    const defaultOptions = super.getSerializationOptions(context);
+
+    // If no user or roles exist, fallback to the default static options
+    if (!user || !user.roles) {
+      return defaultOptions;
+    }
+
+    // Dynamically inject the user's roles as serialization groups
+    return {
+      ...defaultOptions,
+      groups: user.roles,
+    };
+  }
+}
+```
+
+### Implementing dynamic serialization
+
+Annotate your entity to associate specific fields with role groups, then apply the dynamic interceptor at the controller level:
+
+```typescript
 import { Exclude, Expose } from "class-transformer";
 
 export class UserEntity {
-  @Expose() id: number;
-  @Expose() email: string;
-  @Expose({ groups: ["admin"] }) role: string;
-  @Expose({ groups: ["admin"] }) lastLoginIp: string;
-  @Exclude() password: string;
+  @Expose()
+  id: number;
+
+  @Expose()
+  email: string;
+
+  @Expose({ groups: ["admin"] })
+  role: string;
+
+  @Expose({ groups: ["admin"] })
+  lastLoginIp: string;
+
+  @Exclude()
+  passwordHash: string;
+
+  constructor(partial: Partial<UserEntity>) {
+    Object.assign(this, partial);
+  }
+}
+```
+
+```typescript
+import {
+  Controller,
+  Get,
+  UseInterceptors,
+  Req,
+} from "@nestjs/common";
+import { Request } from "express";
+import { UserEntity } from "./user.entity";
+import { DynamicSerializerInterceptor } from "./dynamic-serializer.interceptor";
+
+interface RequestWithUser extends Request {
+  user?: {
+    id: number;
+    roles: string[];
+  };
 }
 
 @Controller("users")
-@UseInterceptors(ClassSerializerInterceptor)
+@UseInterceptors(DynamicSerializerInterceptor)
 export class UsersController {
   @Get("me")
-  @SerializeOptions({ groups: ["user"] })
-  me(): UserEntity {
-    return Object.assign(new UserEntity(), {
-      id: 1,
-      email: "a@b.c",
+  getProfile(@Req() req: RequestWithUser): UserEntity {
+    // Return a class instance so class-transformer decorators are applied
+    return new UserEntity({
+      id: 42,
+      email: "jane.doe@example.com",
       role: "admin",
-      lastLoginIp: "1.2.3.4",
-      password: "secret",
-    });
-  }
-
-  @Get("admin")
-  @SerializeOptions({ groups: ["admin"] })
-  asAdmin(): UserEntity {
-    return Object.assign(new UserEntity(), {
-      id: 1,
-      email: "a@b.c",
-      role: "admin",
-      lastLoginIp: "1.2.3.4",
-      password: "secret",
+      lastLoginIp: "192.168.1.100",
+      passwordHash: "$2b$10$K3y...",
     });
   }
 }
 ```
 
-`GET /users/me`:
+### Dynamic serialization in action
 
-```json
-{ "id": 1, "email": "a@b.c" }
+Here is how the dynamic output transforms depending on the authenticated client's role permissions:
+
+#### Scenario A: Authenticated as a standard user (`user.roles = ["user"]`)
+
+**Request**:
+```http
+GET /users/me
+Authorization: Bearer <user-jwt>
 ```
 
-`GET /users/admin`:
-
+**Response**:
 ```json
 {
-  "id": 1,
-  "email": "a@b.c",
-  "role": "admin",
-  "lastLoginIp": "1.2.3.4"
+  "id": 42,
+  "email": "jane.doe@example.com"
 }
 ```
 
-Same entity, two payloads, no `if (isAdmin)` in the controller.
+#### Scenario B: Authenticated as an administrator (`user.roles = ["admin"]`)
+
+**Request**:
+```http
+GET /users/me
+Authorization: Bearer <admin-jwt>
+```
+
+**Response**:
+```json
+{
+  "id": 42,
+  "email": "jane.doe@example.com",
+  "role": "admin",
+  "lastLoginIp": "192.168.1.100"
+}
+```
 
 ## More gotchas
 
