@@ -5,29 +5,13 @@ description: Decode unknown data into typed Effect programs with Schema.Struct, 
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Schema is the runtime boundary for `Effect<A, E, R>` programs: it checks unknown input, derives TypeScript types from the same declaration, and keeps parse failures in the typed `E` channel.
+> Schema is the runtime boundary layer for `Effect<A, E, R>` programs: it checks unknown input, derives TypeScript types from the same declaration, and encapsulates parse failures inside the typed `E` error channel.
 
-<Steps>
+---
 
-1. **Stop trusting** `as` at JSON, config, and HTTP boundaries.
-2. **Declare** the expected shape with `Schema.Struct`.
-3. **Infer** the TypeScript type from the schema instead of duplicating an interface.
-4. **Decode** `unknown` into an `Effect` that succeeds with the typed value or fails with a parse error.
-5. **Map** parse errors into your own domain tag before exposing service APIs.
+## The Boundary Problem
 
-</Steps>
-
-## Before you start
-
-Install the core `effect` package first. After the command finishes, confirm your package manager added `effect` to `package.json`; the examples use `Effect`, `Schema`, `ParseResult`, and `Data` from that package ([installation](https://effect.website/docs/getting-started/installation/#manual-installation)).
-
-```bash
-bun add effect
-```
-
-## The boundary problem
-
-`JSON.parse` returns `any`, and `as Todo` only changes what TypeScript believes. It does not check the value that came from the outside world.
+In standard TypeScript, `JSON.parse` returns `any`, and casting it with `as Todo` only changes what the compiler believes at compile time. It does not perform any runtime checks on the actual data shape.
 
 ```ts twoslash
 interface Todo {
@@ -40,23 +24,33 @@ const raw = '{"id":"1","title":"Write docs"}';
 const todo = JSON.parse(raw) as Todo;
 
 console.log(todo.id + 1);
-// "11", because id was actually a string
+// Prints "11" at runtime because the ID was actually a string!
 
 console.log(todo.completed);
-// undefined, because the field was missing
+// Prints undefined because the completed property was missing!
 ```
 
-The code type-checks, but the runtime value is still malformed. Schema puts the check at the boundary instead of letting the bad shape move deeper into the program.
+This code type-checks perfectly, but it fails silently at runtime. `Schema` puts the validation check directly at the boundary, ensuring that malformed payloads are rejected immediately before they propagate deeper into your application logic.
 
-<Aside type="caution" title="as is not validation">
+---
 
-Use `as` only when some other code already proved the shape. At an untrusted boundary, the value is `unknown` until a parser accepts it.
+## Effect Schema vs. Zod
 
-</Aside>
+While Zod is an industry-standard validation library, `Effect Schema` is designed from the ground up for functional composition and tight integration with the Effect ecosystem.
 
-## 1. Declare the shape once
+| Dimension | Zod | Effect Schema |
+| --- | --- | --- |
+| **Design Paradigm** | Imperative, builder-pattern based fluent API. | Functional, declarative, combinator-based compositional API. |
+| **Type Parity** | Derived TS types are separate: can drift on complex transformations or custom checks. | 100% type-safe compile-time/runtime parity: derives exact `Type` and `Encoded` types from the same tree. |
+| **Error Channel** | Throws raw `ZodError` or returns `{ success: false, error }` object structure. | Integrated directly into Effect's typed error channel as `ParseResult.ParseError` inside `Effect<A, ParseError>`. |
+| **Transformations** | `.transform()` allows arbitrary mutations but type-inference hides the original wire shape. | Dual-channel transformations (`Schema.transform`) preserve both `Encoded` (input) and `Type` (output) schemas, ensuring full bidirectional capability. |
+| **Performance** | Standard runtime evaluation with average overhead. | Highly optimized code-generation: compiles schemas into hyper-fast specialized JS functions at runtime. |
 
-`Schema.Struct` builds an object schema from field schemas ([structs](https://effect.website/docs/schema/basic-usage/#structs), [`Schema.Struct`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts#L2907-L2943)). Primitive schemas use PascalCase names such as `Schema.String`, `Schema.Number`, and `Schema.Boolean` ([primitives](https://effect.website/docs/schema/basic-usage/#primitives)).
+---
+
+## 1. Declare the Schema
+
+Use `Schema.Struct` to build an object schema from field schemas. Primitive schemas use PascalCase names like `Schema.String`, `Schema.Number`, and `Schema.Boolean`.
 
 ```ts twoslash
 import { Schema } from "effect";
@@ -68,11 +62,11 @@ const Todo = Schema.Struct({
 });
 ```
 
-The schema is a runtime value. You can pass it to decoders, formatters, encoders, and other schema combinators.
+---
 
-## 2. Infer the TypeScript type
+## 2. Infer the TypeScript Types
 
-Do not write a separate `interface Todo` and hope it stays in sync. `Schema.Schema.Type<typeof Todo>` extracts the decoded TypeScript type from the schema ([type extraction](https://effect.website/docs/schema/getting-started/#type), [source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts#L302-L319)).
+Instead of duplicating declarations by writing an `interface` manually, you can extract the derived type directly from your runtime schema using `Schema.Schema.Type`:
 
 ```ts twoslash
 import { Schema } from "effect";
@@ -83,42 +77,64 @@ const Todo = Schema.Struct({
   completed: Schema.Boolean,
 });
 
+// Extract the decoded TypeScript type
 type Todo = Schema.Schema.Type<typeof Todo>;
-//   ^?
 
-const ok: Todo = {
+const validTodo: Todo = {
   id: 1,
   title: "Write docs",
   completed: false,
 };
 ```
 
-The decoded type is the type your business logic should consume. The schema remains the source of truth.
+---
 
-<Aside type="note" title="Encoded and decoded can differ">
+## 3. Bidirectional Transformations
 
-Schema also exposes `Schema.Schema.Encoded<typeof Todo>` for the input side of a schema ([encoded type](https://effect.website/docs/schema/getting-started/#encoded)). For a plain `Struct`, encoded and decoded shapes are the same. Transformation schemas can decode one shape and encode another.
+Unlike typical parsers, `Schema` models transformations that preserve both the raw wire shape and the clean domain shape. `Schema.Schema.Encoded` extracts the raw input shape, while `Schema.Schema.Type` extracts the output shape.
 
 ```ts twoslash
 import { Schema } from "effect";
 
 const User = Schema.Struct({
-  id: Schema.NumberFromString,
+  id: Schema.NumberFromString, // Transforms string -> number
   name: Schema.String,
 });
 
 type User = Schema.Schema.Type<typeof User>;
-//   ^?
+// Resolved type: { readonly id: number; readonly name: string; }
 
 type UserEncoded = Schema.Schema.Encoded<typeof User>;
-//   ^?
+// Resolved type: { readonly id: string; readonly name: string; }
 ```
 
-</Aside>
+### Custom Transformations
 
-## 3. Decode success
+You can write custom, bidirectional mappings using `Schema.transform()`. This function accepts an input schema, an output schema, and mapping functions for decoding and encoding:
 
-Use `Schema.decodeUnknown(schema)(input)` when the value came from `JSON.parse`, `Response.json()`, environment variables, CLI arguments, or any source you cannot type-check ahead of time. The API returns an `Effect` that succeeds with the decoded value or fails with `ParseResult.ParseError` ([decodeUnknown](https://effect.website/docs/schema/getting-started/#decodeunknown), [source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts#L555-L566)).
+```ts twoslash
+import { Schema } from "effect";
+
+// Custom transformation: trims leading and trailing whitespaces from a string
+const TrimmedString = Schema.transform(
+  Schema.String,
+  Schema.String,
+  {
+    decode: (str) => str.trim(),
+    encode: (str) => str,
+  }
+);
+
+const UserProfile = Schema.Struct({
+  username: TrimmedString,
+});
+```
+
+---
+
+## 4. Decode Inbound Payloads
+
+Use `Schema.decodeUnknown(schema)(input)` to parse untrusted data (like `JSON.parse` outputs or network response bodies). This returns an `Effect` that succeeds with the validated domain type, or fails with a structured `ParseResult.ParseError` in the error channel.
 
 ```ts twoslash
 import { Effect, Schema } from "effect";
@@ -129,72 +145,30 @@ const Todo = Schema.Struct({
   completed: Schema.Boolean,
 });
 
-const input: unknown = {
+const untrustedInput: unknown = {
   id: 1,
   title: "Write docs",
   completed: false,
 };
 
-const decoded = Schema.decodeUnknown(Todo)(input);
-//    ^?
+const program = Schema.decodeUnknown(Todo)(untrustedInput);
 
-console.log(Effect.runSync(decoded));
-// { id: 1, title: 'Write docs', completed: false }
+// Run the program synchronously
+const result = Effect.runSync(program);
+console.log(result);
+// Prints: { id: 1, title: 'Write docs', completed: false }
 ```
 
-The type tells the story: `decoded` is an `Effect` whose success is the inferred `Todo`, whose error is a parse error, and whose requirements are `never`.
+---
 
-## 4. Decode failure
+## 5. Domain Error Mapping
 
-Bad input stays in the `E` channel. Use `runSyncExit` or `Effect.either` when demonstrating a failure path so the example shows the value instead of throwing at the runner.
-
-```ts twoslash
-import { Effect, Exit, ParseResult, Schema } from "effect";
-
-const Todo = Schema.Struct({
-  id: Schema.Number,
-  title: Schema.String,
-  completed: Schema.Boolean,
-});
-
-const badInput: unknown = {
-  id: "1",
-  title: "Write docs",
-};
-
-const decoded = Schema.decodeUnknown(Todo)(badInput).pipe(
-  Effect.mapError(ParseResult.TreeFormatter.formatErrorSync),
-);
-
-const exit = Effect.runSyncExit(decoded);
-console.log(exit._tag);
-// Failure
-
-if (Exit.isFailure(exit)) {
-  console.log(exit.cause._tag);
-  console.log(String(exit.cause));
-}
-// Fail
-// { readonly id: number; readonly title: string; readonly completed: boolean }
-// └─ ["id"]
-//    └─ Expected number, actual "1"
-```
-
-Schema parse failures are tagged `ParseResult.ParseError` values whose `issue` describes the parse problem ([parse error docs](https://effect.website/docs/schema/getting-started/#parseerror), [source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/ParseResult.ts#L181-L218)). `ParseResult.TreeFormatter.formatErrorSync` turns the parse error into a readable tree for logs or your own error object.
-
-<Aside type="caution" title="runSync throws on unhandled E">
-
-`Schema.decodeUnknown(Todo)(badInput)` has a non-`never` error channel. `Effect.runSync` throws a `FiberFailure` when that error is not handled first. Use `runSyncExit`, `Effect.either`, or map and handle the error before crossing the application edge.
-
-</Aside>
-
-## 5. Map parse errors into a domain tag
-
-Raw parse errors are useful inside a boundary adapter. A service API should usually expose an error name that matches the domain, then compose like any other [[effect-ts/typed-errors|typed error]]. `Effect.mapError` transforms the error channel without touching the success value ([mapError](https://effect.website/docs/error-management/error-channel-operations/#maperror), [source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/internal/core.ts#L1042-L1076)).
+Raw parse errors are extremely useful for debugging, but you should map them to clean, domain-specific tagged errors before they cross your internal application layer. Use `ParseResult.TreeFormatter.formatErrorSync` to turn a `ParseError` into a highly readable hierarchical diagnostic message.
 
 ```ts twoslash
 import { Data, Effect, ParseResult, Schema } from "effect";
 
+// Define a custom, tagged domain error
 class ParseFailure extends Data.TaggedError("ParseFailure")<{
   readonly issues: string;
 }> {}
@@ -210,152 +184,51 @@ type Todo = Schema.Schema.Type<typeof Todo>;
 const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
   Schema.decodeUnknown(Todo)(input).pipe(
     Effect.mapError(
-      (error) =>
+      (parseError) =>
         new ParseFailure({
-          issues: ParseResult.TreeFormatter.formatErrorSync(error),
+          issues: ParseResult.TreeFormatter.formatErrorSync(parseError),
         }),
     ),
   );
-
-const safeTitle = (input: unknown) =>
-  parseTodo(input).pipe(
-    Effect.map((todo) => todo.title),
-    Effect.catchTag("ParseFailure", (error) =>
-      Effect.succeed(`bad todo: ${error.issues.split("\n")[0]}`),
-    ),
-  );
-
-console.log(Effect.runSync(safeTitle({ id: "1", title: "Write docs" })));
-// bad todo: { readonly id: number; readonly title: string; readonly completed: boolean }
 ```
 
-Now callers handle `ParseFailure`, not a low-level parser detail.
+If we pass invalid data, the formatted error output clearly highlights the failing nested fields:
 
-## 6. Put Schema in a small boundary adapter
+```typescript
+const badInput: unknown = {
+  id: "not-a-number",
+  title: "Write docs",
+};
 
-Keep Schema at the edge: parse the outside value once, then pass the decoded type through the rest of the program.
+const result = Effect.runSyncExit(parseTodo(badInput));
+// Failure(ParseFailure: { readonly id: number; readonly title: string; readonly completed: boolean }
+// ├─ ["id"]
+// │  └─ Expected number, actual "not-a-number"
+// └─ ["completed"]
+//    └─ is missing)
+```
 
-<Tabs>
-  <TabItem label="Boundary adapter">
-    ```ts twoslash
-    import { Data, Effect, ParseResult, Schema } from "effect";
+---
 
-    class NetworkError extends Data.TaggedError("NetworkError")<{
-      readonly cause: unknown;
-    }> {}
+## Gotchas and Best Practices
 
-    class ParseFailure extends Data.TaggedError("ParseFailure")<{
-      readonly issues: string;
-    }> {}
+<Aside type="danger" title="Do not runSync on untrusted boundaries directly">
 
-    const Todo = Schema.Struct({
-      id: Schema.Number,
-      title: Schema.String,
-      completed: Schema.Boolean,
-    });
-
-    type Todo = Schema.Schema.Type<typeof Todo>;
-
-    const fetchJson = (): Effect.Effect<unknown, NetworkError> =>
-      Effect.tryPromise({
-        try: () =>
-          Promise.resolve({ id: 1, title: "Write docs", completed: false }),
-        catch: (cause) => new NetworkError({ cause }),
-      });
-
-    const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
-      Schema.decodeUnknown(Todo)(input).pipe(
-        Effect.mapError(
-          (error) =>
-            new ParseFailure({
-              issues: ParseResult.TreeFormatter.formatErrorSync(error),
-            }),
-        ),
-      );
-
-    const loadTodo = Effect.gen(function* () {
-      const json = yield* fetchJson();
-      return yield* parseTodo(json);
-    });
-
-    Effect.runPromise(loadTodo).then(console.log);
-    // { id: 1, title: 'Write docs', completed: false }
-    ```
-
-  </TabItem>
-  <TabItem label="Type story">
-    ```ts twoslash
-    import { Data, Effect, ParseResult, Schema } from "effect";
-
-    class NetworkError extends Data.TaggedError("NetworkError")<{
-      readonly cause: unknown;
-    }> {}
-
-    class ParseFailure extends Data.TaggedError("ParseFailure")<{
-      readonly issues: string;
-    }> {}
-
-    const Todo = Schema.Struct({
-      id: Schema.Number,
-      title: Schema.String,
-      completed: Schema.Boolean,
-    });
-
-    type Todo = Schema.Schema.Type<typeof Todo>;
-
-    const fetchJson = (): Effect.Effect<unknown, NetworkError> =>
-      Effect.succeed({ id: 1, title: "Write docs", completed: false });
-
-    const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
-      Schema.decodeUnknown(Todo)(input).pipe(
-        Effect.mapError(
-          (error) =>
-            new ParseFailure({
-              issues: ParseResult.TreeFormatter.formatErrorSync(error),
-            }),
-        ),
-      );
-
-    const loadTodo = Effect.gen(function* () {
-      const json = yield* fetchJson();
-      return yield* parseTodo(json);
-    });
-
-    // loadTodo: Effect<Todo, NetworkError | ParseFailure, never>
-    ```
-
-  </TabItem>
-</Tabs>
-
-This is the same boundary pattern used in [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]], but without the timeout, retry, and concurrency layers.
-
-## Common gotchas
-
-<Aside type="caution" title="Do not parse twice">
-
-Decode at the boundary, then pass the inferred `Todo` type inward. Re-decoding the same value inside domain functions is noise and makes it harder to see where untrusted data enters.
+`Effect.runSync` will throw a native `FiberFailure` exception if the underlying effect fails. Because `decodeUnknown` can fail when given invalid data, executing `runSync` without handling the error first will crash the process. Use `Effect.runSyncExit` or handle/map the error using operations like `catchTag` before execution.
 
 </Aside>
 
-<Aside type="caution" title="Use decodeUnknown for unknown input">
+<Aside type="caution" title="Validate at the boundary only">
 
-`Response.json()`, `JSON.parse`, environment variables, and CLI input are untrusted values. `decodeUnknown` is the safe default for those boundaries because its input is `unknown`.
-
-</Aside>
-
-<Aside type="note" title="Transforms are the second layer">
-
-Schema can model different encoded and decoded shapes, like `Schema.NumberFromString`. Start with boundary validation first; add transformations when you need to cross from wire shape to domain shape in a controlled way.
+Parse your incoming network payloads or configuration objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
 
 </Aside>
+
+---
 
 ## See also
 
-- [[effect-ts/quickstart|Quickstart]]: install `effect` and run your first program
-- [[effect-ts/what-is-effect|What is Effect]]: `Effect<A, E, R>` and runners
-- [[effect-ts/typed-errors|Typed errors]]: `Data.TaggedError`, `mapError`, and `catchTag`
-- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]]: Schema inside a full HTTP ingestion pipeline
-- [[effect-ts/ecosystem-map|Ecosystem map]]: where `Schema` lives in the package layout
-- [Schema getting started](https://effect.website/docs/schema/getting-started/) (official)
-- [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts) (source)
-- [`ParseResult.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/ParseResult.ts) (source)
+- [[effect-ts/quickstart|Quickstart]]: install the `effect` package and execute simple programs
+- [[effect-ts/typed-errors|Typed errors]]: defining `Data.TaggedError` wrappers and catching failures
+- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]]: utilizing `Schema` validation inside robust stream processing pipelines
+- [Effect Schema Official Documentation](https://effect.website/docs/schema/getting-started/)

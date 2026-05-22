@@ -12,14 +12,14 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 When developers think of "file upload," they usually think of a browser sending raw bytes to NestJS, which buffers the file and saves it locally. However, in modern containerized (Docker, Kubernetes) or serverless (AWS ECS, Lambda) environments, this simple approach introduces severe production bottlenecks:
 
 1. **Ephemeral Local Disk**: Cloud containers have ephemeral filesystems. If a container restarts or autoscales, files written to local disk (like `/tmp` or `./uploads`) disappear forever.
-2. **RAM Exhaustion & Out-Of-Memory (OOM) Crashes**: Standard in-memory Multer buffering stores the entire file in RAM. If $10$ users simultaneously upload $100\text{ MB}$ files, the server consumes an extra $1\text{ GB}$ of RAM. Under load, this triggers an immediate OOM crash.
+2. **RAM Exhaustion & Out-Of-Memory (OOM) Crashes**: Standard in-memory Multer buffering stores the entire file in RAM. If 10 users simultaneously upload 100 MB files, the server consumes an extra 1 GB of RAM. Under load, this triggers an immediate OOM crash.
 3. **Event Loop & Bandwidth Saturation**: Streaming heavy binary payloads directly through a single-threaded Node.js API process blocks the CPU event loop, degrading the response time for all other API consumers.
 
 ### Architectural Comparison
 
 | Metric | Tier 1: Local Multer (RAM/Disk) | Tier 2: Stream-to-Cloud Middleware | Tier 3: Direct S3 Presigned PUT |
 | :--- | :--- | :--- | :--- |
-| **RAM Impact** | High ($N \times \text{FileSize}$) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
+| **RAM Impact** | High (N × File Size) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
 | **Disk Lifetime** | Ephemeral (Lost on restart) | **Cloud-Safe** (Saves directly) | **Cloud-Safe** (Saves directly) |
 | **Bandwidth Cost** | Heavy (Server routes raw bytes) | Heavy (Server routes raw bytes) | **Zero** (Saves directly from client) |
 | **File Validation** | High (Magic-number support) | Harder (Needs inline parsing) | Pre-validated via signed POST policy |

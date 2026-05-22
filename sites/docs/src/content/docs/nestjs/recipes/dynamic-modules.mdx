@@ -9,9 +9,9 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## Why do we need dynamic modules?
 
-To understand why we need dynamic modules, consider a **static module**. A static module is hardcoded; every time you import it, it behaves exactly the same way.
+To understand why we need dynamic modules, consider a **static module**. A static module is hardcoded: every time you import it, it behaves exactly the same way.
 
-However, what happens if your application needs a **reusable service** whose behavior must be customized depending on where it is imported? 
+However, what happens if your application needs a **reusable service** whose behavior must be customized depending on where it is imported?
 *   **The Bucket Example**: You write a `StorageModule` that uploads files to Amazon S3. In a single application, you need to upload user avatars to a **public bucket** (`my-public-avatars`) and export PDF invoices to a **secure private bucket** (`my-private-invoices`).
 *   **Why not just use environment variables inside the service?** If your service directly reads `process.env.S3_BUCKET` or injects `ConfigService` directly, it is locked to **one single bucket**. You cannot reuse the uploading logic for two different buckets inside the same application.
 
@@ -32,6 +32,10 @@ Dynamic modules solve this by acting as a **configurable factory**. When you imp
      readonly region?: string;
      readonly accessKeyId?: string;
    }
+
+   export interface StorageOptionsFactory {
+     createStorageOptions(): Promise<StorageOptions> | StorageOptions;
+   }
    ```
 
 </Steps>
@@ -40,7 +44,7 @@ Dynamic modules solve this by acting as a **configurable factory**. When you imp
 
 ## The Modern Way: `ConfigurableModuleBuilder`
 
-Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the boilerplate types (`register`, `registerAsync`, `inject`, `useFactory`) for dynamic modules, reducing code overhead by ~70%.
+Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the boilerplate types (`register`, `registerAsync`, `inject`, `useFactory`, `useClass`, `useExisting`) for dynamic modules, reducing boilerplate code by up to 70%.
 
 ### 1. Build the Module Definitions
 
@@ -110,7 +114,7 @@ export class StorageModule extends ConfigurableModuleClass {}
 
 ## Static vs. Asynchronous Registration
 
-You can register the module inside your root application module in one of two ways:
+You can register the module inside your root application module in one of several ways. `ConfigurableModuleBuilder` automatically generates support for static options passing and three distinct asynchronous resolution strategies.
 
 <Tabs>
   <TabItem label="Static (register)">
@@ -132,8 +136,8 @@ You can register the module inside your root application module in one of two wa
     export class AppModule {}
     ```
   </TabItem>
-  <TabItem label="Asynchronous (registerAsync)">
-    Use `registerAsync` to inject `@nestjs/config`'s `ConfigService` (or other dependencies) and resolve options dynamically from environment variables:
+  <TabItem label="Async (useFactory)">
+    Use `useFactory` to inject `@nestjs/config`'s `ConfigService` (or other dependencies) and resolve options dynamically from environment variables using a factory function:
 
     ```typescript
     // app.module.ts
@@ -157,13 +161,65 @@ You can register the module inside your root application module in one of two wa
     export class AppModule {}
     ```
   </TabItem>
+  <TabItem label="Async (useClass)">
+    Use `useClass` to delegate option creation to a custom configuration class. NestJS will instantiate a private instance of this class and call its factory method to resolve the options:
+
+    ```typescript
+    // app.module.ts
+    import { Module, Injectable } from "@nestjs/common";
+    import { StorageModule } from "./storage.module";
+    import { StorageOptions, StorageOptionsFactory } from "./storage-options.interface";
+
+    @Injectable()
+    export class StorageConfigService implements StorageOptionsFactory {
+      createStorageOptions(): StorageOptions {
+        return {
+          bucket: "my-class-bucket",
+          region: "eu-central-1",
+        };
+      }
+    }
+
+    @Module({
+      imports: [
+        StorageModule.registerAsync({
+          useClass: StorageConfigService,
+        }),
+      ],
+      providers: [StorageConfigService],
+    })
+    export class AppModule {}
+    ```
+  </TabItem>
+  <TabItem label="Async (useExisting)">
+    Use `useExisting` when a configuration provider has already been registered in another imported module, allowing you to reuse that exact provider instance without creating a new one:
+
+    ```typescript
+    // app.module.ts
+    import { Module } from "@nestjs/common";
+    import { StorageModule } from "./storage.module";
+    import { StorageConfigModule } from "./storage-config.module"; // exports StorageConfigService
+    import { StorageConfigService } from "./storage-config.service";
+
+    @Module({
+      imports: [
+        StorageConfigModule,
+        StorageModule.registerAsync({
+          imports: [StorageConfigModule],
+          useExisting: StorageConfigService,
+        }),
+      ],
+    })
+    export class AppModule {}
+    ```
+  </TabItem>
 </Tabs>
 
 ---
 
 ## The Classic Way: Manual Dynamic Module
 
-Understanding the classic manual way is crucial for handling complex scenarios, such as when you need custom provider generation or complex multi-module wiring.
+Understanding the classic manual way is crucial for handling legacy code bases or complex scenarios, such as when you need custom provider generation, multiple distinct options objects, or complex multi-module wiring.
 
 ```typescript
 // storage.module.ts (Manual Pattern)
@@ -290,13 +346,35 @@ If you import the same module class twice in the same `imports` list with differ
 export class AppModule {}
 ```
 
-**How to solve this**: To run multiple instances of the same service with different configurations, you must wrap them in **separate wrapper modules** (e.g., `AvatarsStorageModule` and `InvoicesStorageModule`) or use the manual custom provider pattern to register them with unique injection tokens.
+**How to solve this**: To run multiple instances of the same service with different configurations, you must wrap them in **separate wrapper modules** (e.g., `AvatarsStorageModule` and `InvoicesStorageModule`) that import and then export their respective customized versions, or use the manual custom provider pattern to register them with unique injection tokens.
+
+```typescript
+// avatars-storage.module.ts
+import { Module } from "@nestjs/common";
+import { StorageModule } from "./storage.module";
+
+@Module({
+  imports: [StorageModule.register({ bucket: "avatars" })],
+  exports: [StorageModule],
+})
+export class AvatarsStorageModule {}
+
+// invoices-storage.module.ts
+import { Module } from "@nestjs/common";
+import { StorageModule } from "./storage.module";
+
+@Module({
+  imports: [StorageModule.register({ bucket: "invoices" })],
+  exports: [StorageModule],
+})
+export class InvoicesStorageModule {}
+```
 
 </Aside>
 
 <Aside type="caution" title="Generic Token Collisions">
 
-If you write multiple manual dynamic modules and register options using a generic token name (e.g. `OPTIONS` or `CONFIG`), Nest's IoC container will overwrite providers with matching tokens. 
+If you write multiple manual dynamic modules and register options using a generic token name (e.g., `OPTIONS` or `CONFIG`), Nest's IoC container will overwrite providers with matching tokens. 
 
 **Rule of thumb**: Always prefix/namespace option tokens specifically (`STORAGE_OPTIONS`, `REDIS_OPTIONS`) to avoid startup-time conflicts. `ConfigurableModuleBuilder` handles this automatically by generating a unique object identity token.
 
@@ -317,12 +395,13 @@ export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
       (definition, extras) => ({
         ...definition,
         global: extras.isGlobal, // dynamically sets global property
+        // Note: isGlobal is a custom name; "global" is the key NestJS looks for
       }),
     )
     .build();
 ```
 
-Which allows the consumer to specify: `StorageModule.register({ bucket: '...', isGlobal: true })`.
+Which allows the consumer to specify: `StorageModule.register({ bucket: 'my-bucket', isGlobal: true })`.
 
 </Aside>
 
