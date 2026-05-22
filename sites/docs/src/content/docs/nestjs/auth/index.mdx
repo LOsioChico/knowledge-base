@@ -24,10 +24,11 @@ import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
 
 ## Planned
 
-- Guards vs [[nestjs/fundamentals/middleware|middleware]]: when to use each
-- Role and permission checks (RBAC, claims-based access control)
-- Refresh tokens and rotation
-- Session-based auth (when JWT is the wrong tool)
+- **Guards vs. Middleware Architecture**: Structural comparison detailing when to intercept requests at the HTTP adapter level vs. inside NestJS exception-handling zone (see [[nestjs/fundamentals/middleware|middleware]] and [[nestjs/fundamentals/guards|guards]]).
+- **Fine-Grained Access Control (RBAC & ABAC)**: Designing declarative role checks and dynamic claims-based or attribute-based authorization engines.
+- **Refresh Tokens & Rotation Security**: Implementing secure token refresh mechanics, dynamic token rotation patterns, and Redis-backed invalidation blacklists.
+- **Session-Based Authentication**: Integrating stateful sessions (`express-session` / Passport session) for applications requiring instantaneous server-side revocation.
+- **Third-Party Federated Identity (OAuth2)**: Multi-provider social logins (Google, GitHub, Apple) using unified Passport strategy routing.
 
 <Aside type="note" title="Validation at the edge">
 

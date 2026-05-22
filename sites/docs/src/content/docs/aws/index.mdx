@@ -64,3 +64,12 @@ import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/
 - [[aws/account-migrations|Account migrations]]: end-to-end playbook.
 - [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: compute decision matrix.
 - [[aws/secrets-manager|Secrets Manager]]: named secrets under KMS.
+
+## Planned Concepts & Recipes
+
+To expand our cloud infrastructure coverage, the following AWS topics and architectural guides are planned to be added next:
+
+- **Decoupled Architecture with EventBridge**: Designing event-driven communication channels using standard/custom buses, rule targets, schema registries, and secure cross-account event routing.
+- **Distributed Observability with CloudWatch & X-Ray**: Setting up trace context propagation, CloudWatch log aggregation, alarm configurations, and service maps.
+- **Dynamic DNS & Traffic Management with Route 53**: Configuring private hosted zones, health checks, failover routing, and alias records.
+- **Secure ECS Secrets Orchestration**: Wiring KMS keys and Secrets Manager values dynamically into ECS task definition environment variables and container secrets without manual injection.

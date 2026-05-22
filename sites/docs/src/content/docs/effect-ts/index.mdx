@@ -102,11 +102,12 @@ After the sequence above, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup 
 
 ## Pending notes (vault)
 
-- Streams (`Stream`) for backpressured data flow.
-- Concurrency primitives (fibers, queues, semaphores, structured cancellation).
-- `Ref` for shared mutable state across fibers.
-- Logging and tracing (`Effect.log`, `Effect.withLogSpan`, `@effect/opentelemetry`).
-- Durability boundary: in-process `Effect.retry` vs external queues / workflow engines.
+- **Streams (`Stream`) for Backpressured Pipelines**: Designing pull-based streams for processing high-throughput data streams, windowing, batching, and custom backpressure configurations.
+- **Structured Concurrency & Fibers**: Deep-dive into asynchronous execution units (fibers), coordination queues (`Queue`), mutual exclusion semaphores (`Semaphore`), and parent-child cancellation lifecycles.
+- **Shared Mutable State Coordinates**: Managing concurrent fiber state modifications safely using `Ref`, `SubscriptionRef`, and STM (Software Transactional Memory) primitives.
+- **Distributed Observability & Telemetry**: Configuring structured logging (`Effect.log`), span hierarchies (`Effect.withLogSpan`), and full OpenTelemetry integrations (`@effect/opentelemetry`).
+- **Platform Abstractions & Integrations**: Utilizing `@effect/platform` for cross-environment HTTP clients, server hosting, and native file system interactions.
+- **Durability Boundaries**: Establishing reliable error recovery thresholds by contrasting in-memory `Effect.retry` scheduling patterns against durable distributed queues and workflow engines.
 
 ## See also
 
