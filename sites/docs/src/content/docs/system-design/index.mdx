@@ -7,6 +7,18 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 
 > Foundational concepts and mathematical primitives for designing robust, distributed, and highly available systems.
 
+## What is Systems Design?
+
+Systems design is the practice of building large-scale software systems that run across multiple computers (called nodes or servers) to handle massive traffic and data volumes reliably.
+
+In a single-computer system, building software is straightforward: there is a single processor, a single system clock, and a single memory space. But when your system grows so large that it must be split across dozens, hundreds, or thousands of machines, everything changes:
+*   **No shared memory**: How do we decide which server stores which user's data?
+*   **No instant updates**: If a user updates their profile picture, how does every other server learn about it without slowing down the site?
+*   **No single truth of time**: Computers have physical clocks that drift. How do we know which event happened first if servers disagree on what time it is?
+
+Consistent Hashing, Consistency Models, and Logical Clocks are the three foundational pillars that solve these exact core problems. Mastering them is the essential prerequisite before building complex distributed architectures.
+
+
 ## TL;DR
 
 *   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].

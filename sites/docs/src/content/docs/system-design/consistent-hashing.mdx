@@ -11,22 +11,44 @@ In a distributed database or caching cluster, routing requests efficiently is cr
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
-A common entry-level strategy for distributing keys across a set of `N` servers is modulo hashing. We compute the hash value of a key and divide it by the number of active servers:
+Imagine you have a website with a cluster of `N` servers caching user session data. When a request comes in, how do you decide which server stores that user's session? 
+
+A simple, traditional strategy is **modulo hashing** (also known as Modulo-N). We compute a numerical hash of the user's key and divide it by the number of active servers (`N`). The **remainder** of that division determines the server index:
 
 ```
-Server Index = Hash(key) mod N
+Server Index = Hash(Key) mod N
 ```
+
+> **What is modulo (mod)?**
+> Modulo is simply the remainder left over after division. It is the same math we use every day to tell time on a 12-hour clock. For example, "14 o'clock" is 2:00 because 14 divided by 12 leaves a remainder of 2 (`14 mod 12 = 2`). Similarly, if a user's ID hashes to the number 12 and we have 5 servers, `12 mod 5 = 2` (since 5 goes into 12 twice, leaving a remainder of 2). The session goes to Server 2.
 
 ### The Scaling Failure
-Imagine we have 5 servers ($N = 5$) and distribute 100 keys. If one server crashes or we dynamically scale up to 6 servers ($N = 6$), the denominator of the modulo operation changes. 
 
-Because the modulo base is shifted, almost every key hashes to a completely different server index. Statistically, **up to $(N-1)/N$ of all keys (80% to 90%) must be migrated to new locations**. In a caching layer (like Redis or Memcached), this triggers a massive cache stampede, blowing out database load and causing cascading performance failures.
+Modulo-N hashing works perfectly, until the size of your server cluster changes.
+
+Imagine we have 5 servers ($N = 5$) and distribute 100 session keys. If one server crashes, or if we scale up by adding a 6th server ($N = 6$), the divisor in our modulo formula changes. Because the divisor shifts, **almost every key now maps to a completely different server index.**
+
+Let's trace what happens to three sample session keys when we scale from 5 servers to 6:
+
+| Key | Hash Value | Index with 5 Servers (`Hash mod 5`) | Index with 6 Servers (`Hash mod 6`) | Status After Scaling |
+| :--- | :--- | :--- | :--- | :--- |
+| `session-alice` | **12** | `12 mod 5 = 2` (Server 2) | `12 mod 6 = 0` (Server 0) | **MOVED** (Cache Miss!) |
+| `session-bob` | **23** | `23 mod 5 = 3` (Server 3) | `23 mod 6 = 5` (Server 5) | **MOVED** (Cache Miss!) |
+| `session-charlie`| **30** | `30 mod 5 = 0` (Server 0) | `30 mod 6 = 0` (Server 0) | **STAYS** (Cache Hit) |
+
+Notice how Alice's and Bob's sessions have shifted to entirely new servers. Statistically, when scaling from $N$ to $N+1$ servers, **the probability of any key staying on the same server is only $1 / (N+1)$**. 
+
+This means:
+*   When scaling from 5 to 6 servers, **$5/6$ of all keys (83.3%) are suddenly sent to the wrong servers**.
+*   In a production caching layer (like Redis or Memcached), this causes a massive **cache stampede**: almost all read requests fail, forcing the application to query the primary database all at once, which frequently crashes the database.
 
 ---
 
 ## The Consistent Hashing Ring
 
-Consistent Hashing addresses this by decoupling the key distribution from the exact server count. Instead of a shifting base $N$, it uses a large, fixed circular space (typically $0$ to $2^{32} - 1$, representing a 32-bit unsigned integer ring).
+Consistent Hashing solves this scaling bottleneck by decoupling key routing from the exact number of active servers. 
+
+Instead of dividing key hashes by `N`, it places both servers and keys onto a large, fixed circular space known as a **hash ring**. This circle is typically mapped from $0$ to $4,294,967,295$ (which is $2^{32} - 1$, the standard range of a 32-bit unsigned integer).
 
 ```mermaid
 flowchart TD
@@ -42,11 +64,17 @@ flowchart TD
 ```
 
 ### The Clockwise Routing Protocol
-1.  **Map Nodes**: Physical servers are placed on the ring by hashing their identifier (for example, `Hash("Server-A")`).
-2.  **Map Keys**: Incoming data keys are placed on the same ring by hashing the key itself (for example, `Hash("user-session-982")`).
-3.  **Route clockwise**: To locate the server responsible for storing a key, we traverse the ring clockwise starting from the key's position until we hit the first available server node.
 
-When a server is added or removed, only the keys immediately preceding that server on the ring must be migrated. The rest of the ring mappings remain untouched.
+1.  **Map Servers**: We hash each physical server's identifier (for example, `Hash("Server-A")`) to get a large number, putting the server on that specific slot on the 4.3-billion-slot circle.
+2.  **Map Keys**: We hash the incoming data key (for example, `Hash("session-alice")`) using the same hash function to get another slot number on the circle.
+3.  **Route Clockwise**: To locate the server responsible for storing a key, we start at the key's slot and travel clockwise around the ring until we encounter the very first server.
+
+Let's look at the diagram above:
+*   **Key X** hashes to position 25,000. 
+*   Traveling clockwise (upward in numbers), the first server we encounter is **Server B** at position 50,000.
+*   Therefore, Key X is routed to Server B.
+
+If Server B crashes and is removed, Key X's clockwise path now passes right through position 50,000 and finds **Server C** at position 100,000. Only the keys that mapped to Server B are affected and need to be re-routed. All other keys on the ring (like those routed to Server A) stay exactly where they are.
 
 ---
 
