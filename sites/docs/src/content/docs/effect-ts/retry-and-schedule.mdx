@@ -47,6 +47,19 @@ console.log(Effect.runSync(program));
 // ok on attempt 3
 ```
 
+Here is the step-by-step visual execution trace of the synchronous runtime execution:
+
+```text
+[22:50:00.000] ▶️ [Sync Execution] Starting flaky program...
+[22:50:00.001] 💥 Attempt #1 starting... count = 1
+[22:50:00.002] ⚠️ Attempt #1 failed with: "attempt 1 failed" (retrying...)
+[22:50:00.003] 💥 Attempt #2 starting... count = 2
+[22:50:00.004] ⚠️ Attempt #2 failed with: "attempt 2 failed" (retrying...)
+[22:50:00.005] 💥 Attempt #3 starting... count = 3
+[22:50:00.006] ✅ Attempt #3 succeeded! Returning "ok on attempt 3"
+[22:50:00.007] 💾 Output: "ok on attempt 3"
+```
+
 `{ times: 3 }` means three **extra** attempts after the first (four tries total) ([retrying docs](https://effect.website/docs/error-management/retrying/#retry)).
 
 ## 2. Exponential backoff (cap it)
@@ -73,6 +86,20 @@ const program = flaky.pipe(Effect.retry(policy));
 
 attempts = 0;
 Effect.runPromise(program).then((n) => console.log(`succeeded after ${n} attempts`));
+```
+
+Here is the step-by-step visual execution trace illustrating the exponential backoff timeline delays:
+
+```text
+[22:50:00.000] ▶️ [Promise Execution] Starting backoff program...
+[22:50:00.001] 💥 Attempt #1 failed with: "fail 1"
+[22:50:00.002] ⏳ Schedule: Delaying for 10ms (exponential backoff)
+[22:50:00.013] 💥 Attempt #2 failed with: "fail 2"
+[22:50:00.014] ⏳ Schedule: Delaying for 20ms (exponential backoff factor = 2)
+[22:50:00.035] 💥 Attempt #3 failed with: "fail 3"
+[22:50:00.036] ⏳ Schedule: Delaying for 40ms (exponential backoff factor = 2)
+[22:50:00.077] 🎉 Attempt #4 succeeded! Value = 4
+[22:50:00.078] 💾 Output: "succeeded after 4 attempts"
 ```
 
 `Schedule.exponential` alone recurs **forever** ([built-in schedules](https://effect.website/docs/scheduling/built-in-schedules/#exponential)). Always intersect with `Schedule.recurs(n)` or use `times` / `until`.
@@ -114,6 +141,18 @@ const program = Effect.gen(function* () {
 n = 0;
 Effect.runPromiseExit(program).then((exit) => console.log(exit._tag));
 // Failure — FatalError on attempt 2, not retried
+```
+
+Here is the step-by-step visual execution trace illustrating the conditional error filtering predicate:
+
+```text
+[22:50:00.000] ▶️ [Exit Execution] Starting predicate filter program...
+[22:50:00.001] 💥 Attempt #1 failed with: TransientError
+[22:50:00.002] 🔍 Predicate check: error tag matches "TransientError" (while = true). Retrying...
+[22:50:00.003] 💥 Attempt #2 failed with: FatalError
+[22:50:00.004] 🔍 Predicate check: error tag "FatalError" does NOT match "TransientError" (while = false).
+[22:50:00.005] 🚫 Halting retry flow. Propagating fatal error upward.
+[22:50:00.006] 💾 Output Exit Status: Failure
 ```
 
 Pair with [[effect-ts/typed-errors|typed errors]] so `while` can discriminate on `_tag`.

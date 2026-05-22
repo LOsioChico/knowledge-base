@@ -86,6 +86,54 @@ No string tokens or decorator metadata: missing dependencies are compile errors,
   </TabItem>
 </Tabs>
 
+### OOP Analogy: Interface Tokens and Abstract Classes
+
+For developers coming from NestJS or traditional OOP dependency injection, `Context.Tag` acts exactly like an **Abstract Class injection token**:
+
+1. **The Token (Abstract Class)**: In NestJS, you declare an abstract class or interface token to define the API shape and provide a runtime identity.
+2. **The Constructor Injection**: You inject that token into a service constructor.
+3. **The Binding**: You register the provider mapping the token to an implementation inside a module.
+
+Here is a side-by-side comparison of declaring the boundary:
+
+<Tabs>
+  <TabItem label="NestJS (Abstract Class Token)">
+    ```typescript
+    // 1. Declare the boundary (Token + API shape)
+    export abstract class RandomService {
+      abstract readonly next: Promise<number>;
+    }
+
+    // 2. Inject the boundary
+    @Injectable()
+    export class GameService {
+      constructor(private readonly random: RandomService) {}
+
+      async play() {
+        return await this.random.next;
+      }
+    }
+    ```
+  </TabItem>
+  <TabItem label="Effect (Context.Tag)">
+    ```typescript
+    // 1. Declare the boundary (Token + API shape)
+    import { Context, Effect } from "effect";
+
+    export class Random extends Context.Tag("MyRandomService")<
+      Random,
+      { readonly next: Effect.Effect<number> }
+    >() {}
+
+    // 2. Inject the boundary (R tracks the dependency)
+    export const play = Effect.gen(function* () {
+      const random = yield* Random;
+      return yield* random.next;
+    });
+    ```
+  </TabItem>
+</Tabs>
+
 ## Building a layer
 
 A `Layer<ROut, E, RIn>` constructs services `ROut`, may fail with `E`, and may need `RIn` to build ([`Layer` module](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts)):
@@ -168,6 +216,26 @@ Release runs at program end, including on interruption.
 ## Providing a layer
 
 [`Effect.provide`](https://effect.website/docs/requirements-management/services/) removes the layer's outputs from `R`:
+
+```text
+                  ┌────────────────────────┐
+                  │ Effect<A, E, L | C>    │ (needs Logger AND Config)
+                  └───────────┬────────────┘
+                              │
+                    [Effect.provide(LoggerLive)]
+                              │
+                              ▼
+                  ┌────────────────────────┐
+                  │   Effect<A, E, Config> │ (needs only Config)
+                  └───────────┬────────────┘
+                              │
+                    [Effect.provide(ConfigLive)]
+                              │
+                              ▼
+                  ┌────────────────────────┐
+                  │   Effect<A, E, never>  │ (runnable!)
+                  └────────────────────────┘
+```
 
 ```ts twoslash
 import { Context, Effect, Layer } from "effect";

@@ -138,6 +138,88 @@ Effect.runPromise(program);
 
 NestJS resolves the graph at bootstrap ([custom providers](https://docs.nestjs.com/fundamentals/custom-providers#di-fundamentals)).
 
+### Custom Injection Tokens: `@Inject` vs `Context.Tag`
+
+In NestJS, provider identity defaults to the class itself, but you can decouple implementation from interface using custom string or symbol injection tokens with `@Inject()`:
+
+```typescript
+// NestJS: Decouple boundary using an injection token
+export const LOGGER_TOKEN = Symbol("LOGGER_TOKEN");
+
+export interface ILogger {
+  log(msg: string): void;
+}
+
+@Injectable()
+export class ConsoleLogger implements ILogger {
+  log(msg: string) { console.log(msg); }
+}
+
+// Injecting the boundary
+constructor(@Inject(LOGGER_TOKEN) private readonly logger: ILogger) {}
+```
+
+In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
+
+```typescript
+// Effect: The Tag is both the token and the type interface
+import { Context, Effect } from "effect";
+
+export class Logger extends Context.Tag("Logger")<
+  Logger,
+  { readonly log: (msg: string) => Effect.Effect<void> }
+>() {}
+
+// Injecting the boundary (inferred in R)
+export const logMessage = Effect.gen(function* () {
+  const logger = yield* Logger;
+  return yield* logger.log("decoupled");
+});
+```
+
+### Dynamic Modules and Provider Bindings vs Layer
+
+NestJS uses **Dynamic Modules** (`register()`, `forRoot()`) to construct provider configurations dynamically (e.g., passing a configuration object or reading from environment variables at startup):
+
+```typescript
+// NestJS: Dynamic Module configuration
+@Module({})
+export class DatabaseModule {
+  static forRoot(dbUrl: string): DynamicModule {
+    return {
+      module: DatabaseModule,
+      providers: [
+        {
+          provide: DB_CONNECTION,
+          useFactory: () => new DatabaseConnection(dbUrl),
+        },
+      ],
+      exports: [DB_CONNECTION],
+    };
+  }
+}
+```
+
+In Effect, **Layers are values** that can be composed and constructed dynamically using ordinary functions and standard functional operators. There is no special container ceremony or dynamic module API:
+
+```typescript
+// Effect: Dynamic Layer factory function
+import { Context, Effect, Layer } from "effect";
+
+export class Database extends Context.Tag("Database")<
+  Database,
+  { readonly query: (sql: string) => Effect.Effect<string> }
+>() {}
+
+export const makeDatabaseLive = (dbUrl: string) =>
+  Layer.succeed(Database, {
+    query: (sql) => Effect.succeed(`url: ${dbUrl} | query: ${sql}`),
+  });
+
+// Compose dynamically at the app entrypoint
+const AppLive = makeDatabaseLive(process.env.DATABASE_URL || "fallback-url");
+```
+
 ### Scope and memoization
 
 Nest providers are **singletons** unless scoped ([injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes#provider-scope)). Effect layers memoize **per `Effect.provide`** ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)).
