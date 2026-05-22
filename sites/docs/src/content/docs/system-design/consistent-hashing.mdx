@@ -3,7 +3,7 @@ title: Consistent Hashing
 description: Explaining circular hash ring spaces, the mod-N scaling problem, virtual nodes (VNodes), and a high performance TypeScript implementation.
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Distributing data across dynamic clusters with minimal rehashing when nodes scale up or down.
 
@@ -11,9 +11,11 @@ In a distributed database or caching cluster, routing requests efficiently is cr
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
-A common entry-level strategy for distributing keys across a set of $N$ servers is modulo hashing. We compute the hash value of a key and divide it by the number of active servers:
+A common entry-level strategy for distributing keys across a set of `N` servers is modulo hashing. We compute the hash value of a key and divide it by the number of active servers:
 
-$$\text{Server Index} = \text{Hash}(\text{key}) \pmod N$$
+```
+Server Index = Hash(key) mod N
+```
 
 ### The Scaling Failure
 Imagine we have 5 servers ($N = 5$) and distribute 100 keys. If one server crashes or we dynamically scale up to 6 servers ($N = 6$), the denominator of the modulo operation changes. 
