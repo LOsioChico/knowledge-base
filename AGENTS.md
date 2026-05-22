@@ -289,6 +289,9 @@ To deliver premium, state-of-the-art teaching and maximum utility, every note mu
 A concept note must establish deep mental clarity before introducing any implementation:
 - **Visual Diagrams**: Include at least one visual system diagram using Mermaid.js or structured ASCII art to map data flows, lifecycle stages, or spatial relationships.
 - **Mental Analogies**: Frame technical abstractions (such as AsyncLocalStorage, RxJS streams, or AWS KMS key structures) using a real-world or OOP analogy.
+- **Zero-Assumptions for Systems Design**: Distributed systems and systems design concepts MUST be welcoming and "intuition-first" for first-time readers. Avoid academic or mathematical formulas (e.g. raw equations, algebraic symbols, or formal relation signs without gloss). Instead, replace formulas entirely with:
+  1. A concrete real-world analogy (e.g. clock drift as physical wristwatches, Lamport limits as parallel personal diaries, happens-before as physical mail, partitions as branch office communication cuts).
+  2. Step-by-step numeric transition tables or execution flow matrices showing exact node state shifts.
 - **Behavior-in-Snippet Comments**: Do not leave code blocks unexplained. Annotate lines with precise comments highlighting exact runtime behavior.
 
 ### Gotchas (type/gotcha)
