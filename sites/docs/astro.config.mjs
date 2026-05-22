@@ -69,6 +69,7 @@ const nestjsSidebar = [
       { label: "Trace IDs", slug: "nestjs/recipes/trace-id" },
       { label: "Rate limiting", slug: "nestjs/recipes/rate-limiting" },
       { label: "Monorepos", slug: "nestjs/recipes/monorepo" },
+      { label: "Dynamic modules", slug: "nestjs/recipes/dynamic-modules" },
     ],
   },
   {

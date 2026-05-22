@@ -1,0 +1,330 @@
+---
+title: Dynamic Modules with ConfigurableModuleBuilder
+description: Async configuration, dependency injection, ConfigurableModuleBuilder, custom providers, and common gotchas in NestJS.
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Dynamic modules allow you to configure modules dynamically at registration time. Primitives like `register`, `forRoot`, and `registerAsync` map custom options (like API keys, timeouts, and connection pools) into the dependency injection (DI) container so services can consume them asynchronously.
+
+## When to reach for it
+
+- You are writing a shared client library (e.g., Stripe, database client, email sender) that needs different credentials per application.
+- Configuration values must be loaded asynchronously (e.g., from an external secret manager or database) before the service boots.
+- You want to reuse a module structure without hardcoding environment variables directly inside the service.
+
+## Setup
+
+<Steps>
+
+1. Install dependencies (we will build a custom Stripe module as a worked example):
+
+   ```bash
+   npm i stripe
+   ```
+
+2. Define the configuration options interface that our module will accept:
+
+   ```typescript
+   // stripe-options.interface.ts
+   export interface StripeOptions {
+     readonly apiKey: string;
+     readonly timeoutMs?: number;
+     readonly apiVersion?: string;
+   }
+   ```
+
+</Steps>
+
+---
+
+## The Modern Way: `ConfigurableModuleBuilder`
+
+Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the boilerplate types (`register`, `registerAsync`, `inject`, `useFactory`) for dynamic modules, reducing boilerplate by ~70%.
+
+### 1. Build the Module Definitions
+
+```typescript
+// stripe.module-definition.ts
+import { ConfigurableModuleBuilder } from "@nestjs/common";
+import { StripeOptions } from "./stripe-options.interface";
+
+// ConfigurableModuleBuilder generates standard dynamic module patterns
+export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
+  new ConfigurableModuleBuilder<StripeOptions>()
+    .setClassMethodName("register") // Defines "register" and "registerAsync" methods
+    .build();
+```
+
+### 2. Implement the Injectable Service
+
+Inject `MODULE_OPTIONS_TOKEN` directly to access the options configured at startup:
+
+```typescript
+// stripe.service.ts
+import { Inject, Injectable } from "@nestjs/common";
+import Stripe from "stripe";
+import { MODULE_OPTIONS_TOKEN } from "./stripe.module-definition";
+import { StripeOptions } from "./stripe-options.interface";
+
+@Injectable()
+export class StripeService {
+  private readonly stripe: Stripe;
+
+  constructor(
+    @Inject(MODULE_OPTIONS_TOKEN)
+    private readonly options: StripeOptions,
+  ) {
+    this.stripe = new Stripe(this.options.apiKey, {
+      timeout: this.options.timeoutMs ?? 5000,
+      apiVersion: (this.options.apiVersion as "2025-04-10") ?? "2025-04-10",
+    });
+  }
+
+  async createCharge(amount: number, currency: string): Promise<{ id: string; amount: number; status: string }> {
+    // stripe-side simulation for this recipe
+    if (!this.options.apiKey.startsWith("sk_")) {
+      throw new Error("Invalid Stripe secret key");
+    }
+    return {
+      id: `ch_${Math.random().toString(36).substring(2, 10)}`,
+      amount,
+      status: "succeeded",
+    };
+  }
+}
+```
+
+### 3. Implement the Module
+
+By extending `ConfigurableModuleClass`, NestJS automatically adds the `register` and `registerAsync` methods under the hood:
+
+```typescript
+// stripe.module.ts
+import { Module } from "@nestjs/common";
+import { ConfigurableModuleClass } from "./stripe.module-definition";
+import { StripeService } from "./stripe.service";
+
+@Module({
+  providers: [StripeService],
+  exports: [StripeService],
+})
+export class StripeModule extends ConfigurableModuleClass {}
+```
+
+---
+
+## Static vs. Asynchronous Registration
+
+You can register the module inside your root application module in one of two ways:
+
+<Tabs>
+  <TabItem label="Static (register)">
+    Use `register` when configuration options are available statically at build or startup time:
+
+    ```typescript
+    // app.module.ts
+    import { Module } from "@nestjs/common";
+    import { StripeModule } from "./stripe.module";
+
+    @Module({
+      imports: [
+        StripeModule.register({
+          apiKey: "sk_test_12345",
+          timeoutMs: 3000,
+        }),
+      ],
+    })
+    export class AppModule {}
+    ```
+  </TabItem>
+  <TabItem label="Asynchronous (registerAsync)">
+    Use `registerAsync` to inject `@nestjs/config`'s `ConfigService` (or other dependencies) and resolve options dynamically from environment variables:
+
+    ```typescript
+    // app.module.ts
+    import { Module } from "@nestjs/common";
+    import { ConfigModule, ConfigService } from "@nestjs/config";
+    import { StripeModule } from "./stripe.module";
+
+    @Module({
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        StripeModule.registerAsync({
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: (config: ConfigService) => ({
+            apiKey: config.getOrThrow<string>("STRIPE_API_KEY"),
+            timeoutMs: config.get<number>("STRIPE_TIMEOUT_MS", 5000),
+          }),
+        }),
+      ],
+    })
+    export class AppModule {}
+    ```
+  </TabItem>
+</Tabs>
+
+---
+
+## The Classic Way: Manual Dynamic Module
+
+Understanding the classic manual way is crucial for handling complex scenarios (such as dynamic provider generation or custom factory structures).
+
+```typescript
+// stripe.module.ts (Manual Pattern)
+import { DynamicModule, Module, Provider } from "@nestjs/common";
+import { StripeService } from "./stripe.service";
+import { StripeOptions } from "./stripe-options.interface";
+
+export const STRIPE_OPTIONS = "STRIPE_OPTIONS";
+
+@Module({})
+export class StripeModule {
+  // Static options registration
+  static register(options: StripeOptions): DynamicModule {
+    return {
+      module: StripeModule,
+      providers: [
+        {
+          provide: STRIPE_OPTIONS,
+          useValue: options,
+        },
+        StripeService,
+      ],
+      exports: [StripeService],
+    };
+  }
+
+  // Async options registration using factory injections
+  static registerAsync(options: {
+    imports?: any[];
+    inject?: any[];
+    useFactory: (...args: any[]) => Promise<StripeOptions> | StripeOptions;
+  }): DynamicModule {
+    const optionsProvider: Provider = {
+      provide: STRIPE_OPTIONS,
+      useFactory: options.useFactory,
+      inject: options.inject || [],
+    };
+
+    return {
+      module: StripeModule,
+      imports: options.imports || [],
+      providers: [optionsProvider, StripeService],
+      exports: [StripeService],
+    };
+  }
+}
+```
+
+---
+
+## Show, Don't Tell: Runtime Demonstration
+
+Let's inspect how the `StripeModule` behaves when wired into a controller.
+
+### 1. Injected Controller
+
+```typescript
+// payments.controller.ts
+import { Body, Controller, Post, InternalServerErrorException } from "@nestjs/common";
+import { StripeService } from "./stripe.service";
+
+@Controller("payments")
+export class PaymentsController {
+  constructor(private readonly stripeService: StripeService) {}
+
+  @Post("charge")
+  async charge(@Body() body: { amount: number; currency: string }) {
+    try {
+      return await this.stripeService.createCharge(body.amount, body.currency);
+    } catch (error) {
+      throw new InternalServerErrorException((error as Error).message);
+    }
+  }
+}
+```
+
+### 2. Concrete Payloads
+
+`POST /payments/charge` with a valid body:
+
+```json
+{
+  "amount": 5000,
+  "currency": "usd"
+}
+```
+
+Successful `201 Created` response payload:
+
+```json
+{
+  "id": "ch_7a9f82d",
+  "amount": 5000,
+  "status": "succeeded"
+}
+```
+
+If the dynamic options load an invalid API key, the service throws, and the controller yields `500 Internal Server Error`:
+
+```json
+{
+  "statusCode": 500,
+  "message": "Invalid Stripe secret key",
+  "error": "Internal Server Error"
+}
+```
+
+---
+
+## Gotchas and Best Practices
+
+<Aside type="danger" title="Generic Token Collisions">
+
+If you write multiple manual dynamic modules and register options using a generic token name (e.g. `OPTIONS` or `CONFIG`), Nest's IoC (Inversion of Control) container will overwrite providers with matching tokens. 
+
+**Rule of thumb**: Always prefix/namespace option tokens specifically (`STRIPE_OPTIONS`, `REDIS_OPTIONS`) to avoid startup-time conflicts. `ConfigurableModuleBuilder` handles this automatically by generating a unique object identity token.
+
+</Aside>
+
+<Aside type="caution" title="Global Scope Overreach">
+
+By default, dynamic modules are bounded to the module registry where they are imported. Adding `@Global()` makes the dynamic module global, which means other modules do not need to re-import it. 
+
+If using `ConfigurableModuleBuilder`, you can dynamically support optional global registration by configuring it on the builder:
+
+```typescript
+export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
+  new ConfigurableModuleBuilder<StripeOptions>()
+    .setClassMethodName("register")
+    .setExtras(
+      { isGlobal: false }, // Default extras value
+      (definition, extras) => ({
+        ...definition,
+        global: extras.isGlobal, // dynamically sets global property
+      }),
+    )
+    .build();
+```
+
+Which allows the consumer to specify: `StripeModule.register({ apiKey: '...', isGlobal: true })`.
+
+</Aside>
+
+<Aside type="note" title="ConfigurableModuleBuilder and Factory memoization">
+
+NestJS memoizes providers. If you define a custom `useFactory` callback, it will run exactly once when the application bootstraps and cached for all future injections. Avoid fetching request-scoped values inside your module's boot factories.
+
+</Aside>
+
+---
+
+## See also
+
+- [[nestjs/recipes/configuration|Configuration]]: loading environment variables for `registerAsync` injection
+- [[nestjs/fundamentals/global-providers|Global providers]]: understanding how custom providers are wired
+- [[nestjs/recipes|Recipes MOC]]
+- [NestJS Dynamic Modules (official)](https://docs.nestjs.com/fundamentals/dynamic-modules)
+- [NestJS Configurable Module Builder (official)](https://docs.nestjs.com/fundamentals/dynamic-modules#configurable-module-builder)
