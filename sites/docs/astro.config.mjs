@@ -229,6 +229,14 @@ const awsSidebar = [
   },
 ];
 
+/** @type {import('@astrojs/starlight').StarlightUserConfig['sidebar']} */
+const systemDesignSidebar = [
+  { label: "Overview", slug: "system-design" },
+  { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
+  { label: "Consistency Models", slug: "system-design/consistency-models" },
+  { label: "Logical Clocks", slug: "system-design/logical-clocks" },
+];
+
 export default defineConfig({
   site: SITE,
   base: BASE,
@@ -271,6 +279,11 @@ export default defineConfig({
           label: "AWS",
           collapsed: true,
           items: awsSidebar,
+        },
+        {
+          label: "System Design",
+          collapsed: true,
+          items: systemDesignSidebar,
         },
       ],
     }),
