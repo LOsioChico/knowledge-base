@@ -236,6 +236,7 @@ export class UsersController {
 Decorators do not recurse without `@ValidateNested()` and `@Type()` from `class-transformer`:
 
 ```typescript
+// create-order.dto.ts
 import { Type } from "class-transformer";
 import { IsArray, IsString, ValidateNested } from "class-validator";
 
@@ -252,9 +253,35 @@ export class CreateOrderDto {
 }
 ```
 
+If we send an invalid nested item payload:
+
+```json
+{
+  "items": [
+    { "sku": "A100" },
+    { "sku": 123 }
+  ]
+}
+```
+
+The pipe automatically traverses the array and throws a nested path error:
+
+```json
+{
+  "statusCode": 400,
+  "message": [
+    "items.1.sku must be a string"
+  ],
+  "error": "Bad Request"
+}
+```
+
 ## Custom error shape
 
+To return clean, standardized validation details (e.g. mapping internal validator constraints to a friendly list of fields), customize the `exceptionFactory` in `main.ts`:
+
 ```typescript
+// main.ts
 import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
 
 new ValidationPipe({
@@ -270,25 +297,163 @@ new ValidationPipe({
 });
 ```
 
-`POST /signup` with `{ "email": "not-an-email", "password": "x" }`:
+## Custom asynchronous validation with Dependency Injection
 
-```json
-{
-  "statusCode": 400,
-  "error": "Validation failed",
-  "details": [
-    { "field": "email", "messages": ["email must be an email"] },
-    {
-      "field": "password",
-      "messages": ["password must be longer than or equal to 8 characters"]
-    }
-  ]
+Often, validation requires checking state outside the payload (e.g., verifying database uniqueness before executing an insert).
+
+### 1. Define the custom validator and constraint
+Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):
+
+```typescript
+// is-unique.validator.ts
+import { Injectable } from "@nestjs/common";
+import { 
+  registerDecorator, 
+  ValidationOptions, 
+  ValidatorConstraint, 
+  ValidatorConstraintInterface,
+  ValidationArguments 
+} from "class-validator";
+import { DataSource } from "typeorm";
+
+@ValidatorConstraint({ name: "IsUniqueConstraint", async: true })
+@Injectable()
+export class IsUniqueConstraint implements ValidatorConstraintInterface {
+  constructor(private readonly dataSource: DataSource) {}
+
+  async validate(value: any, args: ValidationArguments): Promise<boolean> {
+    const [tableName, columnName] = args.constraints as [string, string];
+    const repository = this.dataSource.getRepository(tableName);
+    
+    // Check if any record already exists with the given column value
+    const entity = await repository.findOne({ where: { [columnName]: value } });
+    return !entity; // returns true if the value is unique (does not exist)
+  }
+
+  defaultMessage(args: ValidationArguments): string {
+    return `${args.property} must be unique. The value is already registered.`;
+  }
+}
+
+// Decorator definition function
+export function IsUnique(tableAndColumn: [string, string], validationOptions?: ValidationOptions) {
+  return function (object: object, propertyName: string) {
+    registerDecorator({
+      target: object.constructor,
+      propertyName: propertyName,
+      options: validationOptions,
+      constraints: tableAndColumn,
+      validator: IsUniqueConstraint,
+    });
+  };
 }
 ```
+
+### 2. DTO usage
+Add your custom decorator to your DTO fields:
+
+```typescript
+// create-user.dto.ts
+import { IsEmail, IsNotEmpty } from "class-validator";
+import { IsUnique } from "./is-unique.validator";
+
+export class CreateUserDto {
+  @IsNotEmpty()
+  @IsEmail()
+  @IsUnique(["users", "email"])
+  email: string;
+}
+```
+
+### 3. Bind the NestJS DI container in `main.ts`
+By default, `class-validator` instantiates custom validation constraint classes using `new`, bypassing the NestJS DI container and making database repository injection crash. 
+
+Bind the class-validator engine to the NestJS container in `main.ts` using `useContainer`:
+
+```typescript
+// main.ts
+import { NestFactory } from "@nestjs/core";
+import { useContainer } from "class-validator";
+import { AppModule } from "./app.module";
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  // Bind class-validator to the NestJS container, enabling DI in custom constraints
+  useContainer(app.select(AppModule), { fallbackOnErrors: true });
+  
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+<Aside type="caution" title="The race-condition vulnerability">
+
+Asynchronous custom validators are non-atomic. Two concurrent API requests with the exact same email can validate concurrently, pass the database uniqueness check, and both proceed to write, resulting in a duplicate DB error. **Always** back custom validators with a unique index (`UNIQUE`) inside the physical database schema to ensure absolute atomicity.
+
+</Aside>
+
+### 4. The container-leak test suite hang gotcha
+
+In testing environments (Jest/Vitest/Bun), calling `useContainer` binds validation constraints to the compiled `TestingModule` container. If you do not reset this reference during test teardowns, **the entire compiled application container remains in memory**. This triggers major memory leaks and prevents the runner process from exiting, hanging CI pipelines indefinitely.
+
+**Resolution**: Always reset `useContainer(null)` in the E2E test teardown:
+
+```typescript
+// users.e2e.spec.ts
+import { INestApplication } from "@nestjs/common";
+import { Test, TestingModule } from "@nestjs/testing";
+import { useContainer } from "class-validator";
+import { AppModule } from "../src/app.module";
+
+describe("Users (E2E)", () => {
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    
+    // Bind container for tests
+    useContainer(app.select(AppModule), { fallbackOnErrors: true });
+    
+    await app.init();
+  });
+
+  afterAll(async () => {
+    // 1. Reset container to prevent memory leaks and hung runners!
+    useContainer(null);
+    
+    // 2. Safely close application
+    await app.close();
+  });
+});
+```
+
+---
+
+## High-volume validation performance: Event loop blocking
+
+Standard NestJS validation pipes execute **synchronously** when parsing and transforming. If your application handles bulk file records or highly nested arrays (e.g., validating a JSON spreadsheet upload with 10,000 recursive sub-objects):
+1. The heavy nested validation recurses synchronously on the CPU.
+2. The single-threaded Node.js event loop is completely blocked for several hundred milliseconds.
+3. All other concurrent requests stall, driving up LCP and request latency.
+
+### Mitigation Strategies
+
+- **Validate in chunks**: Chop massive arrays into small batches (e.g. processing batches of 100) and execute validation iteratively with `setImmediate` or `setTimeout` breaks to yield CPU back to the event loop.
+- **Microservice offloading**: Offload validation to an isolated worker thread or a secondary microservice using NestJS queues (RabbitMQ/BullMQ).
+- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized schema libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
+
+---
 
 ## See also
 
 - [[nestjs/fundamentals/pipes|Pipes]]: binding scopes and built-ins
+- [[nestjs/recipes/dynamic-modules|Dynamic Modules]]: configurable dynamic modules
+- [[nestjs/recipes/serialization|Response serialization]]: transforming response payloads
 - [[nestjs/recipes|Recipes MOC]]
 - [Validation (official)](https://docs.nestjs.com/techniques/validation)
 - [class-validator decorators](https://github.com/typestack/class-validator#validation-decorators)

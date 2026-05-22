@@ -296,6 +296,188 @@ Use the guard override when the test is about the controller, pipe, or response 
 
 If the expensive boundary is a whole imported module rather than one guard, Nest's testing API also supports `overrideModule().useModule()` for larger E2E replacements ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing), [[nestjs/releases/v10|NestJS 10]]). Keep that move for mailers, payments, or other heavy edges: do not start there.
 
+---
+
+## Transactional database E2E test rollback pattern
+
+For true confidence, E2E tests should target a real database (e.g., local PostgreSQL or Docker test container) rather than an in-memory double. However, resetting database state between test runs is a major bottleneck: rebuilding schemas or truncating tables in `beforeEach` adds seconds to every test, slowing down CI pipelines.
+
+The gold standard for high-performance database testing is the **transactional rollback pattern**. By wrapping every individual test case inside a database transaction and rolling it back in `afterEach`, the database never persists mutations, keeping tests completely isolated and running in milliseconds.
+
+Here is a compile-safe, production-ready TypeORM E2E test implementation:
+
+```typescript
+// users-transactional.e2e.spec.ts
+import { INestApplication } from "@nestjs/common";
+import { Test, TestingModule } from "@nestjs/testing";
+import request from "supertest";
+import { DataSource, QueryRunner } from "typeorm";
+import { AppModule } from "../src/app.module";
+
+describe("Users E2E (Transactional)", () => {
+  let app: INestApplication;
+  let dataSource: DataSource;
+  let queryRunner: QueryRunner;
+
+  beforeAll(async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+
+    // 1. Retrieve the central database DataSource instance from Nest's container
+    dataSource = app.get(DataSource);
+  });
+
+  beforeEach(async () => {
+    // 2. Spawn a new, isolated database query runner
+    queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    
+    // 3. Initiate an isolated transaction context
+    await queryRunner.startTransaction();
+
+    // 4. Force all TypeORM repositories to use this transactional runner
+    jest.spyOn(dataSource, "createQueryRunner").mockReturnValue(queryRunner);
+  });
+
+  afterEach(async () => {
+    // 5. Instantly roll back all mutations executed during this test case!
+    await queryRunner.rollbackTransaction();
+    await queryRunner.release();
+    
+    // 6. Reset database mocks for the next isolated test case
+    jest.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    // 7. Gracefully close the application container and release pool connections
+    await app.close();
+  });
+
+  it("creates a user successfully inside the transaction", async () => {
+    const payload = {
+      email: "transaction@example.com",
+      name: "TxTest"
+    };
+
+    // Assert that the HTTP POST request succeeds
+    const response = await request(app.getHttpServer())
+      .post("/users")
+      .send(payload)
+      .expect(201);
+
+    expect(response.body).toEqual({
+      id: expect.any(Number),
+      email: "transaction@example.com",
+      name: "TxTest"
+    });
+  });
+});
+```
+
+### Show, don't tell: Concrete transaction isolation
+
+Here is exactly how the transactional isolation behaves across tests. If we send a POST request inside the transactional boundary:
+
+```http
+POST /users
+Content-Type: application/json
+
+{
+  "email": "transaction@example.com",
+  "name": "TxTest"
+}
+```
+
+We receive the created user record:
+
+```http
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "id": 402,
+  "email": "transaction@example.com",
+  "name": "TxTest"
+}
+```
+
+Because the test case ends and `afterEach` rolls back the transaction, the database returns to its clean state. A subsequent `GET /users/402` request in a different test case yields:
+
+```http
+HTTP/1.1 404 Not Found
+Content-Type: application/json
+
+{
+  "statusCode": 404,
+  "message": "User with ID 402 not found",
+  "error": "Not Found"
+}
+```
+
+---
+
+## Database connection pool teardown
+
+Active database connection pools (such as those maintained by `pg` or `mysql2` drivers) keep persistent TCP sockets open to the database server. If the testing container is compiled but the pools are never closed, the Node.js process cannot exit.
+
+When testing repository layers or individual services directly without booting a full `INestApplication` (which calls `app.close()`), you must manually destroy the connection pool in `afterAll()`:
+
+```typescript
+// users.repository.spec.ts
+import { Test, TestingModule } from "@nestjs/testing";
+import { DataSource } from "typeorm";
+import { AppModule } from "../src/app.module";
+
+describe("UsersRepository Unit Teardown", () => {
+  let moduleFixture: TestingModule;
+
+  beforeAll(async () => {
+    moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+  });
+
+  afterAll(async () => {
+    // Retrieve and destroy the pool if no INestApplication close handler is active
+    const dataSource = moduleFixture.get(DataSource);
+    if (dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+  });
+});
+```
+
+---
+
+## Diagnosing hung test suites (open handles)
+
+If your test runner finishes running all assertions but hangs indefinitely instead of returning to the terminal, it is because of unresolved asynchronous handles. Common culprits include:
+1. **Unclosed Nest Applications**: Forgetting to call `await app.close()` in `afterAll()`.
+2. **Active Database Pools**: Unclosed connection pools from TypeORM or Prisma.
+3. **Leaked Validators**: Bounding `class-validator` to the testing module using `useContainer` without resetting `useContainer(null)` in `afterAll()`.
+4. **Active Timers**: Unclosed `setInterval` or `setTimeout` handles inside services or tasks.
+
+To diagnose these leaks, invoke the test runner with the open handles flag:
+
+```bash
+# Jest
+jest --detectOpenHandles --forceExit
+
+# Vitest
+vitest --detectOpenHandles
+
+# Bun
+bun test --detectOpenHandles
+```
+
+The `--detectOpenHandles` flag prints the active call stack for every TCP socket, timer, or database handle that was created during test execution but was not safely closed by the time assertions completed.
+
+---
+
 ## Common gotchas
 
 - **`compile()` does not create an HTTP server.** If the test needs `app.getHttpServer()` or `HttpAdapterHost#httpAdapter`, boot an app first ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
