@@ -16,12 +16,15 @@ export function remarkWikilinks({ docsRoot, base = "" }) {
       aliasDivider: "|",
       hrefTemplate: (permalink) => {
         if (permalink === "__broken__") return `${basePath}/#wikilink-broken`;
-        const path = `/${permalink}/`.replace(/\/{2,}/g, "/");
-        return basePath ? `${basePath}${path}` : path;
+        const [slug, anchor] = permalink.split("#");
+        const path = `/${slug}/`.replace(/\/{2,}/g, "/");
+        const hash = anchor ? `#${anchor}` : "";
+        return (basePath ? `${basePath}${path}` : path) + hash;
       },
       pageResolver: (name) => {
-        const slug = resolveWikilinkTarget(name, slugs);
-        return slug ? [slug] : ["__broken__"];
+        const [target, anchor] = name.split("#");
+        const slug = resolveWikilinkTarget(target, slugs);
+        return slug ? [slug + (anchor ? `#${anchor}` : "")] : ["__broken__"];
       },
     },
   ];

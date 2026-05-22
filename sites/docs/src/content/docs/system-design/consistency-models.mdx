@@ -22,9 +22,8 @@ The CAP theorem states that a distributed data store can simultaneously provide 
 *   **Partition Tolerance**: The system continues to operate despite an arbitrary number of messages being dropped or delayed by the network between nodes.
 
 ```mermaid
-circleRing
+flowchart TD
     %% Venn diagram representing CAP theorem trade-offs
-    flowchart TD
         subgraph CAP ["The CAP Theorem Spectrum"]
             direction TB
             P["Partition Tolerance<br/>(Mandatory in Real Networks)"] --- CP["CP Systems<br/>(Consistent under Partition)"]

@@ -29,9 +29,8 @@ Because the modulo base is shifted, almost every key hashes to a completely diff
 Consistent Hashing addresses this by decoupling the key distribution from the exact server count. Instead of a shifting base $N$, it uses a large, fixed circular space (typically $0$ to $2^{32} - 1$, representing a 32-bit unsigned integer ring).
 
 ```mermaid
-circleRing
+flowchart TD
     %% Conceptual representation of clockwise routing on a circular hash ring
-    flowchart TD
         subgraph Ring [Circular Hash Ring Space]
             direction TB
             NodeA["Server A (Position 10,000)"] --> Key1["Key X (Position 25,000)"]
