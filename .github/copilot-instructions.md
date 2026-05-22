@@ -280,6 +280,35 @@ Three patterns to apply when rewriting:
 
 Enforced as an LLM judge pass in `scripts/audit-notes/jargon-verify.ts` (Pass 1e), surfacing as `style-jargon` advisory findings. The judge (`kb-jargon-judge` skill) is constrained to quote a specific undefined token from a specific line: subjective complaints like "this paragraph is dense" are forbidden by the skill prompt. Triggers: undefined acronyms or named features used without an inline gloss/wikilink within ±10 lines, and misleading-name traps stated as tail clauses ("X is a Y feature, not Z"). A domain-shorthand whitelist suppresses universally-known acronyms in their home area (`AWS`/`S3`/`IAM`/etc. in `aws/**`; `JWT`/`DTO`/`HTTP`/etc. everywhere); reference notes (`type/reference` or `*/data/`, `*/reference/` paths) are skipped wholesale. Hard cap of 5 findings per note. Findings still surface as advisory because rewrites are subjective; dismiss via `dismissed.json` (sig-based) when the LLM is wrong. Audit during the post-edit reading pass too: read each section as if you'd never seen the technology, flag anything requiring an external glossary lookup. See [`kb-author` Audit P](.github/skills/kb-author/audits/P-no-assumed-jargon.md).
 
+## Note-type premium standards
+
+To deliver premium, state-of-the-art teaching and maximum utility, every note must adhere to the high-value standards corresponding to its type:
+
+### Concepts (type/concept)
+
+A concept note must establish deep mental clarity before introducing any implementation:
+- **Visual Diagrams**: Include at least one visual system diagram using Mermaid.js or structured ASCII art to map data flows, lifecycle stages, or spatial relationships.
+- **Mental Analogies**: Frame technical abstractions (such as AsyncLocalStorage, RxJS streams, or AWS KMS key structures) using a real-world or OOP analogy.
+- **Behavior-in-Snippet Comments**: Do not leave code blocks unexplained. Annotate lines with precise comments highlighting exact runtime behavior.
+
+### Gotchas (type/gotcha)
+
+Gotcha notes must serve as immediate, actionable troubleshooting resources:
+- **Diagnostic Path**: Provide the exact error log snippet, terminal output, or stack trace the developer will encounter.
+- **Silent vs. Explicit Failures**: Clearly document the exact root cause, how to identify if the failure is silent, and configure explicit fail-fast mechanisms.
+
+### References (type/reference)
+
+Reference notes and cheat sheets must prioritize immediate utility and speed:
+- **Worked-Example Back-Links**: Every row in an API or configuration table must link to a concrete, worked-example code block or sibling recipe note demonstrating its usage.
+- **Copy-Pasteable Shell Blocks**: Provide a single, copy-pasteable environment setup block defining standard CLI variables so commands are immediately executable.
+
+### Design Patterns (type/pattern)
+
+Pattern notes must guide architectural decision-making:
+- **Trade-offs Matrix**: Include a Markdown table contrasting options across axes like cognitive load, scale limits, operational cost, and database impact.
+- **Directory Layout Trees**: Use fenced ASCII tree blocks to illustrate the exact folder structure required to implement the pattern in a project.
+
 ## Sourcing rule (NON-NEGOTIABLE)
 
 Never write a technical claim from training-data memory. Every fact MUST be verified against primary sources at the moment of writing.
