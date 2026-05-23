@@ -35,10 +35,11 @@ function candidateKey(path: string, line: number): string {
   return `${path}:${line}`;
 }
 
-describe("corpus expectSilent (deterministic)", { skip: !hasVault }, (): void => {
-  const manifest = loadManifest();
+describe("corpus expectSilent (deterministic)", (): void => {
+  // Only load manifest if hasVault is true to avoid crashes when content/ is missing
+  const manifest = hasVault ? loadManifest() : { expectSilent: [] };
 
-  it("show-dont-tell candidate finder is silent at manifest lines", (): void => {
+  it("show-dont-tell candidate finder is silent at manifest lines", { skip: !hasVault }, (): void => {
     for (const spec of manifest.expectSilent) {
       if (spec.rule !== "show-dont-tell") continue;
       if (SDT_KNOWN_GAPS.has(candidateKey(spec.path, spec.line))) continue;
@@ -53,7 +54,7 @@ describe("corpus expectSilent (deterministic)", { skip: !hasVault }, (): void =>
     }
   });
 
-  it("pass-0 deterministic is silent at manifest lines for style rules", (): void => {
+  it("pass-0 deterministic is silent at manifest lines for style rules", { skip: !hasVault }, (): void => {
     for (const spec of manifest.expectSilent) {
       if (!spec.rule.startsWith("style-")) continue;
       const abs: string = resolve(REPO_ROOT, spec.path);

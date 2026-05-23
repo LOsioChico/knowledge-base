@@ -19,20 +19,20 @@ function candidateLines(repoRelPath: string): number[] {
   );
 }
 
-describe("findShowDontTellCandidates", { skip: !hasVault }, (): void => {
-  it("does not flag the frontmatter opening fence (line 1)", (): void => {
+describe("findShowDontTellCandidates", (): void => {
+  it("does not flag the frontmatter opening fence (line 1)", { skip: !hasVault }, (): void => {
     const path: string = "content/nestjs/recipes/serialization.md";
     const lines: number[] = candidateLines(path);
     assert.ok(!lines.includes(1), `unexpected candidate at line 1: ${lines}`);
   });
 
-  it("does not flag the recipe tagline blockquote (line 29)", (): void => {
+  it("does not flag the recipe tagline blockquote (line 29)", { skip: !hasVault }, (): void => {
     const path: string = "content/nestjs/recipes/serialization.md";
     const lines: number[] = candidateLines(path);
     assert.ok(!lines.includes(29), `tagline should be skipped: ${lines}`);
   });
 
-  it("skips behavioral claims inside Obsidian callouts", (): void => {
+  it("skips behavioral claims inside Obsidian callouts", { skip: !hasVault }, (): void => {
     const path: string = "content/nestjs/fundamentals/exception-filters.md";
     const lines: number[] = candidateLines(path);
     for (const line of [202, 203, 207]) {
@@ -43,7 +43,7 @@ describe("findShowDontTellCandidates", { skip: !hasVault }, (): void => {
     }
   });
 
-  it("flags serialization L156 when req/res example is only above (backward-window gap)", (): void => {
+  it("flags serialization L156 when req/res example is only above (backward-window gap)", { skip: !hasVault }, (): void => {
     const path: string = "content/nestjs/recipes/serialization.md";
     const lines: number[] = candidateLines(path);
     assert.ok(
