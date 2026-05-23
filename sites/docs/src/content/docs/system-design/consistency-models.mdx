@@ -17,7 +17,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before resolving CAP theorem partition trade-offs and consistency spectrums, make sure you understand:
+This note is part of the **[[system-design|Systems Design Track]]**. Before resolving CAP theorem partition trade-offs and consistency spectrums, make sure you understand:
 - [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Master token bucket, leaky bucket, sliding window counter algorithms, and gateway traffic shaping defenses.
 
 </Aside>
@@ -66,10 +66,10 @@ Distributed databases do not offer a binary choice between strong consistency an
 
 | Consistency Model | Description | Coordination Cost | Typical Systems |
 | :--- | :--- | :--- | :--- |
-| **Linearizable** | Strict real-time global ordering. Reads always return the latest write. | Extremely High (Consensus required) | Google Spanner, CockroachDB |
-| **Sequential** | Identical global order of operations seen by all nodes. Real-time is ignored. | High (Global logical sequencing) | Apache ZooKeeper (for writes) |
-| **Causal** | Causally related operations are seen in the same order. Concurrent updates can diverge. | Medium (Vector tracking) | Cassandra (with lightweight transactions) |
-| **Eventual** | Replicas converge to the same value over time if no new writes occur. | Low (Background anti-entropy) | DynamoDB, CouchDB, DNS |
+| [**Linearizable**](#1-linearizability-strong-consistency) | Strict real-time global ordering. Reads always return the latest write. | Extremely High (Consensus required) | Google Spanner, CockroachDB |
+| [**Sequential**](#2-sequential-consistency) | Identical global order of operations seen by all nodes. Real-time is ignored. | High (Global logical sequencing) | Apache ZooKeeper (for writes) |
+| [**Causal**](#3-causal-consistency) | Causally related operations are seen in the same order. Concurrent updates can diverge. | Medium (Vector tracking) | Cassandra (with lightweight transactions) |
+| [**Eventual**](#4-eventual-consistency) | Replicas converge to the same value over time if no new writes occur. | Low (Background anti-entropy) | DynamoDB, CouchDB, DNS |
 
 *Note: For detail on partitioning strategies and hashing techniques used to distribute these data sets, see [[system-design/consistent-hashing|Consistent Hashing]].*
 

@@ -17,7 +17,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before building dynamic routing rings or consistency models, make sure you understand:
+This note is part of the **[[system-design|Systems Design Track]]**. Before building [[system-design/consistent-hashing|dynamic routing rings]] or [[system-design/consistency-models|consistency models]], make sure you understand:
 - [[system-design|Systems Design Overview]]: The high-level challenges of distributed systems design.
 
 </Aside>
@@ -36,11 +36,13 @@ A byte consists of 8 bits. A single ASCII character consumes exactly 1 Byte of s
 
 | Power of 2 | Approximate Value | Decimal Name | Short Name | Real-World Size Analogy |
 | :--- | :--- | :--- | :--- | :--- |
-| 2<sup>10</sup> | 1 Thousand | 1 Kilobyte | 1 KB | A single page of plain text (~1,000 characters) |
-| 2<sup>20</sup> | 1 Million | 1 Megabyte | 1 MB | A medium-length digital novel, or a high-res photo |
-| 2<sup>30</sup> | 1 Billion | 1 Gigabyte | 1 GB | A high-definition movie, or a small database table |
-| 2<sup>40</sup> | 1 Trillion | 1 Terabyte | 1 TB | A massive cluster user table, or 1,000 HD movies |
-| 2<sup>50</sup> | 1 Quadrillion | 1 Petabyte | 1 PB | The daily analytics log lake of a global tech company |
+| 2<sup>10</sup> | 1 Thousand | 1 Kilobyte | [1 KB](#mental-math-pro-tip) | A single page of plain text (~1,000 characters) |
+| 2<sup>20</sup> | 1 Million | 1 Megabyte | [1 MB](#worked-example-capstone-high-scale-photo-platform) | A medium-length digital novel, or a high-res photo |
+| 2<sup>30</sup> | 1 Billion | 1 Gigabyte | [1 GB](#mental-math-pro-tip) | A high-definition movie, or a small database table |
+| 2<sup>40</sup> | 1 Trillion | 1 Terabyte | [1 TB](#worked-example-capstone-high-scale-photo-platform) | A massive cluster user table, or 1,000 HD movies |
+| 2<sup>50</sup> | 1 Quadrillion | 1 Petabyte | [1 PB](#worked-example-capstone-high-scale-photo-platform) | The daily analytics log lake of a global tech company |
+
+<div id="mental-math-pro-tip"></div>
 
 > **Mental Math Pro-Tip**:
 > In interviews, translate units instantly by remembering these baseline pairs:
@@ -56,20 +58,20 @@ In 2010, Google Senior Fellow Dr. Jeff Dean published a set of baseline latency 
 
 | Operation Name | Latency (Nanoseconds) | Latency (Microseconds) | Latency (Milliseconds) |
 | :--- | :--- | :--- | :--- |
-| L1 cache reference | 0.5 ns | - | - |
+| [L1 cache reference](#the-time-dilation-analogy) | 0.5 ns | - | - |
 | Branch mispredict | 5 ns | - | - |
-| L2 cache reference | 7 ns | - | - |
+| [L2 cache reference](#the-time-dilation-analogy) | 7 ns | - | - |
 | Mutex lock/unlock | 100 ns | 0.1 µs | - |
-| Main memory reference (RAM) | 100 ns | 0.1 µs | - |
-| Compress 1 KB with Zippy | 10,000 ns | 10 µs | 0.01 ms |
-| Send 2 KB over 1 Gbps network | 20,000 ns | 20 µs | 0.02 ms |
+| [Main memory reference (RAM)](#the-time-dilation-analogy) | 100 ns | 0.1 µs | - |
+| [Compress 1 KB with Zippy](#key-architectural-takeaways) | 10,000 ns | 10 µs | 0.01 ms |
+| [Send 2 KB over 1 Gbps network](#key-architectural-takeaways) | 20,000 ns | 20 µs | 0.02 ms |
 | Read 1 MB sequentially from RAM | 250,000 ns | 250 µs | 0.25 ms |
-| Round trip within same data center | 500,000 ns | 500 µs | 0.5 ms |
-| SSD sequential read | 1,000,000 ns | 1,000 µs | 1 ms |
-| Disk seek (physical spinning disk) | 10,000,000 ns | 10,000 µs | 10 ms |
-| Read 1 MB sequentially from network | 10,000,000 ns | 10,000 µs | 10 ms |
+| [Round trip within same data center](#key-architectural-takeaways) | 500,000 ns | 500 µs | 0.5 ms |
+| [SSD sequential read](#the-time-dilation-analogy) | 1,000,000 ns | 1,000 µs | 1 ms |
+| [Disk seek (physical spinning disk)](#the-time-dilation-analogy) | 10,000,000 ns | 10,000 µs | 10 ms |
+| [Read 1 MB sequentially from network](#key-architectural-takeaways) | 10,000,000 ns | 10,000 µs | 10 ms |
 | Read 1 MB sequentially from disk | 30,000,000 ns | 30,000 µs | 30 ms |
-| Send packet (US-East to Europe RTT) | 150,000,000 ns | 150,000 µs | 150 ms |
+| [Send packet (US-East to Europe RTT)](#the-time-dilation-analogy) | 150,000,000 ns | 150,000 µs | 150 ms |
 
 ### The Time-Dilation Analogy
 
@@ -86,8 +88,8 @@ To build immediate engineering intuition from these abstract decimal figures, im
 
 <Steps>
 
-1.  **Memory is Fast, Disk is Slow**: RAM references are five orders of magnitude faster than a physical disk seek. Avoid physical disk lookups at all costs for high-throughput reads; use memory [[nestjs/data/caching|caching]].
-2.  **Network is Extremely Expensive**: A network roundtrip to another continent takes longer than a local disk seek and dwarfs memory lookups. Minimize cross-data center requests for synchronous transaction pipelines.
+1.  **Memory is Fast, Disk is Slow**: RAM references are five orders of magnitude faster than a physical disk seek. Avoid physical disk lookups at all costs for high-throughput reads; use memory [[system-design/distributed-caching|caching]].
+2.  **Network is Extremely Expensive**: a network roundtrip to another continent takes longer than a local disk seek and dwarfs memory lookups. Minimize cross-data center requests for synchronous transaction pipelines.
 3.  **Compress Before Sending**: Simple compression (like Zippy/Snappy) takes only 10 microseconds per KB, whereas sending data over a network takes far longer. Compressing data before [[nestjs/recipes/serialization|serialization]] is a highly effective performance trade-off.
 
 </Steps>
@@ -101,10 +103,10 @@ System availability is traditionally defined as a percentage representing the pr
 | Availability % | Downtime per Day | Downtime per Week | Downtime per Month | Downtime per Year |
 | :--- | :--- | :--- | :--- | :--- |
 | **99%** | 14.40 minutes | 1.68 hours | 7.31 hours | 3.65 days |
-| **99.9%** (Three Nines) | 8.64 seconds | 1.01 minutes | 43.80 minutes | 8.76 hours |
+| [**99.9%** (Three Nines)](#compounding-system-availability) | 8.64 seconds | 1.01 minutes | 43.80 minutes | 8.76 hours |
 | **99.99%** (Four Nines) | 864.00 milliseconds | 6.05 seconds | 4.38 minutes | 52.60 minutes |
 | **99.999%** (Five Nines) | 86.40 milliseconds | 604.80 ms | 26.30 seconds | 5.26 minutes |
-| **99.9999%** (Six Nines) | 8.64 milliseconds | 60.48 ms | 2.63 seconds | 31.56 seconds |
+| [**99.9999%** (Six Nines)](#compounding-system-availability) | 8.64 milliseconds | 60.48 ms | 2.63 seconds | 31.56 seconds |
 
 ### Compounding System Availability
 
@@ -208,7 +210,7 @@ Assume our site handles 300 Million reads per day (equal to the number of daily 
     Daily hot reads volume = 300 Million reads * 20% = 60 Million hot items
     Cache memory size = 60 Million * (1.5 MB + 250 bytes) ≈ 90 Terabytes of RAM
 
-To build this caching layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
+To build this [[nestjs/data/caching|caching]] layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
 *   Number of Redis Nodes = 90,000 GB / 256 GB ≈ 352 servers
 
 ---

@@ -17,7 +17,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before routing cache nodes, make sure you understand:
+This note is part of the **[[system-design|Systems Design Track]]**. Before routing cache nodes, make sure you understand:
 - [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Calculate daily working sets, QPS boundaries, and cache memory footprints using the 80/20 rule.
 
 </Aside>
@@ -97,7 +97,7 @@ The application writes directly to the cache, and the cache synchronously update
     1.  The application writes to the cache.
     2.  The cache server synchronously writes the same value to the database.
     3.  Once the database write completes, the cache returns a success status.
-*   **Pros**: Strong consistency. Stale cache reads are impossible because the cache and database are updated in a single transaction.
+*   **Pros**: [[system-design/consistency-models|Strong consistency]]. Stale cache reads are impossible because the cache and database are updated in a single transaction.
 *   **Cons**: Extremely high write latency. Every write operation is bottlenecked by the slow database disk, negating some performance benefits.
 
 ### 4. Write-Behind (Write-Back)

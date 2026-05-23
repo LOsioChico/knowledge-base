@@ -23,7 +23,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before diving into rate limiting and traffic shaping, make sure you understand:
+This note is part of the **[[system-design|Systems Design Track]]**. Before diving into rate limiting and traffic shaping, make sure you understand:
 - [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, Pub/Sub channels, delivery semantics, and dead-letter recovery queues.
 
 </Aside>
@@ -107,15 +107,15 @@ The Sliding Window Counter is a hybrid algorithm that combines the memory effici
 
 ## Architectural Comparison Matrix
 
-| Algorithmic Criteria | Token Bucket | Leaky Bucket | Fixed Window | Sliding Log | Sliding Counter |
+| Algorithmic Criteria | Token Bucket | Leaky Bucket | Fixed Window | [Sliding Log](#typescript-sliding-window-log-limiter) | Sliding Counter |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Burst Tolerance** | Full (up to Capacity) | None (Smooth flow) | High (Vulnerable) | Full | Balanced |
 | **Memory Footprint** | Extremely Low | Medium (Queue state) | Extremely Low | Extremely High | Extremely Low |
 | **Boundary Accuracy** | High | High | Low (Double limit) | Absolute | High (Approximate) |
 | **Implementation Complexity** | Low | Low | Low | High | Medium |
-| **Primary Technology Fit** | API Gateways | Worker Queues | Simple Scripts | Redis Sorted Sets | Production Gateways |
+| **Primary Technology Fit** | API Gateways | Worker Queues | Simple Scripts | Redis / Memory Map | Production Gateways |
 
-*Note: For detail on how standard clients use these concepts, check the [NestJS Rate Limiting Recipe](/knowledge-base/nestjs/recipes/rate-limiting/).*
+*Note: For detail on how standard clients use these concepts, check the [[nestjs/recipes/rate-limiting|NestJS Rate Limiting Recipe]].*
 
 ---
 
