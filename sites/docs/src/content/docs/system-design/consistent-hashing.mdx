@@ -214,6 +214,7 @@ Let us run a simulation comparing a low virtual node count (3 replicas per serve
 <Tabs>
   <TabItem label="Simulation Code">
   ```typescript
+  // Assumes the ConsistentHashRing class defined in the previous section is saved as "./consistent-hashing.ts"
   import { ConsistentHashRing } from "./consistent-hashing";
 
   const servers = ["Node-0", "Node-1", "Node-2", "Node-3", "Node-4"];
