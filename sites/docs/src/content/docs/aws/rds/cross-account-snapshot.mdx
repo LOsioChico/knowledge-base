@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/rds/cli|RDS CLI cheatsheet]]: since snapshot replication operations rely on regional database configurations.
+</Aside>
+
 ## The trap
 
 <Aside type="caution" title="Default RDS KMS key cannot be shared">

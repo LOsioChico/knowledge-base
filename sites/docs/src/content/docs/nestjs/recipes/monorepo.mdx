@@ -13,6 +13,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Scale multiple NestJS applications and shared libraries in a high-performance monorepo workspace. By combining Turborepo with pnpm workspaces, you eliminate dependency bleed, leverage local and remote build caches, and orchestrate parallel development servers with native task pipelines.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into monorepo setup, make sure you understand:
+- [[nestjs/fundamentals|Dependency Injection]] & [[nestjs/fundamentals|Modules]]: since monorepo architecture relies on sharing encapsulated modules across multiple applications.
+</Aside>
+
 ## Why Turborepo over simple scripts
 
 Standard NestJS monorepo mode shares a single `package.json` file at the root, which forces every microservice to inherit all dependencies. If a single background worker requires a heavy library, every other service in your cluster must download it in its production container.

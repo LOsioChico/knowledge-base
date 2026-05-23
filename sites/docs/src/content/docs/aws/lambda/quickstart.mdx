@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > CLI walkthrough: write a Node.js function, create an execution role, zip the bundle, deploy, invoke, and clean up. No console clicks.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since packaging and deploying function payloads is executed using the AWS CLI.
+</Aside>
+
 ## Before you start
 
 - AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:

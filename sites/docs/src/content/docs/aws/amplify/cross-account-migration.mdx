@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > Recreate [[aws/amplify|Amplify Hosting]] in a new account: `create-app` → branch → zip deployment → move custom domain. CLI-driven and scriptable for dry runs.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/amplify/cli|Amplify CLI cheatsheet]]: since we will use the Amplify CLI toolchain to manage the application lifecycle and run the migration tasks.
+</Aside>
+
 <Aside type="caution" title="SPA rewrite on create-app">
 
 Without a `404-200` rule to `/index.html`, hard refreshes on client routes return S3/CloudFront 404s ([redirects docs](https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html)).

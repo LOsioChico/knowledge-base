@@ -35,6 +35,7 @@ export function runMdxDeterministicStructural(
   findings.push(...checkObsidianCalloutsInMdx(text));
   findings.push(...checkAsideTypes(text));
   findings.push(...checkVaultPathWikilinks(text));
+  findings.push(...checkMdxPrerequisiteBadge(text, absolutePath.endsWith("index.mdx")));
 
   findings.sort((a: Finding, b: Finding): number => a.line - b.line);
   return { path: repoRelative, findings };
@@ -240,6 +241,38 @@ function checkVaultPathWikilinks(text: string): Finding[] {
         evidence: raw.trim().slice(0, 120),
       });
     }
+  }
+
+  return findings;
+}
+
+/** Enforces that every non-index note-level page has documented prerequisites. */
+function checkMdxPrerequisiteBadge(text: string, isIndex: boolean): Finding[] {
+  const findings: Finding[] = [];
+  if (isIndex) return findings;
+
+  const lines = text.split("\n");
+  let hasTaglinePrereq = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    if (raw === undefined) continue;
+    const trimmed = raw.trim();
+    if (trimmed.startsWith(">") && /Prerequisite:/i.test(trimmed)) {
+      hasTaglinePrereq = true;
+      break;
+    }
+  }
+
+  const hasAsidePrereq = /<Aside\s+[^>]*type=["']tip["']\s+[^>]*title=["']Prerequisites["']/i.test(text);
+
+  if (!hasTaglinePrereq && !hasAsidePrereq) {
+    findings.push({
+      rule: "frontmatter-schema",
+      line: 1,
+      message:
+        "Missing prerequisite documentation. Notes must either carry 'Prerequisite: [[link]]' in their tagline quote, or have a standard `<Aside type=\"tip\" title=\"Prerequisites\">` badge block at the top of the body.",
+    });
   }
 
   return findings;

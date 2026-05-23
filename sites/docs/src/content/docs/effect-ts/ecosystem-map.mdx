@@ -7,6 +7,8 @@ import { Aside } from "@astrojs/starlight/components";
 
 > Every package from the [`Effect-TS/effect` monorepo](https://github.com/Effect-TS/effect/tree/main/packages). Core ships as `effect`; integrations ship as `@effect/*`.
 
+> Prerequisite: [[effect-ts/what-is-effect|What is Effect]]
+
 ## How packages are laid out
 
 `effect` holds `Effect<A, E, R>`, runners, [[effect-ts/schema|Schema]], `Layer`, `Stream`, `Schedule`, `Fiber`, `Scope`, and combinators ([`packages/effect`](https://github.com/Effect-TS/effect/tree/main/packages/effect)). Everything else adds a runtime adapter, domain (HTTP, SQL, AI), or tooling.

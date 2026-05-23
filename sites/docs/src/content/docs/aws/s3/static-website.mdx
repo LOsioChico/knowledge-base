@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only: production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/s3/quickstart|S3 quickstart]]: since configuring S3 static hosting assumes existing S3 bucket resource configurations.
+</Aside>
+
 ## When to reach for it
 
 - **Bare S3 website**: ephemeral/internal/test where [[effect-ts/platform|HTTP]] is acceptable.

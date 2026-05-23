@@ -1,11 +1,21 @@
 ---
 title: Configuration with @nestjs/config
 description: Load config once, validate required env at startup, inject typed settings into modules, and avoid stringly-typed process.env drift.
+related:
+  - "[[nestjs/recipes/dynamic-modules]]"
+  - "[[nestjs/auth/jwt-strategy]]"
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 
 > Load configuration once, fail fast on missing or malformed env, and inject typed settings where Nest resolves dependencies.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Configuration, make sure you understand:
+- [[nestjs/recipes/dynamic-modules|Dynamic Modules]]: Dynamic dependency injection patterns used to initialize global app configuration layers asynchronously.
+
+</Aside>
 
 ## When to reach for it
 

@@ -1,11 +1,21 @@
 ---
 title: Consistent Hashing
 description: Explaining circular hash ring spaces, the mod-N scaling problem, virtual nodes (VNodes), and a high performance TypeScript implementation.
+related:
+  - "[[system-design/consistency-models]]"
+  - "[[system-design/logical-clocks]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Distributing data across dynamic clusters with minimal rehashing when nodes scale up or down.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before mapping circular hash rings, make sure you understand:
+- [[system-design/consistency-models|Consistency Models]]: Frame database partitions, replication states, and coordination costs across dynamic nodes.
+
+</Aside>
 
 In a distributed database or [[nestjs/data/caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
 

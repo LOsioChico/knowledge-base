@@ -7,6 +7,11 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 > A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials: recipients need no AWS account.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/s3/quickstart|S3 quickstart]]: since generating secure presigned links assumes existing S3 object paths.
+</Aside>
+
 ## When to reach for one
 
 - Browser download of a private object without opening the bucket.

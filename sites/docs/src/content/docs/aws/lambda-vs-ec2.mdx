@@ -7,6 +7,11 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > [[aws/lambda|Lambda]], [[aws/ec2|EC2]], and [[aws/ecs|Fargate]] solve different workload shapes. Picking Lambda for a long-lived backend trades cold starts, connection-pool overhead, and per-request pricing that crosses always-on compute well before "high traffic".
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since comparing runtime platforms assumes a foundational understanding of AWS computing profiles.
+</Aside>
+
 ## TL;DR
 
 - **Lambda**: event glue, low-duty cron, spiky webhooks, scale-to-zero.

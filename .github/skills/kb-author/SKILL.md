@@ -10,7 +10,7 @@ description: >
 
 # kb-author
 
-Workflow companion to the repo's `AGENTS.md`. AGENTS.md owns invariants (frontmatter schema,
+Workflow companion to the repo's `AGENTS.md`. AGENTS.md owns invariants (frontmatter [[effect-ts/schema|schema]],
 controlled vocabulary, linker rules); this skill owns the **multi-step workflows**.
 
 **Always read `AGENTS.md` first.** On conflict it wins.
@@ -58,6 +58,7 @@ Run the relevant audits before commit on every note you touched (snippets inside
 | **N** | Re-fetch every URL in `source:` and diff prose against the live doc; mandatory for recipes, security, auth, error-handling, and version-specific notes | [audits/N-source-verification.md](audits/N-source-verification.md) |
 | **O** | Prose claims about a snippet's runtime behavior (auto-converted, deprecated, throws at startup, emits warning) are mirrored INSIDE the snippet via comments, output, or annotated identifiers | [audits/O-behavior-in-snippet.md](audits/O-behavior-in-snippet.md) |
 | **P** | No assumed-knowledge jargon: every domain term, acronym, or named feature is defined inline at first use, wikilinked to its note, or replaced with the observable behavior it names | [audits/P-no-assumed-jargon.md](audits/P-no-assumed-jargon.md) |
+| **Q** | Prerequisite badge & curriculum progression: every non-index note carries visual prerequisite badges aligned with nearest MOC flowcharts | [audits/Q-prerequisite-badge.md](audits/Q-prerequisite-badge.md) |
 
 ### Starlight MDX audits (published site)
 
@@ -190,7 +191,7 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   it's chat-specific ("as I mentioned earlier", "great question").
 - **Using the most familiar example name even when its domain contradicts the note** → `auth/jwt`
   is the canonical "nested path" demo across the Nest ecosystem, but it has no business in
-  middleware.md (which disclaims authz). Run [Audit J](audits/J-demo-names.md).
+  [[nestjs/fundamentals/middleware|middleware]].md (which disclaims authz). Run [Audit J](audits/J-demo-names.md).
 - **Marking every qualifier as `[!warning]`** → readers learn to skim past warnings, including
   the real ones. Warnings are for actual footguns (silent failures, security, hangs); everything
   else is `[!info]` or plain prose. Run [Audit K](audits/K-callout-severity.md).
@@ -199,7 +200,7 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   mode is shipping a confident-sounding lie about X. Run [Audit L](audits/L-comparative-claims.md);
   default to dropping the comparison and linking to the comparator's note.
 - **Reflexively accepting a first-mention wikilink suggestion** → the linter matches by note
-  title/alias/filename, so words like "validation", "guards", "pipes", "middleware" trigger
+  title/alias/filename, so words like "[[nestjs/recipes/validation|validation]]", "[[nestjs/fundamentals/guards|guards]]", "[[nestjs/fundamentals/pipes|pipes]]", "middleware" trigger
   links to their Nest-specific notes even when the surrounding sentence is about a different
   concept (Joi env checks, TS type guards, shell pipes, Express middleware in a non-Nest
   context). The fix is to **rephrase the prose** ("check the shape of" instead of "validate"),

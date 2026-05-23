@@ -7,6 +7,11 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 > When you move a workload between AWS accounts, the same service-level moves recur. This page is the cross-cutting playbook pointing at each per-service recipe.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since multi-account migrations require orchestrating resources across two or more local CLI environments.
+</Aside>
+
 ## When this playbook applies
 
 - The workload's AWS account is changing (compromise, ownership, billing consolidation, sandbox graduation).

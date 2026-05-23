@@ -7,6 +7,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Wire `@nestjs/typeorm` to Postgres via `forRootAsync` + `ConfigService`, register entities per feature, inject repositories, and run migrations from a standalone `DataSource`. One `forRoot` per process; `forFeature` per module.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into PostgreSQL setup, make sure you understand:
+- [[nestjs/fundamentals|Dependency Injection]]: since TypeORM uses NestJS custom providers and tokens to configure the database connections.
+</Aside>
+
 ## Setup
 
 ```bash

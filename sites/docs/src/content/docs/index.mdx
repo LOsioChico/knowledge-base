@@ -7,25 +7,41 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
 
 > Personal notes on TypeScript backends: Effect-TS, NestJS, and AWS. Everything on this site is Starlight MDX under `sites/docs/`. The `content/` vault remains for Obsidian editing, `related:` symmetry, and LLM audit.
 
-## Start here
+## Learning Pathways
 
-- **Effect-TS**: [[effect-ts]] or [[effect-ts/quickstart]] (~10 min).
-- **NestJS**: [[nestjs]] → [[nestjs/fundamentals/request-lifecycle|request lifecycle]] → [[nestjs/recipes/validation|validation recipe]].
-- **AWS**: [[aws]] → [[aws/cli|CLI]] → [[aws/s3/quickstart|S3 quickstart]].
-- **Systems Design**: [[system-design]] → [[system-design/consistent-hashing|consistent hashing]] → [[system-design/consistency-models|consistency models]].
+A structured, self-teaching roadmap designed to build deep engineering intuition from basic primitives to production-grade architectures.
 
 <CardGrid>
-  <Card title="Effect-TS" icon="rocket">
-    <p><a href="/knowledge-base/effect-ts/">11 notes</a>: [[effect-ts/composition|composition]], layers, [[effect-ts/typed-errors|typed errors]], retries.</p>
+  <Card title="1. NestJS Track" icon="rocket">
+    *Core request flow, modular boundary design, and dependency injection:*
+    
+    - **Core**: [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]] ➔ [[nestjs/fundamentals/middleware|Middleware]] ➔ [[nestjs/fundamentals/guards|Guards]]
+    - **Intermediate**: [[nestjs/fundamentals/interceptors|Interceptors]] ➔ [[nestjs/fundamentals/pipes|Pipes]] ➔ [[nestjs/fundamentals/exception-filters|Exception Filters]]
+    - **Advanced**: [[nestjs/recipes/dynamic-modules|Dynamic Modules]] ➔ [[nestjs/recipes/configuration|Config Injection]] ➔ [[nestjs/auth/jwt-strategy|Auth Stack]]
   </Card>
-  <Card title="NestJS" icon="open-book">
-    <p><a href="/knowledge-base/nestjs/">28 notes</a>: fundamentals, recipes, data, auth, releases.</p>
+  
+  <Card title="2. AWS Serverless Track" icon="setting">
+    *Cloud infrastructure primitives to decoupled event-driven queues:*
+    
+    - **Core**: [[aws/cli/profiles-and-credentials|CLI Credentials]] ➔ [[aws/s3/quickstart|S3 Quickstart]] ➔ [[aws/s3/storage-classes|Storage Classes]]
+    - **Intermediate**: [[aws/s3/lifecycle-rules|S3 Lifecycles]] ➔ SQS & SNS Buffering
+    - **Advanced**: [[aws/eventbridge/event-driven-decoupling|EventBridge Asynchronous Decoupling]]
   </Card>
-  <Card title="AWS" icon="setting">
-    <p><a href="/knowledge-base/aws/">41 notes</a>: CLI, S3 deep-dives, cross-[[aws/account-migrations|account migrations]].</p>
+  
+  <Card title="3. Effect-TS Track" icon="open-book">
+    *Functional programming, compile-time DI, and structured concurrency:*
+    
+    - **Core**: [[effect-ts/what-is-effect|What is Effect]] ➔ [[effect-ts/quickstart|Quickstart]] ➔ [[effect-ts/composition|Composition]]
+    - **Intermediate**: [[effect-ts/typed-errors|Typed Errors]] ➔ [[effect-ts/layers-and-di|Layers & DI]] ➔ [[effect-ts/scoped-resources|Scoped Resources]]
+    - **Advanced**: [[effect-ts/concurrency|Concurrency & Fibers]] ➔ [[effect-ts/streams|Streams]] ➔ [[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]
   </Card>
-  <Card title="Systems Design" icon="puzzle">
-    <p><a href="/knowledge-base/system-design/">4 notes</a>: consistent hashing, CAP/consistency models, [[system-design/logical-clocks|logical clocks]].</p>
+  
+  <Card title="4. Systems Design Track" icon="puzzle">
+    *Distributed systems mathematical foundations and partitioning algorithms:*
+    
+    - **Core**: [[system-design/consistency-models|Consistency Models]]
+    - **Intermediate**: [[system-design/logical-clocks|Logical Clocks]]
+    - **Advanced**: [[system-design/consistent-hashing|Consistent Hashing]]
   </Card>
 </CardGrid>
 

@@ -25,6 +25,16 @@ In a single-computer system, building software is straightforward: there is a si
 *   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
 *   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
 
+## Learning Pathway Sequence
+
+For a progressive learning flow, we recommend mastering the CAP consistency spectrum before diving into event coordination (logical clocks) and data distribution rings (consistent hashing):
+
+```mermaid
+flowchart TD
+    CM["1. [[system-design/consistency-models|Consistency Models]] (Entry)"] --> LC["2. [[system-design/logical-clocks|Logical Clocks]]"]
+    CM --> CH["3. [[system-design/consistent-hashing|Consistent Hashing]]"]
+```
+
 ## Choose a path
 
 <Tabs>

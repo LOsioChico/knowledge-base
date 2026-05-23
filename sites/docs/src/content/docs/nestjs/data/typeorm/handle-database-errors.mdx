@@ -7,6 +7,12 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into handling database errors, make sure you understand:
+- [[nestjs/data/typeorm/postgresql-setup|PostgreSQL setup with TypeORM]]: since error handling depends on having TypeORM and pg driver connections established.
+- [[nestjs/fundamentals/exception-filters|Exception Filters]]: since global database error mapping relies on NestJS Exception Filters.
+</Aside>
+
 ## Setup
 
 ```bash

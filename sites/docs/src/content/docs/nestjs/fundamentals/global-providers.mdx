@@ -10,6 +10,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Two ways to register a global pipe, guard, interceptor, or exception filter. They look interchangeable. They are not.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into global enhancers, make sure you understand:
+- [[nestjs/fundamentals|Dependency Injection]]: since the `APP_*` provider tokens rely on the NestJS DI container to instantiate global enhancers.
+</Aside>
+
 ## Choose in 30 seconds
 
 ```mermaid

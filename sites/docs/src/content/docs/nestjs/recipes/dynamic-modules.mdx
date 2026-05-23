@@ -1,11 +1,21 @@
 ---
 title: Dynamic Modules with ConfigurableModuleBuilder
 description: Async configuration, dependency injection, ConfigurableModuleBuilder, custom S3 bucket storage providers, and multi-instance registration in NestJS.
+related:
+  - "[[nestjs/fundamentals/global-providers]]"
+  - "[[nestjs/recipes/configuration]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Dynamic modules allow you to configure modules dynamically at registration time. Primitives like `register`, `forRoot`, and `registerAsync` map custom options (like S3 bucket names, regions, and credentials) into the dependency injection (DI) container so services can consume them asynchronously.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Dynamic Modules, make sure you understand:
+- [[nestjs/fundamentals|NestJS Fundamentals]]: Modules and the Dependency Injection (DI) container that manages provider registrations.
+
+</Aside>
 
 ## Why do we need dynamic modules?
 

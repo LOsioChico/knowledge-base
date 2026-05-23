@@ -3,7 +3,14 @@ title: S3 CLI cheatsheet
 description: aws s3 and aws s3api commands for inventory, bucket config, and bulk data movement.
 ---
 
+import { Aside } from "@astrojs/starlight/components";
+
 > Two CLIs: `aws s3` is high-level `cp`/`ls`/`sync`; `aws s3api` maps REST. Use `s3api` for bucket [[nestjs/recipes/configuration|configuration]]; `s3` for moving bytes.
+
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since managing S3 buckets and objects requires profile-based CLI requests.
+</Aside>
 
 ## Inventory
 

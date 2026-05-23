@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > S3 event notifications fire to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/s3/quickstart|S3 quickstart]]: since wiring bucket events assumes existing S3 bucket infrastructure.
+</Aside>
+
 ## Event families
 
 Ten activity types including Intelligent-Tiering auto-tier ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):

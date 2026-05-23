@@ -27,12 +27,13 @@ Read [`docs/PUBLISHING.md`](../../../docs/PUBLISHING.md) and kb-author audits **
 | `aside-hygiene` | subjective | `<Aside>` type matches stakes (`caution` for footguns); no Obsidian `> [!warning]` in MDX | [S4](../kb-author/audits/S4-enrichment-fit.md) + [K](../kb-author/audits/K-callout-severity.md) |
 | `show-dont-tell` | subjective | Behavioral claims in recipe MDX include request + response payloads | [S3](../kb-author/audits/S3-show-dont-tell-mdx.md) |
 | `recipe-command-context` | subjective | Each `bash`/`sh` fence has prose above explaining **why** to run it and **what to verify** in output | [S2](../kb-author/audits/S2-reader-clarity.md) + [S1](../kb-author/audits/S1-publish-bar.md) |
+| `prerequisite-coverage` | subjective | Prerequisites defined; checks that advanced concepts are not assumed without their predecessors | [Audit Q](../kb-author/audits/Q-prerequisite-badge.md) |
 
 Do **not** emit vault-only rules (`related:`, discoverability, `source:` frontmatter).
 
 ### `recipe-command-context` (recipes only)
 
-Apply on pages with multiple shell steps: `quickstart.mdx`, `**/recipes/**`, cross-account migrations, numbered `## N.` step sections, or `## Before you start`.
+Apply on pages with multiple shell steps: `quickstart.mdx`, `**/recipes/**`, cross-[[aws/account-migrations|account migrations]], numbered `## N.` step sections, or `## Before you start`.
 
 For **each** fenced `bash` or `sh` block:
 
@@ -43,6 +44,14 @@ For **each** fenced `bash` or `sh` block:
 5. Bad example: `## 1. Pre-flight` then ` ```bash ` with no intervening explanation.
 
 Deterministic pre-check: `bun run lint:mdx-recipe-context` (CI advisory). Emit LLM findings only when the heuristic missed a subtle case or prose is present but useless ("run this command" with no verification hint).
+
+### `prerequisite-coverage`
+
+Apply on all non-index notes under `sites/docs/src/content/docs/**/*.mdx`.
+
+1. **Semantic Progression**: Check if the listed prerequisites represent the most direct and logical stepping stones.
+2. **No Cognitive Leaps**: Verify if the note sneaks in highly complex concepts (e.g. multi-account routing, custom providers request scope, Effect concurrency) without their structural prerequisites being explicitly defined on the page or ancestor chain.
+3. **FAIL** if the prerequisites listed are logically disjointed, skipped, or if the note reads as if it assumed zero-prior-knowledge when it actually depends on advanced abstractions.
 
 ## What this skill does NOT check
 
@@ -65,7 +74,8 @@ type Report = {
         | "mdx-internal-link"
         | "aside-hygiene"
         | "show-dont-tell"
-        | "recipe-command-context";
+        | "recipe-command-context"
+        | "prerequisite-coverage";
       line: number;
       message: string;
       evidence?: string;

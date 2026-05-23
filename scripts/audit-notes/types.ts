@@ -18,7 +18,9 @@ export type RuleId =
   | "callout-severity" //     audit K
   | "ambiguous-wikilink" //   audit M
   | "source-verification" //  audit N (always on; requires CURSOR_API_KEY)
-  | "express-first";
+  | "express-first"
+  | "recipe-command-context" // audit S2
+  | "prerequisite-coverage"; // audit Q
 
 export interface Finding {
   rule: RuleId;
@@ -89,6 +91,8 @@ export const SUBJECTIVE_LLM_RULES: ReadonlySet<RuleId> = new Set<RuleId>([
   "callout-severity",
   "ambiguous-wikilink",
   "style-hedge",
+  "recipe-command-context",
+  "prerequisite-coverage",
 ]);
 
 export interface TieredFinding extends FlatFinding {

@@ -7,6 +7,8 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Effect [[effect-ts/layers-and-di|layers]] and NestJS's IoC container both wire dependencies. They differ on **when** missing deps surface, **how** graphs compose, and **how** cleanup is modeled.
 
+> Prerequisite: [[effect-ts/layers-and-di|Layers and DI]]
+
 ## TL;DR
 
 - **Effect**: missing services are a **type error** (`R` must be `never` to run).

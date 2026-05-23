@@ -1,11 +1,21 @@
 ---
 title: S3 lifecycle rules
 description: Per-bucket lifecycle configuration — transitions, expiration, noncurrent version cleanup, and multipart abort.
+related:
+  - "[[aws/s3/storage-classes]]"
+  - "[[aws/s3/quickstart]]"
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
 > Up to 1,000 rules per bucket age objects automatically: transition to cheaper [[aws/s3/storage-classes|storage classes]] or delete. Scales without custom code.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[AWS Serverless Track](/knowledge-base/aws/)**. Before organizing S3 lifecycle rules, make sure you understand:
+- [[aws/s3/storage-classes|S3 Storage Classes]]: Cost, latency, and retrieval behaviors governing each storage class tier.
+
+</Aside>
 
 ## Why you need one
 

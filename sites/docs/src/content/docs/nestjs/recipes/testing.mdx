@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > Testing in NestJS is mostly choosing how much of the DI container and [[effect-ts/platform|HTTP]] pipeline to boot.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into testing recipes, make sure you understand:
+- [[nestjs/fundamentals|Dependency Injection]]: as NestJS testing compiles custom testing modules to resolve and mock container dependencies.
+</Aside>
+
 ## When to reach for it
 
 - A service test needs DI-friendly mocks, not `new Service(...)` by hand.

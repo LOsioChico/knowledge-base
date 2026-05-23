@@ -218,6 +218,10 @@ Skipping any step is a bug.
 - Avoid stub links to non-existent notes. If you reference a future note, mark it explicitly: `[[microservices/kafka|Kafka (planned)]]`.
 - **Starlight folder index slugs**: In Starlight MDX pages under `sites/docs/`, folder index pages do NOT contain `/index` in their route slugs. The route slug is the folder name itself (e.g. `[[aws/sqs]]` or `[[aws/eventbridge]]`). Using the `/index` basename (such as `[[aws/sqs/index]]` or `[[aws/eventbridge/index]]`) in wikilinks or frontmatter `related:` lists is forbidden and will fail the `bun run lint:ci` compilation checks. Always reference the bare folder name for folder index pages.
 - **No aliased wikilinks inside markdown tables**: Obsidian aliased wikilinks (`[[slug|label]]`) use the pipe character (`|`), which breaks markdown table column parsing. Inside all tables under `sites/docs/`, use standard markdown links `[label](/knowledge-base/slug/)` instead (enforced by `bun run lint:mdx-table-wikilinks`).
+- **Prerequisite Badges & Curriculum Progression Invariant (BLOCKING)**: Every non-index note-level MDX page under `sites/docs/` must have documented prerequisites immediately following the tagline quote. This can be either:
+  1. A standard Astro Starlight Aside component: `<Aside type="tip" title="Prerequisites">Before diving in, make sure you understand: - [[prerequisite-slug|Prerequisite Concept]]</Aside>`
+  2. Or, for compact tracks (like Effect-TS), tagline-integrated: `> Prerequisite: [[prerequisite-slug|Prerequisite Concept]]` inside the initial tagline blockquote.
+  This is a programmatically enforced quality gate in `mdx-deterministic.ts` (`checkMdxPrerequisiteBadge`). If a page does not include either of these prerequisite indicators, the `bun run lint:ci` linter will fail and block compilation. Mapped prerequisites must align logically with the nearest Map of Content (MOC) index visual flowchart sequence.
 
 ## Recipe template
 

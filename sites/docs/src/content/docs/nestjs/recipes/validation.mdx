@@ -9,6 +9,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Validate bodies, query strings, and route params with one global pipe and declarative DTO classes. Same `class-transformer` / `class-validator` pair as [[nestjs/recipes/serialization|response serialization]].
 
+<Aside type="tip" title="Prerequisites">
+Before diving into this recipe, make sure you understand:
+- [[nestjs/fundamentals/pipes|Pipes]]: since validation in NestJS is built on the Pipes architecture.
+</Aside>
+
 ## When to reach for it
 
 - You assumed `body.email` was a string and it wasn't.

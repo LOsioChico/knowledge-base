@@ -7,6 +7,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since NestJS 10, the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into the SWC builder setup, make sure you understand:
+- [[nestjs/fundamentals|Dependency Injection]]: since SWC requires specific decorator metadata configurations to prevent DI runtime failures.
+</Aside>
+
 ## Which builder?
 
 | Project shape | Builder | Type-check |

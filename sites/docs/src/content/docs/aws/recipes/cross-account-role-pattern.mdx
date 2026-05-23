@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > Pattern for partial [[aws/account-migrations|account migrations]]: leave a service in the old account and let new-account compute reach it via STS `AssumeRole` with ExternalId and a tightly scoped permission policy.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/iam/policy-evaluation|IAM Policy Evaluation]]: since establishing cross-account trust boundaries requires a deep understanding of resource-based and identity-based policies.
+</Aside>
+
 When workloads move from account A to B but one service can't migrate yet (sandbox, vendor approval, regulatory lock-in), account B's compute assumes a role in account A. Common during partial migrations for SES, Bedrock, or any service with regional approval flows.
 
 ## Shape

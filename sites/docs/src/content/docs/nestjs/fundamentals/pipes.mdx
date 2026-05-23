@@ -1,11 +1,21 @@
 ---
 title: Pipes
 description: Transform or validate a single handler argument before the route method runs.
+related:
+  - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/recipes/validation]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Run on **one** argument at a time (`@Body()`, `@Param()`, `@Query()`): coerce types, apply defaults, or reject with `400` before the handler executes.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Pipes, make sure you understand:
+- [[nestjs/fundamentals/interceptors|Interceptors]]: Enhancers that wrap the execution flow immediately preceding argument pipes.
+
+</Aside>
 
 <Tabs>
   <TabItem label="Use ValidationPipe when">

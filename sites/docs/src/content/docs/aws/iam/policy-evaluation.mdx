@@ -7,6 +7,11 @@ import { Aside } from "@astrojs/starlight/components";
 
 > IAM policy evaluation is the authorization pass behind every AWS API call: start at deny, find every applicable allow, then let explicit denies and guardrail policies decide what survives.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since verifying policy evaluation models requires inspecting identities and credentials.
+</Aside>
+
 ## TL;DR
 
 - **Default is deny.** AWS evaluates the caller, action, resource, and request context, then allows the request only if applicable policies allow it ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).

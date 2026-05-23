@@ -7,6 +7,11 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". The propagation layer relies only on Node's built-in `node:async_hooks` (`AsyncLocalStorage`) plus `randomUUID` from `node:crypto`.
 
+<Aside type="tip" title="Prerequisites">
+Before diving into trace propagation, make sure you understand:
+- [[nestjs/fundamentals/middleware|Middleware]]: since AsyncLocalStorage context must be opened early in the request execution chain via middleware.
+</Aside>
+
 ## How it works
 
 `AsyncLocalStorage` (from Node's `node:async_hooks` module) acts as a per-async-context store: anything executing inside the `als.run(store, callback)` callback (and any asynchronous `await` chain it spawns) sees the same `store`. 

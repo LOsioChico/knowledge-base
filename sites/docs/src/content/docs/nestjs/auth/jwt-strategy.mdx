@@ -1,11 +1,22 @@
 ---
 title: JWT strategy with Passport
 description: Sign JWTs on login, verify with passport-jwt, protect routes with JwtAuthGuard, and opt out public routes with @Public().
+related:
+  - "[[nestjs/recipes/configuration]]"
+  - "[[nestjs/fundamentals/guards]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into the JWT Auth Strategy, make sure you understand:
+- [[nestjs/fundamentals/guards|Guards]]: How authorization blockers gate access inside the request lifecycle.
+- [[nestjs/recipes/configuration|Configuration]]: Centralizing environment secrets dynamically for containerised bootstrap.
+
+</Aside>
 
 ## The four-layer stack
 

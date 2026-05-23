@@ -1,11 +1,21 @@
 ---
 title: Exception filters
 description: Map thrown errors to HTTP responses; route-first resolution, opposite of guards and pipes.
+related:
+  - "[[nestjs/fundamentals/request-lifecycle]]"
+  - "[[nestjs/fundamentals/global-providers]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Last-chance handlers when something throws in [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the controller, or service code reached from that request path. Filters run **only on failure inside Nest's exception zone**.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Exception Filters, make sure you understand:
+- [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]: How errors propagate out of the NestJS exception zone to their respective filters.
+
+</Aside>
 
 ## Default behavior
 

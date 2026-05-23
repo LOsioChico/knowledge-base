@@ -1,11 +1,21 @@
 ---
 title: Interceptors
 description: Wrap the handler before and after; RxJS streams, response mapping, caching, and timeouts.
+related:
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/pipes]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, caching, and timeouts: not for raw `req` mutation or per-argument [[nestjs/recipes/validation|validation]].
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Interceptors, make sure you understand:
+- [[nestjs/fundamentals/guards|Guards]]: Declarative auth and gating checks that run prior to interceptor execution.
+
+</Aside>
 
 ## Contract
 

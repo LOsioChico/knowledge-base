@@ -7,6 +7,11 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 > [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims**: retries stack faster than DNS can chase them.
 
+<Aside type="tip" title="Prerequisites">
+Before diving in, make sure you understand:
+- [[aws/cloudfront/cli|CloudFront CLI cheatsheet]]: since managing CNAMEs, alternate domains, and ghost distributions requires navigating CloudFront distribution configurations.
+</Aside>
+
 ## Symptom
 
 ```text

@@ -6,6 +6,7 @@ description: Context.Tag, Layer, and Effect.provide — the R channel as a typed
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > The `R` channel of `Effect<A, E, R>` is the typed dependency graph. Declare a service with a `Tag`, build an implementation as a `Layer`, and `Effect.provide` it. The compiler refuses to run an effect whose `R` is not `never`.
+> Prerequisite: [[effect-ts/scoped-resources|Scoped Resources]]
 
 <Steps>
 
