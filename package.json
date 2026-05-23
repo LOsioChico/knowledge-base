@@ -18,7 +18,7 @@
     "audit:mdx-ci": "bun run --cwd scripts/audit-notes audit:mdx-ci",
     "audit:mdx-triage": "bun run --cwd scripts/audit-notes audit:mdx-triage",
     "lint:ci": "bun run lint:ci:tooling && bun run lint:docs",
-    "lint:ci:tooling": "bun run lint:wikilinks && bun run lint:publish-parity && bun run lint:aws-profile-consistency && bun run lint:mdx-recipe-context && bun run --cwd scripts/audit-notes lint:mdx-content",
+    "lint:ci:tooling": "bun run lint:wikilinks && bun run lint:publish-parity && bun run lint:aws-profile-consistency && bun run lint:mdx-recipe-context && bun run --cwd scripts/audit-notes lint:mdx-content && node scripts/lint-mdx-prerequisite-sequence.mjs",
     "docs:build:ci": "bun run --cwd sites/docs build:ci",
     "test:ci": "bun run test && bun run --cwd scripts/audit-notes test",
     "docs:dev": "bun run --cwd sites/docs dev",
