@@ -257,6 +257,7 @@ const systemDesignSidebar = [
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },
   { label: "Logical Clocks", slug: "system-design/logical-clocks" },
+  { label: "Distributed Transactions & Saga Patterns", slug: "system-design/distributed-transactions" },
 ];
 
 export default defineConfig({

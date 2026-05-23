@@ -16,7 +16,7 @@ In a single-computer system, building software is straightforward: there is a si
 *   **No instant updates**: If a user updates their profile picture, how does every other server learn about it without slowing down the site?
 *   **No single truth of time**: Computers have physical clocks that drift. How do we know which event happened first if servers disagree on what time it is?
 
-[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/message-queues|Asynchronous Message Queues]], [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]], [[system-design/consistency-models|Consistency Models]], [[system-design/logical-clocks|Logical Clocks]], and [[system-design/consistent-hashing|Consistent Hashing]] are the core foundational pillars of distributed software architecture.
+[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/message-queues|Asynchronous Message Queues]], [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]], [[system-design/consistency-models|Consistency Models]], [[system-design/logical-clocks|Logical Clocks]], [[system-design/consistent-hashing|Consistent Hashing]], and [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] are the core foundational pillars of distributed software architecture.
 
 ## TL;DR
 
@@ -27,6 +27,7 @@ In a single-computer system, building software is straightforward: there is a si
 *   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
 *   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
 *   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].
+*   **Distributed Transactions & Saga Patterns**: Coordinates multi-service state changes using Two-Phase Commit or Sagas with compensating workflows. See [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]].
 
 ## Learning Pathway Sequence
 
@@ -40,6 +41,7 @@ flowchart TD
     RL --> CM["5. [[system-design/consistency-models|Consistency Models]]"]
     CM --> LC["6. [[system-design/logical-clocks|Logical Clocks]]"]
     CM --> CH["7. [[system-design/consistent-hashing|Consistent Hashing]]"]
+    CH --> DT["8. [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]]"]
 ```
 
 ## Choose a path
@@ -55,6 +57,7 @@ flowchart TD
     5. [[system-design/consistency-models|Consistency Models]]: Understand the CAP theorem, sequential/causal models, and client-centric guarantees like Read-Your-Writes.
     6. [[system-design/logical-clocks|Logical Clocks]]: Solve time synchronization limits using Lamport Timestamps and Vector Clocks for causal histories.
     7. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
+    8. [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]]: Master Two-Phase Commit (2PC) and Saga patterns (Orchestration vs. Choreography) with compensating transactions.
 
     </Steps>
   </TabItem>
@@ -67,6 +70,7 @@ flowchart TD
     4. **Rate Limiting Simulator**: Build a fully typed TypeScript sliding window log rate limiter using millisecond log sets: [[system-design/rate-limiting#typescript-sliding-window-log-limiter|TypeScript Sliding Window Limiter]].
     5. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
     6. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
+    7. **Saga Workflow Orchestrator**: Build a self-contained orchestrator managing forward steps and backward compensation rollbacks: [[system-design/distributed-transactions#typescript-saga-orchestrator-implementation|TypeScript Saga Orchestrator Code]].
 
     </Steps>
   </TabItem>
@@ -96,6 +100,9 @@ flowchart TD
   <Card title="Consistent Hashing" icon="puzzle">
     <p><a href="/knowledge-base/system-design/consistent-hashing/">Partitioning ring</a>: VNodes, balancing, and TS implementation.</p>
   </Card>
+  <Card title="Distributed Transactions & Saga Patterns" icon="setting">
+    <p><a href="/knowledge-base/system-design/distributed-transactions/">Transaction patterns</a>: 2PC limits, Saga Orchestrator/Choreography, and Transactional Outbox.</p>
+  </Card>
 </CardGrid>
 
 ## Guides Summary
@@ -109,12 +116,12 @@ flowchart TD
 | Consistency Models | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | Logical Clocks | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
 | Consistent Hashing | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
+| Distributed Transactions & Saga Patterns | [Distributed Transactions & Saga Patterns](/knowledge-base/system-design/distributed-transactions/) | 2PC, Saga Orchestrator, Saga Choreography, Transactional Outbox, Compensating rollbacks |
 
 ## Planned Concepts
 
 To expand our distributed systems curriculum and prepare for advanced real-world architectures, the following core topics are planned to be added next:
 
-- **Distributed Transactions & Saga Patterns**: Resolving database coordination bottlenecks without two-phase commit locks by using the Saga and transactional outbox patterns.
 - **Distributed Consensus & Coordination**: Master election, split-brain mitigation, heartbeats, and leader coordination using consensus algorithms like Raft and Paxos.
 - **Storage Internals & Advanced Data Structures**: Analyzing B-Trees vs. LSM Trees for read/write performance, and using Bloom Filters, Merkle Trees, and Geohashes for efficient distributed data storage.
 
