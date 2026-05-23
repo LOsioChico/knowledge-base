@@ -1,6 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Basic styling helpers
 const reset = "\x1b[0m";
@@ -52,7 +56,10 @@ function findFilePathBySlug(slug: string): string | null {
   const paths = [
     path.join(docsDir, `${slug}.mdx`),
     path.join(docsDir, `${slug}.md`),
+    path.join(docsDir, slug, "index.mdx"),
+    path.join(docsDir, slug, "index.md"),
     path.join(contentDir, `${slug}.md`),
+    path.join(contentDir, slug, "index.md"),
   ];
   for (const p of paths) {
     if (fs.existsSync(p)) return p;
@@ -65,12 +72,19 @@ function getSlugFromFilePath(filePath: string): string {
   const docsPrefix = path.resolve(docsDir);
   const contentPrefix = path.resolve(contentDir);
 
+  let slug = "";
   if (normalized.startsWith(docsPrefix)) {
-    return path.relative(docsPrefix, normalized).replace(/\.(mdx|md)$/, "");
+    slug = path.relative(docsPrefix, normalized).replace(/\.(mdx|md)$/, "");
   } else if (normalized.startsWith(contentPrefix)) {
-    return path.relative(contentPrefix, normalized).replace(/\.md$/, "");
+    slug = path.relative(contentPrefix, normalized).replace(/\.md$/, "");
+  } else {
+    slug = path.basename(normalized).replace(/\.(mdx|md)$/, "");
   }
-  return path.basename(normalized).replace(/\.(mdx|md)$/, "");
+
+  if (slug.endsWith("/index")) {
+    slug = slug.slice(0, -6);
+  }
+  return slug;
 }
 
 // Build index of all notes in the knowledge base
@@ -410,14 +424,44 @@ export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string
 // ---------------------------------------------------------
 // 2.5. Effect Twoslash Auto-Converter
 // ---------------------------------------------------------
+function hasForbiddenImportsForTwoslash(code: string): boolean {
+  // Extract all import and export sources
+  const importRe = /(?:import|export)\s+(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+  let match;
+
+  const allowedPackages = new Set([
+    "effect",
+    "@effect/platform",
+    "@effect/platform-node"
+  ]);
+
+  const allowedBuiltins = new Set([
+    "fs", "path", "http", "https", "crypto", "os", "url", "events",
+    "child_process", "util", "assert", "stream", "dns", "net",
+    "tls", "zlib", "readline", "querystring", "punycode"
+  ]);
+
+  while ((match = importRe.exec(code)) !== null) {
+    const source = match[1];
+    if (source.startsWith(".") || source.startsWith("/")) continue;
+    if (source.startsWith("node:")) continue;
+    if (allowedPackages.has(source)) continue;
+    if (allowedBuiltins.has(source)) continue;
+
+    return true;
+  }
+
+  return false;
+}
+
 export function convertEffectBlocksToTwoslash(body: string): { updatedBody: string, modified: boolean } {
   let modified = false;
   // Match fenced typescript code blocks with their line attributes
   const regex = /```(ts|typescript|tsx)(.*?)\r?\n([\s\S]*?)```/g;
 
   const updatedBody = body.replace(regex, (match, lang, attrs, code) => {
-    // If it's already a twoslash block, skip
-    if (attrs.includes("twoslash")) {
+    // If it's already a twoslash block, or has opt-outs, skip
+    if (attrs.includes("twoslash") || code.includes("no-twoslash") || code.includes("no-inject") || code.includes("no-inject-imports")) {
       return match;
     }
 
@@ -426,6 +470,10 @@ export function convertEffectBlocksToTwoslash(body: string): { updatedBody: stri
                             /import\s+['"](?:effect|@effect\/)/.test(code);
 
     if (hasEffectImport) {
+      if (hasForbiddenImportsForTwoslash(code)) {
+        return match;
+      }
+
       modified = true;
       const trimmedAttrs = attrs.trim();
       if (trimmedAttrs === "") {
@@ -743,6 +791,11 @@ function main() {
 }
 
 // If executed directly, run main
-if (require.main === module) {
+const isMain = process.argv[1] && (
+  path.resolve(process.argv[1]) === path.resolve(__filename) ||
+  path.resolve(process.argv[1]).replace(/\.[jt]s$/, "") === path.resolve(__filename).replace(/\.[jt]s$/, "")
+);
+
+if (isMain) {
   main();
 }

@@ -110,7 +110,7 @@ Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel
 
 By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors:
 
-```ts twoslash
+```ts
 import { Effect } from "effect";
 import { NodeSdk } from "@effect/opentelemetry";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";

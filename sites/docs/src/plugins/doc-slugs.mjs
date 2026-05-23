@@ -1,12 +1,19 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
+/** @type {Map<string, Set<string>>} */
+const slugsCache = new Map();
+
 /**
  * Collect Starlight doc slugs from src/content/docs (mirrors Astro route IDs).
  * @param {string} docsRoot absolute path to src/content/docs
  * @returns {Set<string>}
  */
 export function collectDocSlugs(docsRoot) {
+  if (slugsCache.has(docsRoot)) {
+    return slugsCache.get(docsRoot);
+  }
+
   /** @type {Set<string>} */
   const slugs = new Set();
 
@@ -31,6 +38,7 @@ export function collectDocSlugs(docsRoot) {
   }
 
   walk(docsRoot);
+  slugsCache.set(docsRoot, slugs);
   return slugs;
 }
 

@@ -114,7 +114,8 @@ Effect.runPromise(
 
 Building high-overhead API servers usually relies on heavyweight frameworks like Express or Fastify. `@effect/platform` includes a modular, lightweight HTTP Router that executes asynchronously with fiber [[effect-ts/concurrency|concurrency]] limits:
 
-```ts twoslash
+```ts
+// no-twoslash
 import { Effect } from "effect";
 import { HttpRouter, HttpServer, HttpMiddleware, HttpRouterApp } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";

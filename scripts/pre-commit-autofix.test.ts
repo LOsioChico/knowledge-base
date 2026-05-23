@@ -309,3 +309,23 @@ import { Controller } from "@nestjs/common";
   assert.equal(updatedBody, body);
 });
 
+test("convertEffectBlocksToTwoslash ignores blocks with forbidden imports or explicit no-twoslash opt-out", () => {
+  const body = `Some intro.
+
+\`\`\`ts
+import { Effect } from "effect";
+import { NodeSdk } from "@effect/opentelemetry";
+\`\`\`
+
+\`\`\`ts
+// no-twoslash
+import { Effect } from "effect";
+\`\`\`
+`;
+
+  const { updatedBody, modified } = convertEffectBlocksToTwoslash(body);
+  assert.equal(modified, false);
+  assert.equal(updatedBody, body);
+});
+
+

@@ -1,6 +1,13 @@
 ---
 title: Effect-TS
 description: Typed errors, dependency injection, and structured concurrency in TypeScript.
+related:
+  - "[[effect-ts/platform]]"
+  - "[[effect-ts/streams]]"
+  - "[[effect-ts/concurrency]]"
+  - "[[effect-ts/observability]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
+  - "[[effect-ts/state]]"
 ---
 
 import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
@@ -40,6 +47,27 @@ const program = Effect.sync(() => {
 | `Effect.gen`      | Generator-based DSL: `yield*` an effect to "await" it.                                             | `async/await` for `Effect` (see [Composition](/knowledge-base/effect-ts/composition/)). |
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
+
+## Learning Pathway Sequence
+
+Follow this structured step-by-step track sequence to master Effect-TS, from foundational generator composition up to fault-tolerant streaming pipelines:
+
+```mermaid
+flowchart TD
+    QS["1. [[effect-ts/quickstart|Quickstart]] (Entry)"] --> WE["2. [[effect-ts/what-is-effect|What is Effect]]"]
+    WE --> COMP["3. [[effect-ts/composition|Composition]]"]
+    COMP --> ERR["4. [[effect-ts/typed-errors|Typed Errors]]"]
+    ERR --> SCH["5. [[effect-ts/schema|Schema]]"]
+    SCH --> LYR["6. [[effect-ts/layers-and-di|Layers & DI]]"]
+    LYR --> RET["7. [[effect-ts/retry-and-schedule|Retry & Schedule]]"]
+    RET --> SCP["8. [[effect-ts/scoped-resources|Scoped Resources]]"]
+    SCP --> CONC["9. [[effect-ts/concurrency|Concurrency]]"]
+    CONC --> STR["10. [[effect-ts/streams|Streams]]"]
+    STR --> ST["11. [[effect-ts/state|State Coordinates]]"]
+    ST --> OBS["12. [[effect-ts/observability|Observability]]"]
+    OBS --> PLT["13. [[effect-ts/platform|Platform Layers]]"]
+    PLT --> FT["14. [[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]"]
+```
 
 ## Start here
 
