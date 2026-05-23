@@ -1095,6 +1095,62 @@
       "reason": "Verified at content/effect-ts/layers-and-di.md#L37: 'depending on how much ceremony you want' is legitimate either/or framing for Context.Tag vs Effect.Service, not softening of a factual claim. Each variant is documented concretely in the same note.",
       "date": "2026-05-10",
       "originalLine": "A service is two things: a unique tag (identifier) and an interface (the operations it exposes). Effect ships two ways to declare both, depending on how much ceremony you want."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/rate-limiting.mdx",
+      "sig": "307a38b2cf156675339585a191f966f8fdbdaa24",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Asynchronous Message Queues is the strict sequential predecessor node of Rate Limiting in the curriculum flowchart. Restoring the prerequisite is required for the progression sequence linter to pass compile-gate checks.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, Pub/Sub channels, delivery semantics, and dead-letter recovery queues."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/consistency-models.mdx",
+      "sig": "9376872415ec2fe70de0ccc629d9345b1dc4f442",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Rate Limiting & Traffic Shaping is the strict sequential predecessor node of Consistency Models in the curriculum flowchart. Restoring the prerequisite is required for the progression sequence linter to pass compile-gate checks.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Master token bucket, leaky bucket, sliding window counter algorithms, and gateway traffic shaping defenses."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/distributed-transactions.mdx",
+      "sig": "b2e9e7dc5a328ab0d6f5b5edd3af72b46faf1b13",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Consistent Hashing is the strict sequential predecessor node of Distributed Transactions in the curriculum flowchart. Restoring the prerequisite is required for the progression sequence linter to pass compile-gate checks.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/consistent-hashing|Consistent Hashing]]: Master circular hashing ring spaces and virtual nodes data balancing."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/logical-clocks.mdx",
+      "sig": "eab404a9ab32adb9118ae787985d7115dec335f6",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Consistency Models is the strict sequential predecessor node of Logical Clocks in the curriculum flowchart. Restoring the prerequisite is required for the progression sequence linter to pass compile-gate checks.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/consistency-models|Consistency Models]]: Frame the CAP partition boundaries and eventual vs causal consistency spectrums."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/back-of-the-envelope-estimation.mdx",
+      "sig": "6c8225bf8a8bc72fac65c51327cfb300af4941f2",
+      "rule": "style-hedge",
+      "reason": "Verified: The 'depending on' is the correct, honest engineering description of a capacity constant representing video sizes, not a softened factual claim.",
+      "date": "2026-05-23",
+      "originalLine": "*   **Video file**: 50 MB to 500 MB depending on length and compression."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/message-queues.mdx",
+      "sig": "89dac588154b4383f39b9661d5b52a8bdcc6ee3c",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Distributed Caching is the strict sequential predecessor node of Asynchronous Message Queues in the curriculum flowchart. Restoring the prerequisite is required for the progression sequence linter to pass compile-gate checks.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/distributed-caching|Distributed Caching]]: Master read-through, write-through, and write-behind caching synchronization patterns before analyzing queue buffers."
+    },
+    {
+      "path": "sites/docs/src/content/docs/system-design/message-queues.mdx",
+      "sig": "416e7e185c1f612c8dab10f2d53b4f311cb70d72",
+      "rule": "prerequisite-coverage",
+      "reason": "Verified at system-design/index.mdx: Consistency Models is referenced as a prerequisite because MQ Exactly-Once delivery relies heavily on transaction consistency and two-generals consensus. Added to prevent cognitive leaps for the consumer atomic transactional offsets.",
+      "date": "2026-05-23",
+      "originalLine": "- [[system-design/consistency-models|Consistency Models]]: Master CAP partition boundaries, eventual consistency, and transactional delivery guarantees."
     }
   ]
 }
