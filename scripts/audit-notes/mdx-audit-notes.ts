@@ -204,7 +204,7 @@ function emitReportAndExit(
     { high: 0, advisory: 0 },
   );
   log(`\n[totals] high=${totals.high} advisory=${totals.advisory}`);
-  process.exit(totals.high > 0 ? 1 : 0);
+  process.exitCode = totals.high > 0 ? 1 : 0;
 }
 
 async function streamAssistantText(run: Run): Promise<string> {
