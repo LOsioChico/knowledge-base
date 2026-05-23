@@ -336,16 +336,16 @@ const IMPORT_RULES: ImportRule[] = [
     library: "rxjs",
     imports: [
       { token: "Observable", triggers: [/\bObservable\b/] },
-      { token: "of", triggers: [/\bof\s*\(/] },
-      { token: "from", triggers: [/\bfrom\s*\(/] },
-      { token: "throwError", triggers: [/\bthrowError\s*\(/] },
-      { token: "map", triggers: [/\bmap\b/] },
-      { token: "tap", triggers: [/\btap\b/] },
-      { token: "catchError", triggers: [/\bcatchError\b/] },
-      { token: "delay", triggers: [/\bdelay\b/] },
-      { token: "mergeMap", triggers: [/\bmergeMap\b/] },
-      { token: "switchMap", triggers: [/\bswitchMap\b/] },
-      { token: "concatMap", triggers: [/\bconcatMap\b/] }
+      { token: "of", triggers: [/(?<!\.)\bof\s*\(/] },
+      { token: "from", triggers: [/(?<!\.)\bfrom\s*\(/] },
+      { token: "throwError", triggers: [/(?<!\.)\bthrowError\s*\(/] },
+      { token: "map", triggers: [/(?<!\.)\bmap\s*\(/] },
+      { token: "tap", triggers: [/(?<!\.)\btap\s*\(/] },
+      { token: "catchError", triggers: [/(?<!\.)\bcatchError\s*\(/] },
+      { token: "delay", triggers: [/(?<!\.)\bdelay\s*\(/] },
+      { token: "mergeMap", triggers: [/(?<!\.)\bmergeMap\s*\(/] },
+      { token: "switchMap", triggers: [/(?<!\.)\bswitchMap\s*\(/] },
+      { token: "concatMap", triggers: [/(?<!\.)\bconcatMap\s*\(/] }
     ]
   }
 ];
@@ -506,6 +506,11 @@ function buildConceptCatalog(notes: Note[]): Concept[] {
       
       terms.sort((a, b) => b.length - a.length);
       return { slug: note.slug, terms };
+    })
+    .sort((a, b) => {
+      const aMax = a.terms[0] ? a.terms[0].length : 0;
+      const bMax = b.terms[0] ? b.terms[0].length : 0;
+      return bMax - aMax;
     });
 }
 

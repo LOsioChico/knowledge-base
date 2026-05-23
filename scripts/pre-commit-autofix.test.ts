@@ -237,3 +237,32 @@ const message = "Hello from NestJS";
   const { modified } = injectImportsIntoCodeBlocks(body);
   assert.equal(modified, false);
 });
+
+test("injectImportsIntoCodeBlocks does not inject RxJS map, of, or from for native method calls like Array.prototype.map, Array.of, Array.from", () => {
+  const body = `\`\`\`ts
+const mapped = [1, 2, 3].map(x => x * 2);
+const arrayFrom = Array.from("hello");
+const arrayOf = Array.of(1, 2, 3);
+\`\`\``;
+
+  const { modified } = injectImportsIntoCodeBlocks(body);
+  assert.equal(modified, false);
+});
+
+test("fixFirstMentionWikilinks prioritizes longer concepts over shorter overlapping ones when sorted by term length", () => {
+  const body = "I am studying Nest Request Lifecycle in details.";
+  // If we pass concepts sorted by length:
+  // "Nest Request Lifecycle" has length 22
+  // "Request Lifecycle" has length 17
+  const concepts = [
+    { slug: "nestjs/fundamentals/request-lifecycle-short", terms: ["Request Lifecycle"] },
+    { slug: "nestjs/fundamentals/request-lifecycle-long", terms: ["Nest Request Lifecycle"] }
+  ];
+
+  // Sort them like we do in buildConceptCatalog:
+  concepts.sort((a, b) => b.terms[0].length - a.terms[0].length);
+
+  const { updatedBody } = fixFirstMentionWikilinks(body, "nestjs/recipes/monorepo", concepts);
+  // It should match the longer concept first
+  assert.equal(updatedBody, "I am studying [[nestjs/fundamentals/request-lifecycle-long|Nest Request Lifecycle]] in details.");
+});

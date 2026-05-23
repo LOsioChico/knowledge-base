@@ -26,6 +26,7 @@ const effectTsSidebar = [
   { label: "Layers and DI", slug: "effect-ts/layers-and-di" },
   { label: "Retry and Schedule", slug: "effect-ts/retry-and-schedule" },
   { label: "Scoped resources", slug: "effect-ts/scoped-resources" },
+  { label: "Concurrency", slug: "effect-ts/concurrency" },
   {
     label: "Fault-tolerant ingestion",
     slug: "effect-ts/fault-tolerant-ingestion",

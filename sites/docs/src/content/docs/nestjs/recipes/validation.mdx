@@ -281,8 +281,6 @@ The pipe automatically traverses the array and throws a nested path error:
 To return clean, standardized validation details (e.g. mapping internal validator constraints to a friendly list of fields), customize the `exceptionFactory` in `main.ts`:
 
 ```typescript
-import { map } from "rxjs";
-
 // main.ts
 import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
 

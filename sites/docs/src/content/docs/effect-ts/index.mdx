@@ -90,6 +90,11 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
       <a href="/knowledge-base/effect-ts/scoped-resources/">acquireRelease, Scope</a>.
     </p>
   </Card>
+  <Card title="Concurrency" icon="random">
+    <p>
+      <a href="/knowledge-base/effect-ts/concurrency/">Fibers, fork, and bounded execution</a>.
+    </p>
+  </Card>
   <Card title="Ingestion capstone" icon="list-format">
     <p>
       <a href="/knowledge-base/effect-ts/fault-tolerant-ingestion/">Fault-tolerant pipeline</a>{" "}
@@ -103,7 +108,6 @@ After the sequence above, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup 
 ## Pending notes (vault)
 
 - **Streams (`Stream`) for Backpressured Pipelines**: Designing pull-based streams for processing high-throughput data streams, windowing, batching, and custom backpressure configurations.
-- **Structured Concurrency & Fibers**: Deep-dive into asynchronous execution units (fibers), coordination queues (`Queue`), mutual exclusion semaphores (`Semaphore`), and parent-child cancellation lifecycles.
 - **Shared Mutable State Coordinates**: Managing concurrent fiber state modifications safely using `Ref`, `SubscriptionRef`, and STM (Software Transactional Memory) primitives.
 - **Distributed Observability & Telemetry**: Configuring structured logging (`Effect.log`), span hierarchies (`Effect.withLogSpan`), and full OpenTelemetry integrations (`@effect/opentelemetry`).
 - **Platform Abstractions & Integrations**: Utilizing `@effect/platform` for cross-environment HTTP clients, server hosting, and native file system interactions.
@@ -112,6 +116,7 @@ After the sequence above, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup 
 ## See also
 
 - [[effect-ts/quickstart|Quickstart]]
+- [[effect-ts/concurrency|Concurrency]]
 - [[effect-ts/schema|Schema]]
 - [[effect-ts/layers-vs-nestjs-di|Layers vs NestJS DI]]
 - [Effect documentation](https://effect.website/docs/getting-started/introduction/) (official)
