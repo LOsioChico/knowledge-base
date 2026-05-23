@@ -1,0 +1,237 @@
+---
+title: Back-of-the-Envelope Estimation
+description: "Quantitative scaling foundations: data volume scales, network latency limits, SLA availability math, and complete worked capacity blueprints."
+related:
+  - "[[system-design/consistency-models]]"
+  - "[[system-design/consistent-hashing]]"
+  - "[[system-design/logical-clocks]]"
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> The quantitative calculus of software architecture: estimating QPS, storage, bandwidth, and availability before writing a single line of code.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before building dynamic routing rings or consistency models, make sure you understand:
+- [[system-design|Systems Design Overview]]: The high-level challenges of distributed systems design.
+
+</Aside>
+
+In a systems design interview or real-world architectural review, you are frequently asked to estimate system capacity and performance requirements. This process, known as **back-of-the-envelope estimation**, uses a combination of thought experiments, basic arithmetic, and common performance constants to get a quantitative feel for which designs will meet requirements.
+
+Without quantitative math, architectures are designed in the dark: you cannot choose a database, sizing cache clusters, or provisioning network [[nestjs/fundamentals/pipes|pipes]] without knowing the raw throughput and storage volumes your system must handle under peak pressure.
+
+---
+
+## The Power-of-Two Scale
+
+Distributed systems deal with massive volumes of data. To perform fast, high-level capacity math without getting bogged down in decimal division, you must master the binary power-of-two scale. 
+
+A byte consists of 8 bits. A single ASCII character consumes exactly 1 Byte of storage. The table below outlines the standard units of volume used in systems scaling:
+
+| Power of 2 | Approximate Value | Decimal Name | Short Name | Real-World Size Analogy |
+| :--- | :--- | :--- | :--- | :--- |
+| 2<sup>10</sup> | 1 Thousand | 1 Kilobyte | 1 KB | A single page of plain text (~1,000 characters) |
+| 2<sup>20</sup> | 1 Million | 1 Megabyte | 1 MB | A medium-length digital novel, or a high-res photo |
+| 2<sup>30</sup> | 1 Billion | 1 Gigabyte | 1 GB | A high-definition movie, or a small database table |
+| 2<sup>40</sup> | 1 Trillion | 1 Terabyte | 1 TB | A massive cluster user table, or 1,000 HD movies |
+| 2<sup>50</sup> | 1 Quadrillion | 1 Petabyte | 1 PB | The daily analytics log lake of a global tech company |
+
+> **Mental Math Pro-Tip**:
+> In interviews, translate units instantly by remembering these baseline pairs:
+> *   **Daily Traffic volume of 1 Million requests** at **1 KB per request** is **1 GB per day**.
+> *   **Daily Traffic volume of 100 Million requests** at **10 KB per request** is **1 TB per day**.
+> *   **1 Million writes per second** at **100 Bytes per write** is **100 MB per second** of ingress.
+
+---
+
+## Latency Numbers Every Programmer Should Know
+
+In 2010, Google Senior Fellow Dr. Jeff Dean published a set of baseline latency figures for typical computer operations. Although modern CPU hardware has become faster, these numbers still preserve the relative scaling differences between memory, disk, and network lookups.
+
+| Operation Name | Latency (Nanoseconds) | Latency (Microseconds) | Latency (Milliseconds) |
+| :--- | :--- | :--- | :--- |
+| L1 cache reference | 0.5 ns | - | - |
+| Branch mispredict | 5 ns | - | - |
+| L2 cache reference | 7 ns | - | - |
+| Mutex lock/unlock | 100 ns | 0.1 µs | - |
+| Main memory reference (RAM) | 100 ns | 0.1 µs | - |
+| Compress 1 KB with Zippy | 10,000 ns | 10 µs | 0.01 ms |
+| Send 2 KB over 1 Gbps network | 20,000 ns | 20 µs | 0.02 ms |
+| Read 1 MB sequentially from RAM | 250,000 ns | 250 µs | 0.25 ms |
+| Round trip within same data center | 500,000 ns | 500 µs | 0.5 ms |
+| SSD sequential read | 1,000,000 ns | 1,000 µs | 1 ms |
+| Disk seek (physical spinning disk) | 10,000,000 ns | 10,000 µs | 10 ms |
+| Read 1 MB sequentially from network | 10,000,000 ns | 10,000 µs | 10 ms |
+| Read 1 MB sequentially from disk | 30,000,000 ns | 30,000 µs | 30 ms |
+| Send packet (US-East to Europe RTT) | 150,000,000 ns | 150,000 µs | 150 ms |
+
+### The Time-Dilation Analogy
+
+To build immediate engineering intuition from these abstract decimal figures, imagine scaling computer speeds up to human terms. If we stretch an **L1 Cache access (0.5 nanoseconds) to represent 1 second of human time**, the other operations scale as follows:
+
+*   **L1 Cache Access**: **1 second** (taking a sip of water).
+*   **L2 Cache Access**: **14 seconds** (reading a short paragraph).
+*   **Main Memory reference (RAM)**: **200 seconds (3.3 minutes)** (brewing a cup of tea).
+*   **SSD Sequential Read**: **23.1 days** (taking a month-long vacation).
+*   **Disk Seek (HDD)**: **231.5 days (7.7 months)** (waiting three full academic quarters).
+*   **Cross-Ocean Network Roundtrip**: **9.5 years** (completing a full decade of your life).
+
+### Key Architectural Takeaways
+
+<Steps>
+
+1.  **Memory is Fast, Disk is Slow**: RAM references are five orders of magnitude faster than a physical disk seek. Avoid physical disk lookups at all costs for high-throughput reads; use memory [[nestjs/data/caching|caching]].
+2.  **Network is Extremely Expensive**: A network roundtrip to another continent takes longer than a local disk seek and dwarfs memory lookups. Minimize cross-data center requests for synchronous transaction pipelines.
+3.  **Compress Before Sending**: Simple compression (like Zippy/Snappy) takes only 10 microseconds per KB, whereas sending data over a network takes far longer. Compressing data before [[nestjs/recipes/serialization|serialization]] is a highly effective performance trade-off.
+
+</Steps>
+
+---
+
+## High Availability and the SLA "Nines"
+
+System availability is traditionally defined as a percentage representing the proportion of time a service remains continuously operational. In industry Service Level Agreements (SLAs), availability is measured in "nines":
+
+| Availability % | Downtime per Day | Downtime per Week | Downtime per Month | Downtime per Year |
+| :--- | :--- | :--- | :--- | :--- |
+| **99%** | 14.40 minutes | 1.68 hours | 7.31 hours | 3.65 days |
+| **99.9%** (Three Nines) | 8.64 seconds | 1.01 minutes | 43.80 minutes | 8.76 hours |
+| **99.99%** (Four Nines) | 864.00 milliseconds | 6.05 seconds | 4.38 minutes | 52.60 minutes |
+| **99.999%** (Five Nines) | 86.40 milliseconds | 604.80 ms | 26.30 seconds | 5.26 minutes |
+| **99.9999%** (Six Nines) | 8.64 milliseconds | 60.48 ms | 2.63 seconds | 31.56 seconds |
+
+### Compounding System Availability
+
+In a real-world system, overall availability is determined by how components are connected:
+
+#### Series Components (The Chain of Single Points of Failure)
+
+If a system relies on multiple sequential components to complete a request (for example, a web tier feeding a microservice which queries a database), their availabilities compound multiplicatively. If one component fails, the entire transaction fails:
+
+```
+A_system = A_1 * A_2 * ... * A_n
+```
+
+> **The Cost of Series Chains**:
+> Imagine a system with a Web Server (99.9% availability) and a Database (99.9% availability) set up in series. The compound availability drops:
+> ```
+> A_system = 0.999 * 0.999 = 0.998001 (99.8% availability)
+> ```
+> By chaining two 99.9% components without redundancy, you have lowered your availability to 99.8%, doubling your expected downtime!
+
+#### Parallel Components (Redundant Clustering)
+
+To protect against Single Points of Failure (SPOFs), systems deploy identical redundant components in parallel. The system remains operational as long as at least one node is healthy:
+
+```
+A_system = 1 - (1 - A_1) * (1 - A_2) * ... * (1 - A_n)
+```
+
+> **The Power of Parallel Redundancy**:
+> If you cluster two identical 99.9% Web Servers in parallel behind a load balancer, the overall availability of the web tier jumps:
+> ```
+> A_system = 1 - (1 - 0.999)^2 = 1 - (0.001)^2 = 0.999999 (99.9999% availability)
+> ```
+> Chaining redundant components in parallel dramatically eliminates downtime risk.
+
+---
+
+## Worked Example Capstone: High-Scale Photo Platform
+
+Let us design the storage and compute footprint for a global photo sharing application using step-by-step back-of-the-envelope calculations.
+
+### Establish Constraints and Assumptions
+
+Before writing calculations, document the baseline constraints clearly:
+*   **Monthly Active Users (MAU)**: 300 Million
+*   **Daily Active Users (DAU)**: 50% (150 Million)
+*   **Write Traffic**: Active daily users upload an average of 2 photos per day.
+*   **Media Constraints**: Average photo size is 1.5 MB.
+*   **Data Retention**: Storage must be retained for 3 years.
+*   **Metadata Overhead**: Each photo has a database metadata entry of 250 bytes (ID, owner, URL, tags).
+
+### Step 1: Calculate QPS (Query Per Second)
+
+First, estimate the write and read QPS load on our API gateways:
+
+#### Average Write QPS (Uploads)
+*   Daily Uploads = 150 Million DAU * 2 uploads = 300 Million photos per day
+*   Seconds in a day = 24 hours * 3,600 seconds = 86,400 seconds (approx. 100,000 seconds for quick whiteboarding)
+*   Average Write QPS = 300,000,000 photos / 86,400 seconds ≈ 3,472 uploads per second
+
+#### Peak Write QPS
+Standard capacity planning assumes peak traffic is at least double the daily average to handle regional high-load periods:
+*   Peak Write QPS = 3,472 * 2 ≈ 6,944 uploads per second
+
+### Step 2: Calculate Storage Capacity Footprint
+
+Next, estimate the storage capacity required for both the raw media files (stored in Object Storage) and metadata records (stored in a sharded relational/NoSQL database):
+
+#### Raw Photo Storage (Object Storage)
+*   **Daily raw storage**:
+    Daily storage = 300 Million photos * 1.5 MB = 450 Terabytes per day
+*   **Yearly raw storage**:
+    Yearly storage = 450 TB * 365 days ≈ 164.25 Petabytes per year
+*   **3-year raw storage**:
+    3-year storage = 164.25 PB * 3 = 492.75 PB
+
+#### Metadata DB Storage (NoSQL/SQL)
+*   **Daily metadata storage**:
+    Daily metadata = 300 Million photos * 250 bytes = 75 Gigabytes per day
+*   **3-year metadata storage**:
+    3-year metadata = 75 GB/day * 365 * 3 ≈ 82.12 Terabytes
+
+### Step 3: Calculate Ingress Network Bandwidth
+
+Determine the network capacity required to sustain raw upload speeds at our load balancers:
+
+#### Average Ingress Bandwidth
+*   Daily Ingress volume = 450 TB/day = 450,000 GB/day
+*   Average Ingress = (450,000 GB * 8 bits) / 86,400 seconds = 41.67 Gbps (Gigabits per second)
+
+#### Peak Ingress Bandwidth
+*   Peak Ingress = 41.67 Gbps * 2 ≈ 83.33 Gbps
+
+### Step 4: Estimate Caching Memory Sizing (Redis Cluster)
+
+High-read websites leverage caching to store popular items in memory (RAM) to avoid hitting database disks. To size the memory footprint for our Redis cluster, we apply the standard **80/20 Rule**: 80% of all read requests are generated by the 20% most popular files.
+
+Assume our site handles 300 Million reads per day (equal to the number of daily uploads):
+*   To keep the system highly responsive, we want to cache all hot photo metadata and media assets requested on a given day.
+*   **Hot files storage footprint**:
+    Daily hot reads volume = 300 Million reads * 20% = 60 Million hot items
+    Cache memory size = 60 Million * (1.5 MB + 250 bytes) ≈ 90 Terabytes of RAM
+
+To build this caching layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
+*   Number of Redis Nodes = 90,000 GB / 256 GB ≈ 352 servers
+
+---
+
+## Engineering Approximations Checklist
+
+To perform high-speed back-of-the-envelope calculations under pressure (such as in an active whiteboard session), adopt these standard rounding shortcuts and constants:
+
+### 1. The Division Shortcut
+In mental math, round the number of seconds in a day to make division simpler:
+*   Seconds in a day = 86,400 ≈ 100,000 (provides a fast, conservative lower-bound estimate).
+*   Dividing a daily value by 100,000 instantly translates it to average QPS.
+
+### 2. Standard Capacity Constants
+If the user does not specify sizes, rely on these industry standard defaults:
+*   **User ID / Primary Keys**: 8 bytes (64-bit integer) or 16 bytes (UUID).
+*   **Char**: 1 byte (ASCII) or 2 bytes (UTF-8).
+*   **Metadata Record**: 250 bytes to 500 bytes.
+*   **Short URL**: 100 bytes.
+*   **Video file**: 50 MB to 500 MB depending on length and compression.
+
+### 3. Unit-Tracking Sanitation
+Never write raw numbers without their units. Write 450 TB/day or 83 Gbps rather than 450 or 83. Tracking units prevents off-by-a-thousand conversion errors between Megabytes (10^6) and Gigabytes (10^9) or Megabits (network transfer) and Megabytes (disk storage).
+
+---
+
+## See Also
+*   [[system-design/consistency-models|CAP Theorem & Consistency Models]]
+*   [[system-design/logical-clocks|Logical Clocks & Event Ordering]]
+*   [[system-design/consistent-hashing|Consistent Hashing & Dynamic Ring Partitioning]]

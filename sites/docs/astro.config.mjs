@@ -250,6 +250,7 @@ const awsSidebar = [
 /** @type {import('@astrojs/starlight').StarlightUserConfig['sidebar']} */
 const systemDesignSidebar = [
   { label: "Overview", slug: "system-design" },
+  { label: "Estimation Primitives", slug: "system-design/back-of-the-envelope-estimation" },
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },
   { label: "Logical Clocks", slug: "system-design/logical-clocks" },

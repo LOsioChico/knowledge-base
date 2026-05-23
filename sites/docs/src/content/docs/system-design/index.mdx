@@ -21,18 +21,20 @@ In a single-computer system, building software is straightforward: there is a si
 
 ## TL;DR
 
-*   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].
+*   **Estimation Primitives**: Frames system capacities and constraints using powers of two, network latencies, and SLA uptime compounding formulas. See [[system-design/back-of-the-envelope-estimation|Estimation Primitives]].
 *   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
 *   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
+*   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].
 
 ## Learning Pathway Sequence
 
-For a progressive learning flow, we recommend mastering the CAP consistency spectrum before diving into event coordination (logical clocks) and data distribution rings (consistent hashing):
+For a progressive learning flow, we recommend mastering quantitative estimation before diving into the CAP consistency spectrum (consistency models), event coordination (logical clocks), and data distribution rings (consistent hashing):
 
 ```mermaid
 flowchart TD
-    CM["1. [[system-design/consistency-models|Consistency Models]] (Entry)"] --> LC["2. [[system-design/logical-clocks|Logical Clocks]]"]
-    CM --> CH["3. [[system-design/consistent-hashing|Consistent Hashing]]"]
+    EST["1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]] (Entry)"] --> CM["2. [[system-design/consistency-models|Consistency Models]]"]
+    CM --> LC["3. [[system-design/logical-clocks|Logical Clocks]]"]
+    CM --> CH["4. [[system-design/consistent-hashing|Consistent Hashing]]"]
 ```
 
 ## Choose a path
@@ -41,17 +43,19 @@ flowchart TD
   <TabItem label="Core Architecture">
     <Steps>
 
-    1. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
+    1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Master the power-of-two scale, Jeff Dean latency numbers, compounding SLA availability math, and raw QPS/storage blueprints.
     2. [[system-design/consistency-models|Consistency Models]]: Understand the CAP theorem, sequential/causal models, and client-centric guarantees like Read-Your-Writes.
     3. [[system-design/logical-clocks|Logical Clocks]]: Solve time synchronization limits using Lamport Timestamps and Vector Clocks for causal histories.
+    4. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
 
     </Steps>
   </TabItem>
   <TabItem label="Algorithmic Primitives">
     <Steps>
 
-    1. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
-    2. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
+    1. **Quantitative Calculations**: Practice step-by-step arithmetic to estimate storage footprint, bandwidth requirements, and caching memory size: [[system-design/back-of-the-envelope-estimation#worked-example-capstone-high-scale-photo-platform|Worked Example Blueprint]].
+    2. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
+    3. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
 
     </Steps>
   </TabItem>
@@ -60,8 +64,8 @@ flowchart TD
 ## Start here
 
 <CardGrid>
-  <Card title="Consistent Hashing" icon="puzzle">
-    <p><a href="/knowledge-base/system-design/consistent-hashing/">Partitioning ring</a>: VNodes, balancing, and TS implementation.</p>
+  <Card title="Estimation Primitives" icon="calculator">
+    <p><a href="/knowledge-base/system-design/back-of-the-envelope-estimation/">Quantitative scale</a>: Latency, availability nines, and worked math blueprints.</p>
   </Card>
   <Card title="Consistency Models" icon="matrix">
     <p><a href="/knowledge-base/system-design/consistency-models/">Consistency spectrum</a>: CAP theorem, linearizability, and client models.</p>
@@ -69,21 +73,24 @@ flowchart TD
   <Card title="Logical Clocks" icon="random">
     <p><a href="/knowledge-base/system-design/logical-clocks/">Logical time</a>: NTP limits, Lamport, and Vector clocks.</p>
   </Card>
+  <Card title="Consistent Hashing" icon="puzzle">
+    <p><a href="/knowledge-base/system-design/consistent-hashing/">Partitioning ring</a>: VNodes, balancing, and TS implementation.</p>
+  </Card>
 </CardGrid>
 
 ## Guides Summary
 
 | Guide | MOC Link | Key Primitives |
 | --- | --- | --- |
-| Consistent Hashing | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
+| Estimation Primitives | [Estimation Primitives](/knowledge-base/system-design/back-of-the-envelope-estimation/) | Powers of two, Latency numbers, SLA nines, QPS math |
 | Consistency Models | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | Logical Clocks | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
+| Consistent Hashing | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
 
 ## Planned Concepts
 
 To expand our distributed systems curriculum and prepare for advanced real-world architectures, the following core topics are planned to be added next:
 
-- **Back-of-the-Envelope Estimation**: Calculating QPS, peak traffic, database storage, and network bandwidth under pressure using raw math approximations, latency guides, and SLA availability "nines".
 - **[[nestjs/recipes/rate-limiting|Rate Limiting]] & Traffic Shaping**: Implementing token bucket, leaky bucket, and sliding window counter algorithms at the API Gateway layer to defend downstream services against DDoS attacks.
 - **Distributed [[nestjs/data/caching|Caching]] & Invalidation**: Master-replica caching architectures, invalidation models (cache-aside, write-through, write-behind), eviction policies (LRU, LFU), and cache stampede mitigations.
 - **Asynchronous Message Queues**: Decoupling compute using message queues and Pub/Sub hubs, handling dead-letter queues, horizontal worker scaling, and delivery guarantees (at-least-once, exactly-once).
