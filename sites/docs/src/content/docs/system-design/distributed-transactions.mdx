@@ -23,8 +23,10 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before resolving multi-service [[effect-ts/state|state]] consistency and transaction choreography, make sure you understand:
-- [[system-design/consistent-hashing|Consistent Hashing]]: Master dynamic partition distribution rings and virtual node data load balancing.
+This note is part of the **[[system-design|Systems Design Track]]**. Before resolving distributed state consistency, transaction choreography, and multi-service event rollbacks, make sure you understand:
+- [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, event brokers vs logs, and delivery semantics.
+- [[system-design/consistency-models|Consistency Models]]: Master CAP spectrum tradeoffs and sequential/causal guarantees.
+- [[system-design/consistent-hashing|Consistent Hashing]]: Master circular hashing ring spaces and virtual nodes data balancing.
 
 </Aside>
 
@@ -65,7 +67,7 @@ While 2PC guarantees strong consistency, it introduces severe bottlenecks in hig
 
 ## The Saga Pattern (BASE Consistency)
 
-To overcome the performance limits of 2PC, modern distributed systems trade strict ACID properties for **BASE** (Basically Available, Soft State, Eventual Consistency) using the **Saga Pattern**.
+To overcome the performance limits of 2PC, modern distributed systems trade strict ACID properties for **BASE** (Basically Available, Soft [[effect-ts/state|State]], Eventual Consistency) using the **Saga Pattern**.
 
 A Saga coordinates a business transaction through a sequence of local transactions. Each step in the Saga executes a local transaction in a single service and commits instantly, releasing database locks immediately. 
 *   If all local transactions succeed, the Saga is complete.
@@ -219,7 +221,7 @@ Local transactions in a Saga commit immediately. This means intermediate states 
 ### 3. Idempotency Invariants
 Due to network retries, a service can receive the same Saga command or compensating event multiple times.
 *   **The Gotcha**: If a payment service receives `RefundPayment` twice due to a broker retry, it could issue two refunds to the customer.
-*   **The Mitigation**: Every command must carry a unique Saga ID and Step ID. Before processing, services must verify if the specific Step ID has already run, rejecting duplicate invocations. (See [Asynchronous Message Queues](/knowledge-base/system-design/message-queues/) for details on distributed idempotency locks).
+*   **The Mitigation**: Every command must carry a unique Saga ID and Step ID. Before processing, services must verify if the specific Step ID has already run, rejecting duplicate invocations. (See [[system-design/message-queues|Asynchronous Message Queues]] for details on distributed idempotency locks).
 
 ---
 
