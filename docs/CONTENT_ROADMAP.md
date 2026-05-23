@@ -1,7 +1,5 @@
 # Content roadmap
 
-> **Step 8: Content Development Roadmap**: Planning map for upcoming additions, recent graduates, and future priorities across the NestJS, AWS, and Effect-TS domains. Prerequisite: [Step 7: Upstream Backlog & Contributions](../to-contribute.md); next step: none.
-
 Short-lived planning map for the published Starlight knowledge base. This file keeps the useful decisions from the Dia-generated prompt packs without preserving large prompt artifacts as source of truth.
 
 ## When agents should consult this file
