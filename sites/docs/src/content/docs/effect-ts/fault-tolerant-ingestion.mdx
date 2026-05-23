@@ -50,7 +50,7 @@ The following workflow diagram illustrates how elements are batched, fetched, pa
 
 <Steps>
 
-1. Install the core `effect` package:
+1. Install the core `effect` package to add the complete functional programming runtime and data modeling library to your project. Verify that the command completes successfully and that `node_modules/effect/` is created inside your project root:
 
    ```bash
    npm install effect
@@ -174,9 +174,64 @@ try: (signal) => fetch(url, { signal })
 
 When a timeout triggers, the Effect runtime aborts the executing fiber. This automatically fires the passed `AbortSignal`, terminating the underlying TCP connection immediately. This prevents socket resource leaks and reduces connection exhaustion on server pods.
 
+For example, if the upstream API hangs and exceeds our `5 seconds` durational boundary, the runtime aborts the TCP connection and yields a `TimeoutException`:
+
+```json
+// Outbound Request input (takes >5s to respond):
+GET /api/records/45
+
+// Resulting TimeoutException emitted in the error channel:
+{
+  "_tag": "TimeoutException",
+  "message": "The computation has timed out after 5 seconds"
+}
+```
+
 ### 2. Selective Failure Retries
 
 A major footgun in standard promise wrappers is blindly retrying all failures. If an upstream server returns a `404 Not Found` (`HttpError`) or a payload violates our `Schema` (`ParseFailure`), retrying is useless and wastes compute resources.
+
+For example, when a `ParseFailure` occurs due to an invalid JSON structure, the schema [[nestjs/recipes/validation|validation]] rejects it immediately with our custom `ParseFailure` error shape:
+
+```json
+// Mock Input Payload with missing required "completed" field:
+{
+  "userId": 1,
+  "id": 45,
+  "title": "Collect telemetry"
+}
+
+// Resulting ParseFailure TaggedError inside the Effect error channel (fails fast immediately):
+{
+  "_tag": "ParseFailure",
+  "issues": "Todo: is missing required field \"completed\""
+}
+```
+
+Similarly, when an upstream server returns a `404 Not Found` error, it fails fast immediately with a structured `HttpError`:
+
+```json
+// Outbound Request input:
+GET /api/todos/999
+
+// Resulting HttpError TaggedError inside the Effect error channel (fails fast immediately):
+{
+  "_tag": "HttpError",
+  "status": 404,
+  "url": "https://jsonplaceholder.typicode.com/todos/999"
+}
+```
+
+Conversely, if a transient network drop triggers a `FetchError` or a hung process yields a `TimeoutException`, the runtime attempts to retry execution up to 3 times before giving up:
+
+```json
+// Attempt 1 (Transient Socket Drop):
+// Result: FetchError (Retrying in 100ms...)
+
+// Attempt 2 (Success after automatic reconnection):
+// Result: HTTP/1.1 200 OK
+// Output: { "userId": 1, "id": 45, "title": "Collect telemetry", "completed": true }
+```
 
 By using the `while` predicate, we enforce strict boundary separation:
 
@@ -195,9 +250,24 @@ while: (error) => error._tag === "FetchError" || error._tag === "TimeoutExceptio
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="forEach short-circuits on first fatal failure">
+<Aside type="caution" title="forEach short-circuits on first fatal failure">
 
 By default, if any single item inside `Effect.forEach` fails (after exhausting all retries or hitting a fail-fast error), the entire program halts immediately, throwing away all successful concurrent results. 
+
+For example, when running a batch of three items `[1, 2, 3]` in parallel, if item `2` encounters a fail-fast `HttpError`, the entire [[effect-ts/streams|stream]] aborts, and the successful results for `1` and `3` are discarded:
+
+```json
+// Batch Input:
+[1, 2, 3]
+
+// Parallel Fiber execution:
+// Fiber 1 (id: 1) -> Success: Todo 1 (Discarded)
+// Fiber 2 (id: 2) -> Fail Fast: HttpError 404 (Halt stream!)
+// Fiber 3 (id: 3) -> Interrupted: Todo 3 (Discarded)
+
+// Resulting Output:
+// Halts immediately with HttpError 404. Successful results for 1 and 3 are discarded.
+```
 
 If your ingestion logic requires a **non-blocking collector** that saves all successful operations and logs individual failures without halting, wrap each item in `Effect.either`:
 
@@ -222,6 +292,20 @@ This returns a list containing both successful outcomes (`Either.Right`) and fai
 <Aside type="caution" title="Only retry idempotent reads">
 
 Retrying write requests (like `POST` or `DELETE` requests) can duplicate operations on the server if the upstream does not support custom idempotency keys. Restrict selective retries to safe, idempotent `GET` and `PUT` request types.
+
+For example, when retrying a non-idempotent `POST` request during a transient connection dropout (where the request reached the server, but the connection dropped before sending back the response), the server will execute the operation twice:
+
+```json
+// OUTBOUND REQUEST 1:
+POST /api/orders { "itemId": 99 }
+// Server Action: Order #1001 created.
+// Network outcome: Connection dropped before response is received!
+
+// OUTBOUND RETRY 2 (Automatic Retry):
+POST /api/orders { "itemId": 99 }
+// Server Action: Order #1002 created (Duplicate order!).
+// Network outcome: Success (Order #1002 returned).
+```
 
 </Aside>
 

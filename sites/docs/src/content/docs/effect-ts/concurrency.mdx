@@ -120,10 +120,10 @@ High-level APIs like `Effect.all` (combinator for arrays) and `Effect.forEach` (
 
 | Concurrency Option | Type | Behavior |
 | --- | --- | --- |
-| `undefined` | Default | **Sequential**: Runs each effect in order, waiting for the previous to finish. |
-| `"unbounded"` | string | **Unbounded Parallel**: Spawns all effects concurrently as child fibers immediately. |
-| `N` | number | **Bounded Parallel**: Spawns at most `N` concurrent child fibers, queueing the rest. |
-| `"inherit"` | string | **Inherited Parallel**: Inherits the concurrency configuration of the enclosing context. |
+| `undefined` | Default | **Sequential**: Runs each effect in order, waiting for the previous to finish (see [Sequential example](#sequential-vs-parallel-comparison)). |
+| `"unbounded"` | string | **Unbounded Parallel**: Spawns all effects concurrently as child fibers immediately (see [Parallel example](#sequential-vs-parallel-comparison)). |
+| `N` | number | **Bounded Parallel**: Spawns at most `N` concurrent child fibers, queueing the rest (see [Bounded limits example](#bounded-concurrency-limits)). |
+| `"inherit"` | string | **Inherited Parallel**: Inherits the concurrency configuration of enclosing context (see [Inherited scope example](#contextual-inherited-concurrency)). |
 
 ### Sequential vs. Parallel comparison
 

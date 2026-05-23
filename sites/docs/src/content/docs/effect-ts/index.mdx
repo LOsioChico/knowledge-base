@@ -34,10 +34,10 @@ const program = Effect.sync(() => {
 
 | Concept           | Shape                                                                                              | Reader hook                                                               |
 | ----------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `Effect<A, E, R>` | Value describing a computation that, when run, either yields `A`, fails with `E`, or asks for `R`. | A typed `Promise` that also tracks errors and dependencies.               |
-| Runtime           | The thing that _executes_ an `Effect`.                                                             | Like calling a thunk: nothing happens until `Effect.runPromise(program)`. |
-| Layers (`R`)      | Typed dependency graph.                                                                            | DI container, but the compiler tells you when a dependency is missing.    |
-| `Effect.gen`      | Generator-based DSL: `yield*` an effect to "await" it.                                             | `async/await` for `Effect`.                                               |
+| `Effect<A, E, R>` | Value describing a computation that, when run, either yields `A`, fails with `E`, or asks for `R`. | A typed `Promise` that also tracks errors and dependencies (see [What is Effect](/knowledge-base/effect-ts/what-is-effect/)). |
+| Runtime           | The thing that _executes_ an `Effect`.                                                             | Like calling a thunk: nothing happens until `Effect.runPromise(program)` (see [What is Effect](/knowledge-base/effect-ts/what-is-effect/)). |
+| Layers (`R`)      | Typed dependency graph.                                                                            | DI container, but the compiler tells you when a dependency is missing (see [Layers and DI](/knowledge-base/effect-ts/layers-and-di/)). |
+| `Effect.gen`      | Generator-based DSL: `yield*` an effect to "await" it.                                             | `async/await` for `Effect` (see [Composition](/knowledge-base/effect-ts/composition/)). |
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
@@ -102,7 +102,7 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
   </Card>
   <Card title="Step 11: State coordinates" icon="seti:db">
     <p>
-      <a href="/knowledge-base/effect-ts/state/">Lock-free fiber coordinates</a>: <code>[[effect-ts/state|Ref]]</code>, <code>SubscriptionRef</code>, and Software Transactional Memory (STM).
+      <a href="/knowledge-base/effect-ts/state/">Lock-free fiber coordinates</a>: <code>Ref</code> (see [[effect-ts/state|State coordinates]]), <code>SubscriptionRef</code>, and Software Transactional Memory (STM).
     </p>
   </Card>
   <Card title="Step 12: Observability" icon="star">
