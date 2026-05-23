@@ -195,3 +195,34 @@ Also we have inline \`Request Lifecycle\` and a block:
   const { modified } = fixFirstMentionWikilinks(body, "nestjs/recipes/monorepo", concepts);
   assert.equal(modified, false);
 });
+
+test("injectImportsIntoCodeBlocks completely ignores twoslash blocks", () => {
+  const body = `\`\`\`ts twoslash
+@Controller("users")
+export class UsersController {
+  @Get()
+  findAll() {
+    return of([]);
+  }
+}
+\`\`\``;
+
+  const { modified } = injectImportsIntoCodeBlocks(body);
+  assert.equal(modified, false);
+});
+
+test("fixFirstMentionWikilinks completely ignores markdown table rows", () => {
+  const body = `| Heading 1 | Heading 2 |
+| --- | --- |
+| guards | some other text |`;
+
+  const concepts = [
+    {
+      slug: "nestjs/fundamentals/guards",
+      terms: ["guards"]
+    }
+  ];
+
+  const { modified } = fixFirstMentionWikilinks(body, "nestjs/recipes/monorepo", concepts);
+  assert.equal(modified, false);
+});

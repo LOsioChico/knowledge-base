@@ -57,6 +57,8 @@ Hooks apply to **modules, providers, and controllers**. One class can implement 
 
 <span id="worked-example"></span>
 ```typescript
+import { from } from "rxjs";
+
 import { Injectable, OnModuleInit, OnApplicationShutdown } from "@nestjs/common";
 
 @Injectable()
@@ -102,6 +104,8 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
 ## Enable shutdown hooks
 
 ```typescript
+import { from } from "rxjs";
+
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 

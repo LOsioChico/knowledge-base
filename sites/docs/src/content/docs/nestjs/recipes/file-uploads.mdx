@@ -56,7 +56,9 @@ When developers think of "file upload," they usually think of a browser sending 
     Use this tier only for small files where NestJS serves as the final storage controller. To secure your app against hackers renaming an executable (`malicious.exe` to `safe.jpg`), use a `ParseFilePipeBuilder` to run **magic-number validation** (inspecting the actual binary header bytes of the file, rather than trusting the client-supplied `Content-Type` header).
 
     ```typescript
-    import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFilePipeBuilder } from "@nestjs/common";
+import { from, of } from "rxjs";
+
+import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFilePipeBuilder } from "@nestjs/common";
     import { FileInterceptor } from "@nestjs/platform-express";
 
     @Controller("uploads")
@@ -128,7 +130,9 @@ When developers think of "file upload," they usually think of a browser sending 
     The code below configures `multer-s3` so that incoming chunks are piped directly to S3 as they arrive on the network socket. NestJS never keeps more than a small chunk buffer in memory.
 
     ```typescript
-    import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
     import { FileInterceptor } from "@nestjs/platform-express";
     import { S3Client } from "@aws-sdk/client-s3";
     import * as multerS3 from "multer-s3";
@@ -199,7 +203,9 @@ When developers think of "file upload," they usually think of a browser sending 
     *NestJS never touches the file bytes!* This frees up 100% of your server's RAM and network bandwidth.
 
     ```typescript
-    import { Controller, Post, Body, Injectable } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Controller, Post, Body, Injectable } from "@nestjs/common";
     import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
     import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
     import { IsString, IsNotEmpty, Matches } from "class-validator";
@@ -336,7 +342,7 @@ When developers think of "file upload," they usually think of a browser sending 
 </Aside>
 
 <Aside type="note" title="OpenAPI / Swagger File Pickers">
-  To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a schema with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
+  To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a [[effect-ts/schema|schema]] with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
 </Aside>
 
 ---

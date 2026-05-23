@@ -21,7 +21,9 @@ npm install --save-dev @types/pg
 1. **Smoke test with `forRoot` (dev only)**
 
    ```typescript
-   import { Module } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Module } from "@nestjs/common";
    import { TypeOrmModule } from "@nestjs/typeorm";
 
    @Module({
@@ -57,14 +59,16 @@ npm install --save-dev @types/pg
 
    <Aside type="danger" title="Never ship synchronize: true">
 
-   `synchronize: true` re-derives schema on every boot and can drop columns in production. Disable it and use migrations (step 5).
+   `synchronize: true` re-derives [[effect-ts/schema|schema]] on every boot and can drop columns in production. Disable it and use migrations (step 5).
 
    </Aside>
 
 2. **`forRootAsync` + `ConfigService`**
 
    ```typescript
-   import { Module } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Module } from "@nestjs/common";
    import { ConfigModule, ConfigService } from "@nestjs/config";
    import { TypeOrmModule } from "@nestjs/typeorm";
    import * as Joi from "joi";
@@ -112,7 +116,9 @@ npm install --save-dev @types/pg
 3. **Entities + `forFeature`**
 
    ```typescript
-   import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+import { from } from "rxjs";
+
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
    @Entity({ name: "users" })
    @Unique("users_email_key", ["email"])
@@ -132,7 +138,9 @@ npm install --save-dev @types/pg
    ```
 
    ```typescript
-   import { Module } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Module } from "@nestjs/common";
    import { TypeOrmModule } from "@nestjs/typeorm";
    import { UsersController } from "./users.controller";
    import { UsersService } from "./users.service";
@@ -156,7 +164,9 @@ npm install --save-dev @types/pg
 4. **Repository CRUD**
 
    ```typescript
-   import { Injectable, NotFoundException } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Injectable, NotFoundException } from "@nestjs/common";
    import { InjectRepository } from "@nestjs/typeorm";
    import { Repository } from "typeorm";
    import { User } from "./user.entity";
@@ -192,7 +202,9 @@ npm install --save-dev @types/pg
    ```
 
    ```typescript
-   import {
+import { from } from "rxjs";
+
+import {
    Body,
    Controller,
    Delete,
@@ -257,7 +269,9 @@ npm install --save-dev @types/pg
 5. **Migrations (standalone `DataSource`)**
 
    ```typescript
-   import "dotenv/config";
+import { from } from "rxjs";
+
+import "dotenv/config";
    import { DataSource } from "typeorm";
 
    export const AppDataSource = new DataSource({

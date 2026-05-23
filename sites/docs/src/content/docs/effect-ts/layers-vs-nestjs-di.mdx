@@ -75,7 +75,9 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
   </TabItem>
   <TabItem label="NestJS">
     ```typescript
-    import { Injectable, Module } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { Injectable, Module } from "@nestjs/common";
     import { NestFactory } from "@nestjs/core";
 
     @Injectable()
@@ -143,6 +145,8 @@ NestJS resolves the graph at bootstrap ([custom providers](https://docs.nestjs.c
 In NestJS, provider identity defaults to the class itself, but you can decouple implementation from interface using custom string or symbol injection tokens with `@Inject()`:
 
 ```typescript
+import { from } from "rxjs";
+
 // NestJS: Decouple boundary using an injection token
 import { Injectable, Inject } from "@nestjs/common";
 
@@ -167,6 +171,9 @@ export class GameService {
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
 
 ```typescript
+import { Logger } from "@nestjs/common";
+import { from } from "rxjs";
+
 // Effect: The Tag is both the token and the type interface
 import { Context, Effect } from "effect";
 
@@ -184,9 +191,11 @@ export const logMessage = Effect.gen(function* () {
 
 ### Dynamic Modules and Provider Bindings vs Layer
 
-NestJS uses **Dynamic Modules** (`register()`, `forRoot()`) to construct provider configurations dynamically (e.g., passing a configuration object or reading from environment variables at startup):
+NestJS uses **[[nestjs/recipes/dynamic-modules|Dynamic Modules]]** (`register()`, `forRoot()`) to construct provider configurations dynamically (e.g., passing a [[nestjs/recipes/configuration|configuration]] object or reading from environment variables at startup):
 
 ```typescript
+import { from } from "rxjs";
+
 // NestJS: Dynamic Module configuration
 import { Module, DynamicModule } from "@nestjs/common";
 
@@ -215,6 +224,8 @@ export class DatabaseModule {
 In Effect, **Layers are values** that can be composed and constructed dynamically using ordinary functions and standard functional operators. There is no special container ceremony or dynamic module API:
 
 ```typescript
+import { from } from "rxjs";
+
 // Effect: Dynamic Layer factory function
 import { Context, Effect, Layer } from "effect";
 

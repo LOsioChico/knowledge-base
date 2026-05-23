@@ -19,6 +19,8 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ## Contract
 
 ```typescript
+import { from } from "rxjs";
+
 import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
 
 @Injectable()
@@ -59,7 +61,7 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 
 <Tabs>
   <TabItem label="Scopes">
-    Global → controller → route (same direction as guards). **Every** matching pipe in the list runs.
+    Global → controller → route (same direction as [[nestjs/fundamentals/guards|guards]]). **Every** matching pipe in the list runs.
   </TabItem>
   <TabItem label="Per parameter">
     For one handler, Nest runs pipes on each parameter. **Route-parameter pipes run in reverse declaration order** (last `@Param()` pipe first). See [router-execution-context](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts).
@@ -67,6 +69,8 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 </Tabs>
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
 
 @Controller("orders")
@@ -92,6 +96,8 @@ export class OrdersController {
 </Steps>
 
 ```typescript
+import { from } from "rxjs";
+
 // main.ts
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
@@ -146,6 +152,8 @@ Deep DTO patterns: [[nestjs/recipes/validation|validation recipe]].
 ### Zod (not built-in)
 
 ```typescript
+import { from } from "rxjs";
+
 import { BadRequestException, PipeTransform } from "@nestjs/common";
 import { ZodSchema } from "zod";
 

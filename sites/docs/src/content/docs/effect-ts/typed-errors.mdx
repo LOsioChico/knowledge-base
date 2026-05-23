@@ -51,6 +51,8 @@ Any calling code has to wrap the call in a generic `try/catch` block where the e
 Effect solves this by elevating expected errors into a dedicated, type-checked **error channel `E`** in the triple `Effect<SuccessType, ErrorType, Requirements>`:
 
 ```typescript
+import { from } from "rxjs";
+
 import { Data, Effect } from "effect";
 
 interface User {

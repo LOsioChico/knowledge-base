@@ -34,6 +34,8 @@ npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
 
 ```typescript
+import { from } from "rxjs";
+
 import { Injectable } from "@nestjs/common";
 import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";

@@ -49,6 +49,8 @@ Introduced in NestJS 9, `ConfigurableModuleBuilder` automatically generates the 
 ### 1. Build the Module Definitions
 
 ```typescript
+import { from } from "rxjs";
+
 // storage.module-definition.ts
 import { ConfigurableModuleBuilder } from "@nestjs/common";
 import { StorageOptions } from "./storage-options.interface";
@@ -65,6 +67,8 @@ export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
 Inject the auto-generated `MODULE_OPTIONS_TOKEN` directly to access the options configured at startup:
 
 ```typescript
+import { from } from "rxjs";
+
 // storage.service.ts
 import { Inject, Injectable } from "@nestjs/common";
 import { MODULE_OPTIONS_TOKEN } from "./storage.module-definition";
@@ -98,6 +102,8 @@ export class StorageService {
 By extending `ConfigurableModuleClass`, NestJS automatically adds the `register` and `registerAsync` methods under the hood:
 
 ```typescript
+import { from } from "rxjs";
+
 // storage.module.ts
 import { Module } from "@nestjs/common";
 import { ConfigurableModuleClass } from "./storage.module-definition";
@@ -121,7 +127,9 @@ You can register the module inside your root application module in one of severa
     Use `register` when configuration options are available statically at build or startup time:
 
     ```typescript
-    // app.module.ts
+import { from } from "rxjs";
+
+// app.module.ts
     import { Module } from "@nestjs/common";
     import { StorageModule } from "./storage.module";
 
@@ -140,7 +148,9 @@ You can register the module inside your root application module in one of severa
     Use `useFactory` to inject `@nestjs/config`'s `ConfigService` (or other dependencies) and resolve options dynamically from environment variables using a factory function:
 
     ```typescript
-    // app.module.ts
+import { from } from "rxjs";
+
+// app.module.ts
     import { Module } from "@nestjs/common";
     import { ConfigModule, ConfigService } from "@nestjs/config";
     import { StorageModule } from "./storage.module";
@@ -165,7 +175,9 @@ You can register the module inside your root application module in one of severa
     Use `useClass` to delegate option creation to a custom configuration class. NestJS will instantiate a private instance of this class and call its factory method to resolve the options:
 
     ```typescript
-    // app.module.ts
+import { from } from "rxjs";
+
+// app.module.ts
     import { Module, Injectable } from "@nestjs/common";
     import { StorageModule } from "./storage.module";
     import { StorageOptions, StorageOptionsFactory } from "./storage-options.interface";
@@ -195,7 +207,9 @@ You can register the module inside your root application module in one of severa
     Use `useExisting` when a configuration provider has already been registered in another imported module, allowing you to reuse that exact provider instance without creating a new one:
 
     ```typescript
-    // app.module.ts
+import { from } from "rxjs";
+
+// app.module.ts
     import { Module } from "@nestjs/common";
     import { StorageModule } from "./storage.module";
     import { StorageConfigModule } from "./storage-config.module"; // exports StorageConfigService
@@ -222,6 +236,8 @@ You can register the module inside your root application module in one of severa
 Understanding the classic manual way is crucial for handling legacy code bases or complex scenarios, such as when you need custom provider generation, multiple distinct options objects, or complex multi-module wiring.
 
 ```typescript
+import { from } from "rxjs";
+
 // storage.module.ts (Manual Pattern)
 import { DynamicModule, Module, Provider, Inject, Injectable } from "@nestjs/common";
 import { StorageOptions } from "./storage-options.interface";
@@ -288,6 +304,8 @@ Let's inspect how the dynamic `StorageModule` behaves when wired into a controll
 ### 1. Injected Controller
 
 ```typescript
+import { from } from "rxjs";
+
 // files.controller.ts
 import { Body, Controller, Post, InternalServerErrorException } from "@nestjs/common";
 import { StorageService } from "./storage.service";
@@ -360,6 +378,8 @@ export class AppModule {}
 **How to solve this**: To run multiple instances of the same service with different configurations, you must wrap them in **separate wrapper modules** (e.g., `AvatarsStorageModule` and `InvoicesStorageModule`) that import and then export their respective customized versions, or use the manual custom provider pattern to register them with unique injection tokens.
 
 ```typescript
+import { from } from "rxjs";
+
 // avatars-storage.module.ts
 import { Module } from "@nestjs/common";
 import { StorageModule } from "./storage.module";

@@ -21,7 +21,7 @@ Turborepo, paired with pnpm workspaces, resolves this dependency bleed by keepin
 
 *   **Scoped dependencies**: Each Nest application and shared library maintains its own `package.json` manifest.
 *   **Pipeline intelligence**: Turborepo schedules builds, tests, and lints in the correct topological order.
-*   **Zero-effort caching**: Unchanged applications skip compiles and tests entirely, resolving instant feedback loops.
+*   **Zero-effort [[nestjs/data/caching|caching]]**: Unchanged applications skip compiles and tests entirely, resolving instant feedback loops.
 *   **Native dev servers**: Replaces brittle tools with native parallel task execution and clean, color-prefixed logging.
 
 ## Monorepo architecture
@@ -135,7 +135,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     }
     ```
 
-    Write the library's TypeScript configuration in `packages/logger/tsconfig.json`:
+    Write the library's TypeScript [[nestjs/recipes/configuration|configuration]] in `packages/logger/tsconfig.json`:
 
     ```json
     {
@@ -151,7 +151,9 @@ A standard high-performance NestJS monorepo uses the following structure:
     Create the module classes:
 
     ```typescript
-    // packages/logger/src/logger.service.ts
+import { from } from "rxjs";
+
+// packages/logger/src/logger.service.ts
     import { Injectable, Logger } from "@nestjs/common";
 
     @Injectable()
@@ -165,7 +167,9 @@ A standard high-performance NestJS monorepo uses the following structure:
     ```
 
     ```typescript
-    // packages/logger/src/logger.module.ts
+import { from } from "rxjs";
+
+// packages/logger/src/logger.module.ts
     import { Module } from "@nestjs/common";
     import { SharedLoggerService } from "./logger.service";
 
@@ -177,7 +181,9 @@ A standard high-performance NestJS monorepo uses the following structure:
     ```
 
     ```typescript
-    // packages/logger/src/index.ts
+import { from } from "rxjs";
+
+// packages/logger/src/index.ts
     export * from "./logger.module";
     export * from "./logger.service";
     ```
@@ -245,7 +251,9 @@ A standard high-performance NestJS monorepo uses the following structure:
     Now build the core entrypoint code for `apps/api/src/app.module.ts`:
 
     ```typescript
-    // apps/api/src/app.module.ts
+import { from } from "rxjs";
+
+// apps/api/src/app.module.ts
     import { Module } from "@nestjs/common";
     import { SharedLoggerModule } from "@repo/logger";
 
@@ -256,7 +264,9 @@ A standard high-performance NestJS monorepo uses the following structure:
     ```
 
     ```typescript
-    // apps/api/src/main.ts
+import { from } from "rxjs";
+
+// apps/api/src/main.ts
     import { NestFactory } from "@nestjs/core";
     import { AppModule } from "./app.module";
     import { SharedLoggerService } from "@repo/logger";

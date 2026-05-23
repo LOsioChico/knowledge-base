@@ -7,7 +7,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Distributing data across dynamic clusters with minimal rehashing when nodes scale up or down.
 
-In a distributed database or caching cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
+In a distributed database or [[nestjs/data/caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
@@ -102,6 +102,8 @@ In a basic consistent hashing ring, physical servers are represented by a single
 Below is a self-contained, fully typed TypeScript implementation of a Consistent Hashing ring using standard node crypto MD5 hashes and binary search (bisect style) for highly efficient lookups. This achieves **O(log K)** time complexity, where `K` is the total number of virtual nodes on the ring, meaning search times scale logarithmically and take only a tiny handful of steps even with millions of keys.
 
 ```typescript
+import { from, of } from "rxjs";
+
 import * as crypto from "node:crypto";
 
 /**
@@ -214,7 +216,9 @@ Let us run a simulation comparing a low virtual node count (3 replicas per serve
 <Tabs>
   <TabItem label="Simulation Code">
   ```typescript
-  // Assumes the ConsistentHashRing class defined in the previous section is saved as "./consistent-hashing.ts"
+import { from } from "rxjs";
+
+// Assumes the ConsistentHashRing class defined in the previous section is saved as "./consistent-hashing.ts"
   import { ConsistentHashRing } from "./consistent-hashing";
 
   const servers = ["Node-0", "Node-1", "Node-2", "Node-3", "Node-4"];

@@ -29,7 +29,11 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
     Controller or service throws with a custom filter registered:
 
     ```typescript
-    @Get(":id")
+import { from } from "rxjs";
+
+import { Get, Param } from "@nestjs/common";
+
+@Get(":id")
     findOne(@Param("id") id: string) {
       throw new UserNotFoundError(id);
     }
@@ -57,7 +61,9 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
     Middleware throws before Nest reaches guards, pipes, or the controller:
 
     ```typescript
-    import { INestApplication } from "@nestjs/common";
+import { from } from "rxjs";
+
+import { INestApplication } from "@nestjs/common";
 
     declare const app: INestApplication;
 
@@ -87,6 +93,8 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
 ## Contract
 
 ```typescript
+import { from } from "rxjs";
+
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from "@nestjs/common";
 import { Request, Response } from "express";
 
@@ -142,12 +150,20 @@ Every other layer: **global → controller → route**. Filters: **route → con
     `@UseFilters` array is **reversed** before search. Put catch-all **first** in the decorator so typed filters win:
 
     ```typescript
-    // Catch-all first in source → HttpExceptionFilter checked before catch-all
+import { from } from "rxjs";
+
+import { Catch, UseFilters } from "@nestjs/common";
+
+// Catch-all first in source → HttpExceptionFilter checked before catch-all
     @UseFilters(CatchEverythingFilter, HttpExceptionFilter)
     ```
 
     ```typescript
-    // Wrong: catch-all last swallows typed filters
+import { from } from "rxjs";
+
+import { UseFilters } from "@nestjs/common";
+
+// Wrong: catch-all last swallows typed filters
     @UseFilters(HttpExceptionFilter, CatchEverythingFilter)
     ```
 
@@ -189,6 +205,8 @@ export class UserNotFoundError extends Error {
 ```
 
 ```typescript
+import { from } from "rxjs";
+
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/common";
 import { Response } from "express";
 import { UserNotFoundError } from "./user-not-found.error";

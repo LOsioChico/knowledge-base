@@ -7,7 +7,7 @@ description: Managed key-value and document database — partition keys, capacit
 
 ## TL;DR
 
-- **Schema = key shape only**. Partition key + optional sort key; every other attribute is per-item and free-form.
+- **[[effect-ts/schema|Schema]] = key shape only**. Partition key + optional sort key; every other attribute is per-item and free-form.
 - **Access patterns drive design**. Query by key or GSI; no joins, no ad-hoc `WHERE`.
 - **Two capacity modes**: **On-demand** (pay per request, default) vs **provisioned** (pre-purchase RCU/WCU; pairs with auto-scaling) ([source](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/HowItWorks.ReadWriteCapacityMode.html)).
 - **Conditional writes are atomic per item**: locks, idempotency keys, single-writer coordination over [[aws/s3|S3]].

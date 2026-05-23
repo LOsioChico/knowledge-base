@@ -10,6 +10,8 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ## Contract
 
 ```typescript
+import { Observable, from } from "rxjs";
+
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Request } from "express";
 
@@ -108,6 +110,8 @@ export class AuthGuard implements CanActivate {
 </Steps>
 
 ```typescript
+import { from } from "rxjs";
+
 // roles.decorator.ts
 import { Reflector } from "@nestjs/core";
 
@@ -115,6 +119,8 @@ export const Roles = Reflector.createDecorator<string[]>();
 ```
 
 ```typescript
+import { from } from "rxjs";
+
 // roles.guard.ts
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";

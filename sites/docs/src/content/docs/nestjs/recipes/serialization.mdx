@@ -1,6 +1,8 @@
 ---
 title: Serialization with class-transformer
 description: Strip secrets and shape API responses with ClassSerializerInterceptor, class-transformer decorators, and ORM-aware plainToInstance.
+related:
+  - "[[nestjs/recipes/monorepo]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
@@ -37,6 +39,8 @@ Pair with [[nestjs/recipes/validation|validation]] on the way in: same `class-tr
 Bind once so every endpoint serializes outbound data:
 
 ```typescript
+import { from } from "rxjs";
+
 import { ClassSerializerInterceptor, Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, Reflector } from "@nestjs/core";
 
@@ -64,6 +68,8 @@ Decorators need metadata. `main.ts` that imports `NestFactory` from `@nestjs/cor
 ## `@Exclude()`: drop fields
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get, Param } from "@nestjs/common";
 import { Exclude } from "class-transformer";
 
@@ -105,6 +111,8 @@ The handler still sees `password` on the instance; stripping happens after `retu
 Hide everything by default; new DB columns stay off the wire until explicitly exposed:
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get, Param } from "@nestjs/common";
 import { Exclude, Expose, plainToInstance } from "class-transformer";
 
@@ -140,6 +148,8 @@ export class UsersController {
 ## `@Transform()`: reshape values
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get, Param } from "@nestjs/common";
 import { plainToInstance, Transform } from "class-transformer";
 
@@ -181,6 +191,8 @@ export class UsersController {
 Decorators apply when the controller returns a **class instance** or the route sets `@SerializeOptions({ type: ... })`. Plain objects still run through `classToPlain`, but `class-transformer` has no class metadata: every field passes through.
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get } from "@nestjs/common";
 import { Exclude } from "class-transformer";
 
@@ -247,6 +259,8 @@ While `@Expose({ groups: [...] })` coupled with `@SerializeOptions({ groups: [..
 By extending `ClassSerializerInterceptor`, we can intercept the outgoing response context, extract the request object, and dynamically inject user roles from context directly into the active serialization groups.
 
 ```typescript
+import { from } from "rxjs";
+
 import {
   CallHandler,
   ClassSerializerInterceptor,
@@ -294,6 +308,8 @@ export class DynamicSerializerInterceptor
 Annotate your entity to associate specific fields with role groups, then apply the dynamic interceptor at the controller level:
 
 ```typescript
+import { from } from "rxjs";
+
 import { Exclude, Expose } from "class-transformer";
 
 export class UserEntity {
@@ -319,6 +335,8 @@ export class UserEntity {
 ```
 
 ```typescript
+import { from } from "rxjs";
+
 import {
   Controller,
   Get,

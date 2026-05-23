@@ -36,6 +36,8 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ### Express v5: wildcards must be named
 
 ```typescript
+import { from } from "rxjs";
+
 import { Controller, Get } from "@nestjs/common";
 
 @Controller()
@@ -57,6 +59,8 @@ export class UsersController {
 Middleware:
 
 ```typescript
+import { from } from "rxjs";
+
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { MyMiddleware } from "./my.middleware";
 
@@ -73,6 +77,8 @@ export class AppModule implements NestModule {
 Nested bracket queries need the extended parser ([Express 5 migration](https://expressjs.com/en/guide/migrating-5.html)):
 
 ```typescript
+import { from } from "rxjs";
+
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module";
@@ -88,6 +94,8 @@ bootstrap();
 ### Fastify v5: CORS methods
 
 ```typescript
+import { from } from "rxjs";
+
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { AppModule } from "./app.module";
@@ -127,6 +135,8 @@ Dependents shut down before dependencies. Details: [[nestjs/fundamentals/lifecyc
 ### Dynamic modules: reference dedup
 
 ```typescript
+import { from } from "rxjs";
+
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./user.entity";
@@ -152,6 +162,8 @@ Middleware from global modules runs before imported modules ([migration guide](h
 ### `Reflector#getAllAndOverride` is `T | undefined`
 
 ```typescript
+import { from } from "rxjs";
+
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 
@@ -175,6 +187,8 @@ export class RolesGuard implements CanActivate {
 ### `ConsoleLogger` JSON mode
 
 ```typescript
+import { from } from "rxjs";
+
 import { NestFactory } from "@nestjs/core";
 import { ConsoleLogger } from "@nestjs/common";
 import { AppModule } from "./app.module";
@@ -187,6 +201,8 @@ const app = await NestFactory.create(AppModule, {
 ### Microservices: `unwrap()`, `on()`, `status`
 
 ```typescript
+import { from } from "rxjs";
+
 import { NestFactory } from "@nestjs/core";
 import { Transport } from "@nestjs/microservices";
 import type { NatsConnection } from "nats";
@@ -214,6 +230,8 @@ Built-in date parsing with `optional` / `default` like `ParseIntPipe` ([parse-da
 ### Microservice options from DI
 
 ```typescript
+import { from } from "rxjs";
+
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { ClientsModule, Transport } from "@nestjs/microservices";

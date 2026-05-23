@@ -199,6 +199,8 @@ By default, if any single item inside `Effect.forEach` fails (after exhausting a
 If your ingestion logic requires a **non-blocking collector** that saves all successful operations and logs individual failures without halting, wrap each item in `Effect.either`:
 
 ```typescript
+import { from } from "rxjs";
+
 import { Effect } from "effect";
 
 // Hypothetical resilient fetch and input list

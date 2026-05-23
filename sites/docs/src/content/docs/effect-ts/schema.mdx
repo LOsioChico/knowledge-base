@@ -30,13 +30,13 @@ console.log(todo.completed);
 // Prints undefined because the completed property was missing!
 ```
 
-This code type-checks perfectly, but it fails silently at runtime. `Schema` puts the validation check directly at the boundary, ensuring that malformed payloads are rejected immediately before they propagate deeper into your application logic.
+This code type-checks perfectly, but it fails silently at runtime. `Schema` puts the [[nestjs/recipes/validation|validation]] check directly at the boundary, ensuring that malformed payloads are rejected immediately before they propagate deeper into your application logic.
 
 ---
 
 ## Effect Schema vs. Zod
 
-While Zod is an industry-standard validation library, `Effect Schema` is designed from the ground up for functional composition and tight integration with the Effect ecosystem.
+While Zod is an industry-standard validation library, `Effect Schema` is designed from the ground up for functional [[effect-ts/composition|composition]] and tight integration with the Effect ecosystem.
 
 | Dimension | Zod | Effect Schema |
 | --- | --- | --- |
@@ -195,6 +195,8 @@ const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
 If we pass invalid data, the formatted error output clearly highlights the failing nested fields:
 
 ```typescript
+import { from } from "rxjs";
+
 import { Data, Effect } from "effect";
 
 class ParseFailure extends Data.TaggedError("ParseFailure")<{
@@ -229,7 +231,7 @@ const result = Effect.runSyncExit(parseTodo(badInput));
 
 <Aside type="caution" title="Validate at the boundary only">
 
-Parse your incoming network payloads or configuration objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
+Parse your incoming network payloads or [[nestjs/recipes/configuration|configuration]] objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
 
 </Aside>
 

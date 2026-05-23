@@ -299,12 +299,12 @@ const IMPORT_MAPS = [
 
 export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string, modified: boolean } {
   let modified = false;
-  // Match fenced typescript code blocks
-  const regex = /```(ts|typescript|tsx)\b([\s\S]*?)```/g;
+  // Match fenced typescript code blocks with their line attributes
+  const regex = /```(ts|typescript|tsx)(.*?)\r?\n([\s\S]*?)```/g;
   
-  const updatedBody = body.replace(regex, (match, lang, code) => {
-    // Check if the block explicitly opts out
-    if (code.includes("no-inject") || code.includes("no-inject-imports")) {
+  const updatedBody = body.replace(regex, (match, lang, attrs, code) => {
+    // Check if the block is a twoslash block or explicitly opts out
+    if (attrs.includes("twoslash") || code.includes("no-inject") || code.includes("no-inject-imports")) {
       return match;
     }
 
@@ -333,7 +333,7 @@ export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string
       modified = true;
       // Prepend imports with a double newline to separate from rest of the block
       const cleanCode = code.trimStart();
-      return `\`\`\`${lang}\n${injectedLines.join("\n")}\n\n${cleanCode}\`\`\``;
+      return `\`\`\`${lang}${attrs}\n${injectedLines.join("\n")}\n\n${cleanCode}\`\`\``;
     }
 
     return match;
@@ -390,6 +390,12 @@ function buildProseMask(body: string): string {
   // 6. Headings (e.g. ## Heading)
   const headingRe = /^##+\s+.*$/gm;
   while ((match = headingRe.exec(body)) !== null) {
+    blankRange(match.index, match.index + match[0].length);
+  }
+
+  // 7. Table lines (any line containing '|')
+  const tableRe = /^.*\|.*$/gm;
+  while ((match = tableRe.exec(body)) !== null) {
     blankRange(match.index, match.index + match[0].length);
   }
 

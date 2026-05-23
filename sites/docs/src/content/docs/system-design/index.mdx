@@ -74,8 +74,8 @@ In a single-computer system, building software is straightforward: there is a si
 To expand our distributed systems curriculum and prepare for advanced real-world architectures, the following core topics are planned to be added next:
 
 - **Back-of-the-Envelope Estimation**: Calculating QPS, peak traffic, database storage, and network bandwidth under pressure using raw math approximations, latency guides, and SLA availability "nines".
-- **Rate Limiting & Traffic Shaping**: Implementing token bucket, leaky bucket, and sliding window counter algorithms at the API Gateway layer to defend downstream services against DDoS attacks.
-- **Distributed Caching & Invalidation**: Master-replica caching architectures, invalidation models (cache-aside, write-through, write-behind), eviction policies (LRU, LFU), and cache stampede mitigations.
+- **[[nestjs/recipes/rate-limiting|Rate Limiting]] & Traffic Shaping**: Implementing token bucket, leaky bucket, and sliding window counter algorithms at the API Gateway layer to defend downstream services against DDoS attacks.
+- **Distributed [[nestjs/data/caching|Caching]] & Invalidation**: Master-replica caching architectures, invalidation models (cache-aside, write-through, write-behind), eviction policies (LRU, LFU), and cache stampede mitigations.
 - **Asynchronous Message Queues**: Decoupling compute using message queues and Pub/Sub hubs, handling dead-letter queues, horizontal worker scaling, and delivery guarantees (at-least-once, exactly-once).
 - **Distributed Transactions & Saga Patterns**: Resolving database coordination bottlenecks without two-phase commit locks by using the Saga and transactional outbox patterns.
 - **Distributed Consensus & Coordination**: Master election, split-brain mitigation, heartbeats, and leader coordination using consensus algorithms like Raft and Paxos.
