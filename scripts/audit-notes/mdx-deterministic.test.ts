@@ -82,4 +82,88 @@ describe("runMdxDeterministic", () => {
     const r = runMdxDeterministic(p, "dash.mdx");
     assert.ok(rules(r.findings).includes("style-em-dash"));
   });
+
+  it("flags unclosed frontmatter block", () => {
+    const p = writeMdx(
+      "unclosed.mdx",
+      ["---", "title: x", "description: y", "", "> tag"].join("\n"),
+    );
+    const r = runMdxDeterministic(p, "unclosed.mdx");
+    assert.ok(rules(r.findings).includes("frontmatter-schema"));
+    assert.ok(r.findings.some((f) => f.message.includes("not closed")));
+  });
+
+  it("flags missing body tagline blockquote", () => {
+    const p = writeMdx(
+      "notagline.mdx",
+      [
+        "---",
+        "title: Example",
+        "description: One-line summary for SEO.",
+        "---",
+        "",
+        "## Section without tagline first",
+      ].join("\n"),
+    );
+    const r = runMdxDeterministic(p, "notagline.mdx");
+    assert.ok(rules(r.findings).includes("frontmatter-schema"));
+    assert.ok(r.findings.some((f) => f.message.includes("tagline blockquote")));
+  });
+
+  it("flags unknown Aside type", () => {
+    const p = writeMdx(
+      "unknown-aside.mdx",
+      `${VALID_MDX}<Aside type="info">this is unknown</Aside>\n`,
+    );
+    const r = runMdxDeterministic(p, "unknown-aside.mdx");
+    assert.ok(rules(r.findings).includes("frontmatter-schema"));
+    assert.ok(r.findings.some((f) => f.message.includes('Unknown Aside type "info"')));
+  });
+
+  it("flags legacy vault path wikilinks", () => {
+    const p = writeMdx(
+      "legacy-link.mdx",
+      `${VALID_MDX}Check this [[content/aws/s3.md|S3 note]].\n`,
+    );
+    const r = runMdxDeterministic(p, "legacy-link.mdx");
+    assert.ok(rules(r.findings).includes("frontmatter-schema"));
+    assert.ok(r.findings.some((f) => f.message.includes("targets vault path")));
+  });
+
+  it("flags missing prerequisite badge or tagline prerequisite", () => {
+    const p = writeMdx(
+      "noprereqs.mdx",
+      [
+        "---",
+        "title: Example",
+        "description: One-line summary for SEO.",
+        "---",
+        "",
+        "> Tagline without prerequisite indicator.",
+        "",
+        "## Section",
+      ].join("\n"),
+    );
+    const r = runMdxDeterministic(p, "noprereqs.mdx");
+    assert.ok(rules(r.findings).includes("frontmatter-schema"));
+    assert.ok(r.findings.some((f) => f.message.includes("prerequisite documentation")));
+  });
+
+  it("skips prerequisite check on index notes", () => {
+    const p = writeMdx(
+      "index.mdx",
+      [
+        "---",
+        "title: Index MOC",
+        "description: Map of Content.",
+        "---",
+        "",
+        "> MOC Tagline.",
+        "",
+        "## Content",
+      ].join("\n"),
+    );
+    const r = runMdxDeterministic(p, "index.mdx");
+    assert.equal(r.findings.length, 0);
+  });
 });
