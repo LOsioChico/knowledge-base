@@ -1,5 +1,7 @@
 # Starlight + MDX capabilities
 
+> **Step 3: Starlight MDX Features & Capabilities**: Rich component usage (Aside, Steps, Tabs), Mermaid diagrams, and Twoslash compiler integrations for interactive code previews. Prerequisite: [Step 2: Publishing & MDX Authoring](PUBLISHING.md); next step: [Step 4: Script Automation & Tooling](TOOLING.md).
+
 What the **published site** (`sites/docs/`) supports. Vault markdown under `content/` stays Obsidian-safe (wikilinks, callouts, `related:`); it is **not** deployed as HTML. Authoring: [`PUBLISHING.md`](PUBLISHING.md).
 
 ## Already in use

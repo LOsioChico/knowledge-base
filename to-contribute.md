@@ -1,5 +1,7 @@
 # Upstream contribution backlog
 
+> **Step 7: Upstream Backlog & Contributions**: Catalog of identified upstream gaps in NestJS and CLI libraries, including submission workflows and evidence for future open-source PRs. Prerequisite: [Step 6: AI Editing Operating Contract](AGENTS.md); next step: [Step 8: Content Development Roadmap](docs/CONTENT_ROADMAP.md).
+
 Gaps surfaced during the source-verification audit pass on `content/nestjs/*`. Each item lists where I'd file the issue/PR and the evidence I have today. Re-verify against current `master` before opening anything: NestJS moves fast and any of these may already be fixed in a release I haven't checked.
 
 ## High confidence

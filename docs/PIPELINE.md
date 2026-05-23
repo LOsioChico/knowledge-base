@@ -1,5 +1,7 @@
 # CI and quality gates
 
+> **Step 5: CI/CD Quality Gates & Deployments**: Automated validation pipeline, local vs CI linter checks, and GitHub Pages deployment lifecycle. Prerequisite: [Step 4: Script Automation & Tooling](TOOLING.md); next step: [Step 6: AI Editing Operating Contract](../AGENTS.md).
+
 How vault markdown, Starlight MDX, and GitHub Pages fit together. **Source of truth for commands:** root `package.json` and `.github/workflows/deploy.yml`.
 
 ## CI and deploy flow

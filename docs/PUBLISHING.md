@@ -1,5 +1,7 @@
 # Publishing on Starlight
 
+> **Step 2: Publishing & MDX Authoring**: Complete guide to authoring high-fidelity Astro Starlight MDX pages, including link syntax protocols and per-page lifecycle checklists. Prerequisite: [Step 1: Welcome & Layout](../README.md); next step: [Step 3: Starlight MDX Features & Capabilities](STARLIGHT-FEATURES.md).
+
 The public site is **Starlight only** (`sites/docs/` → GitHub Pages at `/knowledge-base`).
 GitHub Pages serves **Starlight only** (`sites/docs/dist/`). The vault is not published as HTML.
 

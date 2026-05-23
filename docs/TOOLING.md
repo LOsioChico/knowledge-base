@@ -1,5 +1,7 @@
 # Skills and scripts (current project model)
 
+> **Step 4: Script Automation & Tooling**: Local pre-commit guardian (`pre-commit-autofix.ts`), Cursor Living MOC reviewer (`cursor-reviewer.ts`), wikilink linters, and external development helper tools (CodeGraph, OpenSpec, Engram). Prerequisite: [Step 3: Starlight MDX Features & Capabilities](STARLIGHT-FEATURES.md); next step: [Step 5: CI/CD Quality Gates & Deployments](PIPELINE.md).
+
 **Published site:** Starlight MDX under `sites/docs/src/content/docs/` → GitHub Pages.  
 **Legacy vault:** `content/**/*.md` (pre-migration; **do not edit**). Parity + optional vault audit only. **Not** deployed as HTML.  
 **Parity:** every legacy vault note except `inbox.md` is covered by a matching `.mdx`; MDX-only pages are allowed (`bun run lint:publish-parity`, in `lint:ci`).

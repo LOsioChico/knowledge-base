@@ -1,5 +1,7 @@
 # AGENTS.md
 
+> **Step 6: AI Editing Operating Contract**: Strict repository invariants, automated and manual auditing procedures (A-P, S1-S6), show-dont-tell rules, and behavior-in-snippet verification patterns. Prerequisite: [Step 5: CI/CD Quality Gates & Deployments](docs/PIPELINE.md); next step: [Step 7: Upstream Backlog & Contributions](to-contribute.md).
+
 Operating contract for any AI agent (Copilot CLI, Claude Code, Cursor, etc.) editing this knowledge base. Read this file end-to-end before touching any note. Nearest `AGENTS.md` wins; this is the root.
 
 ## Surface choices, don't pick silently

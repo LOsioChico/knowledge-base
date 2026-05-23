@@ -1,5 +1,7 @@
 # Content roadmap
 
+> **Step 8: Content Development Roadmap**: Planning map for upcoming additions, recent graduates, and future priorities across the NestJS, AWS, and Effect-TS domains. Prerequisite: [Step 7: Upstream Backlog & Contributions](../to-contribute.md); next step: none.
+
 Short-lived planning map for the published Starlight knowledge base. This file keeps the useful decisions from the Dia-generated prompt packs without preserving large prompt artifacts as source of truth.
 
 ## When agents should consult this file
@@ -86,22 +88,19 @@ Deferred:
 Recently added:
 
 - `effect-ts/schema`
+- `effect-ts/concurrency`
+- `effect-ts/streams`
+- `effect-ts/state`
+- `effect-ts/observability`
+- `effect-ts/platform`
 
 Recommended next work:
 
-1. **Concurrency**
-   - Proposed slug: `effect-ts/concurrency`
-   - Scope: fibers, bounded `Effect.forEach`, interruption, failure behavior, and cleanup links to scoped resources.
-
-2. **Streams**
-   - Proposed slug: `effect-ts/streams`
-   - Should come after concurrency so backpressure and interruption have a shared vocabulary.
-
-3. **HTTP client with Schema**
+1. **HTTP client with Schema**
    - Proposed slug: `effect-ts/http-client-with-schema`
    - Narrower and safer than a broad HTTP service recipe.
 
-4. **Logging and tracing**
+2. **Logging and tracing**
    - Proposed slug: `effect-ts/logging-and-tracing`
    - Focus: `Effect.log`, log spans, `Effect.fn`, and where `@effect/opentelemetry` begins.
 
