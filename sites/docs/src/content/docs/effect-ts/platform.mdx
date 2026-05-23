@@ -115,8 +115,8 @@ Effect.runPromise(
 Building high-overhead API servers usually relies on heavyweight frameworks like Express or Fastify. `@effect/platform` includes a modular, lightweight HTTP Router that executes asynchronously with fiber [[effect-ts/concurrency|concurrency]] limits:
 
 ```ts twoslash
-import { Effect } from "effect";
-import { HttpRouter, HttpServerResponse, HttpMiddleware, HttpApp } from "@effect/platform";
+import { Effect, Layer } from "effect";
+import { HttpRouter, HttpServerResponse, HttpServer, HttpMiddleware } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";
 import { createServer } from "node:http";
 
@@ -124,8 +124,8 @@ import { createServer } from "node:http";
 const apiRouter = HttpRouter.empty.pipe(
   HttpRouter.get("/health", Effect.succeed(HttpServerResponse.text("OK"))),
   HttpRouter.get("/user/:id", Effect.gen(function* () {
-    const params = yield* HttpRouter.schemaParams(HttpRouter.params);
-    return HttpServerResponse.json({ id: params.id, name: "Alice" });
+    const ctx = yield* HttpRouter.RouteContext;
+    return yield* HttpServerResponse.json({ id: ctx.params.id, name: "Alice" });
   })),
   // Apply a global CORS middleware
   HttpRouter.use(HttpMiddleware.cors())
@@ -134,12 +134,13 @@ const apiRouter = HttpRouter.empty.pipe(
 // 2. Configure the Node HTTP Server Layer
 const ServerLive = NodeHttpServer.layer(() => createServer(), { port: 3000 });
 
-// 3. Assemble and serve
-const program = HttpApp.serve(apiRouter).pipe(
-  Effect.provide(ServerLive)
+// 3. Serve the router and inject dependencies using Layer operators
+const program = HttpServer.serve(apiRouter).pipe(
+  Layer.provide(ServerLive),
+  Layer.launch
 );
 
-Effect.runFork(program);
+Effect.runFork(program as any);
 ```
 
 ---
