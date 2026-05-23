@@ -11,13 +11,13 @@ description: Simple Notification Service — topics, fan-out to SQS/Lambda/HTTP,
 - **Standard** = at-least-once, no ordering, high throughput. **FIFO** = strict ordering, exactly-once, FIFO SQS or HTTPS only ([source](https://docs.aws.amazon.com/sns/latest/dg/sns-fifo-topics.html)).
 - **Fan-out canonical pattern**: SNS topic → multiple SQS queues, each consumed independently.
 - **Filter policies** scope each subscription to matching message attributes.
-- **256 KB message limit**; HTTP/HTTPS endpoints must confirm subscription once.
+- **256 KB message limit**; [[effect-ts/platform|HTTP]]/HTTPS endpoints must confirm subscription once.
 
 ## When to use
 
 - **Use SNS** for: fan-out, mobile push, email alerts, simple webhooks.
 - **Use SNS + SQS** when each consumer needs its own buffered queue with retry + DLQ.
-- **Don't use SNS** for: ordered event streams (Kinesis), large payloads, replay on Standard topics (FIFO archiving optional: [source](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html)).
+- **Don't use SNS** for: ordered event [[effect-ts/streams|streams]] (Kinesis), large payloads, replay on Standard topics (FIFO archiving optional: [source](https://docs.aws.amazon.com/sns/latest/dg/fifo-message-archiving-replay.html)).
 
 ## Pending notes
 

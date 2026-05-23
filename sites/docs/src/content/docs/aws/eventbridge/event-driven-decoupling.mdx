@@ -8,6 +8,7 @@ related:
   - "[[aws/eventbridge]]"
   - "[[aws/sqs]]"
   - "[[aws/sns]]"
+  - "[[aws/eventbridge/index]]"
 source:
   - https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
 ---
@@ -15,6 +16,14 @@ source:
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Amazon EventBridge decouples distributed microservices by acting as an asynchronous serverless event bus, matching structured JSON payloads against declarative rules, and routing events to targets.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[AWS Serverless Track](/knowledge-base/aws/)**. Before designing decoupled event-driven systems, make sure you understand:
+- [[aws/sqs|SQS Queues]]: Pull-based queue structures used as horizontal worker buffers.
+- [[aws/sns|SNS Pub/Sub]]: Push-based pub/sub fan-out mechanisms.
+
+</Aside>
 
 ---
 
@@ -184,7 +193,7 @@ In distributed architectures, contract drift is a major footgun. If a publisher 
 
 To prevent this, we construct a runtime boundary validation layer using `effect/Schema` (see [[effect-ts/schema|Schema deep-dive]]). This ensures that raw inbound payloads from SQS or EventBridge targets are decoded, validated, and translated into strict, type-safe TypeScript structures before executing business logic:
 
-```typescript
+```typescript twoslash
 import { Data, Effect, ParseResult, Schema } from "effect";
 
 // 1. Define custom, tagged domain error for validation failures

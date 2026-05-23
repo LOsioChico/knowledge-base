@@ -160,7 +160,7 @@ To understand how scopes operate in production, consider a multi-step database t
 
 By wrapping our resource initialization in `Effect.acquireRelease`, the Effect runtime automatically tracks the resource and wires its release logic to the enclosing `Scope` context.
 
-```ts
+```ts twoslash
 import { Effect, Console } from "effect";
 
 class DbConnection {

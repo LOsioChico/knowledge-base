@@ -1,11 +1,23 @@
 ---
 title: S3 quickstart
 description: Ten-minute S3 walkthrough — create a bucket, upload, presign, and clean up with safe defaults.
+related:
+  - "[[aws/cli/profiles-and-credentials]]"
+  - "[[aws/s3/storage-classes]]"
+  - "[[aws/s3/lifecycle-rules]]"
+  - "[[aws/cli/query-and-output]]"
 ---
 
 import { Aside } from "@astrojs/starlight/components";
 
 > First-bucket walkthrough: create with safe defaults, upload, share via [[aws/s3/presigned-urls|presigned URL]], clean up. No console clicks.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[AWS Serverless Track](/knowledge-base/aws/)**. Before starting your first S3 bucket, make sure you understand:
+- [[aws/cli/profiles-and-credentials|CLI Profiles & Credentials]]: Access profile configurations needed to authorize S3 actions correctly.
+
+</Aside>
 
 ## Before you start
 

@@ -16,7 +16,7 @@ description: AWS Lambda — functions, execution roles, triggers, versions/alias
 ## When to use
 
 - **Use Lambda** for: event glue, scheduled jobs, webhooks, scale-to-zero workloads.
-- **Don't use Lambda** for: invocations over 15 minutes ([900 s cap](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)), latency-critical cold-start paths, persistent local state. For long workflows see [durable functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html).
+- **Don't use Lambda** for: invocations over 15 minutes ([900 s cap](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)), latency-critical cold-start paths, persistent local [[effect-ts/state|state]]. For long workflows see [durable functions](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html).
 
 ## Mental model
 
@@ -30,7 +30,7 @@ description: AWS Lambda — functions, execution roles, triggers, versions/alias
 ## Pending notes
 
 - Cross-account migration: repoint event sources, swap aliases.
-- Cold-start triage: Init Duration, provisioned concurrency, SnapStart.
+- Cold-start triage: Init Duration, provisioned [[effect-ts/concurrency|concurrency]], SnapStart.
 
 ## See also
 

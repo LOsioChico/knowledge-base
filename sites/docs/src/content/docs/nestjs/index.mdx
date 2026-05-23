@@ -5,7 +5,7 @@ description: Map of content for NestJS — fundamentals, recipes, data, auth, an
 
 import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> TypeScript HTTP framework built on Express (default) or Fastify: modules, DI, and a fixed per-request pipeline.
+> TypeScript [[effect-ts/platform|HTTP]] framework built on Express (default) or Fastify: modules, DI, and a fixed per-request pipeline.
 
 ## TL;DR
 
@@ -15,29 +15,22 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 - **Boot/shutdown** is separate from per-request flow: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
 - Default dev build in this KB: [[nestjs/recipes/swc-setup|SWC]] + `--type-check`.
 
-## Choose a path
+## Learning Pathway Sequence
 
-<Tabs>
-  <TabItem label="New to Nest">
-    <Steps>
+Follow this highly curated step-by-step reading flow to build deep engineering intuition, starting from the low-level request pipeline up to production auth stacks.
 
-    1. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]]: pipeline order.
-    2. [[nestjs/fundamentals|Fundamentals MOC]]: layer-by-layer notes.
-    3. [[nestjs/recipes/validation|Validation]]: first DTO + `ValidationPipe`.
-    4. [[nestjs/recipes/swc-setup|SWC builder]]: default dev loop.
-
-    </Steps>
-  </TabItem>
-  <TabItem label="Coming from Effect">
-    <Steps>
-
-    1. [[effect-ts/layers-vs-nestjs-di|Effect vs NestJS DI]].
-    2. [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
-    3. [[effect-ts/layers-and-di|Effect Layers]]: domain in Effect, HTTP at the edge.
-
-    </Steps>
-  </TabItem>
-</Tabs>
+```mermaid
+flowchart TD
+    RL["1. [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]] (Entry)"] --> MW["2. [[nestjs/fundamentals/middleware|Middleware]]"]
+    MW --> G["3. [[nestjs/fundamentals/guards|Guards]]"]
+    G --> I["4. [[nestjs/fundamentals/interceptors|Interceptors]]"]
+    I --> P["5. [[nestjs/fundamentals/pipes|Pipes]]"]
+    P --> EF["6. [[nestjs/fundamentals/exception-filters|Exception Filters]]"]
+    EF --> DM["7. [[nestjs/recipes/dynamic-modules|Dynamic Modules]]"]
+    DM --> CFG["8. [[nestjs/recipes/configuration|Config Injection]]"]
+    CFG --> AUTH["9. [[nestjs/auth/jwt-strategy|Auth Stack]]"]
+    CFG --> DB["10. [[nestjs/data/typeorm/postgresql-setup|PostgreSQL Setup]]"]
+```
 
 ## Start here
 
@@ -49,7 +42,7 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
     <p><a href="/knowledge-base/nestjs/fundamentals/">Fundamentals MOC</a></p>
   </Card>
   <Card title="Recipes" icon="rocket">
-    <p><a href="/knowledge-base/nestjs/recipes/">Validation, uploads, SWC, tracing, …</a></p>
+    <p><a href="/knowledge-base/nestjs/recipes/">[[nestjs/recipes/validation|Validation]], uploads, SWC, [[effect-ts/observability|tracing]], …</a></p>
   </Card>
   <Card title="Data" icon="document">
     <p><a href="/knowledge-base/nestjs/data/">TypeORM, [[nestjs/data/caching|caching]]</a></p>

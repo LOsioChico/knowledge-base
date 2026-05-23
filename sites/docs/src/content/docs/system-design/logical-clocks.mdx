@@ -1,11 +1,21 @@
 ---
 title: Logical Clocks & Time Ordering
 description: Exploring physical clock sync limits, Leslie Lamport's happen-before relation, Lamport Timestamps, and Vector Clocks for causal event tracing.
+related:
+  - "[[system-design/consistency-models]]"
+  - "[[system-design/consistent-hashing]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > Solving the impossibility of absolute physical time in distributed networks using Lamport Timestamps and Vector Clocks.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before resolving time sync limits, make sure you understand:
+- [[system-design/consistency-models|Consistency Models]]: Frame the CAP partition boundaries and eventual vs causal consistency spectrums.
+
+</Aside>
 
 In centralized systems, ordering events is simple: the operating system maintains a single physical system clock, and every event receives a sequential timestamp. In a distributed system with nodes scattered across networks, coordinating events in physical time becomes an intractable problem. 
 
@@ -127,7 +137,7 @@ In a cluster of `N` nodes, each node `P_i` maintains a vector `V_i` of size `N`,
 
 3.  **Send Message**: Process `P_i` attaches its entire local vector `V_i` to the message.
 
-4.  **Receive Message**: When process `P_j` receives a message carrying vector `W`, it merges the incoming state:
+4.  **Receive Message**: When process `P_j` receives a message carrying vector `W`, it merges the incoming [[effect-ts/state|state]]:
     *   It updates every element in its vector to the maximum value:
         ```
         V_j[k] = max(V_j[k], W[k])  for all k in [0, N-1]

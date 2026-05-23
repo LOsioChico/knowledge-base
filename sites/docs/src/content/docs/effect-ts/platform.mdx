@@ -40,7 +40,7 @@ By coding against the abstract types of `@effect/platform`, you write 100% envir
 
 The `FileSystem` service provides standard file operations. Because it is pull-based and fully integrated with the Effect resource scope engine, it guarantees file handles are cleanly closed upon success, failure, or fiber interruption:
 
-```ts
+```ts twoslash
 import { Effect, Console } from "effect";
 import { FileSystem, Path } from "@effect/platform";
 import { NodeContext } from "@effect/platform-node";
@@ -114,7 +114,7 @@ Effect.runPromise(
 
 Building high-overhead API servers usually relies on heavyweight frameworks like Express or Fastify. `@effect/platform` includes a modular, lightweight HTTP Router that executes asynchronously with fiber [[effect-ts/concurrency|concurrency]] limits:
 
-```ts
+```ts twoslash
 import { Effect } from "effect";
 import { HttpRouter, HttpServer, HttpMiddleware, HttpRouterApp } from "@effect/platform";
 import { NodeHttpServer } from "@effect/platform-node";

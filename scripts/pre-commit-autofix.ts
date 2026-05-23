@@ -408,6 +408,41 @@ export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string
 }
 
 // ---------------------------------------------------------
+// 2.5. Effect Twoslash Auto-Converter
+// ---------------------------------------------------------
+export function convertEffectBlocksToTwoslash(body: string): { updatedBody: string, modified: boolean } {
+  let modified = false;
+  // Match fenced typescript code blocks with their line attributes
+  const regex = /```(ts|typescript|tsx)(.*?)\r?\n([\s\S]*?)```/g;
+
+  const updatedBody = body.replace(regex, (match, lang, attrs, code) => {
+    // If it's already a twoslash block, skip
+    if (attrs.includes("twoslash")) {
+      return match;
+    }
+
+    // Check if the block contains an import or export from "effect" or "@effect/..."
+    const hasEffectImport = /(?:import|export)\s+[\s\S]*?\s+from\s+['"](?:effect|@effect\/)/.test(code) ||
+                            /import\s+['"](?:effect|@effect\/)/.test(code);
+
+    if (hasEffectImport) {
+      modified = true;
+      const trimmedAttrs = attrs.trim();
+      if (trimmedAttrs === "") {
+        return `\`\`\`${lang} twoslash\n${code}\`\`\``;
+      } else {
+        return `\`\`\`${lang} twoslash${attrs}\n${code}\`\`\``;
+      }
+    }
+
+    return match;
+  });
+
+  return { updatedBody, modified };
+}
+
+
+// ---------------------------------------------------------
 // 3. First-Mention Wikilink Auto-Fixer
 // ---------------------------------------------------------
 function buildProseMask(body: string): string {
@@ -619,6 +654,14 @@ function processNoteFile(filePath: string, concepts: Concept[], dryRun: boolean)
   if (importResult.modified) {
     console.log(`  ${green}✓ Injected missing NestJS/RxJS imports into code blocks.${reset}`);
     currentBody = importResult.updatedBody;
+    fileModified = true;
+  }
+
+  // 1.5. Convert Effect Blocks to Twoslash
+  const twoslashResult = convertEffectBlocksToTwoslash(currentBody);
+  if (twoslashResult.modified) {
+    console.log(`  ${green}✓ Converted Effect code blocks to Twoslash.${reset}`);
+    currentBody = twoslashResult.updatedBody;
     fileModified = true;
   }
 

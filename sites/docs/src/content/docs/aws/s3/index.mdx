@@ -5,7 +5,7 @@ description: Amazon S3 object storage — buckets, objects, consistency, access 
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Amazon S3 is object storage: put bytes in a bucket under a string key; S3 makes them durable, regional, and addressable over HTTP. Default place for anything that is not a database row.
+> Amazon S3 is object storage: put bytes in a bucket under a string key; S3 makes them durable, regional, and addressable over [[effect-ts/platform|HTTP]]. Default place for anything that is not a database row.
 
 ## TL;DR
 
@@ -13,7 +13,7 @@ import { Aside } from "@astrojs/starlight/components";
 - **Region + name are immutable** after create: wrong Region means new bucket + sync ([[aws/s3/cross-account-migration|cross-account migration]] shape).
 - **Private by default**: [[aws/iam|IAM]], bucket policies, Access Points; keep Block Public Access on.
 - **Strong read-after-write** for PUT/overwrite-PUT/DELETE: no torn reads on a single key ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/Welcome.html#ConsistencyModel)).
-- **Concurrent same-key PUTs: last write wins unpredictably**: not a concurrency lock; don't use S3 Object Lock for that ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)).
+- **Concurrent same-key PUTs: last write wins unpredictably**: not a [[effect-ts/concurrency|concurrency]] lock; don't use S3 Object Lock for that ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html)).
 
 ## When to use S3 vs something else
 

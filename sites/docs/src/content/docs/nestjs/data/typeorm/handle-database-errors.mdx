@@ -232,7 +232,7 @@ Driver messages change across versions and locales. Use `driverError.code` (SQLS
 
 <Aside type="caution" title="Transactions: re-throw after catch">
 
-Inside `dataSource.transaction()`, catching without re-throwing commits broken state ([EntityManager.transaction](https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts#L161-L167)).
+Inside `dataSource.transaction()`, catching without re-throwing commits broken [[effect-ts/state|state]] ([EntityManager.transaction](https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts#L161-L167)).
 
 </Aside>
 

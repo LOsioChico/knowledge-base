@@ -3,11 +3,20 @@ title: Request lifecycle
 description: Execution order from HTTP adapter through middleware, guards, interceptors, pipes, and exception filters.
 related:
   - "[[nestjs/recipes/monorepo]]"
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/middleware]]"
+  - "[[nestjs/fundamentals/exception-filters]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.
+
+<Aside type="tip" title="Prerequisites">
+
+None. This is the **foundational entry point** of the **[NestJS Track](/knowledge-base/nestjs/)**.
+
+</Aside>
 
 <Aside type="note" title="Not application lifecycle">
 

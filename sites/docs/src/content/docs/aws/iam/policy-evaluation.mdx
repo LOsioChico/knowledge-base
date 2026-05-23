@@ -125,7 +125,7 @@ The role in account A also needs a trust policy that names the trusted principal
 }
 ```
 
-Result: if either side is missing, `AssumeRole` fails before the app reaches S3, KMS, SES, or any other target service. The STS `AssumeRole` docs state that the target role trust policy defines who can assume the role, and cross-account assumption requires the caller's account to be trusted by that role ([source](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html)).
+Result: if either side is missing, `AssumeRole` fails before the app reaches S3, KMS, SES, or any other target service. The STS `AssumeRole` docs [[effect-ts/state|state]] that the target role trust policy defines who can assume the role, and cross-account assumption requires the caller's account to be trusted by that role ([source](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html)).
 
 For the full migration pattern, use [[aws/recipes/cross-account-role-pattern|Cross-account assume-role pattern]].
 

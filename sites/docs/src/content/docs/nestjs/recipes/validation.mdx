@@ -1,6 +1,8 @@
 ---
 title: Validation with class-validator
 description: Global ValidationPipe, DTO classes, whitelist security, transform, and validation groups.
+related:
+  - "[[nestjs/fundamentals/pipes]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
@@ -299,7 +301,7 @@ new ValidationPipe({
 
 ## Custom asynchronous validation with Dependency Injection
 
-Often, validation requires checking state outside the payload (e.g., verifying database uniqueness before executing an insert).
+Often, validation requires checking [[effect-ts/state|state]] outside the payload (e.g., verifying database uniqueness before executing an insert).
 
 ### 1. Define the custom validator and constraint
 Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):

@@ -194,7 +194,7 @@ export class GameModule {}
 
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
 
-```typescript
+```typescript twoslash
 import { Logger } from "@nestjs/common";
 
 // Effect: The Tag is both the token and the type interface
@@ -244,7 +244,7 @@ export class DatabaseModule {
 
 In Effect, **Layers are values** that can be composed and constructed dynamically using ordinary functions and standard functional operators. There is no special container ceremony or dynamic module API:
 
-```typescript
+```typescript twoslash
 // Effect: Dynamic Layer factory function
 import { Context, Effect, Layer } from "effect";
 

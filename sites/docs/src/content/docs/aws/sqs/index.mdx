@@ -16,7 +16,7 @@ description: Simple Queue Service — Standard vs FIFO queues, visibility timeou
 ## When to use
 
 - **Use SQS** for: decoupling producers/consumers, smoothing spikes, retry buffers, [[aws/s3/event-notifications|S3 event]] buffering.
-- **Don't use SQS** for: fan-out to many consumers (SNS/EventBridge); global ordering at high throughput (FIFO caps); stream replay (Kinesis/MSK).
+- **Don't use SQS** for: fan-out to many consumers (SNS/EventBridge); global ordering at high throughput (FIFO caps); [[effect-ts/streams|stream]] replay (Kinesis/MSK).
 
 ## Pending notes
 

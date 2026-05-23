@@ -5,7 +5,7 @@ description: "Choose the smallest NestJS test that proves the behavior: compile 
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Testing in NestJS is mostly choosing how much of the DI container and HTTP pipeline to boot.
+> Testing in NestJS is mostly choosing how much of the DI container and [[effect-ts/platform|HTTP]] pipeline to boot.
 
 ## When to reach for it
 
@@ -300,7 +300,7 @@ If the expensive boundary is a whole imported module rather than one guard, Nest
 
 ## Transactional database E2E test rollback pattern
 
-For true confidence, E2E tests should target a real database (e.g., local PostgreSQL or Docker test container) rather than an in-memory double. However, resetting database state between test runs is a major bottleneck: rebuilding schemas or truncating tables in `beforeEach` adds seconds to every test, slowing down CI pipelines.
+For true confidence, E2E tests should target a real database (e.g., local PostgreSQL or Docker test container) rather than an in-memory double. However, resetting database [[effect-ts/state|state]] between test runs is a major bottleneck: rebuilding schemas or truncating tables in `beforeEach` adds seconds to every test, slowing down CI pipelines.
 
 The gold standard for high-performance database testing is the **transactional rollback pattern**. By wrapping every individual test case inside a database transaction and rolling it back in `afterEach`, the database never persists mutations, keeping tests completely isolated and running in milliseconds.
 

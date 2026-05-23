@@ -194,7 +194,7 @@ const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
 
 If we pass invalid data, the formatted error output clearly highlights the failing nested fields:
 
-```typescript
+```typescript twoslash
 import { Data, Effect } from "effect";
 
 class ParseFailure extends Data.TaggedError("ParseFailure")<{

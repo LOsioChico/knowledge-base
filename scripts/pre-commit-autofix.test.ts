@@ -5,7 +5,8 @@ import {
   parseRelatedLinks,
   addRelatedLinkToFrontmatter,
   injectImportsIntoCodeBlocks,
-  fixFirstMentionWikilinks
+  fixFirstMentionWikilinks,
+  convertEffectBlocksToTwoslash
 } from "./pre-commit-autofix";
 
 test("getFrontmatterAndBody correctly splits frontmatter and body", () => {
@@ -266,3 +267,45 @@ test("fixFirstMentionWikilinks prioritizes longer concepts over shorter overlapp
   // It should match the longer concept first
   assert.equal(updatedBody, "I am studying [[nestjs/fundamentals/request-lifecycle-long|Nest Request Lifecycle]] in details.");
 });
+
+test("convertEffectBlocksToTwoslash adds twoslash attribute to ts/typescript code blocks importing effect", () => {
+  const body = `Some intro.
+
+\`\`\`ts
+import { Effect } from "effect";
+const program = Effect.succeed(42);
+\`\`\`
+
+\`\`\`typescript
+import { Platform } from "@effect/platform";
+\`\`\`
+
+\`\`\`ts {1-5}
+import "effect";
+\`\`\`
+`;
+
+  const { updatedBody, modified } = convertEffectBlocksToTwoslash(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /```ts twoslash\nimport \{ Effect \}/);
+  assert.match(updatedBody, /```typescript twoslash\nimport \{ Platform \}/);
+  assert.match(updatedBody, /```ts twoslash \{1-5\}\nimport "effect";/);
+});
+
+test("convertEffectBlocksToTwoslash ignores code blocks that already have twoslash or do not import effect", () => {
+  const body = `Some intro.
+
+\`\`\`ts twoslash
+import { Effect } from "effect";
+\`\`\`
+
+\`\`\`ts
+import { Controller } from "@nestjs/common";
+\`\`\`
+`;
+
+  const { updatedBody, modified } = convertEffectBlocksToTwoslash(body);
+  assert.equal(modified, false);
+  assert.equal(updatedBody, body);
+});
+
