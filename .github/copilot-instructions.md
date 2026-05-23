@@ -162,7 +162,7 @@ The top-level folder under `content/` encodes the area. A note under `content/ne
 
 ### `tech/*` (specific technology)
 
-- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/nest-cli`, `tech/typeorm`, `tech/postgres`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved), `tech/aws`, `tech/aws-cli`, `tech/cloudfront`, `tech/amplify`, `tech/rds`, `tech/iam`, `tech/acm`, `tech/s3`, `tech/ec2`, `tech/lambda`, `tech/secrets-manager`, `tech/kms`, `tech/sts`, `tech/route53`, `tech/dynamodb`, `tech/sqs`, `tech/sns`, `tech/vpc`, `tech/ecs`, `tech/effect-ts`
+- `tech/typescript`, `tech/rxjs`, `tech/multer`, `tech/http`, `tech/class-validator`, `tech/class-transformer`, `tech/asynclocalstorage`, `tech/nest-cli`, `tech/typeorm`, `tech/postgres`, `tech/kafka` (reserved), `tech/prisma` (reserved), `tech/jwt` (reserved), `tech/aws`, `tech/aws-cli`, `tech/eventbridge`, `tech/cloudfront`, `tech/amplify`, `tech/rds`, `tech/iam`, `tech/acm`, `tech/s3`, `tech/ec2`, `tech/lambda`, `tech/secrets-manager`, `tech/kms`, `tech/sts`, `tech/route53`, `tech/dynamodb`, `tech/sqs`, `tech/sns`, `tech/vpc`, `tech/ecs`, `tech/effect-ts`
 
 ### Cross-cutting concepts (no namespace, used sparingly)
 
@@ -216,6 +216,7 @@ Skipping any step is a bug.
 - **Reference-table linking rule**: when a note contains a reference table that enumerates entities (built-in pipes, built-in guards, decorators, common operators, etc.), every row whose entity is **demonstrated by a worked example** — either elsewhere in the same note or in another note — MUST link to that example from the row's notes/description column. Use a wikilink for cross-note targets (`[[nestjs/recipes/file-uploads|File uploads recipe]]`) and a plain anchor for in-note targets (`[composing pipes](#common-recipes)`). A row with no example to point to stays unlinked. Audit this every time you add a new example or a new table row: a freshly added example without a back-link from the table is a discoverability bug.
 - `related:` is the safety net (machine-readable), wikilinks are the surface (reader-facing). Both must agree: if it's in `related:`, the body should link it at first mention; if the body links it, it must be in `related:`.
 - Avoid stub links to non-existent notes. If you reference a future note, mark it explicitly: `[[microservices/kafka|Kafka (planned)]]`.
+- **Starlight folder index slugs**: In Starlight MDX pages under `sites/docs/`, folder index pages do NOT contain `/index` in their route slugs. The route slug is the folder name itself (e.g. `[[aws/sqs]]` or `[[aws/eventbridge]]`). Using the `/index` basename (such as `[[aws/sqs/index]]` or `[[aws/eventbridge/index]]`) in wikilinks or frontmatter `related:` lists is forbidden and will fail the `bun run lint:ci` compilation checks. Always reference the bare folder name for folder index pages.
 
 ## Recipe template
 

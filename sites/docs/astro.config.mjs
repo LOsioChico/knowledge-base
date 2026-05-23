@@ -211,6 +211,18 @@ const awsSidebar = [
     ],
   },
   {
+    label: "EventBridge",
+    collapsed: true,
+    items: [
+      { label: "EventBridge overview", slug: "aws/eventbridge" },
+      { label: "Quickstart", slug: "aws/eventbridge/quickstart" },
+      {
+        label: "Event-driven decoupling",
+        slug: "aws/eventbridge/event-driven-decoupling",
+      },
+    ],
+  },
+  {
     label: "Other services",
     collapsed: true,
     items: [

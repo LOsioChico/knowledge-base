@@ -1,0 +1,271 @@
+---
+title: EventBridge quickstart
+description: Ten-minute EventBridge walkthrough creating a custom bus, filtering rules, an SQS target, and publishing events.
+tags: [type/recipe, tech/aws, tech/aws-cli, tech/eventbridge, tech/sqs]
+area: aws
+status: evergreen
+related:
+  - "[[aws/eventbridge]]"
+  - "[[aws/sqs/quickstart]]"
+  - "[[aws/eventbridge/index]]"
+source:
+  - https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-create-event-bus.html
+---
+
+import { Aside } from "@astrojs/starlight/components";
+
+> CLI walkthrough: stand up a custom Amazon EventBridge event bus, configure an SQS queue as a target, write JSON routing rules, publish test events, and cleanly tear down resources.
+
+## Before you start
+
+- AWS CLI profile resolving to a writable developer account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify that the account matches your expected testing environment:
+
+  ```bash
+  aws --profile <name> sts get-caller-identity
+  ```
+
+  Expected output format:
+  ```json
+  {
+      "UserId": "AROA1234567890EXAMPLE",
+      "Account": "123456789012",
+      "Arn": "arn:aws:iam::123456789012:user/developer"
+  }
+  ```
+
+Shared environment variables for every command below:
+
+```bash
+export AWS_PROFILE=<your-profile>
+export REGION=us-east-1
+export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export BUS_NAME=orders-event-bus
+export QUEUE_NAME=billing-orders-queue-${ACCOUNT_ID}
+export RULE_NAME=billing-orders-rule
+```
+
+---
+
+## 1. Create the Custom Event Bus
+
+Initialize a custom event bus to establish an isolated domain for your application's business events. The default bus is reserved for AWS-internal resource events:
+
+```bash
+aws events create-event-bus \
+  --name "$BUS_NAME" \
+  --region "$REGION"
+```
+
+Verify that the CLI returns a JSON object containing the bus's Amazon Resource Name (ARN):
+```json
+{
+    "EventBusArn": "arn:aws:events:us-east-1:123456789012:event-bus/orders-event-bus"
+}
+```
+
+---
+
+## 2. Create the SQS Queue
+
+Create a standard SQS queue to act as the destination (target) buffer for the routed events. SQS queues act as reliable buffers, keeping messages safe even if your consuming services go offline:
+
+```bash
+aws sqs create-queue \
+  --queue-name "$QUEUE_NAME" \
+  --region "$REGION"
+```
+
+The CLI returns a JSON object containing the unique `QueueUrl`. We programmatically fetch the Queue URL and its corresponding SQS Queue ARN so we can use them to build our resource policies and rules:
+
+```bash
+export QUEUE_URL=$(aws sqs get-queue-url --queue-name "$QUEUE_NAME" --query QueueUrl --output text --region "$REGION")
+export QUEUE_ARN=$(aws sqs get-queue-attributes --queue-url "$QUEUE_URL" --attribute-names QueueArn --query Attributes.QueueArn --output text --region "$REGION")
+
+echo "Queue URL: $QUEUE_URL"
+echo "Queue ARN: $QUEUE_ARN"
+```
+
+---
+
+## 3. Attach SQS Resource Policy
+
+By default, SQS queues reject inbound messages from external services. To allow EventBridge to deliver events to your queue, you must attach a resource policy granting `sqs:SendMessage` permission, restricted to our specific EventBridge routing rule:
+
+```bash
+# 1. Define SQS resource policy JSON
+export POLICY_JSON=$(cat <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowEventBridgeToQueue",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "events.amazonaws.com"
+      },
+      "Action": "sqs:SendMessage",
+      "Resource": "$QUEUE_ARN",
+      "Condition": {
+        "ArnEquals": {
+          "aws:SourceArn": "arn:aws:events:$REGION:$ACCOUNT_ID:rule/$BUS_NAME/$RULE_NAME"
+        }
+      }
+    }
+  ]
+}
+EOF
+)
+
+# 2. Apply the policy to the SQS queue
+aws sqs set-queue-attributes \
+  --queue-url "$QUEUE_URL" \
+  --attributes Policy="$POLICY_JSON" \
+  --region "$REGION"
+```
+
+If the SQS queue policy applies successfully, the command completes with zero output. If you encounter a `MalformedPolicyDocument` error, verify that the `QUEUE_ARN` variable resolved correctly.
+
+---
+
+## 4. Create the EventBridge Routing Rule
+
+Define a routing rule that matches events containing a specific [[effect-ts/schema|schema]] structure. We use a declarative JSON filter pattern that matches any event published with `source` set to `"mycompany.orders"` and `detail-type` set to `"ORDER_COMPLETED"`:
+
+```bash
+# 1. Define the event filtering pattern
+export EVENT_PATTERN='{"source": ["mycompany.orders"], "detail-type": ["ORDER_COMPLETED"]}'
+
+# 2. Create the rule on our custom event bus
+aws events put-rule \
+  --name "$RULE_NAME" \
+  --event-bus-name "$BUS_NAME" \
+  --event-pattern "$EVENT_PATTERN" \
+  --state ENABLED \
+  --region "$REGION"
+```
+
+Verify that the CLI returns the unique ARN for the created rule:
+```json
+{
+    "RuleArn": "arn:aws:events:us-east-1:123456789012:rule/orders-event-bus/billing-orders-rule"
+}
+```
+
+---
+
+## 5. Associate SQS Queue as a Target
+
+Link your routing rule to the destination SQS queue target. This registers SQS as the consumer for any matching events matching our rule pattern:
+
+```bash
+aws events put-targets \
+  --rule "$RULE_NAME" \
+  --event-bus-name "$BUS_NAME" \
+  --targets "Id=1,Arn=$QUEUE_ARN" \
+  --region "$REGION"
+```
+
+The command returns a JSON summary confirming that there were `0` failed target associations:
+```json
+{
+    "FailedEntryCount": 0,
+    "FailedEntries": []
+}
+```
+
+---
+
+## 6. Publish Events and Verify Delivery
+
+Now we publish two events to test the routing pattern.
+
+### Matched Event Test
+Publish an event that matches our JSON pattern (`detail-type` set to `"ORDER_COMPLETED"`):
+
+```bash
+export ENTRY_MATCH='[{"Source": "mycompany.orders", "DetailType": "ORDER_COMPLETED", "Detail": "{\"orderId\": 2048, \"amount\": 150.00}", "EventBusName": "orders-event-bus"}]'
+
+aws events put-events --entries "$ENTRY_MATCH" --region "$REGION"
+```
+
+The CLI returns a JSON payload containing a `FailedEntryCount` of `0` and generates a unique `EventId`:
+```json
+{
+    "FailedEntryCount": 0,
+    "Entries": [
+        {
+            "EventId": "12345678-1234-1234-1234-123456789012"
+        }
+    ]
+}
+```
+
+### Unmatched Event Test
+Publish an event that does **not** match our pattern (`detail-type` set to `"ORDER_FAILED"`):
+
+```bash
+export ENTRY_FAIL='[{"Source": "mycompany.orders", "DetailType": "ORDER_FAILED", "Detail": "{\"orderId\": 4096, \"reason\": \"CardDeclined\"}", "EventBusName": "orders-event-bus"}]'
+
+aws events put-events --entries "$ENTRY_FAIL" --region "$REGION"
+```
+
+### Verification
+Pull the messages from SQS to confirm that the matching completed order event was routed, while the failed order event was successfully filtered out:
+
+```bash
+aws sqs receive-message --queue-url "$QUEUE_URL" --region "$REGION"
+```
+
+Expected JSON output showing the routed matching event:
+
+```json
+{
+    "Messages": [
+        {
+            "MessageId": "d5a8167e-40be-4577-be8b-c6b75c88b0cb",
+            "ReceiptHandle": "AQEB1f...very-long-base64-string...",
+            "MD5OfBody": "5d2b1f...",
+            "Body": "{\"version\":\"0\",\"id\":\"12345678-1234-1234-1234-123456789012\",\"detail-type\":\"ORDER_COMPLETED\",\"source\":\"mycompany.orders\",\"account\":\"123456789012\",\"time\":\"2026-05-23T06:35:00Z\",\"region\":\"us-east-1\",\"resources\":[],\"detail\":{\"orderId\": 2048, \"amount\": 150.00}}"
+        }
+    ]
+}
+```
+
+Invoke SQS `receive-message` a second time to confirm that the SQS queue is now completely empty:
+
+```bash
+aws sqs receive-message --queue-url "$QUEUE_URL" --region "$REGION"
+# Output:
+# (Returns completely empty, confirming the unmatched ORDER_FAILED event was filtered!)
+```
+
+The unmatched `"ORDER_FAILED"` event was filtered directly at the EventBridge boundary, saving downstream processing cost.
+
+---
+
+## 7. Clean Up
+
+Tear down all resources to release the cloud endpoints and avoid stray billing charges:
+
+```bash
+# 1. Remove target from the routing rule
+aws events remove-targets --rule "$RULE_NAME" --event-bus-name "$BUS_NAME" --ids "1" --region "$REGION"
+
+# 2. Delete the rule
+aws events delete-rule --name "$RULE_NAME" --event-bus-name "$BUS_NAME" --region "$REGION"
+
+# 3. Delete SQS queue
+aws sqs delete-queue --queue-url "$QUEUE_URL" --region "$REGION"
+
+# 4. Delete the custom Event Bus
+aws events delete-event-bus --name "$BUS_NAME" --region "$REGION"
+```
+
+Each cleanup command completes successfully with no CLI output.
+
+## Where to go next
+
+- [[aws/eventbridge/event-driven-decoupling|Event-driven decoupling with EventBridge]]: Premium guide on type-safe `@effect/schema` contract validation, retry policy configuration, and secure cross-account bus-to-bus routing.
+- [[aws/sqs|SQS]]: Pull-based queueing structures used for buffering targets.
+- [[aws/sns|SNS]]: Comparison of alternative push-based notification services.
+- [Amazon EventBridge Rule Patterns](https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html) (official).

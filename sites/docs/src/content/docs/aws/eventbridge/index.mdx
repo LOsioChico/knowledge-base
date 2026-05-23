@@ -1,0 +1,70 @@
+---
+title: EventBridge
+description: Amazon EventBridge — Serverless event bus for decoupling distributed systems, matching JSON patterns, and routing events.
+tags: [type/moc, tech/aws, tech/eventbridge]
+area: aws
+status: seed
+related:
+  - "[[aws]]"
+  - "[[aws/eventbridge/quickstart]]"
+  - "[[aws/eventbridge/event-driven-decoupling]]"
+source:
+  - https://docs.aws.amazon.com/eventbridge/latest/userguide/what-is-amazon-eventbridge.html
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+> Amazon EventBridge is a serverless event bus that ingests events from your own applications, SaaS applications, and AWS services, routing them to targets based on declarative JSON filter patterns.
+
+## TL;DR
+
+- **Centralized Event Bus**: Custom buses decouple application domains; the default bus collects AWS resource [[effect-ts/state|state]] events (S3, EC2, etc.).
+- **Deep JSON Filtering**: Rules match deep properties inside JSON event bodies without spinning up compute handlers to parse them.
+- **Serverless Pricing**: Priced per 1 million events published ($1.00/million default), with no base fees or provisioning required.
+- **Rich Target Ecosystem**: Routes events directly to 35+ AWS targets (Lambda, SQS, Step Functions) or external third-party SaaS endpoints via API Destinations.
+- **Symmetric Reliability**: Configurable retries (up to 24 hours) coupled with target Dead-Letter Queues (DLQs).
+
+## When to use
+
+- **Use EventBridge** for:
+  - Decoupling multiple microservices that consume the same business events.
+  - Designing reactive, event-driven architectures with complex filtering needs.
+  - Ingesting SaaS events (Zendesk, PagerDuty, Auth0) directly into your cloud native pipelines.
+  - Scheduling cron-like tasks at scale (using EventBridge Scheduler).
+- **Don't use EventBridge** for:
+  - Point-to-point queueing that requires strict FIFO delivery at massive throughput (use [[aws/sqs|SQS FIFO]]).
+  - High-throughput [[effect-ts/observability|telemetry]] or log streaming where consumers need ordered shard replays (use Kinesis Data [[effect-ts/streams|Streams]]).
+
+## Mental model
+
+EventBridge decouples publishers from consumers using an asynchronous **Bus -> Rule -> Target** routing pipeline:
+
+```
+[ Event Source ]
+       │  (PutEvents / AWS Event)
+       ▼
+ ┌───────────────┐
+ │   Event Bus   │  (Central ingestion endpoint)
+ └───────┬───────┘
+         │
+    ┌────┴────┐
+    │  Rules  │     (Declarative JSON filters)
+    └────┬────┘
+         │  (Matches Pattern)
+         ▼
+    ┌─────────┐
+    │ Targets │     (Lambda, SQS, SNS, or API Destinations)
+    └─────────┘
+```
+
+## Pending notes
+
+- **Event [[effect-ts/schema|Schema]] Registry**: Automating TypeScript types extraction from JSON schemas.
+- **API Destinations**: Designing secure token-refreshed integrations with external REST APIs.
+- **Archive & Replay**: Archiving event bus history to replay past events for disaster recovery.
+
+## See also
+
+- [[aws/eventbridge/quickstart|EventBridge quickstart]]: ten-minute CLI walkthrough.
+- [[aws/eventbridge/event-driven-decoupling|Event-driven decoupling with EventBridge]]: premium decoupling guide.
+- [Amazon EventBridge User Guide](https://docs.aws.amazon.com/eventbridge/latest/userguide/what-is-amazon-eventbridge.html) (official).
