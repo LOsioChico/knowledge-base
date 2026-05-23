@@ -56,7 +56,7 @@ Distributed databases do not offer a binary choice between strong consistency an
 | **Causal** | Causally related operations are seen in the same order. Concurrent updates can diverge. | Medium (Vector tracking) | Cassandra (with lightweight transactions) |
 | **Eventual** | Replicas converge to the same value over time if no new writes occur. | Low (Background anti-entropy) | DynamoDB, CouchDB, DNS |
 
-*Note: For detail on partitioning strategies and hashing techniques used to distribute these data sets, see [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/).*
+*Note: For detail on partitioning strategies and hashing techniques used to distribute these data sets, see [[system-design/consistent-hashing|Consistent Hashing]].*
 
 ---
 

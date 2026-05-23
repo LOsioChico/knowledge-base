@@ -57,6 +57,10 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
     Middleware throws before Nest reaches guards, pipes, or the controller:
 
     ```typescript
+    import { INestApplication } from "@nestjs/common";
+
+    declare const app: INestApplication;
+
     app.use("/webhooks", (_req, _res, next) => {
       next(new Error("bad signature"));
     });

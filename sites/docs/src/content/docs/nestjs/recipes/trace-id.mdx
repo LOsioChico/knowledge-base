@@ -383,9 +383,7 @@ If your logger is a singleton (`Scope.DEFAULT`), NestJS will reuse a single inst
 </Aside>
 
 <Aside type="caution" title="Trust Inbound X-Request-ID Only from Proxies">
-
-Ecohing any arbitrary `X-Request-ID` from the client allows malicious users to pollute log indexing with massive payloads or collisions. If your application faces the open internet, strip client headers at your load balancer or gateway, or configure your middleware to accept headers only from trusted upstream CIDR blocks.
-
+  Echoing client-supplied IDs without validation carries log-indexing bloat and collision risks. If your application faces the open internet, strip client headers at your load balancer or gateway, or configure your middleware to accept headers only from trusted upstream CIDR blocks.
 </Aside>
 
 ---

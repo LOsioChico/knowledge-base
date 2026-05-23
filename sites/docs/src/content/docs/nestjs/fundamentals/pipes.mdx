@@ -52,7 +52,7 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 | `ParseIntPipe` / `ParseFloatPipe` / `ParseBoolPipe` | Coerce route/query params; [contract example](#order) |
 | `ParseUUIDPipe` | UUID shape (optional `version`) |
 | `ParseArrayPipe` | Split `a,b,c` → array |
-| `DefaultValuePipe` | Fallback when `null` / `undefined` / `NaN` |
+| [`DefaultValuePipe`](#order) | Fallback when `null` / `undefined` / `NaN` |
 | `ParseFilePipe` | Upload validators: [file uploads](/knowledge-base/nestjs/recipes/file-uploads/) |
 
 ## Order
@@ -67,11 +67,16 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 </Tabs>
 
 ```typescript
-@Get(":id")
-findOne(
-  @Param("id", ParseIntPipe) id: number,
-  @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-) {}
+import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
+
+@Controller("orders")
+export class OrdersController {
+  @Get(":id")
+  findOne(
+    @Param("id", ParseIntPipe) id: number,
+    @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
+  ) {}
+}
 ```
 
 `DefaultValuePipe` must sit **before** `ParseIntPipe` so `?page=` missing becomes `1`, not `NaN`.

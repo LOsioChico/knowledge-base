@@ -311,7 +311,24 @@ When developers think of "file upload," they usually think of a browser sending 
 </Aside>
 
 <Aside type="caution" title="Reverse-Proxy Upload Caps">
-  Nginx defaults to a `client_max_body_size` limit of `1m`. If an upload exceeds this, Nginx returns a `413 Request Entity Too Large` error, and the request **never reaches NestJS**. You must configure Nginx, AWS ALB, or Cloudflare upload limits to match your NestJS Multer configuration size constraints.
+  Nginx defaults to a `client_max_body_size` limit of `1m`. If an upload exceeds this, Nginx returns a `413 Request Entity Too Large` error, and the request **never reaches NestJS**:
+
+  ```http
+  HTTP/1.1 413 Request Entity Too Large
+  Content-Type: text/html
+  Content-Length: 183
+  Connection: close
+
+  <html>
+  <head><title>413 Request Entity Too Large</title></head>
+  <body>
+  <center><h1>413 Request Entity Too Large</h1></center>
+  <hr><center>nginx</center>
+  </body>
+  </html>
+  ```
+
+  You must configure Nginx, AWS ALB, or Cloudflare upload limits to match your NestJS Multer configuration size constraints.
 </Aside>
 
 <Aside type="caution" title="Fastify requires `@fastify/multipart`">

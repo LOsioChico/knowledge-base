@@ -223,11 +223,22 @@ Understanding the classic manual way is crucial for handling legacy code bases o
 
 ```typescript
 // storage.module.ts (Manual Pattern)
-import { DynamicModule, Module, Provider } from "@nestjs/common";
-import { StorageService } from "./storage.service";
+import { DynamicModule, Module, Provider, Inject, Injectable } from "@nestjs/common";
 import { StorageOptions } from "./storage-options.interface";
 
 export const STORAGE_OPTIONS = "STORAGE_OPTIONS";
+
+@Injectable()
+export class StorageService {
+  constructor(
+    @Inject(STORAGE_OPTIONS)
+    private readonly options: StorageOptions,
+  ) {}
+
+  async uploadFile(fileName: string, content: string) {
+    return { url: `https://s3.amazonaws.com/${this.options.bucket}/${fileName}` };
+  }
+}
 
 @Module({})
 export class StorageModule {

@@ -41,11 +41,11 @@ Init runs when you call `app.init()` or `app.listen()`. Terminate runs on `app.c
 
 | Interface | Method | Phase | Signal argument? |
 | --- | --- | --- | --- |
-| `OnModuleInit` | `onModuleInit()` | init | no |
+| `OnModuleInit` | [`onModuleInit()`](#worked-example) | init | no |
 | `OnApplicationBootstrap` | `onApplicationBootstrap()` | init | no |
 | `OnModuleDestroy` | `onModuleDestroy()` | terminate | no |
 | `BeforeApplicationShutdown` | `beforeApplicationShutdown(signal?)` | terminate | yes |
-| `OnApplicationShutdown` | `onApplicationShutdown(signal?)` | terminate | yes |
+| `OnApplicationShutdown` | [`onApplicationShutdown(signal?)`](#worked-example) | terminate | yes |
 
 <Aside type="note" title="Only the last two receive the signal">
 
@@ -55,6 +55,7 @@ Init runs when you call `app.init()` or `app.listen()`. Terminate runs on `app.c
 
 Hooks apply to **modules, providers, and controllers**. One class can implement several.
 
+<span id="worked-example"></span>
 ```typescript
 import { Injectable, OnModuleInit, OnApplicationShutdown } from "@nestjs/common";
 

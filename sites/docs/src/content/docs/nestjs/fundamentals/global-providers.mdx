@@ -173,18 +173,25 @@ export class AppModule {}
 | `useFactory` | Async setup, env, or manual `inject: [...]`          |
 
 ```typescript
-// Typical imports:
-// import { Logger, ValidationPipe } from "@nestjs/common";
-// import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
+import { Logger, ValidationPipe } from "@nestjs/common";
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 
-{ provide: APP_INTERCEPTOR, useClass: LoggingInterceptor }
-{ provide: APP_PIPE, useValue: new ValidationPipe({ whitelist: true }) }
-{
-  provide: APP_FILTER,
-  inject: [Logger],
-  useFactory: (logger: Logger) =>
-    new SentryFilter(logger, { release: process.env.RELEASE }),
+// Stub classes to satisfy the compiler
+class LoggingInterceptor {}
+class SentryFilter {
+  constructor(logger: Logger, options: { release?: string }) {}
 }
+
+const providers = [
+  { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+  { provide: APP_PIPE, useValue: new ValidationPipe({ whitelist: true }) },
+  {
+    provide: APP_FILTER,
+    inject: [Logger],
+    useFactory: (logger: Logger) =>
+      new SentryFilter(logger, { release: process.env.RELEASE }),
+  },
+];
 ```
 
 <Aside type="caution" title="Hybrid apps">
