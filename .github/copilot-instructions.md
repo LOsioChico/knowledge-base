@@ -8,6 +8,15 @@ Operating contract for any AI agent (Copilot CLI, Claude Code, Cursor, etc.) edi
 
 When a request has plausibly different interpretations (callout severity, callout type, placement, prose vs. table, scope of a refactor, where to put a new section), name the options in one sentence and pick a default — don't commit to one silently. Cheap to ask, expensive to undo.
 
+## Session context hygiene
+
+For substantial new features, deep refactors, or brand new architectural guides (such as introducing a new AWS service index or a multi-file recipe):
+- **Prefer starting a fresh, clean chat session** rather than continuing a long, high-token thread. This maintains maximum reasoning precision, keeps generation speeds high, and avoids context-bloat pollution from prior tasks.
+- **Initiate the new session with an explicit bootstrap prompt** specifying the target scope and SDD configurations (Execution Mode: `interactive` vs `auto`, Artifact Store: `openspec`, and Delivery Strategy: `ask-on-risk`).
+
+This ensures high precision, clean git branches, and structured planning history.
+
+
 ## Companion skill
 
 Before editing any note, load **`kb-author`** (`.github/skills/kb-author/SKILL.md`). It covers:
