@@ -25,9 +25,10 @@
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFromCache, writeToCache } from "./cache-helper.js";
 
 import { runDeterministic, runDeterministicAdvisory } from "./deterministic.js";
 import { runFixProposerPass } from "./fix-proposer.js";
@@ -310,21 +311,56 @@ async function runAgent(prompt: string, label: string): Promise<string> {
     : new Error(`${label} failed after ${maxAttempts} attempts`);
 }
 
-function buildAuditorPrompt(targets: readonly string[]): string {
-  const list: string = targets.map((p: string): string => `- ${p}`).join("\n");
+async function pMap<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next: number = 0;
+  async function worker(): Promise<void> {
+    while (true) {
+      const i: number = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i] as T, i);
+    }
+  }
+  const workers: Promise<void>[] = [];
+  for (let i: number = 0; i < Math.min(limit, items.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+  return results;
+}
+
+function buildAuditorPrompt(
+  target: string,
+  content: string,
+  skillContent: string,
+): string {
   return [
-    "Use the `kb-auditor` skill to audit the following notes against AGENTS.md.",
+    "Use the `kb-auditor` skill to audit the following note against AGENTS.md.",
+    "We have provided the skill instructions and target file contents below so you do NOT need to run any tools to fetch them.",
     "",
-    "Targets:",
-    list,
+    "=== SYSTEM SKILL: `kb-auditor` ===",
+    skillContent,
+    "",
+    `=== TARGET FILE: ${target} ===`,
+    "```markdown",
+    content,
+    "```",
     "",
     "Output a single JSON object matching the skill's `Report` schema. JSON only — no prose, no Markdown, no fenced block.",
   ].join("\n");
 }
 
-function buildVerifierPrompt(findings: FlatFinding[]): string {
+function buildVerifierPrompt(findings: FlatFinding[], skillContent: string): string {
   return [
     "Use the `kb-verifier` skill to adversarially verify the following findings.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-verifier` ===",
+    skillContent,
     "",
     "Findings:",
     JSON.stringify(findings, null, 2),
@@ -336,20 +372,113 @@ function buildVerifierPrompt(findings: FlatFinding[]): string {
 }
 
 async function runAuditorPass(targets: readonly string[]): Promise<Report> {
-  const prompt: string = buildAuditorPrompt(targets);
-  const text: string = await runAgent(prompt, "audit");
-  const json: string = extractJson(text);
-  return JSON.parse(json) as Report;
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-auditor/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const results = await pMap(
+    targets,
+    4,
+    async (target: string): Promise<FileReport> => {
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return { path: target, findings: [] };
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<Finding[]>(
+        REPO_ROOT,
+        "audit",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[audit] cache hit: ${target}`);
+        return { path: target, findings: cached };
+      }
+      
+      log(`[audit] cache miss: ${target} (running LLM...)`);
+      const prompt = buildAuditorPrompt(target, content, skillContent);
+      const text = await runAgent(prompt, `audit:${target}`);
+      const jsonStr = extractJson(text);
+      const parsed = JSON.parse(jsonStr) as Report;
+      const fileReport = parsed.files[0] ?? { path: target, findings: [] };
+      
+      writeToCache(
+        REPO_ROOT,
+        "audit",
+        target,
+        content,
+        skillContent,
+        fileReport.findings,
+      );
+      
+      return fileReport;
+    },
+  );
+  
+  return { files: results };
 }
 
 async function runVerifierPass(
   findings: FlatFinding[],
 ): Promise<VerifiedReport> {
   if (findings.length === 0) return { verifiedFindings: [] };
-  const prompt: string = buildVerifierPrompt(findings);
-  const text: string = await runAgent(prompt, "verify");
-  const json: string = extractJson(text);
-  return JSON.parse(json) as VerifiedReport;
+  
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-verifier/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const byFile: Map<string, FlatFinding[]> = new Map();
+  for (const f of findings) {
+    const list = byFile.get(f.path) ?? [];
+    list.push(f);
+    byFile.set(f.path, list);
+  }
+  
+  const filesWithFindings = Array.from(byFile.keys());
+  
+  const results = await pMap(
+    filesWithFindings,
+    4,
+    async (target: string): Promise<VerifiedFinding[]> => {
+      const fileFindings = byFile.get(target) ?? [];
+      if (fileFindings.length === 0) return [];
+      
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return [];
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<VerifiedFinding[]>(
+        REPO_ROOT,
+        "verify",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[verify] cache hit: ${target}`);
+        return cached;
+      }
+      
+      log(`[verify] cache miss: ${target} (running LLM...)`);
+      const prompt = buildVerifierPrompt(fileFindings, skillContent);
+      const text = await runAgent(prompt, `verify:${target}`);
+      const jsonStr = extractJson(text);
+      const verified = JSON.parse(jsonStr) as VerifiedReport;
+      const verifiedFindings = verified.verifiedFindings ?? [];
+      
+      writeToCache(
+        REPO_ROOT,
+        "verify",
+        target,
+        content,
+        skillContent,
+        verifiedFindings,
+      );
+      
+      return verifiedFindings;
+    },
+  );
+  
+  return { verifiedFindings: results.flat() };
 }
 
 // Pass 1a: deterministic candidate finder + binary LLM judge for show-dont-tell.
@@ -365,11 +494,16 @@ interface JudgeReport {
 
 function buildShowDontTellPrompt(
   candidates: readonly ShowDontTellCandidate[],
+  skillContent: string,
 ): string {
   return [
     "Use the `kb-show-dont-tell-judge` skill. For each candidate below, decide whether the",
     "behavioral claim on that line is demonstrated by a request+response pair within the",
     "`context` field. Return one judgment per candidate.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-show-dont-tell-judge` ===",
+    skillContent,
     "",
     "Candidates:",
     JSON.stringify(candidates, null, 2),
@@ -381,33 +515,68 @@ function buildShowDontTellPrompt(
 async function runShowDontTellPass(
   targets: readonly string[],
 ): Promise<FlatFinding[]> {
-  const candidates: ShowDontTellCandidate[] = targets.flatMap(
-    (p: string): ShowDontTellCandidate[] =>
-      findShowDontTellCandidates(REPO_ROOT, p),
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-show-dont-tell-judge/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const results = await pMap(
+    targets,
+    4,
+    async (target: string): Promise<FlatFinding[]> => {
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return [];
+      
+      const candidates = findShowDontTellCandidates(REPO_ROOT, target);
+      log(`\n[pass-1a] show-dont-tell candidates for ${target}: ${candidates.length}`);
+      if (candidates.length === 0) return [];
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<FlatFinding[]>(
+        REPO_ROOT,
+        "sdt",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[sdt] cache hit: ${target}`);
+        return cached;
+      }
+      
+      log(`[sdt] cache miss: ${target} (running LLM...)`);
+      const prompt = buildShowDontTellPrompt(candidates, skillContent);
+      const text = await runAgent(prompt, `judge-sdt:${target}`);
+      const jsonStr = extractJson(text);
+      const parsed = JSON.parse(jsonStr) as JudgeReport;
+      const missing = parsed.judgments.filter(
+        (j): boolean => j.verdict === "missing",
+      );
+      log(
+        `[pass-1a] judge for ${target}: ${parsed.judgments.length} judged, ${missing.length} missing`,
+      );
+      const findings = missing.map(
+        (j): FlatFinding => ({
+          rule: "show-dont-tell",
+          path: j.path,
+          line: j.line,
+          message: `Behavioral claim is asserted but not shown by a request+response pair within the next 30 lines. ${j.rationale}`,
+          evidence: j.quote.slice(0, 120),
+        }),
+      );
+      
+      writeToCache(
+        REPO_ROOT,
+        "sdt",
+        target,
+        content,
+        skillContent,
+        findings,
+      );
+      
+      return findings;
+    },
   );
-  log(`\n[pass-1a] show-dont-tell candidates: ${candidates.length}`);
-  if (candidates.length === 0) return [];
-  const text: string = await runAgent(
-    buildShowDontTellPrompt(candidates),
-    "judge-sdt",
-  );
-  const json: string = extractJson(text);
-  const parsed: JudgeReport = JSON.parse(json) as JudgeReport;
-  const missing = parsed.judgments.filter(
-    (j): boolean => j.verdict === "missing",
-  );
-  log(
-    `[pass-1a] judge: ${parsed.judgments.length} judged, ${missing.length} missing`,
-  );
-  return missing.map(
-    (j): FlatFinding => ({
-      rule: "show-dont-tell",
-      path: j.path,
-      line: j.line,
-      message: `Behavioral claim is asserted but not shown by a request+response pair within the next 30 lines. ${j.rationale}`,
-      evidence: j.quote.slice(0, 120),
-    }),
-  );
+  
+  return results.flat();
 }
 
 function flatten(report: Report): FlatFinding[] {

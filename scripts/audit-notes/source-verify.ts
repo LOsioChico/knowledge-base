@@ -18,6 +18,7 @@ import { resolve } from "node:path";
 
 import type { FlatFinding } from "./types.js";
 import { readVotingConfig, runWithVoting } from "./voting.js";
+import { readFromCache, writeToCache } from "./cache-helper.js";
 
 const TTL_MS: number = 30 * 24 * 60 * 60 * 1000;
 const MAX_SOURCE_CHARS: number = 40_000;
@@ -321,6 +322,7 @@ function buildVerifierPrompt(
   notePath: string,
   noteBody: string,
   sources: readonly FetchedSource[],
+  skillContent: string,
 ): string {
   const sourceBlocks: string = sources
     .map((s, idx): string => {
@@ -336,6 +338,10 @@ function buildVerifierPrompt(
 
   return [
     "Use the `kb-source-verifier` skill.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-source-verifier` ===",
+    skillContent,
     "",
     `NOTE PATH: ${notePath}`,
     "NOTE BODY (with 1-based line numbers):",
@@ -393,6 +399,9 @@ export async function runSourceVerifyPass(
   const { repoRoot, targets, runAgent, extractJson, log } = args;
   const voteCfg = readVotingConfig();
 
+  const skillPath = resolve(repoRoot, ".github/skills/kb-source-verifier/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
   const perFile: FlatFinding[][] = await pMap(
     targets,
     SOURCE_VERIFY_CONCURRENCY,
@@ -403,11 +412,33 @@ export async function runSourceVerifyPass(
         return [];
       }
       const noteText: string = readFileSync(abs, "utf8");
+      
+      // Check cache first
+      const cached = readFromCache<FlatFinding[]>(
+        repoRoot,
+        "source-verify",
+        target,
+        noteText,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[source-verify] cache hit: ${target}`);
+        return cached;
+      }
+
       const fmUrls: string[] = extractSourceUrls(noteText);
       const inlineUrls: string[] = extractInlineUrls(noteText);
       const urls: string[] = dedupeByCanonical([...fmUrls, ...inlineUrls]);
       if (urls.length === 0) {
         log(`[source-verify] skip (no source URLs): ${target}`);
+        writeToCache(
+          repoRoot,
+          "source-verify",
+          target,
+          noteText,
+          skillContent,
+          [],
+        );
         return [];
       }
       const inlineOnly: number = urls.length - fmUrls.length;
@@ -419,16 +450,16 @@ export async function runSourceVerifyPass(
       const fetched: number = sources.filter(
         (s): boolean => s.error === undefined,
       ).length;
-      const cached: number = sources.filter((s): boolean => s.fromCache).length;
+      const cachedSources: number = sources.filter((s): boolean => s.fromCache).length;
       log(
-        `[source-verify] ${target} fetched=${fetched - cached} cached=${cached} failed=${sources.length - fetched}`,
+        `[source-verify] ${target} fetched=${fetched - cachedSources} cached=${cachedSources} failed=${sources.length - fetched}`,
       );
       for (const s of sources) {
         if (s.error !== undefined) log(`  - ${s.url}: ${s.error}`);
       }
 
       const totalLines: number = noteText.split("\n").length;
-      const prompt: string = buildVerifierPrompt(target, noteText, sources);
+      const prompt: string = buildVerifierPrompt(target, noteText, sources, skillContent);
 
       const runOnce = async (sampleIdx: number): Promise<FlatFinding[]> => {
         const label: string =
@@ -500,7 +531,18 @@ export async function runSourceVerifyPass(
         return `${f.path}|${f.rule}|${f.line}|${status}|${claim}`;
       };
 
-      return runWithVoting(voteCfg, runOnce, sigOf, log, target);
+      const findings = await runWithVoting(voteCfg, runOnce, sigOf, log, target);
+      
+      writeToCache(
+        repoRoot,
+        "source-verify",
+        target,
+        noteText,
+        skillContent,
+        findings,
+      );
+
+      return findings;
     },
   );
 

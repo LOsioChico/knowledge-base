@@ -15,6 +15,7 @@ import { resolve } from "node:path";
 import type { FlatFinding } from "./types.js";
 import { findSkipLines } from "./skip-zones.js";
 import { readVotingConfig, runWithVoting } from "./voting.js";
+import { readFromCache, writeToCache } from "./cache-helper.js";
 
 interface JargonFinding {
   line: number;
@@ -62,7 +63,7 @@ async function pMap<T, R>(
   return results;
 }
 
-function buildJargonPrompt(notePath: string, noteBody: string): string {
+function buildJargonPrompt(notePath: string, noteBody: string, skillContent: string): string {
   const numbered: string = noteBody
     .split("\n")
     .map((l: string, i: number): string => `L${i + 1}: ${l}`)
@@ -70,6 +71,10 @@ function buildJargonPrompt(notePath: string, noteBody: string): string {
   const input = { path: notePath, body: numbered };
   return [
     "Use the `kb-jargon-judge` skill.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-jargon-judge` ===",
+    skillContent,
     "",
     "INPUT:",
     JSON.stringify(input, null, 2),
@@ -84,6 +89,9 @@ export async function runJargonVerifyPass(
   const { repoRoot, targets, runAgent, extractJson, log } = args;
   const voteCfg = readVotingConfig();
 
+  const skillPath = resolve(repoRoot, ".github/skills/kb-jargon-judge/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
   const perFile: FlatFinding[][] = await pMap(
     targets,
     JARGON_CONCURRENCY,
@@ -94,10 +102,24 @@ export async function runJargonVerifyPass(
         return [];
       }
       const noteText: string = readFileSync(abs, "utf8");
+      
+      // Check cache first
+      const cached = readFromCache<FlatFinding[]>(
+        repoRoot,
+        "jargon-verify",
+        target,
+        noteText,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[jargon-verify] cache hit: ${target}`);
+        return cached;
+      }
+
       const totalLines: number = noteText.split("\n").length;
       const lines: string[] = noteText.split("\n");
       const skipLines: Set<number> = findSkipLines(noteText);
-      const prompt: string = buildJargonPrompt(target, noteText);
+      const prompt: string = buildJargonPrompt(target, noteText, skillContent);
 
       const runOnce = async (sampleIdx: number): Promise<FlatFinding[]> => {
         const label: string =
@@ -118,8 +140,6 @@ export async function runJargonVerifyPass(
         let droppedSkipZone: number = 0;
         for (const f of parsed.findings ?? []) {
           if (f.line < 1 || f.line > totalLines) continue;
-          // Ground the quote: must appear on the cited line. Drops the most
-          // common LLM failure (paraphrased quote, off-by-one line).
           const lineText: string = lines[f.line - 1] ?? "";
           if (!lineText.includes(f.quote)) {
             log(
@@ -127,8 +147,6 @@ export async function runJargonVerifyPass(
             );
             continue;
           }
-          // Skip zone: pending-notes / see-also / etc. are link or topic
-          // lists, not prose claims. Jargon flags here are FPs by construction.
           if (skipLines.has(f.line)) {
             droppedSkipZone++;
             continue;
@@ -154,13 +172,21 @@ export async function runJargonVerifyPass(
         return out;
       };
 
-      // Signature: line + quote is stable across resamples (the LLM extracts
-      // the same undefined token even when surrounding rationale wording
-      // drifts). Path+rule pin the bucket to this file's jargon channel.
       const sigOf = (f: FlatFinding): string =>
         `${f.path}|${f.rule}|${f.line}|${f.evidence ?? ""}`;
 
-      return runWithVoting(voteCfg, runOnce, sigOf, log, target);
+      const findings = await runWithVoting(voteCfg, runOnce, sigOf, log, target);
+
+      writeToCache(
+        repoRoot,
+        "jargon-verify",
+        target,
+        noteText,
+        skillContent,
+        findings,
+      );
+
+      return findings;
     },
   );
 

@@ -12,9 +12,10 @@
 import { Agent } from "@cursor/sdk";
 import type { Run, RunResult, SDKMessage } from "@cursor/sdk";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readFromCache, writeToCache } from "./cache-helper.js";
 
 import { findShowDontTellCandidates } from "./candidates/show-dont-tell.js";
 import type { ShowDontTellCandidate } from "./candidates/show-dont-tell.js";
@@ -237,13 +238,44 @@ async function runAgent(prompt: string, label: string): Promise<string> {
   return text;
 }
 
-function buildMdxAuditorPrompt(targets: readonly string[]): string {
-  const list = targets.map((p) => `- ${p}`).join("\n");
+async function pMap<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next: number = 0;
+  async function worker(): Promise<void> {
+    while (true) {
+      const i: number = next++;
+      if (i >= items.length) return;
+      results[i] = await fn(items[i] as T, i);
+    }
+  }
+  const workers: Promise<void>[] = [];
+  for (let i: number = 0; i < Math.min(limit, items.length); i++) {
+    workers.push(worker());
+  }
+  await Promise.all(workers);
+  return results;
+}
+
+function buildMdxAuditorPrompt(
+  target: string,
+  content: string,
+  skillContent: string,
+): string {
   return [
-    "Use the `kb-mdx-auditor` skill to audit the following Starlight MDX pages.",
+    "Use the `kb-mdx-auditor` skill to audit the following Starlight MDX page.",
+    "We have provided the skill instructions and target file contents below so you do NOT need to run any tools to fetch them.",
     "",
-    "Targets:",
-    list,
+    "=== SYSTEM SKILL: `kb-mdx-auditor` ===",
+    skillContent,
+    "",
+    `=== TARGET FILE: ${target} ===`,
+    "```mdx",
+    content,
+    "```",
     "",
     "Output a single JSON object matching the skill Report schema. JSON only.",
   ].join("\n");
@@ -251,10 +283,15 @@ function buildMdxAuditorPrompt(targets: readonly string[]): string {
 
 function buildShowDontTellPrompt(
   candidates: readonly ShowDontTellCandidate[],
+  skillContent: string,
 ): string {
   return [
     "Use the `kb-show-dont-tell-judge` skill. For each candidate, decide if the claim",
     "is demonstrated by request+response within `context`.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-show-dont-tell-judge` ===",
+    skillContent,
     "",
     "Candidates:",
     JSON.stringify(candidates, null, 2),
@@ -263,9 +300,13 @@ function buildShowDontTellPrompt(
   ].join("\n");
 }
 
-function buildVerifierPrompt(findings: FlatFinding[]): string {
+function buildVerifierPrompt(findings: FlatFinding[], skillContent: string): string {
   return [
     "Use the `kb-verifier` skill to verify these MDX audit findings.",
+    "We have provided the skill instructions below so you do NOT need to run any tools to fetch them.",
+    "",
+    "=== SYSTEM SKILL: `kb-verifier` ===",
+    skillContent,
     "",
     "Findings:",
     JSON.stringify(findings, null, 2),
@@ -275,53 +316,186 @@ function buildVerifierPrompt(findings: FlatFinding[]): string {
 }
 
 async function runMdxAuditorPass(targets: readonly string[]): Promise<Report> {
-  const text = await runAgent(buildMdxAuditorPrompt(targets), "mdx-audit");
-  return JSON.parse(extractJson(text)) as Report;
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-mdx-auditor/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const results = await pMap(
+    targets,
+    4,
+    async (target: string): Promise<FileReport> => {
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return { path: target, findings: [] };
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<Finding[]>(
+        REPO_ROOT,
+        "mdx-audit",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[mdx-audit] cache hit: ${target}`);
+        return { path: target, findings: cached };
+      }
+      
+      log(`[mdx-audit] cache miss: ${target} (running LLM...)`);
+      const prompt = buildMdxAuditorPrompt(target, content, skillContent);
+      const text = await runAgent(prompt, `mdx-audit:${target}`);
+      const parsed = JSON.parse(extractJson(text)) as Report;
+      const fileReport = parsed.files[0] ?? { path: target, findings: [] };
+      
+      writeToCache(
+        REPO_ROOT,
+        "mdx-audit",
+        target,
+        content,
+        skillContent,
+        fileReport.findings,
+      );
+      
+      return fileReport;
+    },
+  );
+  
+  return { files: results };
 }
 
 async function runShowDontTellPass(targets: readonly string[]): Promise<FlatFinding[]> {
-  const candidates = targets.flatMap((p) =>
-    findShowDontTellCandidates(REPO_ROOT, p),
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-show-dont-tell-judge/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const results = await pMap(
+    targets,
+    4,
+    async (target: string): Promise<FlatFinding[]> => {
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return [];
+      
+      const candidates = findShowDontTellCandidates(REPO_ROOT, target);
+      if (candidates.length === 0) return [];
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<FlatFinding[]>(
+        REPO_ROOT,
+        "mdx-sdt",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[mdx-sdt] cache hit: ${target}`);
+        return cached;
+      }
+      
+      log(`[mdx-sdt] cache miss: ${target} (running LLM...)`);
+      const prompt = buildShowDontTellPrompt(candidates, skillContent);
+      const text = await runAgent(prompt, `mdx-sdt:${target}`);
+      const parsed = JSON.parse(extractJson(text)) as {
+        judgments: Array<{
+          path: string;
+          line: number;
+          verdict: "shown" | "missing";
+          quote: string;
+          rationale: string;
+        }>;
+      };
+      const findings = parsed.judgments
+        .filter((j) => j.verdict === "missing")
+        .map(
+          (j): FlatFinding => ({
+            rule: "show-dont-tell",
+            path: j.path,
+            line: j.line,
+            message: `Behavioral claim not shown by request+response. ${j.rationale}`,
+            evidence: j.quote.slice(0, 120),
+          }),
+        );
+        
+      writeToCache(
+        REPO_ROOT,
+        "mdx-sdt",
+        target,
+        content,
+        skillContent,
+        findings,
+      );
+      
+      return findings;
+    },
   );
-  if (candidates.length === 0) return [];
-  const text = await runAgent(buildShowDontTellPrompt(candidates), "mdx-sdt");
-  const parsed = JSON.parse(extractJson(text)) as {
-    judgments: Array<{
-      path: string;
-      line: number;
-      verdict: "shown" | "missing";
-      quote: string;
-      rationale: string;
-    }>;
-  };
-  return parsed.judgments
-    .filter((j) => j.verdict === "missing")
-    .map(
-      (j): FlatFinding => ({
-        rule: "show-dont-tell",
-        path: j.path,
-        line: j.line,
-        message: `Behavioral claim not shown by request+response. ${j.rationale}`,
-        evidence: j.quote.slice(0, 120),
-      }),
-    );
+  
+  return results.flat();
 }
 
 async function runVerifierPass(findings: FlatFinding[]): Promise<FlatFinding[]> {
   if (findings.length === 0) return [];
-  const text = await runAgent(buildVerifierPrompt(findings), "mdx-verify");
-  const verified = JSON.parse(extractJson(text)) as VerifiedReport;
-  return verified.verifiedFindings
-    .filter((v: VerifiedFinding) => v.verdict === "VERIFIED")
-    .map(
-      (v): FlatFinding => ({
-        rule: v.rule,
-        line: v.line,
-        message: v.message,
-        path: v.path,
-        ...(v.quote !== undefined ? { evidence: v.quote.slice(0, 120) } : {}),
-      }),
-    );
+  
+  const skillPath = resolve(REPO_ROOT, ".github/skills/kb-verifier/SKILL.md");
+  const skillContent = readFileSync(skillPath, "utf8");
+
+  const byFile: Map<string, FlatFinding[]> = new Map();
+  for (const f of findings) {
+    const list = byFile.get(f.path) ?? [];
+    list.push(f);
+    byFile.set(f.path, list);
+  }
+  
+  const filesWithFindings = Array.from(byFile.keys());
+  
+  const results = await pMap(
+    filesWithFindings,
+    4,
+    async (target: string): Promise<FlatFinding[]> => {
+      const fileFindings = byFile.get(target) ?? [];
+      if (fileFindings.length === 0) return [];
+      
+      const absPath = resolve(REPO_ROOT, target);
+      if (!existsSync(absPath)) return [];
+      
+      const content = readFileSync(absPath, "utf8");
+      const cached = readFromCache<FlatFinding[]>(
+        REPO_ROOT,
+        "mdx-verify",
+        target,
+        content,
+        skillContent,
+      );
+      if (cached !== null) {
+        log(`[mdx-verify] cache hit: ${target}`);
+        return cached;
+      }
+      
+      log(`[mdx-verify] cache miss: ${target} (running LLM...)`);
+      const prompt = buildVerifierPrompt(fileFindings, skillContent);
+      const text = await runAgent(prompt, `mdx-verify:${target}`);
+      const verified = JSON.parse(extractJson(text)) as VerifiedReport;
+      const verifiedFindings = verified.verifiedFindings
+        .filter((v: VerifiedFinding) => v.verdict === "VERIFIED")
+        .map(
+          (v): FlatFinding => ({
+            rule: v.rule,
+            line: v.line,
+            message: v.message,
+            path: v.path,
+            ...(v.quote !== undefined ? { evidence: v.quote.slice(0, 120) } : {}),
+          }),
+        );
+        
+      writeToCache(
+        REPO_ROOT,
+        "mdx-verify",
+        target,
+        content,
+        skillContent,
+        verifiedFindings,
+      );
+      
+      return verifiedFindings;
+    },
+  );
+  
+  return results.flat();
 }
 
 async function main(): Promise<void> {
