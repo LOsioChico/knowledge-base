@@ -50,6 +50,8 @@ LLM judges reuse vault audit **procedures** via symlink (`kb-auditor/audits` →
 
 | Script                             | Command                                                                                       | Scope                                                                                                                              | Role                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `cursor-reviewer.ts`               | `bun run scripts/cursor-reviewer.ts <file> [-w]`                                              | target workspace file                                                                                                              | Indexes evergreen notes/gotchas and matches them to active source file tokens in real-time        |
+| `pre-commit-autofix.ts`            | `bun run scripts/pre-commit-autofix.ts [--all] [--dry-run]`                                    | staged `.mdx`/`.md` files (or all files)                                                                                           | Pre-commit guardian: auto-resolves imports, first-mention wikilinks, and symmetric related links |
 | `lint-wikilinks.mjs`               | `bun run lint:wikilinks`                                                                      | `content/**/*.md`                                                                                                                  | Symmetry, first-mention, discoverability, tagline, agents-mirror                                  |
 | `lint-wikilinks-core.mjs`          | (library)                                                                                     | —                                                                                                                                  | Shared lint engine                                                                                |
 | `check-publish-parity.mjs`         | `bun run lint:publish-parity`                                                                 | legacy vault + MDX paths                                                                                                           | Every legacy vault slug must have MDX; MDX-only pages allowed (excludes `inbox.md`)               |
@@ -72,6 +74,33 @@ lint:wikilinks → lint:publish-parity → lint:aws-profile-consistency → lint
 ```
 
 `bun run test:ci` → root `scripts/*.test.mjs` + `scripts/audit-notes` tests.
+
+---
+
+## Git hooks (local setup)
+
+To automate quality control and ensure 100% green compliance on every commit, a pre-commit hook is active under `.git/hooks/pre-commit`.
+
+### How to set up locally:
+1. Ensure the hook file `.git/hooks/pre-commit` exists with the following content:
+   ```bash
+   #!/bin/sh
+   # Execute the autofixer
+   bun run scripts/pre-commit-autofix.ts
+   
+   EXIT_CODE=$?
+   if [ $EXIT_CODE -ne 0 ]; then
+     echo "Git guardian hook encountered errors. Commit aborted."
+     exit 1
+   fi
+   exit 0
+   ```
+2. Make the hook executable:
+   ```bash
+   chmod +x .git/hooks/pre-commit
+   ```
+
+Every time you stage note files and run `git commit`, the hook will automatically format first-mention wikilinks, inject missing NestJS/RxJS code imports, and update symmetric backlinks in related notes, auto-staging the modifications.
 
 ---
 
