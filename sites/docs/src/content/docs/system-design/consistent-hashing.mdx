@@ -26,7 +26,7 @@ Server Index = Hash(Key) mod N
 
 Modulo-N hashing works perfectly, until the size of your server cluster changes.
 
-Imagine we have 5 servers ($N = 5$) and distribute 100 session keys. If one server crashes, or if we scale up by adding a 6th server ($N = 6$), the divisor in our modulo formula changes. Because the divisor shifts, **almost every key now maps to a completely different server index.**
+Imagine we have 5 servers (which we will represent as `N = 5`) and distribute 100 session keys across them. If one server crashes, or if we scale up by adding a 6th server (`N = 6`), the divisor in our modulo formula changes. Because the divisor shifts, **almost every key now maps to a completely different server index.**
 
 Let's trace what happens to three sample session keys when we scale from 5 servers to 6:
 
@@ -36,11 +36,17 @@ Let's trace what happens to three sample session keys when we scale from 5 serve
 | `session-bob` | **23** | `23 mod 5 = 3` (Server 3) | `23 mod 6 = 5` (Server 5) | **MOVED** (Cache Miss!) |
 | `session-charlie`| **30** | `30 mod 5 = 0` (Server 0) | `30 mod 6 = 0` (Server 0) | **STAYS** (Cache Hit) |
 
-Notice how Alice's and Bob's sessions have shifted to entirely new servers. Statistically, when scaling from $N$ to $N+1$ servers, **the probability of any key staying on the same server is only $1 / (N+1)$**. 
+Notice how Alice's and Bob's sessions have shifted to entirely new servers.
 
-This means:
-*   When scaling from 5 to 6 servers, **$5/6$ of all keys (83.3%) are suddenly sent to the wrong servers**.
-*   In a production caching layer (like Redis or Memcached), this causes a massive **cache stampede**: almost all read requests fail, forcing the application to query the primary database all at once, which frequently crashes the database.
+Why did this happen, and how bad is it mathematically? 
+When you have `N` servers and you add one more (making the new total `N + 1` servers), the probability of any given key remaining on its original server is only **`1 / (N + 1)`**. 
+
+Let's break that down with real numbers:
+*   **The formula:** `1 / (N + 1)`
+*   **With our servers:** Since we scaled to 6 servers, the chance of a key staying on the same server is only **`1 / 6` (about 16.7%)**.
+*   **The moving keys:** If only `1 / 6` of the keys stay, that means the remaining **`5 / 6` of all keys (83.3%)** are suddenly sent to the wrong servers!
+
+In a production caching layer (like Redis or Memcached), this causes a massive **cache stampede**: almost all read requests fail because the data is now looked up on the wrong server. The application is forced to query the primary database all at once for these missing values, which frequently overloads and crashes the database.
 
 ---
 
@@ -48,7 +54,7 @@ This means:
 
 Consistent Hashing solves this scaling bottleneck by decoupling key routing from the exact number of active servers. 
 
-Instead of dividing key hashes by `N`, it places both servers and keys onto a large, fixed circular space known as a **hash ring**. This circle is typically mapped from $0$ to $4,294,967,295$ (which is $2^{32} - 1$, the standard range of a 32-bit unsigned integer).
+Instead of dividing key hashes by the number of servers, consistent hashing places both servers and keys onto a large, fixed circular space known as a **hash ring**. This circle is typically mapped from 0 to 4,294,967,295. This specific number (equal to 2³² - 1) is the standard range of a 32-bit unsigned integer, providing billions of distinct positions around the ring.
 
 ```mermaid
 flowchart TD
@@ -84,7 +90,7 @@ In a basic consistent hashing ring, physical servers are represented by a single
 *   **Non-Uniform Distribution**: Random hashing can place servers close together, leaving large empty gaps on the ring. The server clockwise-next to a large gap becomes a hotspot.
 *   **Neighbor Straining**: If a node fails, its entire key load cascades directly to its single clockwise neighbor, potentially triggering a chain reaction of node failures.
 
-**Virtual Nodes (VNodes)** solve this. Instead of hashing a physical server once, we map each physical server to $V$ virtual positions on the ring (for example, using `Hash("Server-A-0")`, `Hash("Server-A-1")`, etc.).
+**Virtual Nodes (VNodes)** solve this. Instead of hashing a physical server only once, we map each physical server to multiple virtual positions on the ring (usually represented by the variable `V`, for example, using `Hash("Server-A-0")`, `Hash("Server-A-1")`, and so on).
 
 *   A physical server with 100 VNodes is scattered uniformly across the entire ring.
 *   If a physical server fails, its VNodes are removed. Its load is distributed evenly across multiple different clockwise neighbors, preventing neighbor straining.
@@ -93,7 +99,7 @@ In a basic consistent hashing ring, physical servers are represented by a single
 
 ## TypeScript Implementation
 
-Below is a self-contained, fully typed TypeScript implementation of a Consistent Hashing ring using standard node crypto MD5 hashes and binary search (bisect style) for $O(\log K)$ lookups.
+Below is a self-contained, fully typed TypeScript implementation of a Consistent Hashing ring using standard node crypto MD5 hashes and binary search (bisect style) for highly efficient lookups. This achieves **O(log K)** time complexity, where `K` is the total number of virtual nodes on the ring, meaning search times scale logarithmically and take only a tiny handful of steps even with millions of keys.
 
 ```typescript
 import * as crypto from "node:crypto";
@@ -203,7 +209,7 @@ export class ConsistentHashRing {
 ```
 
 ### Simulating Cluster Balancing
-Let us run a simulation comparing a low VNode count ($3$) against a higher VNode count ($150$) using 100,000 random session keys across a 5-node cluster.
+Let us run a simulation comparing a low virtual node count (3 replicas per server) against a higher virtual node count (150 replicas per server) using 100,000 random session keys across a 5-node cluster.
 
 <Tabs>
   <TabItem label="Simulation Code">
@@ -250,14 +256,18 @@ Notice how 150 VNodes divides the load almost symmetrically (approximately 20,00
 ## Gotchas and Production Considerations
 
 <Aside type="caution" title="Memory and Search Complexity Trade-offs">
-Increasing VNodes improves balance but scales memory footprint linearly: $O(N \times V)$. It also increases sorted key binary search traversal times: $O(\log(N \times V))$. In high-throughput route servers, limit VNode counts between 100 and 200.
+Increasing the number of virtual nodes improves cluster balance but increases costs:
+*   **Memory Growth:** The memory footprint grows linearly with both the number of servers and virtual nodes, represented by the time/space complexity **O(N × V)** (where `N` is physical servers and `V` is virtual nodes per server).
+*   **Lookup Overhead:** Finding the right server takes slightly longer because the binary search has to traverse a larger list. This is represented by the search complexity **O(log(N × V))**.
+
+In high-throughput routing servers, a VNode count between 100 and 200 is generally the sweet spot between balanced distribution and search speed.
 </Aside>
 
 ### 1. Heterogeneous Server Capacities
 If Node-0 has double the RAM/CPU of Node-1, you can assign it double the VNodes (namely, 200 replicas for Node-0 and 100 replicas for Node-1). This forces the hash ring to route proportionally more keys to Node-0, mapping capacity directly to cluster load.
 
 ### 2. Cascading Cache Stampedes
-If a server goes down, its keys immediately shift to the next clockwise server. If the keys are temporary cache layers, the clockwise neighbor will experience a sudden cache miss stampede. Distributed systems mitigate this by replicating keys to $R$ successive clockwise nodes in the ring instead of just one.
+If a server goes down, its keys immediately shift to the next clockwise server. If the keys are temporary cache layers, the clockwise neighbor will experience a sudden cache miss stampede. Distributed systems mitigate this by replicating each key to multiple successive clockwise servers on the ring (referred to as a replication factor, `R`) instead of just a single server.
 
 ---
 
