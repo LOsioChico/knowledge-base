@@ -1,0 +1,12 @@
+{
+  "sourceRepo": "LOsioChico/knowledge-base",
+  "branch": "main",
+  "remotePath": ".github/skills",
+  "localPath": ".github/skills",
+  "sync": [
+    "kb-author",
+    "kb-verifier",
+    "kb-fix-proposer",
+    "kb-research-author"
+  ]
+}
