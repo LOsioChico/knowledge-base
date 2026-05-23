@@ -10,8 +10,6 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ## Signature
 
 ```typescript
-import { from } from "rxjs";
-
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import { NextFunction, Request, Response } from "express";
 
@@ -44,9 +42,7 @@ Middleware cannot read `@Roles()`, the controller class, or which handler will r
 <Tabs>
   <TabItem label="Global (main.ts)">
     ```typescript
-import { from } from "rxjs";
-
-import { NestFactory } from "@nestjs/core";
+    import { NestFactory } from "@nestjs/core";
     import { AppModule } from "./app.module";
     import { requestId } from "./request-id.middleware";
 
@@ -60,9 +56,7 @@ import { NestFactory } from "@nestjs/core";
   </TabItem>
   <TabItem label="Module (DI)">
     ```typescript
-import { from } from "rxjs";
-
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
+    import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
     import { CatsController } from "./cats.controller";
     import { LoggerMiddleware } from "./logger.middleware";
 
@@ -112,8 +106,6 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 Functional middleware: pair with [[nestjs/recipes/trace-id|trace IDs]] for `AsyncLocalStorage` logging.
 
 ```typescript
-import { from } from "rxjs";
-
 import { randomUUID } from "node:crypto";
 import { NextFunction, Request, Response } from "express";
 
@@ -133,8 +125,6 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
 | Business events inside the handler | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) |
 
 ```typescript
-import { from } from "rxjs";
-
 import { Injectable, Logger, NestMiddleware } from "@nestjs/common";
 import { NextFunction, Request, Response } from "express";
 
@@ -159,8 +149,6 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 `express.json()` consumes the stream once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
 
 ```typescript
-import { from } from "rxjs";
-
 import { json, raw } from "express";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";

@@ -19,8 +19,6 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 ## Contract
 
 ```typescript
-import { from } from "rxjs";
-
 import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
 
 @Injectable()
@@ -69,8 +67,6 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 </Tabs>
 
 ```typescript
-import { from } from "rxjs";
-
 import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
 
 @Controller("orders")
@@ -96,8 +92,6 @@ export class OrdersController {
 </Steps>
 
 ```typescript
-import { from } from "rxjs";
-
 // main.ts
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
@@ -152,8 +146,6 @@ Deep DTO patterns: [[nestjs/recipes/validation|validation recipe]].
 ### Zod (not built-in)
 
 ```typescript
-import { from } from "rxjs";
-
 import { BadRequestException, PipeTransform } from "@nestjs/common";
 import { ZodSchema } from "zod";
 

@@ -226,3 +226,14 @@ test("fixFirstMentionWikilinks completely ignores markdown table rows", () => {
   const { modified } = fixFirstMentionWikilinks(body, "nestjs/recipes/monorepo", concepts);
   assert.equal(modified, false);
 });
+
+test("injectImportsIntoCodeBlocks does not inject RxJS imports for keywords inside imports, comments, or string literals", () => {
+  const body = `\`\`\`ts
+import { AsyncLocalStorage } from "node:async_hooks";
+// This is a comment containing of and from
+const message = "Hello from NestJS";
+\`\`\``;
+
+  const { modified } = injectImportsIntoCodeBlocks(body);
+  assert.equal(modified, false);
+});

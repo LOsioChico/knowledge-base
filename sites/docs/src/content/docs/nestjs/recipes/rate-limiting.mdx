@@ -22,9 +22,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 2. Register the module and global guard:
 
    ```typescript
-import { from } from "rxjs";
-
-// app.module.ts
+   // app.module.ts
    import { Module } from "@nestjs/common";
    import { APP_GUARD } from "@nestjs/core";
    import { ThrottlerModule, ThrottlerGuard, seconds } from "@nestjs/throttler";
@@ -83,9 +81,7 @@ You can override or bypass the global rate limiter using decorators on individua
     Tighten or loosen the global bucket on a specific route. The outer key matches the **throttler name**: use `default` for a single unnamed bucket:
 
     ```typescript
-import { from } from "rxjs";
-
-// auth.controller.ts
+    // auth.controller.ts
     import { Controller, Post, Body } from "@nestjs/common";
     import { Throttle, seconds } from "@nestjs/throttler";
 
@@ -110,9 +106,7 @@ import { from } from "rxjs";
     Opt out entirely for health check endpoints or third-party webhooks:
 
     ```typescript
-import { from } from "rxjs";
-
-// health.controller.ts
+    // health.controller.ts
     import { Controller, Get } from "@nestjs/common";
     import { SkipThrottle } from "@nestjs/throttler";
 
@@ -135,8 +129,6 @@ import { from } from "rxjs";
 You can stack multiple throttlers to handle both immediate bursts (e.g., max 3 requests per second) and sustained traffic (e.g., max 100 requests per minute) concurrently.
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
@@ -160,8 +152,6 @@ export class AppModule {}
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 // reports.controller.ts
 import { Controller, Get } from "@nestjs/common";
 import { Throttle, SkipThrottle, seconds } from "@nestjs/throttler";
@@ -193,8 +183,6 @@ To solve this, you must configure NestJS to trust headers like `X-Forwarded-For`
 ### 1. Configure Express Proxy Trust
 
 ```typescript
-import { from } from "rxjs";
-
 // main.ts
 import { NestFactory } from "@nestjs/core";
 import { NestExpressApplication } from "@nestjs/platform-express";
@@ -231,9 +219,7 @@ If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Ng
     For the default Express HTTP adapter, type the request as `Request` from `"express"` and extract the leftmost address from `req.ips`:
 
     ```typescript
-import { from, of } from "rxjs";
-
-// trace/throttler-behind-proxy.guard.ts
+    // trace/throttler-behind-proxy.guard.ts
     import { Injectable } from "@nestjs/common";
     import { ThrottlerGuard } from "@nestjs/throttler";
     import { Request } from "express";
@@ -251,9 +237,7 @@ import { from, of } from "rxjs";
     For the Fastify HTTP adapter, type the request as `FastifyRequest` from `"fastify"` and retrieve the IP address as follows:
 
     ```typescript
-import { from } from "rxjs";
-
-// trace/throttler-behind-proxy.guard.ts
+    // trace/throttler-behind-proxy.guard.ts
     import { Injectable } from "@nestjs/common";
     import { ThrottlerGuard } from "@nestjs/throttler";
     import { FastifyRequest } from "fastify";
@@ -269,9 +253,7 @@ import { from } from "rxjs";
 
     Ensure you have enabled proxy trusting in your Fastify bootstrap adapter setup:
     ```typescript
-import { from } from "rxjs";
-
-// main.ts
+    // main.ts
     import { NestFactory } from "@nestjs/core";
     import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
     import { AppModule } from "./app.module";
@@ -290,8 +272,6 @@ import { from } from "rxjs";
 Register your custom guard as the global guard in your module:
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
@@ -326,8 +306,6 @@ export class AppModule {}
 For authenticated routes, rate-limiting by IP address is insufficient because users behind the same office NAT will block each other. It is far more robust to rate-limit based on the authenticated `user.id`.
 
 ```typescript
-import { from } from "rxjs";
-
 // trace/user-throttler.guard.ts
 import { Injectable } from "@nestjs/common";
 import { ThrottlerGuard } from "@nestjs/throttler";
@@ -349,8 +327,6 @@ Note: when combining multiple global [[nestjs/fundamentals/interceptors|intercep
 If you need to fetch throttler limits dynamically from a database, remote [[nestjs/recipes/configuration|configuration]] server, or environment variables at application startup, use `forRootAsync`:
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -399,8 +375,6 @@ npm install --save @nest-lab/throttler-storage-redis ioredis
 ### 2. Configure Redis Storage
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
@@ -449,8 +423,6 @@ Pre-v5 versions of `@nestjs/throttler` accepted `ttl` in **seconds**. In `@nestj
 The default `ThrottlerGuard` extracts the HTTP execution context. WebSockets have a completely different primitive architecture. To rate limit socket connections, subclass `ThrottlerGuard` and override `handleRequest` utilizing `switchToWs()` to extract the WebSocket connection:
 
 ```typescript
-import { from } from "rxjs";
-
 // gateways/ws-throttler.guard.ts
 import { Injectable, ExecutionContext } from "@nestjs/common";
 import { ThrottlerGuard } from "@nestjs/throttler";

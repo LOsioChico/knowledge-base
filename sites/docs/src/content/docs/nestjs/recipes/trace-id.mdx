@@ -33,9 +33,7 @@ No external npm packages are required for the core correlation pattern. `AsyncLo
 1. **Middleware opens the context**: create the store helper and middleware:
 
    ```typescript
-import { from } from "rxjs";
-
-// trace/trace-context.ts
+   // trace/trace-context.ts
    import { AsyncLocalStorage } from "node:async_hooks";
 
    export interface TraceStore {
@@ -48,9 +46,7 @@ import { from } from "rxjs";
    ```
 
    ```typescript
-import { from } from "rxjs";
-
-// trace/trace.middleware.ts
+   // trace/trace.middleware.ts
    import { randomUUID } from "node:crypto";
    import { Injectable, NestMiddleware } from "@nestjs/common";
    import { Request, Response, NextFunction } from "express";
@@ -74,9 +70,7 @@ import { from } from "rxjs";
    Register the middleware on every route inside the root module:
 
    ```typescript
-import { from } from "rxjs";
-
-// app.module.ts
+   // app.module.ts
    import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
    import { TraceMiddleware } from "./trace/trace.middleware";
 
@@ -93,9 +87,7 @@ import { from } from "rxjs";
 2. **Logger injects the trace ID**: subclass `ConsoleLogger` and override the `formatPid()` method:
 
    ```typescript
-import { from, of } from "rxjs";
-
-// trace/trace-logger.service.ts
+   // trace/trace-logger.service.ts
    import { ConsoleLogger, Injectable, Scope } from "@nestjs/common";
    import { getTraceId } from "./trace-context";
 
@@ -111,9 +103,7 @@ import { from, of } from "rxjs";
    ```
 
    ```typescript
-import { from } from "rxjs";
-
-// main.ts
+   // main.ts
    import { NestFactory } from "@nestjs/core";
    import { AppModule } from "./app.module";
    import { TraceLogger } from "./trace/trace-logger.service";
@@ -135,9 +125,7 @@ import { from } from "rxjs";
 3. **Exception filter adds trace ID to error bodies**: read the trace ID directly from the store:
 
    ```typescript
-import { from } from "rxjs";
-
-// trace/trace-exception.filter.ts
+   // trace/trace-exception.filter.ts
    import {
      ArgumentsHost,
      Catch,
@@ -183,9 +171,7 @@ import { from } from "rxjs";
    Register the filter globally:
 
    ```typescript
-import { from } from "rxjs";
-
-// app.module.ts
+   // app.module.ts
    import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
    import { APP_FILTER } from "@nestjs/core";
    import { TraceMiddleware } from "./trace/trace.middleware";
@@ -244,9 +230,7 @@ import { from } from "rxjs";
 5. **Propagate to outbound HTTP requests**: forward the trace ID to external services using Axios interceptors:
 
    ```typescript
-import { from } from "rxjs";
-
-// trace/http-trace.module.ts
+   // trace/http-trace.module.ts
    import { HttpModule, HttpService } from "@nestjs/axios";
    import { Module, OnModuleInit } from "@nestjs/common";
    import { getTraceId } from "./trace-context";
@@ -281,8 +265,6 @@ HTTP middleware does not execute in WebSocket connections, BullMQ queue workers,
 ### 1. BullMQ Queue Processor Example
 
 ```typescript
-import { from } from "rxjs";
-
 // queues/emails.processor.ts
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { randomUUID } from "node:crypto";
@@ -308,8 +290,6 @@ Store `getTraceId()` in the job data when enqueuing the task. The consumer will 
 ### 2. WebSockets Gateway Example
 
 ```typescript
-import { from } from "rxjs";
-
 // gateways/chat.gateway.ts
 import { SubscribeMessage, WebSocketGateway, WsResponse } from "@nestjs/websockets";
 import { Socket } from "socket.io";

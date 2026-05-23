@@ -151,9 +151,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     Create the module classes:
 
     ```typescript
-import { from } from "rxjs";
-
-// packages/logger/src/logger.service.ts
+    // packages/logger/src/logger.service.ts
     import { Injectable, Logger } from "@nestjs/common";
 
     @Injectable()
@@ -167,9 +165,7 @@ import { from } from "rxjs";
     ```
 
     ```typescript
-import { from } from "rxjs";
-
-// packages/logger/src/logger.module.ts
+    // packages/logger/src/logger.module.ts
     import { Module } from "@nestjs/common";
     import { SharedLoggerService } from "./logger.service";
 
@@ -181,9 +177,7 @@ import { from } from "rxjs";
     ```
 
     ```typescript
-import { from } from "rxjs";
-
-// packages/logger/src/index.ts
+    // packages/logger/src/index.ts
     export * from "./logger.module";
     export * from "./logger.service";
     ```
@@ -251,9 +245,7 @@ import { from } from "rxjs";
     Now build the core entrypoint code for `apps/api/src/app.module.ts`:
 
     ```typescript
-import { from } from "rxjs";
-
-// apps/api/src/app.module.ts
+    // apps/api/src/app.module.ts
     import { Module } from "@nestjs/common";
     import { SharedLoggerModule } from "@repo/logger";
 
@@ -264,9 +256,7 @@ import { from } from "rxjs";
     ```
 
     ```typescript
-import { from } from "rxjs";
-
-// apps/api/src/main.ts
+    // apps/api/src/main.ts
     import { NestFactory } from "@nestjs/core";
     import { AppModule } from "./app.module";
     import { SharedLoggerService } from "@repo/logger";

@@ -27,9 +27,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 2. Register a global pipe in `main.ts` (secure defaults):
 
    ```typescript
-import { from } from "rxjs";
-
-import "reflect-metadata";
+   import "reflect-metadata";
    import { NestFactory } from "@nestjs/core";
    import { ValidationPipe } from "@nestjs/common";
    import { AppModule } from "./app.module";
@@ -62,8 +60,6 @@ import "reflect-metadata";
 ## First DTO (show the 400)
 
 ```typescript
-import { from } from "rxjs";
-
 import { IsEmail, IsString, MinLength } from "class-validator";
 
 export class CreateUserDto {
@@ -77,8 +73,6 @@ export class CreateUserDto {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Body, Controller, Post } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 
@@ -202,8 +196,6 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
 Same DTO, different routes:
 
 ```typescript
-import { from } from "rxjs";
-
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 
 export class UserDto {
@@ -218,8 +210,6 @@ export class UserDto {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Body, Controller, Patch, Post, UsePipes, ValidationPipe } from "@nestjs/common";
 import { UserDto } from "./dto/user.dto";
 
@@ -246,8 +236,6 @@ export class UsersController {
 Decorators do not recurse without `@ValidateNested()` and `@Type()` from `class-transformer`:
 
 ```typescript
-import { from } from "rxjs";
-
 // create-order.dto.ts
 import { Type } from "class-transformer";
 import { IsArray, IsString, ValidateNested } from "class-validator";
@@ -293,7 +281,7 @@ The pipe automatically traverses the array and throws a nested path error:
 To return clean, standardized validation details (e.g. mapping internal validator constraints to a friendly list of fields), customize the `exceptionFactory` in `main.ts`:
 
 ```typescript
-import { from, map } from "rxjs";
+import { map } from "rxjs";
 
 // main.ts
 import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
@@ -319,8 +307,6 @@ Often, validation requires checking state outside the payload (e.g., verifying d
 Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):
 
 ```typescript
-import { from } from "rxjs";
-
 // is-unique.validator.ts
 import { Injectable } from "@nestjs/common";
 import { 
@@ -369,8 +355,6 @@ export function IsUnique(tableAndColumn: [string, string], validationOptions?: V
 Add your custom decorator to your DTO fields:
 
 ```typescript
-import { from } from "rxjs";
-
 // create-user.dto.ts
 import { IsEmail, IsNotEmpty } from "class-validator";
 import { IsUnique } from "./is-unique.validator";
@@ -389,8 +373,6 @@ By default, `class-validator` instantiates custom validation constraint classes 
 Bind the class-validator engine to the NestJS container in `main.ts` using `useContainer`:
 
 ```typescript
-import { from } from "rxjs";
-
 // main.ts
 import { NestFactory } from "@nestjs/core";
 import { useContainer } from "class-validator";
@@ -420,8 +402,6 @@ In [[nestjs/recipes/testing|testing]] environments (Jest/Vitest/Bun), calling `u
 **Resolution**: Always reset `useContainer(null)` in the E2E test teardown:
 
 ```typescript
-import { from } from "rxjs";
-
 // users.e2e.spec.ts
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";

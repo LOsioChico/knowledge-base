@@ -34,9 +34,7 @@ flowchart TD
     Instantiate in `main.ts` **outside** the DI container:
 
     ```typescript
-import { from } from "rxjs";
-
-// main.ts
+    // main.ts
     import { NestFactory } from "@nestjs/core";
     import { ValidationPipe } from "@nestjs/common";
     import { AppModule } from "./app.module";
@@ -56,9 +54,7 @@ import { from } from "rxjs";
     Register in **any** module's `providers` array; Nest builds the instance:
 
     ```typescript
-import { from } from "rxjs";
-
-// app.module.ts
+    // app.module.ts
     import { Module, ValidationPipe } from "@nestjs/common";
     import { APP_PIPE } from "@nestjs/core";
 
@@ -99,8 +95,6 @@ import { from } from "rxjs";
 ### Config-driven `APP_PIPE`
 
 ```typescript
-import { from } from "rxjs";
-
 // validation.config.ts
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -118,8 +112,6 @@ export const validationPipeProvider = {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
@@ -137,8 +129,6 @@ With `useGlobalPipes` in `main.ts`, you can hand-resolve `app.get(ConfigService)
 ### Request-scoped `APP_GUARD`
 
 ```typescript
-import { from } from "rxjs";
-
 // tenant.guard.ts
 import { CanActivate, ExecutionContext, Inject, Injectable, Scope } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
@@ -160,8 +150,6 @@ export class TenantGuard implements CanActivate {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 // app.module.ts
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
@@ -185,8 +173,6 @@ export class AppModule {}
 | `useFactory` | Async setup, env, or manual `inject: [...]`          |
 
 ```typescript
-import { from } from "rxjs";
-
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 

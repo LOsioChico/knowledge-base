@@ -271,31 +271,95 @@ ${targetFM.body}`;
 // ---------------------------------------------------------
 // 2. Smart Import Injector
 // ---------------------------------------------------------
-const IMPORT_MAPS = [
+interface ImportRule {
+  library: string;
+  imports: {
+    token: string;
+    triggers: RegExp[];
+  }[];
+}
+
+const IMPORT_RULES: ImportRule[] = [
   {
     library: "@nestjs/common",
-    tokens: [
-      "Controller", "Get", "Post", "Put", "Delete", "Patch", "Injectable", "Inject",
-      "UseGuards", "UseInterceptors", "UsePipes", "UseFilters", "Catch", "Req", "Res",
-      "Query", "Param", "Body", "Headers", "HttpCode", "Redirect", "Header",
-      "NestInterceptor", "PipeTransform", "NestMiddleware", "CanActivate", "ExceptionFilter",
-      "ExecutionContext", "CallHandler", "ArgumentsHost", "HttpStatus", "Optional", "ForwardRef",
-      "Logger", "INestApplication"
+    imports: [
+      { token: "Controller", triggers: [/@Controller\b/] },
+      { token: "Get", triggers: [/@Get\b/] },
+      { token: "Post", triggers: [/@Post\b/] },
+      { token: "Put", triggers: [/@Put\b/] },
+      { token: "Delete", triggers: [/@Delete\b/] },
+      { token: "Patch", triggers: [/@Patch\b/] },
+      { token: "Injectable", triggers: [/@Injectable\b/] },
+      { token: "Inject", triggers: [/@Inject\b/] },
+      { token: "UseGuards", triggers: [/@UseGuards\b/] },
+      { token: "UseInterceptors", triggers: [/@UseInterceptors\b/] },
+      { token: "UsePipes", triggers: [/@UsePipes\b/] },
+      { token: "UseFilters", triggers: [/@UseFilters\b/] },
+      { token: "Catch", triggers: [/@Catch\b/] },
+      { token: "Req", triggers: [/@Req\b/] },
+      { token: "Res", triggers: [/@Res\b/] },
+      { token: "Query", triggers: [/@Query\b/] },
+      { token: "Param", triggers: [/@Param\b/] },
+      { token: "Body", triggers: [/@Body\b/] },
+      { token: "Headers", triggers: [/@Headers\b/] },
+      { token: "HttpCode", triggers: [/@HttpCode\b/] },
+      { token: "Redirect", triggers: [/@Redirect\b/] },
+      { token: "Header", triggers: [/@Header\b/] },
+      { token: "NestInterceptor", triggers: [/\bNestInterceptor\b/] },
+      { token: "PipeTransform", triggers: [/\bPipeTransform\b/] },
+      { token: "NestMiddleware", triggers: [/\bNestMiddleware\b/] },
+      { token: "CanActivate", triggers: [/\bCanActivate\b/] },
+      { token: "ExceptionFilter", triggers: [/\bExceptionFilter\b/] },
+      { token: "ExecutionContext", triggers: [/\bExecutionContext\b/] },
+      { token: "CallHandler", triggers: [/\bCallHandler\b/] },
+      { token: "ArgumentsHost", triggers: [/\bArgumentsHost\b/] },
+      { token: "HttpStatus", triggers: [/\bHttpStatus\b/] },
+      { token: "Optional", triggers: [/\bOptional\b/] },
+      { token: "ForwardRef", triggers: [/\bForwardRef\b/] },
+      { token: "Logger", triggers: [/\bLogger\b/] },
+      { token: "INestApplication", triggers: [/\bINestApplication\b/] }
     ]
   },
   {
     library: "@nestjs/core",
-    tokens: [
-      "NestFactory", "APP_GUARD", "APP_INTERCEPTOR", "APP_PIPE", "APP_FILTER", "Reflector", "ModuleRef"
+    imports: [
+      { token: "NestFactory", triggers: [/\bNestFactory\b/] },
+      { token: "APP_GUARD", triggers: [/\bAPP_GUARD\b/] },
+      { token: "APP_INTERCEPTOR", triggers: [/\bAPP_INTERCEPTOR\b/] },
+      { token: "APP_PIPE", triggers: [/\bAPP_PIPE\b/] },
+      { token: "APP_FILTER", triggers: [/\bAPP_FILTER\b/] },
+      { token: "Reflector", triggers: [/\bReflector\b/] },
+      { token: "ModuleRef", triggers: [/\bModuleRef\b/] }
     ]
   },
   {
     library: "rxjs",
-    tokens: [
-      "Observable", "of", "from", "map", "tap", "catchError", "throwError", "delay", "mergeMap", "switchMap", "concatMap"
+    imports: [
+      { token: "Observable", triggers: [/\bObservable\b/] },
+      { token: "of", triggers: [/\bof\s*\(/] },
+      { token: "from", triggers: [/\bfrom\s*\(/] },
+      { token: "throwError", triggers: [/\bthrowError\s*\(/] },
+      { token: "map", triggers: [/\bmap\b/] },
+      { token: "tap", triggers: [/\btap\b/] },
+      { token: "catchError", triggers: [/\bcatchError\b/] },
+      { token: "delay", triggers: [/\bdelay\b/] },
+      { token: "mergeMap", triggers: [/\bmergeMap\b/] },
+      { token: "switchMap", triggers: [/\bswitchMap\b/] },
+      { token: "concatMap", triggers: [/\bconcatMap\b/] }
     ]
   }
 ];
+
+function cleanCodeForTokenMatching(code: string): string {
+  return code
+    // 1. Remove comments
+    .replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "")
+    // 2. Remove string literals
+    .replace(/'[^']*'|"[^"]*"|`[^`]*`/g, "")
+    // 3. Remove standard import declarations
+    .replace(/^\s*import\s+[\s\S]*?;\r?\n/gm, "")
+    .replace(/^\s*import\s+[\s\S]*?$/gm, "");
+}
 
 export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string, modified: boolean } {
   let modified = false;
@@ -309,18 +373,19 @@ export function injectImportsIntoCodeBlocks(body: string): { updatedBody: string
     }
 
     let injectedLines: string[] = [];
+    const cleanedCode = cleanCodeForTokenMatching(code);
 
-    for (const lib of IMPORT_MAPS) {
+    for (const lib of IMPORT_RULES) {
       // If code already imports from this library, skip it
       const hasImportRe = new RegExp(`from ['"]${lib.library}['"]`);
       if (hasImportRe.test(code)) continue;
 
-      // Scan for used tokens with exact word boundary
+      // Scan for used tokens with exact trigger regexes on the cleaned code
       const matchedTokens: string[] = [];
-      for (const token of lib.tokens) {
-        const tokenRe = new RegExp(`\\b${token}\\b`);
-        if (tokenRe.test(code)) {
-          matchedTokens.push(token);
+      for (const item of lib.imports) {
+        const isMatched = item.triggers.some(re => re.test(cleanedCode));
+        if (isMatched) {
+          matchedTokens.push(item.token);
         }
       }
 

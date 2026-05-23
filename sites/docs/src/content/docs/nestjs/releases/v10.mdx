@@ -39,8 +39,6 @@ npm i @nestjs/cache-manager cache-manager
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 // Before (v9)
 import { CacheModule, CacheInterceptor } from "@nestjs/common";
 
@@ -72,8 +70,6 @@ Full setup: [[nestjs/recipes/swc-setup|SWC recipe]], [official SWC recipe](https
 ### Override whole modules in tests
 
 ```typescript
-import { from } from "rxjs";
-
 import { Test } from "@nestjs/testing";
 import { LoggerModule } from "./logger.module";
 import { LoggerTestingModule } from "./logger-testing.module";
@@ -92,8 +88,6 @@ Replacement must export the same public tokens ([e2e testing docs](https://docs.
 ### Redis wildcard subscriptions
 
 ```typescript
-import { from } from "rxjs";
-
 import { NestFactory } from "@nestjs/core";
 import { MicroserviceOptions, Transport } from "@nestjs/microservices";
 import { AppModule } from "./app.module";
@@ -108,8 +102,6 @@ await app.listen();
 ### `@Search()` decorator
 
 ```typescript
-import { from } from "rxjs";
-
 import { Body, Controller, Search } from "@nestjs/common";
 
 @Controller("documents")

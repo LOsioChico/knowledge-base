@@ -22,9 +22,7 @@ npm i @nestjs/cache-manager cache-manager
 1. Register `CacheModule` globally:
 
    ```typescript
-import { from } from "rxjs";
-
-import { Module } from "@nestjs/common";
+   import { Module } from "@nestjs/common";
    import { CacheModule } from "@nestjs/cache-manager";
    import { BooksController } from "./books.controller";
    import { BooksService } from "./books.service";
@@ -45,9 +43,7 @@ import { Module } from "@nestjs/common";
 2. Inject `CACHE_MANAGER` in a service:
 
    ```typescript
-import { from } from "rxjs";
-
-import { Inject, Injectable } from "@nestjs/common";
+   import { Inject, Injectable } from "@nestjs/common";
    import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager";
 
    export interface Book {
@@ -97,8 +93,6 @@ import { Inject, Injectable } from "@nestjs/common";
 ## Auto-caching GET responses
 
 ```typescript
-import { from } from "rxjs";
-
 import { Controller, Get, UseInterceptors } from "@nestjs/common";
 import { CacheInterceptor, CacheKey, CacheTTL } from "@nestjs/cache-manager";
 import { BooksService, type Book } from "./books.service";
@@ -126,8 +120,6 @@ export class BooksController {
 Global binding via [[nestjs/fundamentals/global-providers|APP_INTERCEPTOR]]:
 
 ```typescript
-import { from } from "rxjs";
-
 import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager";
@@ -173,8 +165,6 @@ npm i @keyv/redis keyv cacheable
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Module } from "@nestjs/common";
 import { CacheModule } from "@nestjs/cache-manager";
 import { Keyv } from "keyv";
@@ -211,8 +201,6 @@ Reads check stores in order; `set`/`del` hit each store (optional `nonBlocking: 
 Use [[nestjs/recipes/configuration|Configuration with @nestjs/config]] when TTLs, Redis URLs, or other cache options come from environment-driven app settings.
 
 ```typescript
-import { from } from "rxjs";
-
 import { Module } from "@nestjs/common";
 import { CacheModule } from "@nestjs/cache-manager";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -238,8 +226,6 @@ export class AppModule {}
 ## Custom tracking (per-user keys)
 
 ```typescript
-import { from } from "rxjs";
-
 import { ExecutionContext, Injectable } from "@nestjs/common";
 import { CacheInterceptor } from "@nestjs/cache-manager";
 import type { Request } from "express";

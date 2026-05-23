@@ -99,9 +99,7 @@ Here is a side-by-side comparison of declaring the boundary:
 <Tabs>
   <TabItem label="NestJS (Abstract Class Token)">
     ```typescript
-import { from } from "rxjs";
-
-import { Injectable, Module } from "@nestjs/common";
+    import { Injectable, Module } from "@nestjs/common";
 
     // 1. Declare the boundary (Token + API shape)
     export abstract class RandomService {
@@ -136,10 +134,7 @@ import { Injectable, Module } from "@nestjs/common";
   </TabItem>
   <TabItem label="Effect (Context.Tag)">
     ```typescript
-import { Inject } from "@nestjs/common";
-import { from } from "rxjs";
-
-// 1. Declare the boundary (Token + API shape)
+    // 1. Declare the boundary (Token + API shape)
     import { Context, Effect } from "effect";
 
     export class Random extends Context.Tag("MyRandomService")<

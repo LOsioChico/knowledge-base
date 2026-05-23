@@ -145,8 +145,6 @@ aws sts assume-role \
 ## 4. In application code, assume at startup
 
 ```typescript
-import { from } from "rxjs";
-
 import { STSClient, AssumeRoleCommand } from "@aws-sdk/client-sts";
 import { SESClient } from "@aws-sdk/client-ses";
 

@@ -19,8 +19,6 @@ npm install --save-dev @types/pg
 TypeORM copies enumerable driver properties onto the wrapper ([QueryFailedError.ts](https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts)). Prefer **`err.driverError`** with `pg`'s `DatabaseError` type over `err.code` (`any` on the wrapper).
 
 ```typescript
-import { from } from "rxjs";
-
 import { DatabaseError } from "pg";
 import { QueryFailedError } from "typeorm";
 
@@ -59,8 +57,6 @@ Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes
 ## Recipe 1: Global exception filter
 
 ```typescript
-import { from } from "rxjs";
-
 import {
   ArgumentsHost,
   Catch,
@@ -130,8 +126,6 @@ export class TypeOrmExceptionFilter extends BaseExceptionFilter {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Module } from "@nestjs/common";
 import { APP_FILTER } from "@nestjs/core";
 import { TypeOrmExceptionFilter } from "./typeorm-exception.filter";
@@ -164,8 +158,6 @@ Postgres `detail` includes the offending value. Redact before sending to clients
 Use **named** constraints (`@Unique('users_email_key', ['email'])`), not `@Column({ unique: true })` (auto `UQ_<hash>` names).
 
 ```typescript
-import { from } from "rxjs";
-
 import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
 @Entity()
@@ -179,8 +171,6 @@ export class User {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { ConflictException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";

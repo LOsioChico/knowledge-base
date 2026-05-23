@@ -35,8 +35,6 @@ export const jwtConstants = {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
@@ -64,8 +62,6 @@ export class AuthModule {}
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
@@ -89,8 +85,6 @@ export class AuthService {
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
@@ -121,8 +115,6 @@ Wrong credentials (`401`):
 ## JWT strategy
 
 ```typescript
-import { from } from "rxjs";
-
 import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
@@ -159,8 +151,6 @@ Do not re-verify the JWT in `validate()`. Use it for revocation lists, active-us
 ## Protected route
 
 ```typescript
-import { from } from "rxjs";
-
 import { Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
@@ -169,8 +159,6 @@ export class JwtAuthGuard extends AuthGuard("jwt") {}
 ```
 
 ```typescript
-import { from } from "rxjs";
-
 import { Controller, Get, Request, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
@@ -203,9 +191,7 @@ With `Authorization: Bearer <token>` (`200`):
 1. Decorator:
 
    ```typescript
-import { from } from "rxjs";
-
-import { SetMetadata } from "@nestjs/common";
+   import { SetMetadata } from "@nestjs/common";
 
    export const IS_PUBLIC_KEY = "isPublic";
    export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
@@ -214,9 +200,7 @@ import { SetMetadata } from "@nestjs/common";
 2. Guard:
 
    ```typescript
-import { from } from "rxjs";
-
-import { ExecutionContext, Injectable } from "@nestjs/common";
+   import { ExecutionContext, Injectable } from "@nestjs/common";
    import { Reflector } from "@nestjs/core";
    import { AuthGuard } from "@nestjs/passport";
    import { IS_PUBLIC_KEY } from "./public.decorator";
@@ -241,9 +225,7 @@ import { ExecutionContext, Injectable } from "@nestjs/common";
 3. Register globally:
 
    ```typescript
-import { from } from "rxjs";
-
-import { Module } from "@nestjs/common";
+   import { Module } from "@nestjs/common";
    import { APP_GUARD } from "@nestjs/core";
    import { JwtAuthGuard } from "./jwt-auth.guard";
 
@@ -256,9 +238,7 @@ import { Module } from "@nestjs/common";
 4. Mark login public:
 
    ```typescript
-import { from } from "rxjs";
-
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request } from "@nestjs/common";
+   import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request } from "@nestjs/common";
    import { AuthService } from "./auth.service";
    import { Public } from "./public.decorator";
 

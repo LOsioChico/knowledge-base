@@ -56,9 +56,7 @@ When developers think of "file upload," they usually think of a browser sending 
     Use this tier only for small files where NestJS serves as the final storage controller. To secure your app against hackers renaming an executable (`malicious.exe` to `safe.jpg`), use a `ParseFilePipeBuilder` to run **magic-number validation** (inspecting the actual binary header bytes of the file, rather than trusting the client-supplied `Content-Type` header).
 
     ```typescript
-import { from, of } from "rxjs";
-
-import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFilePipeBuilder } from "@nestjs/common";
+    import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFilePipeBuilder } from "@nestjs/common";
     import { FileInterceptor } from "@nestjs/platform-express";
 
     @Controller("uploads")
@@ -130,9 +128,7 @@ import { Controller, Post, UploadedFile, UseInterceptors, HttpStatus, ParseFileP
     The code below configures `multer-s3` so that incoming chunks are piped directly to S3 as they arrive on the network socket. NestJS never keeps more than a small chunk buffer in memory.
 
     ```typescript
-import { from } from "rxjs";
-
-import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
+    import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
     import { FileInterceptor } from "@nestjs/platform-express";
     import { S3Client } from "@aws-sdk/client-s3";
     import * as multerS3 from "multer-s3";
@@ -203,9 +199,7 @@ import { Controller, Post, UploadedFile, UseInterceptors } from "@nestjs/common"
     *NestJS never touches the file bytes!* This frees up 100% of your server's RAM and network bandwidth.
 
     ```typescript
-import { from } from "rxjs";
-
-import { Controller, Post, Body, Injectable } from "@nestjs/common";
+    import { Controller, Post, Body, Injectable } from "@nestjs/common";
     import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
     import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
     import { IsString, IsNotEmpty, Matches } from "class-validator";
