@@ -8,6 +8,7 @@ related:
   - "[[effect-ts/observability]]"
   - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/state]]"
+  - "[[effect-ts/async-result]]"
 ---
 
 import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
@@ -64,9 +65,10 @@ flowchart TD
     SCP --> CONC["9. [[effect-ts/concurrency|Concurrency]]"]
     CONC --> STR["10. [[effect-ts/streams|Streams]]"]
     STR --> ST["11. [[effect-ts/state|State Coordinates]]"]
-    ST --> OBS["12. [[effect-ts/observability|Observability]]"]
-    OBS --> PLT["13. [[effect-ts/platform|Platform Layers]]"]
-    PLT --> FT["14. [[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]"]
+    ST --> AR["12. [[effect-ts/async-result|AsyncResult State Machine]]"]
+    AR --> OBS["13. [[effect-ts/observability|Observability]]"]
+    OBS --> PLT["14. [[effect-ts/platform|Platform Layers]]"]
+    PLT --> FT["15. [[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]"]
 ```
 
 ## Start here
@@ -133,17 +135,22 @@ flowchart TD
       <a href="/knowledge-base/effect-ts/state/">Lock-free fiber coordinates</a>: <code>Ref</code> (see [[effect-ts/state|State coordinates]]), <code>SubscriptionRef</code>, and Software Transactional Memory (STM).
     </p>
   </Card>
-  <Card title="Step 12: Observability" icon="star">
+  <Card title="Step 12: AsyncResult" icon="document">
+    <p>
+      <a href="/knowledge-base/effect-ts/async-result/">Reactive state machines</a>: modeling remote async lifecycles, avoiding loading defaults, and local atom/ref derivation.
+    </p>
+  </Card>
+  <Card title="Step 13: Observability" icon="star">
     <p>
       <a href="/knowledge-base/effect-ts/observability/">Structured telemetry</a>: logging, <code>withLogSpan</code>, and OpenTelemetry.
     </p>
   </Card>
-  <Card title="Step 13: Platform layers" icon="laptop">
+  <Card title="Step 14: Platform layers" icon="laptop">
     <p>
       <a href="/knowledge-base/effect-ts/platform/">Runtime-agnostic contexts</a>: FileSystem, HttpClient, and modular routing.
     </p>
   </Card>
-  <Card title="Step 14: Ingestion capstone" icon="approve-check">
+  <Card title="Step 15: Ingestion capstone" icon="approve-check">
     <p>
       <a href="/knowledge-base/effect-ts/fault-tolerant-ingestion/">Fault-tolerant pipeline</a>{" "}
       recipe.

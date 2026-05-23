@@ -29,6 +29,7 @@ const effectTsSidebar = [
   { label: "Concurrency", slug: "effect-ts/concurrency" },
   { label: "Streams", slug: "effect-ts/streams" },
   { label: "State coordinates", slug: "effect-ts/state" },
+  { label: "AsyncResult", slug: "effect-ts/async-result" },
   { label: "Observability", slug: "effect-ts/observability" },
   { label: "Platform layers", slug: "effect-ts/platform" },
   {

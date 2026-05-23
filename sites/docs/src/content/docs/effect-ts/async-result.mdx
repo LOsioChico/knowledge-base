@@ -1,0 +1,216 @@
+---
+title: AsyncResult state machine
+description: Model clientside and remote state transitions with AsyncResult, avoiding empty defaults or prop drilling, and maintaining stable reactive state machines in Effect.
+aliases: [async-result, AsyncResult, reactive-state, clientside-state]
+tags: [type/concept, tech/typescript, tech/effect-ts]
+area: effect-ts
+status: evergreen
+related:
+  - "[[effect-ts]]"
+  - "[[effect-ts/state]]"
+  - "[[effect-ts/schema]]"
+source: []
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> **Step 12: AsyncResult State Machine**: Represent reactive clientside remote data lifecycles, avoiding empty default values, managing precise execution states, and local atom/subscription derivation. Prerequisite: [[effect-ts/state|Step 11: State coordinates]]; next step: [[effect-ts/observability|Step 13: Observability & Telemetry]].
+
+<Steps>
+
+1.  **Define** remote state transitions explicitly with the `AsyncResult` tagged union.
+2.  **Coordinate** reactive updates using `SubscriptionRef` or `Ref` primitives.
+3.  **Derive** data transforms locally inside components rather than prop-drilling raw atoms.
+4.  **Expose** typed error telemetries cleanly using explicit cause annotations.
+
+</Steps>
+
+---
+
+## The Remote State Dilemma
+
+In clientside applications, representing the state of remote asynchronous operations (such as API fetches) is a frequent source of bugs. The common footgun is **flattening state into generic defaults** (e.g., initializing an unresolved user list as an empty array `[]` or `null`):
+
+```typescript
+// A dangerous, flattened state model
+interface State {
+  users: User[];      // Empty [] initially, or is it loaded/empty?
+  isLoading: boolean; // Parallel boolean tracking
+  error: Error | null;
+}
+```
+
+This model introduces severe layout and synchronization challenges:
+1.  **Semantic Collision**: An empty array `[]` could represent "not started yet," "fetching," "loaded with zero results," or "failed." The UI cannot distinguish these states cleanly.
+2.  **Impossible States**: It is possible for `isLoading` to be `true` and `error` to have a value, leading to undefined or conflicting visual states.
+3.  **Layout Thrashing**: Layouts flash and components unmount/remount as concurrent states update disjointly.
+
+---
+
+## The Precise Solution: AsyncResult State Machine
+
+To solve this, we model async lifecycles as a strict, atomic **`AsyncResult` tagged union**. State transitions flow cleanly along a deterministic pathway:
+
+```mermaid
+flowchart TD
+    Waiting["Waiting (Initial)"] --> Loading["Loading (Fetching)"]
+    Loading --> Success["Success (Data Resolved)"]
+    Loading --> Failure["Failure (Error Occurred)"]
+    Success --> Loading
+    Failure --> Loading
+```
+
+### The Algebraic Model
+
+We structure the state machine using precise TypeScript types, where the data and error channels are strongly typed and bounded:
+
+```ts twoslash
+export type AsyncResult<A, E = never> =
+  | { readonly _tag: "Waiting" }
+  | { readonly _tag: "Loading" }
+  | { readonly _tag: "Success"; readonly data: A }
+  | { readonly _tag: "Failure"; readonly error: E };
+
+// Helper constructors
+export const waiting = <A, E = never>(): AsyncResult<A, E> => ({ _tag: "Waiting" });
+export const loading = <A, E = never>(): AsyncResult<A, E> => ({ _tag: "Loading" });
+export const success = <A, E = never>(data: A): AsyncResult<A, E> => ({ _tag: "Success", data });
+export const failure = <A, E>(error: E): AsyncResult<A, E> => ({ _tag: "Failure", error });
+```
+
+---
+
+## Minimal Working Example: Remote Ingestion Store
+
+Below is a complete, compile-safe, and standalone example demonstrating how to model a remote store that manages user profiles, processes transitions atomically, and exports its state changes as a reactive [[effect-ts/streams|stream]]:
+
+```ts twoslash
+import { Console, Effect, SubscriptionRef, Stream } from "effect";
+
+// 1. Declare Domain Types and State
+export interface User {
+  readonly id: number;
+  readonly name: string;
+}
+
+export interface UserFetchError {
+  readonly _tag: "UserFetchError";
+  readonly message: string;
+}
+
+export type AsyncResult<A, E = never> =
+  | { readonly _tag: "Waiting" }
+  | { readonly _tag: "Loading" }
+  | { readonly _tag: "Success"; readonly data: A }
+  | { readonly _tag: "Failure"; readonly error: E };
+
+// Helper constructors
+export const waiting = <A, E = never>(): AsyncResult<A, E> => ({ _tag: "Waiting" });
+export const loading = <A, E = never>(): AsyncResult<A, E> => ({ _tag: "Loading" });
+export const success = <A, E = never>(data: A): AsyncResult<A, E> => ({ _tag: "Success", data });
+export const failure = <A, E>(error: E): AsyncResult<A, E> => ({ _tag: "Failure", error });
+
+// 2. Mock Fallible External Fetcher
+const fetchUserFromNetwork = (id: number): Effect.Effect<User, UserFetchError> =>
+  id === 42
+    ? Effect.succeed({ id: 42, name: "Alice" })
+    : Effect.fail({ _tag: "UserFetchError", message: `User ${id} not found.` });
+
+// 3. Coordinate State Transitions Reactively
+const runUserHandshake = (
+  store: SubscriptionRef.SubscriptionRef<AsyncResult<User, UserFetchError>>,
+  id: number
+) =>
+  Effect.gen(function* () {
+    // A. Transition state to Loading
+    yield* SubscriptionRef.set(store, loading());
+    yield* Effect.sleep("10 millis");
+
+    // B. Run the network Effect
+    const fetchResult = yield* fetchUserFromNetwork(id).pipe(Effect.either);
+
+    // C. Transition state atomically based on output
+    if (fetchResult._tag === "Right") {
+      yield* SubscriptionRef.set(store, success(fetchResult.right));
+    } else {
+      yield* SubscriptionRef.set(store, failure(fetchResult.left));
+    }
+  });
+
+const program = Effect.gen(function* () {
+  // Initialize the reactive store in the Waiting state
+  const store = yield* SubscriptionRef.make<AsyncResult<User, UserFetchError>>(waiting());
+
+  // Observe updates in the background
+  const bgFiber = yield* store.changes.pipe(
+    Stream.tap((state) => Console.log(`Reactive Subscriber saw tag: ${state._tag}`)),
+    Stream.runDrain,
+    Effect.fork
+  );
+
+  // Execute a successful fetch
+  yield* runUserHandshake(store, 42);
+  yield* Effect.sleep("20 millis");
+
+  // Execute a failing fetch
+  yield* runUserHandshake(store, 99);
+  yield* Effect.sleep("20 millis");
+
+  yield* Effect.fiberId.pipe(Effect.flatMap((id) => Effect.log(`Terminating subscriber fiber: ${id}`)));
+  yield* Effect.fork(Effect.succeed(bgFiber)); // Keep running in background
+});
+
+Effect.runFork(program);
+```
+
+---
+
+## Architectural Guidelines
+
+### I. Exclude Atoms and Refs from Prop Drilling
+When building clientside components, **never pass raw `Ref` or Subscription atoms as props**. This couples components tightly to specific state managers and triggers unnecessary global rerenders.
+
+Instead:
+*   Pass stable identifiers, IDs, or keys through standard props.
+*   Let child components derive their specific state slice locally from global scopes using read-only primitives (e.g., `SubscriptionRef` streams or selectors).
+*   This encapsulates state updates and preserves high rendering performance.
+
+### II. Explicit UI State Matching
+When rendering an `AsyncResult`, always cover the complete state taxonomy. Prohibit shortcuts that collapse loading and failure:
+
+```typescript
+// Correct pattern: Cover all states explicitly
+const renderUI = <A, E>(result: AsyncResult<A, E>) => {
+  switch (result._tag) {
+    case "Waiting":
+      return "Handshake pending...";
+    case "Loading":
+      return "Fetching records...";
+    case "Failure":
+      return `Failed: ${result.error.message}`;
+    case "Success":
+      return `Loaded profile: ${result.data.name}`;
+  }
+};
+```
+
+---
+
+## Gotchas and Best Practices
+
+<Aside type="caution" title="Never Treat Failure or Waiting as Empty Data">
+  Collapsing a `Failure` state into an empty default (like a `null` value or `[]` array) hides critical operational faults. When an API call crashes, the user interface must display the actual cause details so the user is informed of the failure type, rather than silently showing a misleading "No records found" visual state.
+</Aside>
+
+<Aside type="tip" title="Use cause.pretty for Diagnostic Error Renders">
+  When displaying failures originating from deep nested fiber crashes, use `Cause.pretty(cause)` to format the error text. It provides stack traces and precise tagging out-of-the-box, ensuring developers can diagnose issues directly from user-submitted screenshots.
+</Aside>
+
+---
+
+## See also
+
+- [[effect-ts/state|State coordinates]]
+- [[effect-ts/schema|Schema boundaries]]
+- [[effect-ts/observability|Observability and telemetry]]
+- [Effect-TS State Management](https://effect.website/docs/state-management/introduction/) (official)
