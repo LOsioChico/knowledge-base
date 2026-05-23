@@ -16,16 +16,16 @@ Before reading about the NestJS 10 release notes, make sure you understand:
 
 | Change | Type | Impact |
 | --- | --- | --- |
-| Node.js 16+ required | Breaking | Drop Node 12 from CI |
-| `CacheModule` → `@nestjs/cache-manager` | Breaking | Re-import; see [caching recipe](/knowledge-base/nestjs/data/caching/) |
-| CLI Plugins need TypeScript 4.8+ | Breaking | Bump `typescript` if Swagger/GraphQL plugins enabled |
+| [Node.js 16+ required](#nodejs-16) | Breaking | Drop Node 12 from CI |
+| [`CacheModule` → `@nestjs/cache-manager`](#cachemodule-moved-out-of-nestjscommon) | Breaking | Re-import; see [caching recipe](/knowledge-base/nestjs/data/caching/) |
+| [CLI Plugins need TypeScript 4.8+](#cli-plugins-require-typescript-48) | Breaking | Bump `typescript` if Swagger/GraphQL plugins enabled |
 | `ES2021` compile target | Behavior | Smaller bundles |
-| `nest start -b swc` | Feature | ~20× faster dev builds |
-| `Test#overrideModule().useModule()` | Feature | Mock whole modules in e2e tests |
-| Redis `wildcards: true` | Feature | Glob `psubscribe` patterns |
+| [`nest start -b swc`](#swc-in-the-nest-cli) | Feature | ~20× faster dev builds |
+| [`Test#overrideModule().useModule()`](#override-whole-modules-in-tests) | Feature | Mock whole modules in e2e tests |
+| [Redis `wildcards: true`](#redis-wildcard-subscriptions) | Feature | Glob `psubscribe` patterns |
 | `AsyncLocalStorage` in interceptors | Feature | [trace-id recipe](/knowledge-base/nestjs/recipes/trace-id/) |
 | [`@Search()`](#search-decorator) decorator | Feature | `SEARCH` HTTP method handler |
-| Middleware once per matched route | Behavior | Stops double-firing on shared paths |
+| [Middleware once per matched route](#middleware-runs-once-per-matched-route) | Behavior | Stops double-firing on shared paths |
 
 ## Breaking changes you'll hit
 

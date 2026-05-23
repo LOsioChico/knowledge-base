@@ -23,9 +23,9 @@ This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before div
 | Layer        | Package                        | Role                                           |
 | ------------ | ------------------------------ | ---------------------------------------------- |
 | Orchestrator | `passport`                     | Strategy registry and verify callback          |
-| Strategy     | `passport-jwt`                 | Extract and verify JWT from the request        |
-| Nest wrapper | `@nestjs/passport`             | `PassportStrategy`, `AuthGuard(name)`          |
-| Your code    | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` |
+| Strategy     | [`passport-jwt`](#jwt-strategy) | Extract and verify JWT from the request        |
+| Nest wrapper | [`@nestjs/passport`](#protected-route) | `PassportStrategy`, `AuthGuard(name)`          |
+| Your code    | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` (see [JwtStrategy](#jwt-strategy) and [JwtAuthGuard](#protected-route)) |
 
 `AuthGuard('jwt')` runs whatever strategy is registered as `'jwt'`. `@nestjs/jwt` signs at login; `passport-jwt` verifies on later requests. **Same secret in both places.**
 
@@ -318,11 +318,11 @@ Every route including login runs through `JwtAuthGuard`. Add `@Public()` to logi
 
 | Symptom                                 | Likely cause                                                  |
 | --------------------------------------- | ------------------------------------------------------------- |
-| Every authed request `401`              | Secret mismatch between `JwtModule` and `JwtStrategy`         |
-| `Unknown authentication strategy "jwt"` | `JwtStrategy` not in `providers` or `PassportModule` missing  |
-| `req.user` undefined                    | No guard, falsy `validate()` return, or `@Public()`           |
-| `401` on login with global guard        | Missing `@Public()`                                           |
-| `super(...) is not a constructor`       | Imported `Strategy` from `passport` instead of `passport-jwt` |
+| Every authed request `401`              | [Secret mismatch](#global-guard--public) between `JwtModule` and `JwtStrategy` |
+| `Unknown authentication strategy "jwt"` | `JwtStrategy` not in `providers` (see [AuthModule](#login-endpoint)) or `PassportModule` missing |
+| `req.user` undefined                    | No guard, falsy [`validate()`](#jwt-strategy) return, or [`@Public()`](#global-guard--public) |
+| `401` on login with global guard        | [Missing `@Public()`](#global-guard--public) |
+| `super(...) is not a constructor`       | Imported `Strategy` from `passport` instead of `passport-jwt` (see [JwtStrategy](#jwt-strategy)) |
 
 ## See also
 
