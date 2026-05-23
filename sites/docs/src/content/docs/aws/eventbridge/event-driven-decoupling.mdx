@@ -8,7 +8,6 @@ related:
   - "[[aws/eventbridge]]"
   - "[[aws/sqs]]"
   - "[[aws/sns]]"
-  - "[[aws/eventbridge/index]]"
 source:
   - https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-event-patterns.html
 ---
@@ -233,7 +232,7 @@ export const validateEventPayload = (
   );
 ```
 
-<Aside type="caution" title="Validate at the ingress boundary only">
+<Aside type="note" title="Validate at the ingress boundary only">
 Execute the [[nestjs/recipes/validation|validation]] once at your consumer's controller or SQS queue listener. Once the payload passes the `validateEventPayload` boundary, propagate the clean `EventBridgeEnvelope` type throughout your internal services rather than parsing/validating the values again.
 </Aside>
 
@@ -324,6 +323,28 @@ aws events put-targets \
   --region "us-east-1"
 ```
 
+Expected JSON response showing successful target association:
+```json
+{
+  "FailedEntryCount": 0,
+  "FailedEntries": []
+}
+```
+
+Counterexample response showing a failure (e.g., target event bus does not exist in target account B or routing IAM role has insufficient permissions):
+```json
+{
+  "FailedEntryCount": 1,
+  "FailedEntries": [
+    {
+      "Id": "1",
+      "ErrorCode": "ResourceNotFoundException",
+      "ErrorMessage": "Event bus target-event-bus does not exist in target account."
+    }
+  ]
+}
+```
+
 ---
 
 ## SQS vs. SNS vs. EventBridge Matrix
@@ -334,7 +355,7 @@ To make informed architectural decisions, evaluate our core cloud messaging tool
 | :--- | :--- | :--- | :--- |
 | **Model** | **Pull-based Queue** (Point-to-point buffer) | **Push-based Pub/Sub** (Broad event fan-out) | **Push-based Serverless Event Bus** (Enterprise Event Mesh) |
 | **Throughput** | Standard: Unlimited.<br/>FIFO: Capped (3,000 req/s with batch). | Practically unlimited. | Extremely high: Default 10,000+ put-events/s (soft limit, auto-scales). |
-| **Payload Filtering** | **None** (Consumers must parse the entire body or filter using raw metadata attributes). | **Metadata attributes only** (Filter policies matching numeric or string arrays). | **Deep JSON matching** (Filter patterns matching deep nested objects in event bodies). |
+| **Payload Filtering** | **None** (Consumers must parse the entire body or filter using raw metadata attributes). | **Metadata attributes only** (Filter policies matching numeric or string arrays). | [Deep JSON matching](#deep-json-pattern-matching) (Filter patterns matching deep nested objects in event bodies). |
 | **Target Integration** | Queue-centric (Lambda, HTTP, SQS targets). | Restrictive endpoints (SQS, Lambda, HTTPS, SMS, Email). | **Vast ecosystem** (35+ AWS native services, HTTP SaaS API Destinations directly). |
 | **Reliability / DLQ** | Handled by consumer visibility timeout + redrive policies on SQS queue. | Event delivery retry policies (up to 23 hours) + SQS DLQs on subscriptions. | Deep retry configurations (up to 24 hours, 185 retries) + **native target SQS DLQs**. |
 | **Ideal Workloads** | Heavy task decoupling, async jobs, worker pools, smoothing load spikes. | Real-time fan-out notifications, simple alarms, alerting stacks. | Microservices event bus, SaaS ingestion, complex multi-recipient routing. |

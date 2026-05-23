@@ -84,7 +84,7 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 
 | Need | Layer | Why |
 | --- | --- | --- |
-| Raw `req`/`res` mutation (IDs, helmet, compression) | **Middleware** | Runs first; no handler metadata |
+| Raw `req`/`res` mutation (IDs, helmet, compression) | **[Middleware](#signature)** | Runs first; no handler metadata (see worked examples in [Recipes](#recipes)) |
 | Allow/deny handler | [Guard](/knowledge-base/nestjs/fundamentals/guards/) | `ExecutionContext` + `@Roles()` metadata |
 | Validate `@Body()` / `@Param()` | [Pipe](/knowledge-base/nestjs/fundamentals/pipes/) | Argument metadata |
 | Wrap handler + response stream | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) | `next.handle()` |
@@ -117,11 +117,26 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
 }
 ```
 
+```http
+// BEFORE: Outbound Request from Client (No x-request-id):
+GET /users HTTP/1.1
+Host: localhost:3000
+
+// AFTER: Inbound request mutated by functional middleware and response header attached:
+// Mutated Inbound request headers inside handler:
+// req.headers['x-request-id'] = "1a8b9c0d-e1f2-3a4b-5c6d-7e8f9a0b1c2d"
+
+// Resulting Response Headers received by client:
+HTTP/1.1 200 OK
+X-Request-Id: 1a8b9c0d-e1f2-3a4b-5c6d-7e8f9a0b1c2d
+Content-Type: application/json; charset=utf-8
+```
+
 ### Access log (HTTP layer)
 
 | Question | Layer |
 | --- | --- |
-| Method, URL, status, duration | Middleware (`res.on("finish", ...)`) |
+| Method, URL, status, duration | Middleware (`res.on("finish", ...)` worked example: [HttpLoggerMiddleware](#access-log-http-layer)) |
 | Business events inside the handler | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) |
 
 ```typescript
@@ -144,9 +159,35 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 }
 ```
 
+```text
+// Sample Nest console access logs generated on response finish:
+[Nest] 12345  - 05/23/2026, 8:31:00 AM     LOG [HTTP] GET /users 200 45ms
+[Nest] 12345  - 05/23/2026, 8:31:05 AM     LOG [HTTP] POST /users/new 201 120ms
+[Nest] 12345  - 05/23/2026, 8:31:10 AM    WARN [HTTP] GET /users/9999 404 12ms
+```
+
 ### Raw body for signed webhooks
 
-`express.json()` consumes the stream once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
+`express.json()` consumes the [[effect-ts/streams|stream]] once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
+
+```json
+// OUTCOME 1: Body parsed before signature verification (Fails!)
+// Request payload:
+POST /webhooks/stripe
+Headers: Stripe-Signature: t=1614815340,v1=9c4a8a9a...
+Body (as parsed by express.json()):
+{ "id": "evt_123", "type": "payment_intent.succeeded" }
+
+// In-code verification result:
+// Stripe SDK throws SignatureVerificationError: "No signatures found matching the expected signature for payload"
+
+// OUTCOME 2: Raw bytes verified (Success!)
+// Raw body bytes passed:
+Buffer.from('{"id":"evt_123","type":"payment_intent.succeeded"}')
+
+// In-code verification result:
+// Stripe SDK successfully constructs Event object: { id: "evt_123", ... }
+```
 
 ```typescript
 import { json, raw } from "express";
@@ -188,10 +229,10 @@ Nest registers `express.json()` / `urlencoded()` automatically. Custom parsers n
 
 | Symptom | Likely cause |
 | --- | --- |
-| Request hangs | No `next()` and no `res.end()` |
-| Provider `undefined` in middleware | Used `app.use()` instead of `MiddlewareConsumer` |
-| Stripe signature fails | `json()` parsed body before verify: use `raw()` on webhook path |
-| `exclude()` ignored | Called after `forRoutes()`: order is `apply` → `exclude` → `forRoutes` |
+| Request hangs | No `next()` and no `res.end()` (worked example: [LoggerMiddleware](#signature)) |
+| Provider `undefined` in middleware | Used `app.use()` instead of `MiddlewareConsumer` (which bypasses DI; see correct [Module DI binding](#bind-middleware)) |
+| Stripe signature fails | `json()` parsed body before verify: use `raw()` on webhook path (worked example: [Raw body for signed webhooks](#raw-body-for-signed-webhooks)) |
+| `exclude()` ignored | Called after `forRoutes()`: order is `apply` → `exclude` → `forRoutes` ([worked example](#bind-middleware)) |
 
 ## See also
 

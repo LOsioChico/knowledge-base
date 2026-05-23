@@ -11,7 +11,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 | Primitive | Captures | Restore |
 | --- | --- | --- |
-| AMI (`create-image`) | Root + attached EBS + boot config | `run-instances` new machine |
+| AMI (`create-image`) | Root + attached EBS + boot config | [run-instances new machine](#3-restore-later) |
 | EBS snapshot | Volumes only | Attach volumes manually |
 
 <Aside type="caution" title="no-reboot flag and filesystem consistency">
@@ -26,7 +26,21 @@ Replace `PROFILE` and `REGION` in the exports below.
 
 ## 1. Snapshot every instance
 
-One AMI per instance returned by `describe-instances` (running and stopped by default). Tags on both the AMI and underlying snapshots use `Backup=manual-${STAMP}` for later cleanup:
+One AMI per instance returned by `describe-instances` (running and stopped by default). Before running the loop, execute the target query command on its own and verify that the returned list matches the exact subset of instances you intend to back up:
+
+```bash
+aws ec2 describe-instances \
+  --query 'Reservations[].Instances[].[InstanceId,Tags[?Key==`Name`]|[0].Value]' \
+  --output text
+```
+
+Expected query stdout:
+```text
+i-0123456789abcdef0	production-web-server
+i-0abcdef1234567890	production-db-replica
+```
+
+If the list is correct, proceed to run the complete loop to create an AMI for each target instance. We export `AWS_PROFILE` and `AWS_REGION` to explicitly direct our AWS CLI requests to the correct account and target region, and generate a dynamic `STAMP` variable so that all derived AMIs and snapshots share an identical point-in-time timestamp tag `Backup=manual-${STAMP}` for coordinated tracking and automated deletion cleanup:
 
 ```bash
 export AWS_PROFILE=PROFILE
@@ -50,18 +64,41 @@ aws ec2 describe-instances \
 done
 ```
 
+// Loop Output (STAMP=20260523-020000):
+```json
+{
+    "ImageId": "ami-0123456789abcdef0"
+}
+{
+    "ImageId": "ami-0abcdef0123456789"
+}
+```
+
 ## 2. Wait for available
 
-Block until every AMI tagged `Backup=manual-${STAMP}` reaches `available` (creation is async):
+Block until every AMI tagged `Backup=manual-${STAMP}` reaches `available` (creation is async). This command runs silently, blocking the shell execution until all matched AMIs reach the `available` [[effect-ts/state|state]]. On successful completion, the command exits with code `0` and prints no stdout. If the waiter times out (max attempts exceeded), it will exit with code `255` and print an error message:
 
 ```bash
 aws ec2 wait image-available \
   --filters "Name=tag:Backup,Values=manual-${STAMP}"
 ```
 
+```text
+// Success outcome (blocks silently, then exits 0):
+$ aws ec2 wait image-available --filters "Name=tag:Backup,Values=manual-20260523-020000"
+$ echo $?
+0
+
+// Timeout failure outcome (exits 255 if creation takes too long):
+$ aws ec2 wait image-available --filters "Name=tag:Backup,Values=manual-20260523-020000"
+Waiter ImageAvailable failed: Max attempts exceeded
+$ echo $?
+255
+```
+
 ## 3. Restore later
 
-Launch from the AMI ID; reattach Elastic IPs, target groups, and DNS (they do not travel with the image):
+Launch from the AMI ID; reattach Elastic IPs, target groups, and DNS (they do not travel with the image). When running the launch command, check the returned JSON to verify that the `State.Name` field is `pending` and note the newly generated `InstanceId` (which you will use to trace and manage the new instance):
 
 ```bash
 aws ec2 run-instances \
@@ -72,11 +109,58 @@ aws ec2 run-instances \
   --key-name your-key
 ```
 
+Expected JSON response from successful launch:
+```json
+{
+  "Groups": [],
+  "Instances": [
+    {
+      "InstanceId": "i-0123456789abcdef0",
+      "ImageId": "ami-xxxxxxxx",
+      "State": {
+        "Code": 0,
+        "Name": "pending"
+      },
+      "InstanceType": "t3.medium",
+      "LaunchTime": "2026-05-23T08:30:00+00:00",
+      "Placement": {
+        "AvailabilityZone": "us-east-1a",
+        "Tenancy": "default"
+      }
+    }
+  ],
+  "OwnerId": "123456789012",
+  "ReservationId": "r-0abcdef1234567890"
+}
+```
+
 Encrypted volumes need `kms:Decrypt` on the key; cross-account handoff: [[aws/ec2/ami-cross-account-copy|AMI cross-account copy]].
 
 ## Cleanup
 
 Deregister the AMI **and** delete underlying snapshots ([deregister docs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/deregister-ami.html)): deregister alone leaves billable storage.
+
+Terminal verification session proving deregistration alone leaves orphaned billable snapshots:
+
+```text
+// 1. Deregister the AMI
+$ aws ec2 deregister-image --image-id ami-0123456789abcdef0
+(No output)
+
+// 2. Query snapshots - the snapshot remains!
+$ aws ec2 describe-snapshots --filters "Name=tag:Backup,Values=manual-*" --query 'Snapshots[].SnapshotId'
+[
+    "snap-0123456789abcdef0"
+]
+
+// 3. Delete the snapshot manually to fully stop billing
+$ aws ec2 delete-snapshot --snapshot-id snap-0123456789abcdef0
+(No output)
+
+// 4. Verify snapshot is gone (empty output confirmation)
+$ aws ec2 describe-snapshots --filters "Name=tag:Backup,Values=manual-*" --query 'Snapshots[].SnapshotId'
+[]
+```
 
 ## When to use AWS Backup
 

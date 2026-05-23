@@ -13,9 +13,9 @@ Per the [Effect type docs](https://effect.website/docs/getting-started/the-effec
 
 | Channel | Name in docs | What it tracks                                                |
 | ------- | ------------ | ------------------------------------------------------------- |
-| `A`     | Success      | The value the effect yields when it succeeds.                 |
-| `E`     | Error        | The expected, recoverable errors that can occur.              |
-| `R`     | Requirements | Services and config the effect needs (`Context.Tag`, layers). |
+| `A`     | Success      | The value the effect yields when it succeeds (worked example: `{ name: string }` in [FindUser](#the-type-three-channels)). |
+| `E`     | Error        | The expected, recoverable errors that can occur (worked example: `{ _tag: "NotFound" }` in [FindUser](#the-type-three-channels)). |
+| `R`     | Requirements | Services and config the effect needs (worked example: `never` in [FindUser](#the-type-three-channels)). |
 
 Read `Effect<User, NotFound, UserRepo>` as: when you run this, you get a `User`, or it fails with `NotFound`, and you must provide a `UserRepo`:
 
@@ -142,7 +142,7 @@ Calling `Effect.runSync(program)` while `R` still includes `UserRepo` fails the 
 | Resources    | `try/finally`            | `acquireRelease`, `Scope` |
 | Retry        | Hand-rolled loops        | `Schedule`                |
 
-Because `Effect` is a description, the runtime can replay (retry), attach cleanup (scope), or stop mid-flight (interrupt) in ways that are awkward on an already-running `Promise`.
+Because `Effect` is a description, the runtime can replay (retry), attach cleanup (scope), or stop mid-flight ([[effect-ts/concurrency|interrupt]]) in ways that are awkward on an already-running `Promise`.
 
 <Aside type="note" title="No custom TypeScript compiler">
 
@@ -152,7 +152,7 @@ Effect is a normal npm package: no forked `tsc`. An earlier **TS+** experiment a
 
 ## Ecosystem snapshot
 
-Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)): platform, CLI, SQL, AI, workflow, RPC, OpenTelemetry, Vitest, and more.
+Core: single `effect` package. Adjacent: `@effect/*` ([packages directory](https://github.com/Effect-TS/effect/tree/main/packages)): [[effect-ts/platform|platform]], CLI, SQL, AI, workflow, RPC, [[effect-ts/observability|OpenTelemetry]], Vitest, and more.
 
 [[effect-ts/schema|Schema]] lives in core [`Schema.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schema.ts); standalone `@effect/schema` on npm is deprecated (merged into `effect`). Full lookup: [[effect-ts/ecosystem-map|Ecosystem map]].
 

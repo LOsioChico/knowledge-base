@@ -32,6 +32,24 @@ aws sts get-caller-identity --profile account-a --output json
 aws sts get-caller-identity --profile account-b --output json
 ```
 
+Expected output for the source and target account profiles:
+
+```json
+// Output for --profile account-a:
+{
+    "UserId": "AROA111122223333:session-name",
+    "Account": "111122223333",
+    "Arn": "arn:aws:sts::111122223333:assumed-role/MigrationRole/session-name"
+}
+
+// Output for --profile account-b:
+{
+    "UserId": "AROA444455556666:session-name",
+    "Account": "444455556666",
+    "Arn": "arn:aws:sts::444455556666:assumed-role/MigrationRole/session-name"
+}
+```
+
 ## 2. Inventory the source bucket
 
 You will recreate every setting on the destination bucket; defaults are not always what you want. Capture policy, encryption, versioning, and a baseline object count (match this after sync):
@@ -44,6 +62,11 @@ aws s3api get-bucket-encryption  --profile account-a --bucket "$SRC_BUCKET" > sr
 aws s3api get-bucket-versioning  --profile account-a --bucket "$SRC_BUCKET"
 aws s3api get-public-access-block --profile account-a --bucket "$SRC_BUCKET"
 aws s3api list-objects-v2        --profile account-a --bucket "$SRC_BUCKET" --query 'KeyCount' --output text
+```
+
+Expected baseline object count stdout (e.g. 15,240 objects):
+```text
+15240
 ```
 
 ## 3. Create destination in `account-b`
@@ -93,7 +116,7 @@ cat > src-bucket-grant.json <<EOF
 EOF
 ```
 
-Merge the grant into the saved policy before applying it. `put-bucket-policy` prints no success body; re-run `get-bucket-policy` if you need to confirm the merged statement is present.
+Merge the grant into the saved policy using `jq`, then apply the updated policy to the source bucket using `put-bucket-policy`:
 
 ```bash
 jq -s '.[0].Statement += .[1].Statement | .[0]' \
@@ -102,6 +125,14 @@ jq -s '.[0].Statement += .[1].Statement | .[0]' \
 aws s3api put-bucket-policy \
   --profile account-a --bucket "$SRC_BUCKET" \
   --policy file://src-bucket-policy-merged.json
+```
+
+The `put-bucket-policy` command prints no success body (silently succeeds with empty stdout). Re-run `get-bucket-policy` if you need to confirm the merged statement is present, or verify the silent success exit:
+
+```text
+// Command outputs nothing on success:
+$ aws s3api put-bucket-policy --profile account-a --bucket "$SRC_BUCKET" --policy file://src-bucket-policy-merged.json
+$ 
 ```
 
 For SSE-KMS objects, also grant `account-b` `kms:Decrypt` on the source CMK ([[aws/kms|KMS]] key policy, same idea as the RDS recipe).
@@ -117,6 +148,15 @@ aws s3 sync \
   "s3://$DST_BUCKET"
 ```
 
+Expected sync stdout trace with progress and file metrics:
+
+```text
+copy: s3://my-source-bucket/assets/logo.png to s3://my-dest-bucket/assets/logo.png
+copy: s3://my-source-bucket/documents/report.pdf to s3://my-dest-bucket/documents/report.pdf
+copy: s3://my-source-bucket/index.html to s3://my-dest-bucket/index.html
+Completed 3 part(s) with ~15.2 MiB/s (13 objs left)
+```
+
 For very large buckets, run from EC2 in the destination Region so client bandwidth is not the bottleneck.
 
 ## 6. Verify
@@ -128,6 +168,15 @@ aws s3api list-objects-v2 --profile account-a --bucket "$SRC_BUCKET" --query 'Ke
 aws s3api list-objects-v2 --profile account-b --bucket "$DST_BUCKET" --query 'KeyCount' --output text
 ```
 
+Expected output confirming matching counts (e.g., 15,240 objects in both):
+```text
+Source Bucket (Account A):
+15240
+
+Destination Bucket (Account B):
+15240
+```
+
 ## 7. Cut writers over
 
 Point applications at `$DST_BUCKET`, run a final sync, and keep the source bucket read-only for a rollback window.
@@ -136,11 +185,11 @@ Point applications at `$DST_BUCKET`, run a final sync, and keep the source bucke
 
 Restore `src-bucket-policy.json` from step 2 when migration is done; eventually empty and delete the source bucket.
 
-## Do not skip
-
+<Aside type="caution" title="Do not skip">
 - **Recreate bucket policy** in target: copy source, then audit principals.
 - **Enable versioning before sync** if the source had it.
 - **Public-access block** at account and bucket level.
+</Aside>
 
 ## See also
 

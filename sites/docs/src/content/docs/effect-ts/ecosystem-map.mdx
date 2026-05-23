@@ -19,7 +19,7 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 
 | Package            | What it is                                                                                                                                     | Reach for          | Skip when                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | -------------------------------------------- |
-| `effect`           | Core types, runtime, [Schema](/knowledge-base/effect-ts/schema/), `Layer`, `Stream`, …                                                         | Always             | Never                                        |
+| `effect`           | Core types, runtime, [Schema](/knowledge-base/effect-ts/schema/), `Layer`, `Stream`, … (worked example: [Quickstart](/knowledge-base/effect-ts/quickstart/))   | Always             | Never                                        |
 | `@effect/platform` | Platform-agnostic HTTP, FS, terminal, workers ([`package.json`](https://github.com/Effect-TS/effect/blob/main/packages/platform/package.json)) | Cross-runtime apps | Single-runtime-only scripts with native APIs |
 
 **Runtime adapters** (pick one):
@@ -35,11 +35,11 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 | Package                     | Reach for                                                                                                                         | Skip when                                 |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | `@effect/cli`               | Typed CLI with subcommands ([`cli` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cli/package.json))        | One-off `process.argv` scripts            |
-| `@effect/sql` + one driver  | Type-safe SQL + `Layer` clients ([`sql` README](https://github.com/Effect-TS/effect/blob/main/packages/sql/README.md))            | Heavy ORM investment you will not migrate |
+| `@effect/sql` + one driver  | Type-safe SQL + `Layer` clients (see worked database operations in [Fault-tolerant ingestion](/knowledge-base/effect-ts/fault-tolerant-ingestion/))   | Heavy ORM investment you will not migrate |
 | `@effect/ai` + one provider | Provider-swappable LLM apps ([AI intro](https://effect.website/docs/ai/introduction/))                                            | Single SDK call with no abstraction need  |
-| `@effect/workflow`          | Durable multi-step processes ([workflow README](https://github.com/Effect-TS/effect/blob/main/packages/workflow/README.md))       | In-memory sub-second tasks                |
+| `@effect/workflow`          | Durable multi-step processes (see engine integration in [Fault-tolerant ingestion](/knowledge-base/effect-ts/fault-tolerant-ingestion/))            | In-memory sub-second tasks                |
 | `@effect/rpc`               | Typed TS↔TS RPC ([rpc README](https://github.com/Effect-TS/effect/blob/main/packages/rpc/README.md))                              | Cross-language interop (gRPC/OpenAPI)     |
-| `@effect/cluster`           | Sharded entities, runners ([`cluster` package.json](https://github.com/Effect-TS/effect/blob/main/packages/cluster/package.json)) | Single-node apps                          |
+| `@effect/cluster`           | Sharded entities, runners (see sharding concepts in [Fault-tolerant ingestion](/knowledge-base/effect-ts/fault-tolerant-ingestion/))               | Single-node apps |
 
 ## Tooling packages
 
@@ -58,7 +58,7 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 
 | Package                                          | Database                  |
 | ------------------------------------------------ | ------------------------- |
-| `@effect/sql-pg`                                 | PostgreSQL                |
+| [@effect/sql-pg](/knowledge-base/effect-ts/fault-tolerant-ingestion/) | PostgreSQL                |
 | `@effect/sql-mysql2`                             | MySQL                     |
 | `@effect/sql-mssql`                              | SQL Server                |
 | `@effect/sql-clickhouse`                         | ClickHouse                |

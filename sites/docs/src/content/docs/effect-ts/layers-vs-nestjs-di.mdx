@@ -23,10 +23,10 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 | [Implementation](#the-same-graph-logger--greeter) | `Layer.succeed` / `effect` / `scoped` | `providers: [...]` |
 | [Wiring](#the-same-graph-logger--greeter) | `Effect.provide` narrows `R` | Module `imports` / `providers` |
 | [Missing dep](#the-same-graph-logger--greeter) | Compile error | Bootstrap exception |
-| [Default lifetime](#the-same-graph-logger--greeter) | Per provision graph | Singleton |
-| Per-request | Fresh layer per handler | `Scope.REQUEST` |
-| [Cleanup](#the-same-graph-logger--greeter) | `Layer.scoped` / `acquireRelease` | Lifecycle hooks |
-| [Tests](#the-same-graph-logger--greeter) | Swap `Layer` | `overrideProvider` |
+| [Default lifetime](#scope-and-memoization) | Per provision graph | Singleton |
+| [Per-request](#scope-and-memoization) | Fresh layer per handler | [Scope.REQUEST](/knowledge-base/nestjs/fundamentals/global-providers/) |
+| [Cleanup](/knowledge-base/effect-ts/scoped-resources/) | `Layer.scoped` / `acquireRelease` | [Lifecycle hooks](/knowledge-base/nestjs/fundamentals/lifecycle-hooks/) |
+| [Tests](#tests) | Swap `Layer` | [overrideProvider](/knowledge-base/nestjs/recipes/testing/) |
 
 ## The same graph: Logger + Greeter
 
@@ -70,7 +70,13 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
     // [INFO] hello, world
     ```
 
-    Omit `LoggerLive` and `Effect.runPromise(program)` does not typecheck: `R` still includes `Greeter`.
+    Omit `LoggerLive` and `Effect.runPromise(program)` does not typecheck; the compiler fails at compile time because `R` still includes `Logger` (the dependency is not satisfied):
+
+    ```text
+    // TypeScript compiler type mismatch error:
+    Argument of type 'Layer<Greeter, Logger, never>' is not assignable to parameter of type 'Layer<never, never, never>'.
+      Type 'Logger' is not assignable to type 'never'.
+    ```
 
   </TabItem>
   <TabItem label="NestJS">
@@ -102,9 +108,20 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
       app.get(Greeter).greet("world");
       await app.close();
     }
+    bootstrap();
+    // [INFO] hello, world
     ```
 
-    Omit `Logger` from `providers` and bootstrap throws: `Nest can't resolve dependencies of the Greeter`.
+    Omit `Logger` from `providers` and bootstrap throws: `Nest can't resolve dependencies of the Greeter`:
+
+    ```text
+    // Observable bootstrap failure output:
+    [Nest] 12345  - 05/23/2026, 8:31:00 AM   ERROR [ExceptionHandler] Nest can't resolve dependencies of the Greeter (?). Please make sure that the argument Logger at index [0] is available in the AppModule context.
+
+    Potential solutions:
+    - Is Logger a provider of the AppModule?
+    - Is it exported from a module imported by AppModule?
+    ```
 
   </TabItem>
 </Tabs>
@@ -144,7 +161,7 @@ In NestJS, provider identity defaults to the class itself, but you can decouple 
 
 ```typescript
 // NestJS: Decouple boundary using an injection token
-import { Injectable, Inject } from "@nestjs/common";
+import { Injectable, Inject, Module } from "@nestjs/common";
 
 export const LOGGER_TOKEN = Symbol("LOGGER_TOKEN");
 
@@ -162,6 +179,17 @@ export class GameService {
   // Injecting the boundary
   constructor(@Inject(LOGGER_TOKEN) private readonly logger: ILogger) {}
 }
+
+@Module({
+  providers: [
+    {
+      provide: LOGGER_TOKEN,
+      useClass: ConsoleLogger,
+    },
+    GameService,
+  ],
+})
+export class GameModule {}
 ```
 
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
@@ -236,7 +264,38 @@ const AppLive = makeDatabaseLive(process.env.DATABASE_URL || "fallback-url");
 
 ### Scope and memoization
 
-Nest providers are **singletons** unless scoped ([injection scopes](https://docs.nestjs.com/fundamentals/injection-scopes#provider-scope)). Effect layers memoize **per `Effect.provide`** ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)).
+Nest providers are **singletons** unless scoped (see [[nestjs/fundamentals/global-providers|injection scopes]] for details). Effect layers memoize **per `Effect.provide`** ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)).
+
+Here is how a Nest singleton is shared across the provider graph, compared to a request-scoped provider that instantiates a fresh class per request execution path:
+
+```typescript
+// NestJS: Singleton vs Request Scope lifetime
+import { Injectable, Scope } from "@nestjs/common";
+
+let next = 0;
+
+// Singleton (Default): created once, shared everywhere
+@Injectable()
+export class SingletonCounter {
+  readonly id = ++next;
+}
+
+// Request-scoped: fresh instance per request execution path
+@Injectable({ scope: Scope.REQUEST })
+export class RequestScopedCounter {
+  readonly id = ++next;
+}
+```
+
+```text
+// Outcome with SingletonCounter (injected in ServiceA and ServiceB):
+ServiceA counter ID: 1
+ServiceB counter ID: 1 // Same instance shared everywhere!
+
+// Outcome with RequestScopedCounter (fresh instance for request path):
+Request 1 -> ServiceA counter ID: 2, ServiceB counter ID: 2
+Request 2 -> ServiceA counter ID: 3, ServiceB counter ID: 3 // Isolated across requests!
+```
 
 ```ts twoslash
 import { Context, Effect, Layer, ManagedRuntime } from "effect";
@@ -285,7 +344,7 @@ await runtime.runPromise(
 
 Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease`: release on interrupt without extra flags.
 
-NestJS: `OnModuleDestroy` / `OnApplicationShutdown`: requires `app.close()` or `enableShutdownHooks()` ([lifecycle events](https://docs.nestjs.com/fundamentals/lifecycle-events)).
+NestJS: `OnModuleDestroy` / `OnApplicationShutdown`: requires `app.close()` or `enableShutdownHooks()` (see [[nestjs/fundamentals/lifecycle-hooks|lifecycle hooks]] for details).
 
 ### Tests
 
@@ -328,17 +387,53 @@ const program = Effect.gen(function* () {
 Effect.runPromise(program.pipe(Effect.provide(AppTest)));
 ```
 
-Nest: `Test.createTestingModule({...}).overrideProvider(Logger).useValue(...)`.
+NestJS provides a [[nestjs/recipes/testing|testing]] module builder that allows mocking or overriding providers at bootstrap:
+
+```typescript
+import { Injectable } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+
+@Injectable()
+class Logger {
+  log(msg: string) {
+    console.log(`[INFO] ${msg}`);
+  }
+}
+
+@Injectable()
+class Greeter {
+  constructor(private readonly logger: Logger) {}
+  greet(name: string) {
+    this.logger.log(`hello, ${name}`);
+  }
+}
+
+async function runTest() {
+  const moduleRef = await Test.createTestingModule({
+    providers: [Greeter, Logger],
+  })
+    .overrideProvider(Logger)
+    .useValue({
+      log: () => {}, // Mocked: void logger in test
+    })
+    .compile();
+
+  const greeter = moduleRef.get(Greeter);
+  greeter.greet("world");
+}
+runTest();
+// (Logger.log is bypassed: no output generated in test stdout)
+```
 
 ## When to pick which
 
 | You want | Reach for |
 | --- | --- |
 | Controllers, guards, interceptors, batteries-included HTTP | NestJS |
-| Compile-time wiring guarantees | Effect layers |
-| Per-request DI without manual layers | Nest `Scope.REQUEST` |
-| Cleanup on interruption without shutdown hooks | `Layer.scoped` |
-| Typed retry/timeout inside one service | Effect inside a Nest provider |
+| [Compile-time wiring guarantees](#compile-time-r-vs-bootstrap-di) | Effect layers |
+| Per-request DI without manual layers | Nest [Scope.REQUEST](/knowledge-base/nestjs/fundamentals/global-providers/) |
+| [Cleanup on interruption without shutdown hooks](#resource-cleanup) | `Layer.scoped` |
+| [Typed retry/timeout inside one service](#using-both-together) | Effect inside a Nest provider |
 
 ## Using both together
 
@@ -393,7 +488,7 @@ await runtime.runPromise(
 await runtime.dispose();
 ```
 
-<Aside type="note" title="Do not merge the containers">
+<Aside type="caution" title="Do not merge the containers">
 
 `Context.Tag("Logger")` and `@Injectable() class Logger` are different identities. Pick one container per service lifetime.
 

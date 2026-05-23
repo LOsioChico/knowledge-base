@@ -26,8 +26,8 @@ export class AuthGuard implements CanActivate {
 
 | Return | Effect |
 | --- | --- |
-| `true` | Continue to interceptors → pipes → handler |
-| `false` | Nest throws `ForbiddenException` (`403`) |
+| `true` | [Continue to interceptors → pipes → handler](#1-authorized-request-user-has-admin-role) |
+| `false` | [Nest throws `ForbiddenException` (`403`)](#2-unauthorized-request-role-mismatch) |
 | Thrown error | [Exception filters](/knowledge-base/nestjs/fundamentals/exception-filters/) handle it |
 
 `canActivate` returns `false` on a protected route:
@@ -50,7 +50,7 @@ export class AuthGuard implements CanActivate {
     `async` guards: JWT verify, DB lookup, remote authz service (`Promise<boolean>`).
   </TabItem>
   <TabItem label="Observable">
-    Return RxJS streams directly when the source is already Observable ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L62) uses `lastValueFrom`).
+    Return RxJS [[effect-ts/streams|streams]] directly when the source is already Observable ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L62) uses `lastValueFrom`).
   </TabItem>
 </Tabs>
 
@@ -68,9 +68,9 @@ export class AuthGuard implements CanActivate {
 
 | Method | Returns |
 | --- | --- |
-| `getHandler()` | Handler function about to run |
-| `getClass()` | Controller class (`CatsController`) |
-| `switchToHttp()` | `getRequest()`, `getResponse()`, `getNext()` |
+| `getHandler()` | Handler function about to run (worked example: [RolesGuard](#roles-guard-canonical-recipe)) |
+| `getClass()` | Controller class (`CatsController`) (worked example: [RolesGuard](#roles-guard-canonical-recipe)) |
+| `switchToHttp()` | `getRequest()`, `getResponse()`, `getNext()` (worked example: [RolesGuard](#roles-guard-canonical-recipe)) |
 | `getType()` | `'http' \| 'rpc' \| 'ws'` |
 
 `Reflector` reads metadata from `getHandler()` and `getClass()`. Source: [Execution context](https://docs.nestjs.com/fundamentals/execution-context).
@@ -140,6 +140,38 @@ export class RolesGuard implements CanActivate {
 }
 ```
 
+### Show the behavior
+
+When a route is protected with `@Roles(['admin'])`, the incoming request headers and internal user [[effect-ts/state|state]] determine whether Nest allows execution or throws a `403`:
+
+#### 1. Authorized Request (user has 'admin' role)
+* **[[effect-ts/platform|HTTP]] exchange**:
+  ```json
+  GET /cats/1
+  Headers: Authorization: Bearer <valid-admin-token>
+  (Request user is decoded as: { "username": "alice", "roles": ["admin"] })
+
+  → 200 OK
+  {
+    "id": 1
+  }
+  ```
+
+#### 2. Unauthorized Request (role mismatch)
+* **HTTP exchange**:
+  ```json
+  GET /cats/1
+  Headers: Authorization: Bearer <valid-user-token>
+  (Request user is decoded as: { "username": "bob", "roles": ["user"] })
+
+  → 403 Forbidden
+  {
+    "statusCode": 403,
+    "message": "Forbidden resource",
+    "error": "Forbidden"
+  }
+  ```
+
 | `Reflector` API | Use when |
 | --- | --- |
 | `getAllAndOverride(d, [handler, class])` | Route metadata **wins** over controller (roles, `@Public()`); [roles guard](#roles-guard-canonical-recipe) |
@@ -159,8 +191,8 @@ Nest core exports `CanActivate` and `@UseGuards` only ([`common/index.ts`](https
 | Symptom | Likely cause |
 | --- | --- |
 | `403` unexpectedly | Guard returned `false`: check order; earlier guard may have failed |
-| `this.reflector` undefined | Passed `new RolesGuard()` instead of `RolesGuard` |
-| `@Roles()` ignored | Wrong reflector method: use `getAllAndOverride` for override semantics |
+| `this.reflector` undefined | Passed `new RolesGuard()` instead of `RolesGuard` (which bypasses DI; see correct [Reflector DI injection](#roles-guard-canonical-recipe)) |
+| `@Roles()` ignored | Wrong reflector method: use `getAllAndOverride` for override semantics ([worked example](#roles-guard-canonical-recipe)) |
 | Public route blocked | Global guard runs first: add `@Public()` + `Reflector` skip ([Passport recipe](https://docs.nestjs.com/recipes/passport)) |
 
 ## See also

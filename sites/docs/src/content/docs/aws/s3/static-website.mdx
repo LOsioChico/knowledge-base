@@ -9,8 +9,8 @@ import { Aside } from "@astrojs/starlight/components";
 
 ## When to reach for it
 
-- **Bare S3 website**: ephemeral/internal/test where HTTP is acceptable.
-- **S3 + CloudFront + ACM**: production static site with HTTPS and custom domain.
+- **Bare S3 website**: ephemeral/internal/test where [[effect-ts/platform|HTTP]] is acceptable.
+- **S3 + CloudFront + [ACM](https://aws.amazon.com/certificate-manager/)**: production static site with HTTPS and custom domain.
 - **Amplify**: AWS's recommended managed path ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
 
 ## 1. Enable hosting
@@ -27,6 +27,28 @@ aws s3 website s3://my-site/ \
 --error-document error.html
 
 aws s3api put-bucket-policy --bucket my-site --policy file://policy.json
+```
+
+Terminal verification session showing empty stdout setup responses and get-bucket-website JSON:
+
+```text
+// Running setup commands returns empty response on success:
+$ aws s3api put-public-access-block --bucket my-site --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
+(No output)
+
+$ aws s3 website s3://my-site/ --index-document index.html --error-document error.html
+(No output)
+
+// Running get-bucket-website to verify the setup:
+$ aws s3api get-bucket-website --bucket my-site
+{
+    "IndexDocument": {
+        "Suffix": "index.html"
+    },
+    "ErrorDocument": {
+        "Key": "error.html"
+    }
+}
 ```
 
 `policy.json`:
@@ -59,11 +81,38 @@ http://my-site.s3-website.us-west-2.amazonaws.com
 | ----------- | --------------- | ---------------------------- |
 | HTTPS       | Yes             | **No**                       |
 | Methods     | Full S3 API     | GET/HEAD only                |
-| Errors      | XML             | HTML (`error.html`)          |
-| Bucket root | Object list XML | `index.html`                 |
+| [Errors](#spa-error-document-pattern)      | XML             | HTML (`error.html`)          |
+| [Bucket root](#website-vs-rest-endpoint) | Object list XML | `index.html`                 |
 | Redirects   | No              | Per-object and routing rules |
 
 Use the **website** endpoint for static sites: REST returns XML listings.
+
+```http
+// REST Endpoint Bucket Root Request (Returns XML):
+GET / HTTP/1.1
+Host: my-bucket.s3.amazonaws.com
+
+HTTP/1.1 200 OK
+Content-Type: application/xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+  <Name>my-bucket</Name>
+  <Contents>
+    <Key>index.html</Key>
+    <Size>1240</Size>
+  </Contents>
+</ListBucketResult>
+
+// Website Endpoint Bucket Root Request (Serves Index Document):
+GET / HTTP/1.1
+Host: my-bucket.s3-website-us-east-1.amazonaws.com
+
+HTTP/1.1 200 OK
+Content-Type: text/html
+
+<!DOCTYPE html><html><body><h1>Hello S3 Website</h1></body></html>
+```
 
 <Aside type="caution" title="Website endpoint is HTTP-only">
 
@@ -77,11 +126,39 @@ No HTTPS on `s3-website-*.amazonaws.com`. Front with CloudFront + ACM or Amplify
 2. Website hosting + public-read policy.
 3. DNS CNAME to `www.example.com.s3-website.<region>.amazonaws.com`.
 
-Apex domains: Route 53 alias records (CNAME not allowed at apex).
+Apex domains: [Route 53](https://aws.amazon.com/route53/) alias records (CNAME not allowed at apex).
 
 ## SPA error document pattern
 
 Point `error-document` at `index.html` for client-side routing: HTTP status stays `404` (SEO/analytics impact). CloudFront custom error responses can rewrite to `200`.
+
+```http
+// Request input to deep link via CloudFront:
+GET /dashboard HTTP/1.1
+Host: www.example.com
+
+// CloudFront Response (rewritten using a Custom Error Response rule: 404 -> 200 with /index.html):
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 12540
+
+<!DOCTYPE html><html>...[index.html contents served under 200 status]...</html>
+```
+
+Visual HTTP exchange showing a deep-link request receiving a `404 Not Found` response with index.html body contents:
+
+```text
+// Request input to deep link (e.g. /dashboard):
+GET /dashboard HTTP/1.1
+Host: my-site.s3-website-us-east-1.amazonaws.com
+
+// Resulting S3 website response (trapped by error document):
+HTTP/1.1 404 Not Found
+Content-Type: text/html
+Content-Length: 12540
+
+<!DOCTYPE html><html>...[index.html contents served under 404 status]...</html>
+```
 
 ## Costs
 

@@ -15,7 +15,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 1. Pick the primitive (`acquireUseRelease` vs `acquireRelease` + `Scope`).
 2. Register cleanup (release / finalizer).
 3. Discharge `Scope` with `Effect.scoped` or `Layer.scoped`.
-4. Compose with timeout, retry, and interrupt: finalizers still run.
+4. Compose with timeout, retry, and [[effect-ts/concurrency|interrupt]]: finalizers still run.
 
 </Steps>
 
@@ -223,7 +223,27 @@ Transaction successfully completed.
 Connection 1 cleanly closed.
 ```
 
-If any query in the block had thrown a runtime failure or timed out, the `Connection 1 cleanly closed.` log would still print, illustrating the bulletproof guarantees of the Effect resource runtime.
+If a query in the block throws a failure (for example, a database exception or query execution timeout), the finalizer still executes cleanly:
+
+```text
+Starting transactional work...
+Initializing connection 1 handshake...
+Success: 'SELECT * FROM products' executed on connection 1
+// Query 2 fails with: Error: UPDATE query timeout!
+Connection 1 cleanly closed.
+```
+
+The finalizer safety is represented in the sequence below:
+
+```text
+[ Client ] ────── SELECT * FROM products ──────► [ Database ]
+[ Client ] ◄────────── Success Response ──────── [ Database ]
+
+[ Client ] ─── UPDATE inventory SET stock = 10 ──► [ Database ] (Fails!)
+
+[ Client ] ────────── (Query Failure) ──────────► [ Database ]
+[ Runtime ] ─────── CLOSE Connection 1 ─────────► [ Database ] (Guaranteed!)
+```
 
 ## Finalizer ordering
 
@@ -247,6 +267,42 @@ Effect.runPromise(Effect.scoped(program));
 ## Retry, timeout, and interrupt
 
 When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try: the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
+
+```ts twoslash
+import { Effect, Console } from "effect";
+
+let attempts = 0;
+
+const program = Effect.acquireUseRelease(
+  Effect.sync(() => {
+    attempts++;
+    console.log(`[Acquire] Resource attempt ${attempts}`);
+    return { id: attempts };
+  }),
+  (res) =>
+    Effect.gen(function* () {
+      console.log(`[Use] Using resource ${res.id}`);
+      if (res.id < 3) {
+        return yield* Effect.fail("Temporary failure");
+      }
+      return "Success!";
+    }),
+  (res) => Effect.sync(() => console.log(`[Release] Releasing resource ${res.id}`))
+).pipe(
+  Effect.retry({ times: 3 })
+);
+
+Effect.runPromise(program);
+// [Acquire] Resource attempt 1
+// [Use] Using resource 1
+// [Release] Releasing resource 1
+// [Acquire] Resource attempt 2
+// [Use] Using resource 2
+// [Release] Releasing resource 2
+// [Acquire] Resource attempt 3
+// [Use] Using resource 3
+// success returned: "Success!"
+```
 
 <Aside type="caution" title="Forgot Effect.scoped">
 

@@ -90,7 +90,7 @@ Run: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 | `runPromise` | `Promise<A>`            | App edge: HTTP handlers, tests, `async/await`; [worked example](#2-run-it) |
 | `runFork`    | `Fiber`                 | Background or interruptible work; [worked example](#2-run-it)              |
 
-<Aside type="note" title="Which runner to use">
+<Aside type="caution" title="Which runner to use">
 
 Pick the runner at the **entry point** only. Inside the program, compose with `pipe` / [[effect-ts/composition|Effect.gen]]; do not sprinkle `runSync` through domain code.
 

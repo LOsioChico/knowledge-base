@@ -217,6 +217,7 @@ Skipping any step is a bug.
 - `related:` is the safety net (machine-readable), wikilinks are the surface (reader-facing). Both must agree: if it's in `related:`, the body should link it at first mention; if the body links it, it must be in `related:`.
 - Avoid stub links to non-existent notes. If you reference a future note, mark it explicitly: `[[microservices/kafka|Kafka (planned)]]`.
 - **Starlight folder index slugs**: In Starlight MDX pages under `sites/docs/`, folder index pages do NOT contain `/index` in their route slugs. The route slug is the folder name itself (e.g. `[[aws/sqs]]` or `[[aws/eventbridge]]`). Using the `/index` basename (such as `[[aws/sqs/index]]` or `[[aws/eventbridge/index]]`) in wikilinks or frontmatter `related:` lists is forbidden and will fail the `bun run lint:ci` compilation checks. Always reference the bare folder name for folder index pages.
+- **No aliased wikilinks inside markdown tables**: Obsidian aliased wikilinks (`[[slug|label]]`) use the pipe character (`|`), which breaks markdown table column parsing. Inside all tables under `sites/docs/`, use standard markdown links `[label](/knowledge-base/slug/)` instead (enforced by `bun run lint:mdx-table-wikilinks`).
 
 ## Recipe template
 

@@ -191,7 +191,7 @@ GET /api/records/45
 
 A major footgun in standard promise wrappers is blindly retrying all failures. If an upstream server returns a `404 Not Found` (`HttpError`) or a payload violates our `Schema` (`ParseFailure`), retrying is useless and wastes compute resources.
 
-For example, when a `ParseFailure` occurs due to an invalid JSON structure, the schema [[nestjs/recipes/validation|validation]] rejects it immediately with our custom `ParseFailure` error shape:
+For example, when a `ParseFailure` occurs due to an invalid JSON structure, the [[effect-ts/schema|Effect Schema]] rejects it immediately with our custom `ParseFailure` error shape:
 
 ```json
 // Mock Input Payload with missing required "completed" field:
@@ -246,6 +246,24 @@ while: (error) => error._tag === "FetchError" || error._tag === "TimeoutExceptio
 
 `Promise.all` executes elements with unbounded concurrency, which can overwhelm databases or trigger DDOS rate limits. Using `Effect.forEach` with `{ concurrency: 3 }` ensures that only three HTTP requests run in parallel at any given moment.
 
+Consider the timing and sequencing differences between a sequential run and a bounded parallel run:
+
+```text
+// Sequential Loop execution trace (concurrency: 1):
+[01:00:00.000] ID: 1 started...
+[01:00:01.000] ID: 1 completed.
+[01:00:01.001] ID: 2 started...
+[01:00:02.000] ID: 2 completed.
+Total time: 2.00 seconds.
+
+// Bounded Parallel execution trace (concurrency: 3):
+[01:00:00.000] ID: 1 started... (Fiber 1)
+[01:00:00.000] ID: 2 started... (Fiber 2)
+[01:00:00.000] ID: 3 started... (Fiber 3)
+[01:00:01.000] ID: 1, 2, 3 completed in parallel.
+Total time: 1.00 seconds.
+```
+
 ---
 
 ## Gotchas and Best Practices
@@ -285,7 +303,36 @@ const safeIngestion = Effect.forEach(
 );
 ```
 
-This returns a list containing both successful outcomes (`Either.Right`) and failed outcomes (`Either.Left`).
+This returns a list containing both successful outcomes (`Either.Right`) and failed outcomes (`Either.Left`):
+
+```json
+[
+  {
+    "_tag": "Right",
+    "right": {
+      "id": 1,
+      "title": "Clean codebase",
+      "completed": true
+    }
+  },
+  {
+    "_tag": "Left",
+    "left": {
+      "_tag": "HttpError",
+      "status": 500,
+      "message": "Gateway Timeout"
+    }
+  },
+  {
+    "_tag": "Right",
+    "right": {
+      "id": 3,
+      "title": "Write unit tests",
+      "completed": false
+    }
+  }
+]
+```
 
 </Aside>
 

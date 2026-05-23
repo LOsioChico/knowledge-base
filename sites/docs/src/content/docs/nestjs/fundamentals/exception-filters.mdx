@@ -11,10 +11,37 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Nest ships a global filter:
 
-- `HttpException` (and subclasses) → that exception's `status` + response body.
-- Anything else → `500` with `{ "statusCode": 500, "message": "Internal server error" }`.
+- `HttpException` (and subclasses) → that exception's `status` + response body:
+  ```http
+  // Request:
+  GET /todos/9999
 
-Write a custom filter when you need a stable JSON shape, domain-error mapping, or logging to Sentry/Datadog.
+  // Response:
+  HTTP/1.1 404 Not Found
+  Content-Type: application/json; charset=utf-8
+
+  {
+    "statusCode": 404,
+    "message": "Cannot GET /todos/9999",
+    "error": "Not Found"
+  }
+  ```
+- Anything else → `500` with `{ "statusCode": 500, "message": "Internal server error" }`:
+  ```http
+  // Request:
+  GET /todos
+
+  // Response:
+  HTTP/1.1 500 Internal Server Error
+  Content-Type: application/json; charset=utf-8
+
+  {
+    "statusCode": 500,
+    "message": "Internal server error"
+  }
+  ```
+
+Write a custom filter when you need a stable JSON shape, domain-error mapping, or [[effect-ts/observability|logging]] to Sentry/Datadog.
 
 <Aside type="caution" title="Filters do not catch middleware errors">
 
@@ -29,11 +56,34 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
     Controller or service throws with a custom filter registered:
 
     ```typescript
-import { Get, Param } from "@nestjs/common";
+    import { Controller, Get, Param, UseFilters, ExceptionFilter, Catch, ArgumentsHost, HttpStatus } from "@nestjs/common";
+    import { Response } from "express";
 
-@Get(":id")
-    findOne(@Param("id") id: string) {
-      throw new UserNotFoundError(id);
+    // Standalone mock to ensure complete copy-pasteability
+    export class UserNotFoundError extends Error {
+      constructor(public readonly id: string) {
+        super(`User ${id} not found`);
+      }
+    }
+
+    @Catch(UserNotFoundError)
+    export class UserNotFoundFilter implements ExceptionFilter<UserNotFoundError> {
+      catch(exception: UserNotFoundError, host: ArgumentsHost): void {
+        const response = host.switchToHttp().getResponse<Response>();
+        response.status(HttpStatus.NOT_FOUND).json({
+          error: "USER_NOT_FOUND",
+          userId: exception.id,
+        });
+      }
+    }
+
+    @Controller("users")
+    @UseFilters(UserNotFoundFilter)
+    export class UsersController {
+      @Get(":id")
+      findOne(@Param("id") id: string) {
+        throw new UserNotFoundError(id);
+      }
     }
     ```
 
@@ -52,7 +102,7 @@ import { Get, Param } from "@nestjs/common";
     }
     ```
 
-    This is the normal filter path: the exception bubbles through Nest, the filter matches, and the filter owns the HTTP body.
+    This is the normal filter path: the exception bubbles through Nest, the filter matches, and the filter owns the [[effect-ts/platform|HTTP]] body.
 
   </TabItem>
   <TabItem label="Outside Nest">
@@ -76,10 +126,24 @@ import { Get, Param } from "@nestjs/common";
 
     Observable result:
 
-    ```text
-    Your custom Nest filter does not run.
-    The response shape now comes from Express/Fastify error handling or your adapter-level setup.
+    ```http
+    HTTP/1.1 500 Internal Server Error
+    Content-Type: text/html; charset=utf-8
+    Content-Length: 139
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="utf-8">
+    <title>Error</title>
+    </head>
+    <body>
+    <pre>Error: bad signature</pre>
+    </body>
+    </html>
     ```
+
+    Notice that your custom Nest filter does not run; the response shape comes directly from the underlying HTTP adapter (Express/Fastify) error handling instead of Nest's exception zone.
 
     That is the boundary: middleware failures do not pass through `@Catch()`.
 
@@ -134,27 +198,72 @@ Every other layer: **global → controller → route**. Filters: **route → con
   <TabItem label="Binding">
     | Scope | How |
     | --- | --- |
-    | Global | `APP_FILTER` (preferred) or `useGlobalFilters()` |
-    | Controller / route | `@UseFilters(MyFilter)` |
+    | Global | [APP_FILTER](/knowledge-base/nestjs/fundamentals/global-providers/) (preferred) or [useGlobalFilters()](/knowledge-base/nestjs/fundamentals/global-providers/) |
+    | Controller / route | [@UseFilters(MyFilter)](#catch-all-ordering) |
 
     [[nestjs/fundamentals/global-providers|Global enhancers]] for `APP_FILTER` vs `useGlobalFilters`.
 
   </TabItem>
   <TabItem label="Catch-all ordering">
+    <a id="catch-all-ordering"></a>
     `@UseFilters` array is **reversed** before search. Put catch-all **first** in the decorator so typed filters win:
 
     ```typescript
-import { UseFilters } from "@nestjs/common";
+    import { Controller, Get, UseFilters, ExceptionFilter, Catch, HttpException } from "@nestjs/common";
 
-// Catch-all first in source → HttpExceptionFilter checked before catch-all
-    @UseFilters(CatchEverythingFilter, HttpExceptionFilter)
+    // Dummy filters for compiler/import completeness
+    @Catch() export class CatchEverythingFilter implements ExceptionFilter { catch() {} }
+    @Catch(HttpException) export class HttpExceptionFilter implements ExceptionFilter { catch() {} }
+
+    @Controller("cats")
+    @UseFilters(CatchEverythingFilter, HttpExceptionFilter) // Catch-all first in source → HttpExceptionFilter checked before catch-all
+    export class CatsController {
+      @Get()
+      findAll() {}
+    }
+    ```
+
+    ```http
+    // Correct Order HTTP outcomes:
+
+    // 1. Throwing NotFoundException (HttpExceptionFilter wins and runs):
+    GET /cats
+    → HTTP/1.1 404 Not Found
+    { "statusCode": 404, "message": "Not Found" }
+
+    // 2. Throwing generic Error (CatchEverythingFilter wins and runs):
+    GET /cats
+    → HTTP/1.1 500 Internal Server Error
+    { "statusCode": 500, "message": "Internal server error" }
     ```
 
     ```typescript
-import { UseFilters } from "@nestjs/common";
+    import { Controller, Get, UseFilters, ExceptionFilter, Catch, HttpException } from "@nestjs/common";
 
-// Wrong: catch-all last swallows typed filters
-    @UseFilters(HttpExceptionFilter, CatchEverythingFilter)
+    // Dummy filters for compiler/import completeness
+    @Catch() export class CatchEverythingFilter implements ExceptionFilter { catch() {} }
+    @Catch(HttpException) export class HttpExceptionFilter implements ExceptionFilter { catch() {} }
+
+    @Controller("cats")
+    @UseFilters(HttpExceptionFilter, CatchEverythingFilter) // Wrong: catch-all last swallows typed filters
+    export class CatsController {
+      @Get()
+      findAll() {}
+    }
+    ```
+
+    ```http
+    // Incorrect Order HTTP outcomes (swallowed behavior):
+
+    // 1. Throwing NotFoundException (swallowed by CatchEverythingFilter!):
+    GET /cats
+    → HTTP/1.1 500 Internal Server Error
+    { "statusCode": 500, "message": "Internal server error" }
+
+    // 2. Throwing generic Error (CatchEverythingFilter wins and runs):
+    GET /cats
+    → HTTP/1.1 500 Internal Server Error
+    { "statusCode": 500, "message": "Internal server error" }
     ```
 
     [Catch everything](https://docs.nestjs.com/exception-filters#catch-everything)
@@ -172,12 +281,12 @@ Sibling filters do not chain. If your `catch()` method throws, the filter that a
 
 | Class                          | Status |
 | ------------------------------ | ------ |
-| `BadRequestException`          | 400    |
+| [BadRequestException](#with-validationpipe)          | 400    |
 | `UnauthorizedException`        | 401    |
 | `ForbiddenException`           | 403    |
-| `NotFoundException`            | 404    |
+| [NotFoundException](#catch-all-ordering)            | 404    |
 | `ConflictException`            | 409    |
-| `InternalServerErrorException` | 500    |
+| [InternalServerErrorException](#catch-all-ordering) | 500    |
 
 Throw these from services/controllers; filters map domain errors when you want stable `error` codes.
 
@@ -211,32 +320,109 @@ export class UserNotFoundFilter implements ExceptionFilter<UserNotFoundError> {
 }
 ```
 
-Controller: `throw new UserNotFoundError(id)`: filter owns HTTP shape.
+Register the filter on your controller or route handler:
 
-`GET /users/missing-id` with filter registered:
+```typescript
+import { Controller, Get, Param, UseFilters } from "@nestjs/common";
+import { UserNotFoundError } from "./user-not-found.error";
+import { UserNotFoundFilter } from "./user-not-found.filter";
 
-```json
-{
-  "error": "USER_NOT_FOUND",
-  "userId": "missing-id"
+@Controller("users")
+export class UsersController {
+  @Get(":id")
+  @UseFilters(UserNotFoundFilter)
+  findOne(@Param("id") id: string) {
+    throw new UserNotFoundError(id);
+  }
 }
 ```
 
-(Status `404` from `HttpStatus.NOT_FOUND`.)
+* **HTTP exchange**:
+  ```json
+  GET /users/missing-id
+
+  → 404 Not Found
+  {
+    "error": "USER_NOT_FOUND",
+    "userId": "missing-id"
+  }
+  ```
 
 ### Platform-agnostic catch-all
 
-Use `HttpAdapterHost` instead of `response.json()` so the same filter works on Express and Fastify ([HTTP adapter](https://docs.nestjs.com/faq/http-adapter)).
+Use `HttpAdapterHost` instead of accessing the platform-specific response object directly so the same filter works seamlessly on both Express and Fastify ([HTTP adapter](https://docs.nestjs.com/faq/http-adapter)).
+
+```typescript
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
+import { HttpAdapterHost } from "@nestjs/core";
+
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const { httpAdapter } = this.httpAdapterHost;
+    const ctx = host.switchToHttp();
+
+    const httpStatus =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const responseBody = {
+      statusCode: httpStatus,
+      timestamp: new Date().toISOString(),
+      path: httpAdapter.getRequestUrl(ctx.getRequest()),
+    };
+
+    httpAdapter.reply(ctx.getResponse(), responseBody, httpStatus);
+  }
+}
+```
+
+* **HTTP exchange**:
+  ```http
+  GET /non-existent-route
+
+  → 500 Internal Server Error
+  {
+    "statusCode": 500,
+    "timestamp": "2026-05-23T08:35:00.000Z",
+    "path": "/non-existent-route"
+  }
+  ```
 
 ## With ValidationPipe
 
 `ValidationPipe` throws `BadRequestException` by default. Pair with a filter only when you need a custom error envelope; otherwise the built-in global filter is enough ([[nestjs/recipes/validation|validation recipe]]).
 
+```http
+// Request with invalid payload:
+POST /users
+Content-Type: application/json
+
+{
+  "email": "invalid-email-format"
+}
+
+// Default ValidationPipe 400 response:
+HTTP/1.1 400 Bad Request
+Content-Type: application/json; charset=utf-8
+
+{
+  "statusCode": 400,
+  "message": [
+    "email must be an email"
+  ],
+  "error": "Bad Request"
+}
+```
+
 ## Common errors
 
 | Symptom                     | Likely cause                                                       |
 | --------------------------- | ------------------------------------------------------------------ |
-| Typed filter never runs     | Catch-all listed after typed filter in `@UseFilters`               |
+| Typed filter never runs     | Catch-all listed after typed filter in `@UseFilters` (worked example: [Catch-all ordering](#catch-all-ordering)) |
 | "No HTTP adapter"           | `new Filter()` instead of class binding                            |
 | Empty response after filter | `async catch()` rejected without await: use sync or handle promise |
 

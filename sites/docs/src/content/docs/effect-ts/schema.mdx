@@ -41,9 +41,9 @@ While Zod is an industry-standard validation library, `Effect Schema` is designe
 | Dimension | Zod | Effect Schema |
 | --- | --- | --- |
 | **Design Paradigm** | Imperative, builder-pattern based fluent API. | Functional, declarative, combinator-based compositional API. |
-| **Type Parity** | Derived TS types are separate: can drift on complex transformations or custom checks. | 100% type-safe compile-time/runtime parity: derives exact `Type` and `Encoded` types from the same tree. |
-| **Error Channel** | Throws raw `ZodError` or returns `{ success: false, error }` object structure. | Integrated directly into Effect's typed error channel as `ParseResult.ParseError` inside `Effect<A, ParseError>`. |
-| **Transformations** | `.transform()` allows arbitrary mutations but type-inference hides the original wire shape. | Dual-channel transformations (`Schema.transform`) preserve both `Encoded` (input) and `Type` (output) schemas, ensuring full bidirectional capability. |
+| **Type Parity** | Derived TS types are separate: can drift on complex transformations or custom checks. | 100% type-safe compile-time/runtime parity: derives exact `Type` and `Encoded` types from the same tree (worked example: [Infer types](#2-infer-the-typescript-types)). |
+| **Error Channel** | Throws raw `ZodError` or returns `{ success: false, error }` object structure. | Integrated directly into Effect's typed error channel as `ParseResult.ParseError` inside `Effect<A, ParseError>` (worked example: [Domain Error Mapping](#5-domain-error-mapping)). |
+| **Transformations** | `.transform()` allows arbitrary mutations but type-inference hides the original wire shape. | Dual-channel transformations (`Schema.transform`) preserve both `Encoded` (input) and `Type` (output) schemas, ensuring full bidirectional capability (worked example: [Bidirectional Transformations](#3-bidirectional-transformations)). |
 | **Performance** | Standard runtime evaluation with average overhead. | Highly optimized code-generation: compiles schemas into hyper-fast specialized JS functions at runtime. |
 
 ---
@@ -221,13 +221,13 @@ const result = Effect.runSyncExit(parseTodo(badInput));
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="Do not runSync on untrusted boundaries directly">
+<Aside type="caution" title="Do not runSync on untrusted boundaries directly">
 
 `Effect.runSync` will throw a native `FiberFailure` exception if the underlying effect fails. Because `decodeUnknown` can fail when given invalid data, executing `runSync` without handling the error first will crash the process. Use `Effect.runSyncExit` or handle/map the error using operations like `catchTag` before execution.
 
 </Aside>
 
-<Aside type="caution" title="Validate at the boundary only">
+<Aside type="note" title="Validate at the boundary only">
 
 Parse your incoming network payloads or [[nestjs/recipes/configuration|configuration]] objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
 

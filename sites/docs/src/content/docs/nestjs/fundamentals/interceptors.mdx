@@ -32,7 +32,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
 1. **Pre**: code before `next.handle()` (auth side effects, cache lookup).
 2. **Handler**: `next.handle()` returns `Observable<T>`; skipping it skips the handler.
-3. **Post**: RxJS operators on that stream (`map`, `tap`, `catchError`, `timeout`).
+3. **Post**: RxJS operators on that [[effect-ts/streams|stream]] (`map`, `tap`, `catchError`, `timeout`).
 
 </Steps>
 
@@ -73,7 +73,7 @@ flowchart LR
     H --> RPo[Route post] --> CPo[Controller post] --> GPo[Global post]
 ```
 
-A global logging interceptor sees the **final** response after route-level `map()` transforms.
+A global [[effect-ts/observability|logging]] interceptor sees the **final** response after route-level `map()` transforms.
 
 **Example:** global wraps `{ data }`, route adds `meta`: client sees both transforms; global's post runs last.
 
@@ -128,6 +128,34 @@ export class CacheInterceptor implements NestInterceptor {
 }
 ```
 
+### Show the behavior
+
+Suppose a client makes two successive requests to a route `/cats` using `CacheInterceptor`:
+
+#### 1. First request (cache miss)
+* **Internal [[effect-ts/state|state]]**: Cache map is empty. Handler executes and queries database.
+* **[[effect-ts/platform|HTTP]] exchange**:
+  ```json
+  GET /cats
+
+  → 200 OK
+  [
+    { "id": 1, "name": "Tom" }
+  ]
+  ```
+
+#### 2. Second request (cache hit)
+* **Internal state**: Cache hit. Handler is skipped, response is returned instantly from the in-memory map.
+* **HTTP exchange**:
+  ```json
+  GET /cats
+
+  → 200 OK
+  [
+    { "id": 1, "name": "Tom" }
+  ]
+  ```
+
 ### Per-route timeout
 
 ```typescript
@@ -149,13 +177,29 @@ export class TimeoutInterceptor implements NestInterceptor {
 }
 ```
 
+### Show the behavior
+
+When a route handler is wrapped with `TimeoutInterceptor` and takes longer than 5000ms to resolve (e.g., a slow database query):
+
+* **HTTP exchange**:
+  ```json
+  GET /cats/slow-route
+
+  → 408 Request Timeout
+  {
+    "statusCode": 408,
+    "message": "Request Timeout",
+    "error": "Request Timeout"
+  }
+  ```
+
 Serialization: [[nestjs/recipes/serialization|response serialization]] (`ClassSerializerInterceptor`). Caching: [[nestjs/data/caching|caching with @nestjs/cache-manager]].
 
 ## Common errors
 
 | Symptom | Likely cause |
 | --- | --- |
-| Handler never runs | Returned `of(cached)` or threw in pre without `next.handle()` |
+| Handler never runs | Returned `of(cached)` or threw in pre without `next.handle()` (worked example: [CacheInterceptor](#cache-short-circuit)) |
 | DI `undefined` | Passed `new Interceptor()` to `@UseInterceptors` |
 | Pre-phase throw not caught by `catchError` on stream | Error never reached `next.handle()`: use `try/catch` or `defer` |
 

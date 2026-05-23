@@ -35,7 +35,7 @@ let count = 0;
 const flaky = Effect.try({
   try: () => {
     count++;
-    if (count < 3) throw new Error(`attempt ${count} failed`);
+    if (count < 4) throw new Error(`attempt ${count} failed`);
     return `ok on attempt ${count}`;
   },
   catch: (e) => e as Error,
@@ -44,7 +44,7 @@ const flaky = Effect.try({
 const program = Effect.retry(flaky, { times: 3 });
 
 console.log(Effect.runSync(program));
-// ok on attempt 3
+// ok on attempt 4
 ```
 
 Here is the step-by-step visual execution trace of the synchronous runtime execution:
@@ -56,8 +56,10 @@ Here is the step-by-step visual execution trace of the synchronous runtime execu
 [22:50:00.003] 💥 Attempt #2 starting... count = 2
 [22:50:00.004] ⚠️ Attempt #2 failed with: "attempt 2 failed" (retrying...)
 [22:50:00.005] 💥 Attempt #3 starting... count = 3
-[22:50:00.006] ✅ Attempt #3 succeeded! Returning "ok on attempt 3"
-[22:50:00.007] 💾 Output: "ok on attempt 3"
+[22:50:00.006] ⚠️ Attempt #3 failed with: "attempt 3 failed" (retrying...)
+[22:50:00.007] 💥 Attempt #4 starting... count = 4
+[22:50:00.008] ✅ Attempt #4 succeeded! Returning "ok on attempt 4"
+[22:50:00.009] 💾 Output: "ok on attempt 4"
 ```
 
 `{ times: 3 }` means three **extra** attempts after the first (four tries total) ([retrying docs](https://effect.website/docs/error-management/retrying/#retry)).
@@ -102,7 +104,16 @@ Here is the step-by-step visual execution trace illustrating the exponential bac
 [22:50:00.078] 💾 Output: "succeeded after 4 attempts"
 ```
 
-`Schedule.exponential` alone recurs **forever** ([built-in schedules](https://effect.website/docs/scheduling/built-in-schedules/#exponential)). Always intersect with `Schedule.recurs(n)` or use `times` / `until`.
+`Schedule.exponential` alone recurs **forever** ([built-in schedules](https://effect.website/docs/scheduling/built-in-schedules/#exponential)). Always intersect with `Schedule.recurs(n)` or use `times` / `until`. If you do not limit it, the retry loop continues infinitely with ever-growing delays:
+
+```text
+[22:50:00.000] Attempt #1 failed. Delaying 10ms...
+[22:50:00.010] Attempt #2 failed. Delaying 20ms...
+[22:50:00.030] Attempt #3 failed. Delaying 40ms...
+[22:50:00.070] Attempt #4 failed. Delaying 80ms...
+...
+[22:55:00.000] Attempt #15 failed. Delaying 163.84s... (Loops forever!)
+```
 
 ## 3. Jitter
 
@@ -114,6 +125,16 @@ const policy = Schedule.intersect(
   Schedule.recurs(5),
 );
 // Each delay is ~80%–120% of the nominal value.
+```
+
+```text
+// Nominal delays: 100ms, 200ms, 400ms, 800ms, 1600ms
+// Execution trace with jitter (randomized between 80% and 120% of nominal):
+[08:00:00.000] Attempt #1 failed. Nominal delay: 100ms. Actual delay: 92ms.
+[08:00:00.092] Attempt #2 failed. Nominal delay: 200ms. Actual delay: 218ms.
+[08:00:00.310] Attempt #3 failed. Nominal delay: 400ms. Actual delay: 382ms.
+[08:00:00.692] Attempt #4 failed. Nominal delay: 800ms. Actual delay: 840ms.
+[08:00:01.532] Attempt #5 failed. Nominal delay: 1600ms. Actual delay: 1320ms.
 ```
 
 Use when many clients can fail together (thundering herd). See [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]] for a full pipeline.
@@ -193,7 +214,7 @@ Effect.runPromise(resilient).then(console.log);
   <TabItem label="retry vs repeat">
     | Combinator | Triggers on |
     | --- | --- |
-    | `Effect.retry` | **Failure** |
+    | [Effect.retry](#1-retry-n-times) | **Failure** |
     | `Effect.repeat` | **Success** |
 
     Same `Schedule` machinery, opposite trigger. `repeat` polls until success; `retry` recovers from transient failure.
