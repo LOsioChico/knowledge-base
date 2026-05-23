@@ -16,7 +16,7 @@ Before diving into the SWC builder setup, make sure you understand:
 
 | Project shape | Builder | Type-check |
 | --- | --- | --- |
-| Single Nest app (default here) | `swc` | Always `--type-check` or `typeCheck: true` |
+| [Single Nest app (default here)](#setup) | `swc` | Always `--type-check` or `typeCheck: true` |
 | `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required**: plugins need `tsc` metadata |
 | Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](/knowledge-base/nestjs/recipes/monorepo/) |
 | SWC circular-metadata / custom transformer bug | `tsc` fallback | Built-in |
@@ -121,9 +121,13 @@ Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com
 
     ```typescript
     // vitest.config.ts
-    import { resolve } from "node:path";
+    import { dirname, resolve } from "node:path";
+    import { fileURLToPath } from "node:url";
     import swc from "unplugin-swc";
     import { defineConfig } from "vitest/config";
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
 
     export default defineConfig({
       test: { globals: true, root: "./" },

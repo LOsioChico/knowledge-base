@@ -5,7 +5,7 @@ description: "Choose the smallest NestJS test that proves the behavior: compile 
 
 import { Aside } from "@astrojs/starlight/components";
 
-> Testing in NestJS is mostly choosing how much of the DI container and [[effect-ts/platform|HTTP]] pipeline to boot.
+> Testing in NestJS is mostly choosing how much of the DI container and web request pipeline to boot.
 
 <Aside type="tip" title="Prerequisites">
 Before diving into testing recipes, make sure you understand:
@@ -27,7 +27,7 @@ Before diving into testing recipes, make sure you understand:
 | [Integration slice](#example-2-integration-slice-over-http) | Small feature module + `createNestApplication()` + `app.init()` | Expensive edges only     | One route with real pipes, guards, interceptors, and controller wiring | You need the whole production graph or cross-module behavior                   | The route behavior is just a thin wrapper over one service |
 | [E2E](#transactional-database-e2e-test-rollback-pattern) | `AppModule` or close to it                                      | External boundaries only | Production-like HTTP behavior across multiple modules                  | You still do not know which layer is failing                                   | One feature can be proved with a smaller slice             |
 
-`Test.createTestingModule()` gives you a Nest testing container. `compile()` builds the module graph and lets you retrieve providers with `get()` or `resolve()` ([testing docs](https://docs.nestjs.com/fundamentals/testing)). Once the behavior lives in the HTTP pipeline, Nest's own docs switch to `createNestApplication()` and require `await app.init()` before requests ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
+`Test.createTestingModule()` gives you a Nest testing container. `compile()` builds the module graph and lets you retrieve providers with `get()` or `resolve()` ([testing docs](https://docs.nestjs.com/fundamentals/testing)). Once the behavior lives in the [[effect-ts/platform|HTTP]] pipeline, Nest's own docs switch to `createNestApplication()` and require `await app.init()` before requests ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
 
 **Rule of thumb:** if the failure would show up in Postman, write an HTTP test. If it would only show up inside one method body, stop at a unit test.
 
@@ -285,16 +285,37 @@ export class AuthModule {}
 ```
 
 ```typescript
+import { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import request from "supertest";
 import { AppModule } from "./app.module";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
-const moduleRef = await Test.createTestingModule({
-  imports: [AppModule],
-})
-  .overrideProvider(JwtAuthGuard)
-  .useValue({ canActivate: () => true })
-  .compile();
+describe("AppModule Auth Override", () => {
+  let app: INestApplication;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  it("GET /protected allows request without authorization header under override", async () => {
+    return request(app.getHttpServer())
+      .get("/protected")
+      .expect(200);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+});
 ```
 
 <Aside type="caution" title="Do not mock away the thing you are trying to prove">
@@ -414,7 +435,7 @@ Content-Type: application/json
 }
 ```
 
-Because the test case ends and `afterEach` rolls back the transaction, the database returns to its clean [[effect-ts/state|state]]. A subsequent `GET /users/402` request in a different test case yields:
+Because the test case ends and `afterEach` rolls back the transaction, the database returns to its clean baseline. A subsequent `GET /users/402` request in a different test case yields:
 
 ```http
 HTTP/1.1 404 Not Found
