@@ -13,4 +13,4 @@ Repo-root tooling for the knowledge base. **Inventory:** [`docs/TOOLING.md`](../
 | `bun run vault:check`             | Publish parity + diff-scoped vault/MDX Pass 0 + optional vault/`mdx-triage` + `lint:docs` |
 | `bun run test` / `test:ci`        | Root unit tests + `scripts/audit-notes` tests                                             |
 | `scripts/check-source-urls.sh`    | Manual GitHub blob URL HEAD check                                                         |
-| `scripts/audit-notes/`            | Vault audit (`audit-notes.ts`) + MDX audit (`mdx-audit-notes.ts`)                         |
+| `scripts/audit-notes/`            | MDX audit (`mdx-audit-notes.ts`)                                                          |

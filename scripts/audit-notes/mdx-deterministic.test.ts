@@ -15,7 +15,7 @@ const VALID_MDX: string = [
   "",
   "import { Aside } from \"@astrojs/starlight/components\";",
   "",
-  "> Tagline for the page.",
+  "> Tagline for the page. Prerequisite: [[some/prereq|Prereq]].",
   "",
   "## Section",
   "",

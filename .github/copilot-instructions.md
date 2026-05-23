@@ -21,10 +21,10 @@ This ensures high precision, clean git branches, and structured planning history
 
 Before editing any note, load **`kb-author`** (`.github/skills/kb-author/SKILL.md`). It covers:
 
-- **Vault** (`content/`): pre-flight discovery, audits A–P, `lint:wikilinks`, LLM audit triage.
+- **Vault (legacy)**: Fully migrated to Starlight MDX under `sites/docs/src/content/docs/`. Pre-flight discovery, audits, and LLM triage now target the MDX files.
 - **Published site** (`sites/docs/`): MDX authoring, audits **S1–S6**, `docs/PUBLISHING.md`.
 
-AGENTS.md remains the source of truth for invariants; the skill is the playbook for vault + Starlight MDX.
+AGENTS.md remains the source of truth for invariants; the skill is the playbook for Starlight MDX notes.
 
 ## Skills directory
 
@@ -37,7 +37,7 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 - [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX; legacy vault content is read-only context.
 - [`kb-algomaster-intake`](.github/skills/kb-algomaster-intake/SKILL.md) — safe extraction of authorized AlgoMaster system-design pages into local Markdown before `kb-research-author` verification.
 
-**LLM judges (runtime, invoked by `scripts/audit-notes/` on vault `content/`):**
+**LLM judges (runtime, invoked by `scripts/audit-notes/` on MDX files under `sites/docs/src/content/docs/`):**
 
 - [`kb-auditor`](.github/skills/kb-auditor/SKILL.md) — Pass 1. Structural rules: code-imports, table-link, express-first, callout vocabulary.
 - [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) — Pass 1a. Binary verdict on behavioral-claim candidates surfaced by the deterministic finder.
@@ -49,39 +49,39 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md). `kb-starlight-author` was removed; Starlight MDX guidance lives in `kb-author` audits S1–S6.
 
-**Vault LLM judges** (`kb-auditor`, `kb-source-verifier`, etc.) run on **vault** `content/**/*.md` only. **MDX** uses deterministic `lint:docs`, kb-author audits **S1–S6**, and optional `kb-mdx-auditor` via `mdx-audit-notes.ts` (`bun run audit:mdx-triage`).
+**LLM judges** (`kb-mdx-auditor`, show-dont-tell, source-verifier, etc.) run directly on **Starlight MDX** under `sites/docs/src/content/docs/**/*.mdx` via the `mdx-audit-notes.ts` orchestrator (using the `mdx-triage` or `mdx-full` profiles). deterministic checks (`lint:docs`, kb-author audits **S1–S6**) run in CI.
 
 ## What this repo is
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
 
-**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/`: enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; legacy vault coverage check: `bun run lint:publish-parity`.
+**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/`: enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; legacy vault coverage check `bun run lint:publish-parity` resolves parity (fully migrated, 100% MDX-only).
 
-**Vault (`content/`):** Legacy Obsidian tree from pre-Starlight migration. **Do not edit**: stale relative to published MDX. Still used by `lint:publish-parity` to ensure old vault slugs remain published, and optional vault LLM audit if you touch a file by mistake; new work is **MDX-only** under `sites/docs/`, and MDX-only pages are allowed.
+**Vault (legacy `content/`):** Fully migrated to Astro Starlight and removed from the repository. All notes are maintained under `sites/docs/src/content/docs/**/*.mdx` and new work is strictly **MDX-only**.
 
 Edit `.github/workflows/deploy.yml` for deploy changes.
 
 ## Folder layout
 
 ```
-content/
-  index.md                       # vault home + areas list (top-level MOC)
+sites/docs/src/content/docs/     # Active Starlight MDX notes (100% of content)
+  index.mdx                      # Vault home + areas list (top-level MOC)
   <area>/
-    index.md                     # area MOC, MANDATORY for every area
+    index.mdx                    # Area MOC, MANDATORY for every area
     <subarea>/
-      index.md                   # sub-area MOC if the subarea has 3+ notes
-      <note>.md                  # atomic note, one concept per file
-sites/docs/                      # Starlight app (MDX, astro sidebar)
+      index.mdx                  # Sub-area MOC if the subarea has 3+ notes
+      <note>.mdx                 # Atomic note, one concept per file
+sites/docs/                      # Starlight configuration and plugins
 docs/                            # PUBLISHING.md, STARLIGHT-FEATURES.md, PIPELINE.md
-scripts/                         # wikilink linter, MDX linters, audit tooling
+scripts/                         # MDX linters, audit tooling
 .github/workflows/deploy.yml     # lint → starlight build → Pages
 ```
 
 Rules:
 
 - One concept per file. Split before a note exceeds ~250 lines.
-- Every folder under `content/` MUST have an `index.md` (its MOC).
-- File names: kebab-case, descriptive nouns (`request-lifecycle.md`, not `req-lc.md`).
+- Every folder under `sites/docs/src/content/docs/` MUST have an `index.mdx` (its MOC).
+- File names: kebab-case, descriptive nouns (`request-lifecycle.mdx`, not `req-lc.mdx`).
 - No orphans. A note that nothing links to is a bug.
 
 ## AWS service indexes (slim shape)
@@ -114,7 +114,7 @@ Status: `evergreen` once written. Skip the quickstart for services where there i
 
 ## Frontmatter schema (required)
 
-Every `.md` under `content/` MUST start with:
+Every `.mdx` under `sites/docs/src/content/docs/` MUST start with:
 
 ```yaml
 ---
@@ -149,7 +149,7 @@ Tags are namespaced. Do not invent free-form tags. If a needed tag is missing, a
 
 ### `area/*` — DO NOT USE AS A TAG
 
-The top-level folder under `content/` encodes the area. A note under `content/nestjs/` is in the NestJS area; tagging it `area/nestjs` adds no information and pollutes the tag index. The `area:` frontmatter field is the machine-readable version for tooling. If a note ever needs to span two areas (e.g., a NestJS+React recipe), file it under the primary area's folder and add the secondary area to `related:` via wikilinks — not tags.
+The top-level folder under `sites/docs/src/content/docs/` encodes the area. A note under `sites/docs/src/content/docs/nestjs/` is in the NestJS area; tagging it `area/nestjs` adds no information and pollutes the tag index. The `area:` frontmatter field is the machine-readable version for tooling. If a note ever needs to span two areas (e.g., a NestJS+React recipe), file it under the primary area's folder and add the secondary area to `related:` via wikilinks — not tags.
 
 ### `type/*` (note kind)
 
@@ -177,19 +177,19 @@ Run, in order, from the repo root:
 ```bash
 # 1. Read the operating contract and the area MOC
 bat AGENTS.md
-bat content/<area>/index.md
+bat sites/docs/src/content/docs/<area>/index.mdx
 
 # 2. Inventory the area
-fd . content/<area> -e md
+fd . sites/docs/src/content/docs/<area> -e mdx
 
 # 3. Search the whole vault for the concept and adjacent terms
-rg -n -i '<keyword>|<synonym>|<adjacent-concept>' content
+rg -n -i '<keyword>|<synonym>|<adjacent-concept>' sites/docs/src/content/docs
 
 # 4. Inspect existing relationship metadata
-rg -n '^(tags|aliases|area|related):' content -A 4
+rg -n '^(tags|aliases|area|related):' sites/docs/src/content/docs -A 4
 
 # 5. Read every candidate note that the searches surfaced
-bat content/<area>/<candidate>.md
+bat sites/docs/src/content/docs/<area>/<candidate>.mdx
 ```
 
 Only after those five steps may you draft the note. Then:
@@ -473,13 +473,13 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
   | `triage` | Pass 0 + 0b + 1b + 1c + 1d + source grounding + dismissed filter | required |
   | `full` | All passes (1, 1a, 1e, 2, 3) | required |
 
-  Convenience scripts (from `scripts/audit-notes/`): `bun run audit:ci`, `bun run audit:triage`. Explicit paths still work: `bun start --json --profile=full ../../content/<path>.md`.
+  Convenience scripts (from `scripts/audit-notes/`): `bun run audit:mdx-ci`, `bun run audit:mdx-triage`. Explicit paths still work: `npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage sites/docs/src/content/docs/<path>.mdx`.
 
-  Diff-aware: `--base <ref>` audits markdown under `content/` changed since `<ref>` (committed + staged + unstaged). Examples: `--base HEAD~1` (last commit), `--base origin/main` (branch delta). Empty diff exits clean.
+  Diff-aware: `--base <ref>` audits MDX pages under `sites/docs/src/content/docs/` changed since `<ref>` (committed + staged + unstaged). Examples: `--base HEAD~1` (last commit), `--base origin/main` (branch delta). Empty diff exits clean.
 
-  Full-vault re-audit (rare): `bun start --json --profile=full $(find ../../content -name '*.md' -not -path '*/inbox.md' | sort)`.
+  Full-vault re-audit: `set -a; source .env; set +a; find sites/docs/src/content/docs -name "*.mdx" | xargs npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage`
 
-  `triage` and `full` exit non-zero if `CURSOR_API_KEY` is missing or invalid. `ci` never calls the LLM. A deterministic **Pass 1c (anchor verifier)** runs after source verification: for any `source-verification` finding whose complaint is "wrong GitHub line anchor" (`L<m>-L<n>` claim), it fetches the cited file and checks whether the symbol named in the note's link text is actually defined within the original anchor's range. If yes, the finding is dropped automatically as a false positive (logged as `[pass-1c] anchor-verifier dropped N false-positive(s)`). This catches the most common LLM hallucination empirically (~50% FP rate on anchor claims) before it reaches human triage. A second deterministic **Pass 1d (fact-grounding)** runs after Pass 1c: for any finding emitted as `Not supported by cited sources: ...`, it extracts high-information terms from the claim (backtick-fenced spans, identifiers, version numbers) and substring-greps them across the on-disk cache of source extracts. If ALL terms appear in at least one cached source body, the LLM missed the supporting text and the finding is dropped (logged as `[pass-1d] fact-grounding dropped N false-positive(s)`). Conservative: never touches `Contradicts` findings, never touches `Plausible but unsourced` findings (those are advisory by design — see below), keeps when fewer than 2 terms can be extracted. Source-verification findings now ship in three flavors: `Contradicts cited sources: ...` (high-tier blocker), `Not supported by cited sources: ...` (high-tier blocker), and `Plausible but unsourced: ... Suggested source: <URL>` (advisory — the action is "add the URL to `source:`", not "rewrite the prose"). Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings (including `source-verification`) get reviewed and fixed if valid; advisory findings are dismissable. High-tier findings carry a `suggestedFix: {kind, before, after, primarySource, rationale}` field when Pass 3 (fix-proposer) was able to produce one. The proposer is instructed to obey "Cite, don't hedge" and to decline rather than soften, so when `suggestedFix` is present it's a starting point for the three-gate review; absent fix means the proposer declined and the human writes the fix from scratch. Either way the fix is still a suggestion, still subject to the three-gate test.
+  `mdx-triage` and `mdx-full` exit non-zero if `CURSOR_API_KEY` is missing or invalid. `mdx-ci` never calls the LLM. A deterministic **Pass 1c (anchor verifier)** runs after source verification: for any `source-verification` finding whose complaint is "wrong GitHub line anchor" (`L<m>-L<n>` claim), it fetches the cited file and checks whether the symbol named in the note's link text is actually defined within the original anchor's range. If yes, the finding is dropped automatically as a false positive (logged as `[pass-1c] anchor-verifier dropped N false-positive(s)`). This catches the most common LLM hallucination empirically (~50% FP rate on anchor claims) before it reaches human triage. A second deterministic **Pass 1d (fact-grounding)** runs after Pass 1c: for any finding emitted as `Not supported by cited sources: ...`, it extracts high-information terms from the claim (backtick-fenced spans, identifiers, version numbers) and substring-greps them across the on-disk cache of source extracts. If ALL terms appear in at least one cached source body, the LLM missed the supporting text and the finding is dropped (logged as `[pass-1d] fact-grounding dropped N false-positive(s)`). Conservative: never touches `Contradicts` findings, never touches `Plausible but unsourced` findings (those are advisory by design — see below), keeps when fewer than 2 terms can be extracted. Source-verification findings now ship in three flavors: `Contradicts cited sources: ...` (high-tier blocker), `Not supported by cited sources: ...` (high-tier blocker), and `Plausible but unsourced: ... Suggested source: <URL>` (advisory — the action is "add the URL to `source:`", not "rewrite the prose"). Then read `/tmp/audit.json` and triage: deterministic Pass-0 findings (em-dash, double-hyphen) get fixed in the next commit; high-tier LLM findings (including `source-verification`) get reviewed and fixed if valid; advisory findings are dismissable. High-tier findings carry a `suggestedFix: {kind, before, after, primarySource, rationale}` field when Pass 3 (fix-proposer) was able to produce one. The proposer is instructed to obey "Cite, don't hedge" and to decline rather than soften, so when `suggestedFix` is present it's a starting point for the three-gate review; absent fix means the proposer declined and the human writes the fix from scratch. Either way the fix is still a suggestion, still subject to the three-gate test.
 - **Audit findings are suggestions, not mandates — verify EVERY one, treat false positives as the default risk**: every LLM-generated finding (Pass 1, Pass 2, and `suggestedFix` from Pass 3) is a hypothesis about a possible defect, NOT a proven bug. Empirically the false-positive rate on specific-anchor and "claim not supported" findings is high enough that **mechanical application is the single biggest source of regressions in this repo's audit loop**. One concrete batch: 5 of 9 high-tier findings I applied were false positives (`formatPid` real range L417-L419 not L407-L409; `loadSwcCliBinary` real range L198-L200 not L215; `"webpack": true` IS set by `sub-app.factory.ts#L358`; `ParseDatePipe`/`ParseIntPipe` ergonomics IS in `parse-date.pipe.ts#L10-L31`). The cost of a false positive is a deleted specific that took real research to produce; the cost of a missed true positive is one more audit cycle. **Bias HARD toward keeping the original.** Required workflow on every finding before applying: (1) fetch the cited file/range with `curl -s <raw-url> | grep -n '<symbol>'` and `sed -n '<a>,<b>p'` — if the original anchor was correct, RESTORE and ignore the finding; if wrong, replace with the verified correct anchor (NEVER drop to a bare URL); (2) for "claim not supported" findings, check whether the claim is true but the supporting URL isn't cited inline yet — if so, ADD the inline citation `([source](URL))` to the prose and keep the claim (`bun run autofix` will sync `source:`); never edit `source:` by hand; (3) confirm the fix preserves or adds information (cite-don't-hedge); (4) confirm the change is worth the diff. **Dismiss findings that fail any gate without guilt** and without a code-side suppression: the audit will re-flag if the underlying concern recurs, which is the right time to revisit. Forbidden: applying a finding mechanically because it's in the JSON. Forbidden: softening a true claim to a vague one because the auditor (incorrectly) said it wasn't sourced. Required: when applying, log the verification in the commit message or chat ("audit flagged X; verified file Y at L<n>-L<m>; original was correct/wrong; applied as Z") so the next pass over the same file knows it's been triaged.
 - **Verify EVERY finding against primary sources before classifying it as dismissable** (same rigor as before applying). Eyeballing a message and concluding "auditor probably hallucinated" or "the cited file probably proves this" is the false-positive analogue of mechanical application: it buries real bugs (one concrete batch: I triaged 14 advisories from "looks plausible" without fetching, and 3 of them — `global-providers.md` testing-override, `exception-filters.md` rethrow-chain, `request-lifecycle.md` rethrow-chain — were actual prose bugs that primary-source verification caught; another 4 needed source-list additions, not dismissals). Required workflow on every finding before deciding the verdict (same shape as the apply-side workflow, executed earlier in the loop): (1) fetch the suggested source URL and the URLs already in the note's `source:` list with `curl -sL <raw-url> | grep -niE '<term1>|<term2>'`; (2) classify into one of four buckets — **TRUE-and-cited** (claim is supported by a URL already in `source:`; auditor extract failed, dismiss with the verifying URL named in the dismissal `reason`), **TRUE-but-uncited-inline** (claim is supported by a URL but never cited inline next to the claim; ADD the inline citation `([source](URL))` to the prose, do NOT dismiss — the audit's job is to make this gap visible; `bun run autofix` keeps `source:` in sync, never edit it by hand), **WRONG-claim** (primary source contradicts the prose; FIX the prose with a citation to the contradicting source), **UNVERIFIABLE** (no usable primary source within the session; leave the advisory in place as a `// TODO: verify` and dismiss with `reason: "no primary source available; revisit"`); (3) only after one of those four buckets is chosen, take the action. Forbidden: dismissing in chat triage on the basis of "follows from cited files" without actually grepping the cited files. Forbidden: dismissing on the basis of "auditor extract probably failed" without re-fetching the URL the auditor flagged. Required: every dismissal `reason` field names the file/anchor that was actually checked (e.g. "verified at `provider-scopes.md#L152`: '~5% latency-wise' is the exact wording"), not just "false positive" or "already cited".
 - **Persisted dismissals**: when an advisory or high-tier finding has been triaged and rejected (rule misapplication, already-cited claim the auditor missed, literal-not-hedge phrasing, callout-scope exclusion, etc.) and the underlying line is unlikely to change soon, record it in `scripts/audit-notes/dismissed.json` so future audit runs auto-suppress it. Each entry is `{path, sig, rule, reason, date, originalLine}` where `sig = sha1(path + "\0" + rule + "\0" + trimmed line text)`. The signature is content-addressed: it survives line-number drift but **re-fires when the prose is rewritten**, which is the right time to re-evaluate. The audit pipeline filters before emitting the final tiered report and logs every suppression as `[dismissed] suppressed N previously-triaged finding(s)` with the original rationale, so the audit trail stays visible. Generate a new entry by running a small node one-liner that reads the line at `path:line`, hashes it, and appends to the JSON (see commit history for the seed batch). Forbidden: dismissing a finding by silently ignoring it in chat triage when the same finding will obviously re-appear on the next full-vault run — that wastes future-you's triage cycles. Forbidden: dismissing high-tier `Contradicts` findings without a written verification chain in the `reason` field (these are the highest-signal class; if you're dismissing one, the reason needs to explain why the auditor was wrong, not just "false positive"). The dismissal file is checked in so triage state is shared across machines and rebuilds.
@@ -490,7 +490,7 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 - Commit only when the user explicitly asks; do not push unless they ask.
 - When the user says to verify first, run the full lint and test suite before committing tooling changes.
-- **Never update `content/`** — it is stale pre-migration material; the published site (`sites/docs/**/*.mdx`) is the only surface to edit for reader-facing notes.
+- **Legacy Vault Removed:** The legacy `content/` folder has been completely removed from the repository. All notes are strictly Astro Starlight MDX files under `sites/docs/src/content/docs/**/*.mdx`.
 - Published MDX recipes must explain why before each bash fence and what to verify in output; command dumps without teaching prose fail the publish bar (S1/S2).
 - Starlight MDX migrations re-author and enrich page-by-page; do not bulk-copy or over-compress legacy vault prose into published MDX.
 
@@ -498,10 +498,10 @@ When editing an existing snippet, audit the imports too — adding a new symbol 
 
 - Engram MCP is configured for this repo with project id `knowledge-base` (session memories via `mem_search` / `mem_save`; see `.cursor/rules/engram.mdc`).
 - CodeGraph: `.codegraph/config.json`; init/reindex with `npx @colbymchenry/codegraph init -i`; prefer `codegraph_*` MCP for structural queries under `scripts/` and `sites/docs/src/plugins/`.
-- OpenSpec SDD config: `openspec/config.yaml` (`strict_tdd: false`; MDX canonical; `content/` read-only; verify with `bun run lint:ci && bun run test:ci`).
-- Deep or subjective audit: `cd scripts/audit-notes && bun start --profile=full --base HEAD~1` (or explicit paths).
-- LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `audit-notes.ts`).
-- To audit an area with no recent git diff (e.g. smoke-testing `content/effect-ts/`), pass explicit note paths to `bun start --profile=triage --json` under `scripts/audit-notes/`.
-- Published site: `sites/docs/` (base `/knowledge-base`) is canonical. `lint:publish-parity` requires every legacy `content/` slug to have an MDX page, but MDX-only pages are allowed; do not refresh vault body to match MDX.
+- OpenSpec SDD config: `openspec/config.yaml` (`strict_tdd: false`; MDX canonical; verify with `bun run lint:ci && bun run test:ci`).
+- Deep or subjective audit: `npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-full --base HEAD~1` (or explicit paths).
+- LLM audit passes use Composer 2.5 Fast (`composer-2.5` with `fast: true` in `mdx-audit-notes.ts`).
+- To audit an area with no recent git diff (e.g. smoke-testing `effect-ts/`), pass explicit note paths to `npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage` under `scripts/audit-notes/`.
+- Published site: `sites/docs/` (base `/knowledge-base`) is canonical. Parity is 100% complete and all pages are MDX-only.
 - `lint:mdx-recipe-context` is advisory in `lint:ci`; `lint:mdx-recipe-context:strict` blocks orphan/thin bash fences on recipe-shaped MDX.
 - `lint:aws-profile-consistency` in `lint:ci` fails cross-account recipes whose tables use bare `A`/`B` when `account-a`/`account-b` profiles are declared.

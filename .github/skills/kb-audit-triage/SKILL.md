@@ -23,8 +23,8 @@ finding → act → persist.
 
 - User asks to: run the audit on touched files, triage audit JSON, apply or dismiss findings,
   add to `dismissed.json`, evaluate audit output.
-- After any commit under `content/` when the user asked you to commit. LLM triage is chat-driven now; CI runs deterministic Pass 0 only.
-- After MDX-only edits: kb-author **S1–S6** + `bun run lint:docs`; optional `bun run audit:mdx-triage -- --base HEAD~1` or `vault:check` (runs `mdx-triage` when `CURSOR_API_KEY` is set). This skill's triage loop is for **vault** JSON from `audit-notes`, not `mdx-audit-notes` output.
+- After any commit under `sites/docs/src/content/docs/` when the user asked you to commit. LLM triage is chat-driven now; CI runs deterministic Pass 0 only.
+- After MDX edits: kb-author **S1–S6** + `bun run lint:docs`; optional `bun run audit:mdx-triage -- --base HEAD~1` or `vault:check` (runs `mdx-triage` when `CURSOR_API_KEY` is set).
 - Whenever Pass-1/Pass-2 LLM output appears in `/tmp/audit.json` and needs human classification.
 
 ## The non-negotiables (from AGENTS.md, repeated because they get skipped)
@@ -41,34 +41,32 @@ finding → act → persist.
 
 ## Step 1 — Run the audit
 
-From repo root. **Default post-edit workflow**: diff-aware `triage` profile on the last
+From repo root. **Default post-edit workflow**: diff-aware `mdx-triage` profile on the last
 commit (Pass 0 + 0b + source-verify + deterministic FP filters; skips Pass 1/1a/1e/2/3).
 
 ```bash
 set -a; source .env; set +a   # loads CURSOR_API_KEY (gitignored)
-cd scripts/audit-notes
-bun start --json --base HEAD~1 --profile=triage > /tmp/audit.json 2> /tmp/audit.err
+npx tsx scripts/audit-notes/mdx-audit-notes.ts --json --base HEAD~1 --profile=mdx-triage > /tmp/audit.json 2> /tmp/audit.err
 ```
 
-### Profiles (`--profile=ci|triage|full`, default `full`)
+### Profiles (`--profile=mdx-ci|mdx-triage|mdx-full`, default `mdx-triage`)
 
 | Profile | When to use | Passes |
 | --- | --- | --- |
-| `triage` | **Default after editing notes** — fast post-commit loop | 0, 0b, 1b, 1c, 1d, source grounding, dismissed filter |
-| `full` | Deep sweep before a major release or when user asks for full audit | All passes including Pass 1, 1a, 1e, 2, 3 |
-| `ci` | CI gate only — no LLM, no API key | Pass 0 only (same as `lint:content`) |
+| `mdx-triage` | **Default after editing notes** — fast post-commit loop | 0, 0b, 1b, 1c, 1d, source grounding, dismissed filter |
+| `mdx-full` | Deep sweep before a major release or when user asks for full audit | All passes including Pass 1, 1a, 1e, 2, 3 |
+| `mdx-ci` | CI gate only — no LLM, no API key | Pass 0 only (same as `lint:mdx-content`) |
 
-Scripts (from `scripts/audit-notes/`): `bun run audit:triage`, `bun run audit:ci`. Repo-root gates: `bun run vault:check --base HEAD~1` (publish parity + scoped vault checks + optional audit + `lint:docs` when MDX changed); `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Inventory: [`docs/TOOLING.md`](../../docs/TOOLING.md).
+Scripts (from `scripts/audit-notes/`): `bun run audit:mdx-triage`, `bun run audit:mdx-ci`. Repo-root gates: `bun run vault:check --base HEAD~1` (publish parity + scoped MDX checks + optional audit + `lint:docs` when MDX changed); `bun run lint:ci`. Inventory: [`docs/TOOLING.md`](../../docs/TOOLING.md).
 
 ### Scope variants
 
 - `--base HEAD~1` — files changed in last commit (default workflow above).
 - `--base origin/main` — everything since the branch diverged.
 - `--base <ref>` — committed + staged + unstaged changes since `<ref>`.
-- Explicit paths: `bun start --json --profile=triage ../../content/<path>.md`.
-- **Full vault** (rare): `bun start --json --profile=full $(find ../../content -name '*.md' -not -path '*/inbox.md' | sort)`.
-- Bare `bun start` (no args, no `--base`) falls back to `DEFAULT_TARGETS` in
-  `audit-notes.ts` — avoid; pass `--base` or explicit paths.
+- Explicit paths: `npx tsx scripts/audit-notes/mdx-audit-notes.ts --json --profile=mdx-triage sites/docs/src/content/docs/<path>.mdx`.
+- **Full vault**: `set -a; source .env; set +a; find sites/docs/src/content/docs -name "*.mdx" | xargs npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage > /tmp/audit.json 2> /tmp/audit.err`.
+- Bare `bun start` (no args, no `--base`) runs `mdx-audit-notes.ts` targets — pass `--base` or explicit paths.
 - Empty diff exits cleanly (`{ "files": [] }`).
 
 Read `/tmp/audit.json`. Skim `/tmp/audit.err` for `[pass-1c] anchor-verifier dropped N`,
@@ -121,7 +119,7 @@ For WRONG-claim and TRUE-but-uncited-inline findings:
    (e.g. "rethrow chain" in both `exception-filters.md` and `request-lifecycle.md`).
 4. Commit messages: `fix(<area>): <correction>` for prose, `docs: cite primary sources for
    <topic>` for citation-only adds.
-5. After a batch of edits, run `cd scripts/audit-notes && bun run autofix` (no args walks `content/`) to sync `source:` lists with the new inline citations and to strip any orphaned URLs.
+5. After a batch of edits, run `cd scripts/audit-notes && bun run autofix` (no args walks `sites/docs/src/content/docs/`) to sync `source:` lists with the new inline citations and to strip any orphaned URLs.
 
 If the finding has a `suggestedFix: {kind, before, after, primarySource, rationale}` field
 (Pass 3 fix-proposer), it's a **starting point**, not a mandate. The proposer is hard-prompted
@@ -162,7 +160,7 @@ function getLine(p, n) {
 }
 
 const items = [
-  { path: 'content/<area>/<note>.md', line: <N>,
+  { path: 'sites/docs/src/content/docs/<area>/<note>.mdx', line: <N>,
     reason: "Verified at <file/anchor>: <exact quote>. <which source URL backs it>." },
   // ...
 ];
@@ -185,7 +183,7 @@ Run with `node /tmp/add-dismiss.cjs`. Delete the script after.
 ### Dismissal `reason:` quality bar
 
 - ✅ "Verified at `throttler.guard.ts#L37-L40`: constructor takes ThrottlerModuleOptions, ThrottlerStorage, Reflector. Note already cites the file inline."
-- ✅ "Verified at docs.nestjs.com/middleware#functional-middleware: 'Consider using the simpler functional middleware alternative…' is verbatim."
+- ✅ "Verified at docs.nestjs.com/[[nestjs/fundamentals/middleware|middleware]]#functional-middleware: 'Consider using the simpler functional middleware alternative…' is verbatim."
 - ❌ "False positive."
 - ❌ "Already cited."
 - ❌ "Auditor probably hallucinated."
@@ -216,7 +214,7 @@ a tailed lint. Read all the output.
 
 ```bash
 cd scripts/audit-notes
-bun start --json --profile=triage ../../content/effect-ts/ecosystem-map.md ../../content/effect-ts/layers-and-di.md
+npx tsx mdx-audit-notes.ts --json --profile=mdx-triage ../../sites/docs/src/content/docs/effect-ts/ecosystem-map.mdx ../../sites/docs/src/content/docs/effect-ts/layers-and-di.mdx
 ```
 
 If formatting fails: `(cd scripts/audit-notes && bun run format)` auto-fixes.
@@ -255,7 +253,7 @@ without explicit ask is a violation.
 - **Eyeballing the JSON and dismissing in chat without `curl`-verifying.** This is the FP
   analogue of mechanical application — buries real bugs. One concrete batch: 3 of 14
   "looks plausible" advisories I dismissed without fetching turned out to be real prose bugs
-  (rethrow-chain, testing-override, microservice-coverage).
+  (rethrow-chain, [[nestjs/recipes/testing|testing]]-override, microservice-coverage).
 - **Mechanically applying a finding because it's in the JSON.** 5 of 9 high-tier findings I
   applied in one batch were FPs (`formatPid` real range L417-L419 not L407-L409;
   `loadSwcCliBinary` real range L198-L200 not L215; etc.). Verify first, restore if the
@@ -283,5 +281,5 @@ After changing skip logic or dismissal patterns, run `cd scripts/audit-notes && 
 - This skill does NOT write notes from scratch — that's `kb-author`.
 - This skill does NOT modify the audit pipeline itself (`scripts/audit-notes/*.ts`) — that's
   a separate engineering task.
-- AGENTS.md invariants (frontmatter schema, vocabulary, linker rules, sourcing rule,
+- AGENTS.md invariants (frontmatter [[effect-ts/schema|schema]], vocabulary, linker rules, sourcing rule,
   cite-don't-hedge, verify-before-dismissing) win on any conflict.
