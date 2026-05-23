@@ -63,6 +63,7 @@ Imagine Alice in London writes a physical letter, puts it in an envelope, and ma
 
 A Lamport Timestamp is a simple, monotonically increasing logical counter maintained by each process. It maps every event to a single integer value, guaranteeing that causal order is preserved.
 
+<div id="lamport-algorithm"></div>
 ### The Algorithm Rules
 
 <Steps>
@@ -126,6 +127,7 @@ Instead of separate personal diaries, imagine each node maintains a "shared time
 
 In a cluster of `N` nodes, each node `P_i` maintains a vector `V_i` of size `N`, where `V_i[j]` represents the latest logical tick node `P_i` knows node `P_j` has executed.
 
+<div id="vector-algorithm"></div>
 ### The Algorithm Rules
 
 <Steps>
@@ -142,7 +144,7 @@ In a cluster of `N` nodes, each node `P_i` maintains a vector `V_i` of size `N`,
 
 3.  **Send Message**: Process `P_i` attaches its entire local vector `V_i` to the message.
 
-4.  **Receive Message**: When process `P_j` receives a message carrying vector `W`, it merges the incoming [[effect-ts/state|state]]:
+4.  **Receive Message**: When process `P_j` receives a message carrying vector `W`, it merges the incoming vector:
     *   It updates every element in its vector to the maximum value:
         ```
         V_j[k] = max(V_j[k], W[k])  for all k in [0, N-1]
@@ -201,10 +203,10 @@ Vector Clocks allow us to mathematically prove whether two events `a` and `b` ar
 
 | Guarantees & Cost | [Lamport Timestamps](#lamport-timestamps) | [Vector Clocks](#vector-clocks) |
 | :--- | :--- | :--- |
-| **Clock State Size** | O(1) (Single integer counter) | O(N) (Integer array for N processes) |
-| **Causal Ordering** | Weak: If `a -> b`, then `C(a) < C(b)`. Converse is false. | Strong: `a -> b` if and only if `V(a) < V(b)`. |
-| **Conflict Detection** | Impossible. Concurrent events receive overlapping timestamps. | Perfect. Detects concurrent updates when vectors are incomparable. |
-| **Message Overhead** | Negligible (Adds a single integer to each message). | Scalability Bottleneck (Adds N integers to each message). |
+| **Clock State Size** | O(1) (Single integer counter; see [algorithm](#lamport-algorithm)) | O(N) (Integer array for N processes; see [algorithm](#vector-algorithm)) |
+| **Causal Ordering** | Weak: If `a -> b`, then `C(a) < C(b)`. Converse is false (see [Lamport limitation](#the-limitation-of-lamport-timestamps)). | Strong: `a -> b` if and only if `V(a) < V(b)`. |
+| **Conflict Detection** | Impossible. Concurrent events receive overlapping timestamps. | Perfect. Detects concurrent updates when vectors are incomparable (see [Detecting Conflicts](#detecting-conflicts-and-concurrency)). |
+| **Message Overhead** | Negligible (Adds a single integer to each message; see [Send step](#lamport-algorithm)) | Scalability Bottleneck (Adds N integers to each message; see [overhead discussion](#gotchas-and-production-considerations)) |
 
 ---
 

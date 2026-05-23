@@ -19,14 +19,15 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before mapping circular hash rings, make sure you understand:
 - [[system-design/consistency-models|Consistency Models]]: Frame database partitions, replication states, and coordination costs across dynamic nodes.
+- [[system-design/distributed-caching|Distributed Caching]]: Master read/write strategies, cache miss cascades, and stampede behaviors.
 
 </Aside>
 
-In a distributed database or [[nestjs/data/caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
+In a distributed database or [[system-design/distributed-caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
-Imagine you have a website with a cluster of `N` servers caching user session data. When a request comes in, how do you decide which server stores that user's session? 
+Imagine you have a website with a cluster of `N` servers [[nestjs/data/caching|caching]] user session data. When a request comes in, how do you decide which server stores that user's session? 
 
 A simple, traditional strategy is **modulo hashing** (also known as Modulo-N). We compute a numerical hash of the user's key and divide it by the number of active servers (`N`). The **remainder** of that division determines the server index:
 

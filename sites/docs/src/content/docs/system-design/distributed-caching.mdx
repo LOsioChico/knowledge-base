@@ -19,6 +19,8 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before routing cache nodes, make sure you understand:
 - [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Calculate daily working sets, QPS boundaries, and cache memory footprints using the 80/20 rule.
+- [[system-design/consistent-hashing|Consistent Hashing]]: Master dynamic hashing ring topologies and node failure routing models.
+- [[system-design/consistency-models|Consistency Models]]: Master strong vs eventual consistency guarantees and replicated state synchronization costs.
 
 </Aside>
 
@@ -253,6 +255,10 @@ export class LRUCache<K, V> {
 ## Production Gotchas & Operational Defenses
 
 Deploying a caching layer in high-volume production requires defending against specific failure states:
+
+<Aside type="caution" title="Production Caching Hazards">
+Failing to implement proper cache invalidation, thundering herd protections, or handling cache misses safely can result in severe database overload, cascading service failure, or stale data reads.
+</Aside>
 
 ### 1. The Cache Stampede (Thundering Herd)
 

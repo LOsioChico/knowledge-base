@@ -19,6 +19,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before resolving CAP theorem partition trade-offs and consistency spectrums, make sure you understand:
 - [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Master token bucket, leaky bucket, sliding window counter algorithms, and gateway traffic shaping defenses.
+- [[system-design/logical-clocks|Logical Clocks & Time Ordering]]: Master happen-before relations, Lamport timestamps, and Vector Clocks for tracking event ordering and conflicts.
 
 </Aside>
 
@@ -297,7 +298,7 @@ Imagine you read a post saying "Who wants to go hiking tomorrow?" (Post A). You 
 
 ## Gotchas and Production Considerations
 
-<Aside type="caution" title="The PACELC Extension to CAP">
+<Aside type="note" title="The PACELC Extension to CAP">
 The CAP theorem only applies when a network partition (P) is active. The **PACELC theorem** expands this: **I**f there is a **P**artition, trade off **A**vailability or **C**onsistency; **E**lse, trade off **L**atency or **C**onsistency. Even in a healthy network, enforcing strong consistency requires cross-replica coordination, which slows down read and write operations.
 </Aside>
 

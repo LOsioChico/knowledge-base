@@ -24,7 +24,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before buil
 
 In a systems design interview or real-world architectural review, you are frequently asked to estimate system capacity and performance requirements. This process, known as **back-of-the-envelope estimation**, uses a combination of thought experiments, basic arithmetic, and common performance constants to get a quantitative feel for which designs will meet requirements.
 
-Without quantitative math, architectures are designed in the dark: you cannot choose a database, sizing cache clusters, or provisioning network [[nestjs/fundamentals/pipes|pipes]] without knowing the raw throughput and storage volumes your system must handle under peak pressure.
+Without quantitative math, architectures are designed in the dark: you cannot choose a database, size cache clusters, or provision network [[nestjs/fundamentals/pipes|pipes]] without knowing the raw throughput and storage volumes your system must handle under peak pressure.
 
 ---
 
@@ -210,7 +210,7 @@ Assume our site handles 300 Million reads per day (equal to the number of daily 
     Daily hot reads volume = 300 Million reads * 20% = 60 Million hot items
     Cache memory size = 60 Million * (1.5 MB + 250 bytes) ≈ 90 Terabytes of RAM
 
-To build this [[nestjs/data/caching|caching]] layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
+To build this [[system-design/distributed-caching|caching]] layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
 *   Number of Redis Nodes = 90,000 GB / 256 GB ≈ 352 servers
 
 ---

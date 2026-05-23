@@ -24,9 +24,9 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 <Aside type="tip" title="Prerequisites">
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before resolving distributed state consistency, transaction choreography, and multi-service event rollbacks, make sure you understand:
+- [[system-design/consistent-hashing|Consistent Hashing]]: Master circular hashing ring spaces and virtual nodes data balancing.
 - [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, event brokers vs logs, and delivery semantics.
 - [[system-design/consistency-models|Consistency Models]]: Master CAP spectrum tradeoffs and sequential/causal guarantees.
-- [[system-design/consistent-hashing|Consistent Hashing]]: Master circular hashing ring spaces and virtual nodes data balancing.
 
 </Aside>
 
@@ -194,6 +194,10 @@ export class SagaOrchestrator {
 
 Moving to a Saga design introduces subtle but severe operational risks that can corrupt business data if left unmitigated.
 
+<Aside type="caution" title="High-Stakes Saga Failure Modes">
+Because local transactions in intermediate steps are committed immediately without global locks, you must actively design against data inconsistency, out-of-order execution, and dual-write bugs.
+</Aside>
+
 ### 1. The Dual Write Bug (Resolved by Transactional Outbox)
 
 In a typical Saga step, a service updates its local database and publishes an event to a message broker.
@@ -230,4 +234,4 @@ Due to network retries, a service can receive the same Saga command or compensat
 *   [[system-design/message-queues|Asynchronous Message Queues]]: Master event routing, dead-letter retries, and consumer idempotency design.
 *   [[system-design/consistency-models|Consistency Models]]: Study CAP theorem limits, sequential consistency spectrums, and linearizability.
 *   [[system-design/consistent-hashing|Consistent Hashing]]: Distribute database partitions dynamically across hash ring structures.
-*   [[nestjs/recipes/rate-limiting|NestJS Rate Limiting]]: Implement gateway rate limiting to prevent traffic floods from overwhelming multi-service transaction queues.
+*   [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Implement gateway rate limiting to prevent traffic floods from overwhelming multi-service transaction queues.

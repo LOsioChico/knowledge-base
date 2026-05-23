@@ -25,6 +25,8 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before diving into rate limiting and traffic shaping, make sure you understand:
 - [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, Pub/Sub channels, delivery semantics, and dead-letter recovery queues.
+- [[system-design/back-of-the-envelope-estimation|Back-of-the-Envelope Estimation]]: Master performance limits, capacity planning constants, and throughput scaling math.
+- [[system-design/distributed-caching|Distributed Caching]]: Master read/write caching strategies, Redis cluster topologies, and operational gotchas.
 
 </Aside>
 
@@ -210,6 +212,10 @@ Application servers invoke a shared, centralized cache like Redis to store and e
 ## Operational Security Gotchas
 
 Deploying rate limiting in production environments exposes severe architectural vulnerabilities that can bypass defenses or block legitimate users if unaddressed.
+
+<Aside type="caution" title="Production Rate Limiting Vulnerabilities">
+Failure to secure the rate limiter can expose system gateways to resource starvation, partition desyncs, or spoofing attacks that bypass traffic regulation entirely.
+</Aside>
 
 ### 1. Horizontal Race Conditions (The Read-Modify-Write Problem)
 

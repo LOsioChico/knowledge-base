@@ -19,6 +19,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before queuing messages, make sure you understand:
 - [[system-design/distributed-caching|Distributed Caching]]: Master read-through, write-through, and write-behind caching synchronization patterns before analyzing queue buffers.
+- [[system-design/consistency-models|Consistency Models]]: Master CAP partition boundaries, eventual consistency, and transactional delivery guarantees.
 
 </Aside>
 
@@ -173,6 +174,10 @@ sequenceDiagram
 
 *   **Use Case**: Most business-critical workflows (like order processing, billing, or shipping) where data loss is unacceptable. **This requires consumers to be Idempotent**.
 
+<Aside type="caution" title="At-Least-Once Duplicate Hazard">
+Because network retries can redeliver previously processed messages, you must design every consumer to be strictly idempotent. Failing to do so exposes system domains to critical duplicate charge, double shipping, or data corruption bugs.
+</Aside>
+
 ### 3. Exactly-Once Delivery
 
 Messages are guaranteed to be processed exactly once, with zero data loss and zero duplicate effects.
@@ -267,7 +272,7 @@ export class IdempotentConsumer {
 When a message repeatedly fails to process, it cannot remain at the head of the queue. If it does, it blocks all subsequent messages, causing massive consumer lag. These unprocessable messages are called **Poison Pills**.
 
 Common causes of poison pills include:
-*   **Malformed payloads**: The message payload has syntax errors or violates the JSON [[effect-ts/schema|schema]].
+*   **Malformed payloads**: The message payload has syntax errors or violates the expected JSON [[effect-ts/schema|schema]].
 *   **Business [[nestjs/recipes/validation|validation]] failures**: The message contains references to missing resources (like a deleted user).
 *   **Software bugs**: The consumer code crashes on specific edge cases in the payload.
 
@@ -329,6 +334,10 @@ Once a poison pill lands in the DLQ, engineers must choose one of three recovery
 3.  **Audit & Drop**:
     *   *Scenario*: The message is completely malformed and has no business value.
     *   *Action*: Log the message to long-term audit storage (like S3 or Glacier) for compliance, and delete it from the DLQ to keep the queue clean.
+
+<Aside type="caution" title="DLQ Replay Side-Effect Risks">
+Before triggering a batch replay of Dead Letter Queue messages, you must guarantee that downstream consumers are 100% idempotent. If a consumer executed part of the transaction before failing and does not support idempotency, replaying the DLQ message will duplicate those side-effects.
+</Aside>
 
 ---
 
