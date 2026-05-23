@@ -1,0 +1,160 @@
+---
+title: Platform layers
+description: Runtime-agnostic abstractions, FileSystem APIs, and unified HTTP client and server architectures in @effect/platform.
+aliases: [platform, platform-layers, FileSystem, HTTP, node-platform]
+tags: [type/concept, tech/typescript, tech/effect-ts]
+area: effect-ts
+status: evergreen
+related:
+  - "[[effect-ts]]"
+  - "[[effect-ts/observability]]"
+  - "[[effect-ts/fault-tolerant-ingestion]]"
+source:
+  - https://effect.website/docs/platform/introduction/
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> **Step 13: Platform layers**: Environment-agnostic abstractions provided by `@effect/platform` to write unified business logic that executes seamlessly on Node.js, Bun, Browser, or Serverless workers. Prerequisite: [[effect-ts/observability|Step 12: Observability & Telemetry]]; next step: [[effect-ts/fault-tolerant-ingestion|Step 14: Ingestion capstone]].
+
+<Steps>
+
+1. Decouple business logic from runtime engines using `@effect/platform`.
+2. Interact with local files safely using cross-runtime `FileSystem` abstractions.
+3. Fetch data across environments using unified, type-safe HTTP Client interfaces.
+4. Orchestrate high-performance web servers with modular HTTP Routing layers.
+
+</Steps>
+
+## Decouple from runtimes
+
+Node.js, Bun, Deno, and standard Web Browsers all have vastly different APIs for reading files, establishing sockets, and handling HTTP payloads. Writing code that targets native Node.js APIs (like `fs/promises` or `http`) makes your code untranslatable to Browser Web Workers or Edge Serverless runtimes.
+
+Effect addresses this with **`@effect/platform`**. It provides a unified, cross-runtime standard library of services for interacting with the environment (FileSystem, Terminal, Command execution, Path parsing, and HTTP clients and servers). 
+
+By coding against the abstract types of `@effect/platform`, you write 100% environment-agnostic business logic. You then bind the concrete runtime layer (e.g. `NodeContext`, `BunContext`, or `BrowserContext`) at the execution boundary.
+
+---
+
+## 1. Unified File System APIs
+
+The `FileSystem` service provides standard file operations. Because it is pull-based and fully integrated with the Effect resource scope engine, it guarantees file handles are cleanly closed upon success, failure, or fiber interruption:
+
+```ts
+import { Effect, Console } from "effect";
+import { FileSystem, Path } from "@effect/platform";
+import { NodeContext } from "@effect/platform-node";
+
+const program = Effect.gen(function* () {
+  const fs = yield* FileSystem.FileSystem;
+  const path = yield* Path.Path;
+  
+  const targetPath = path.resolve("scratch", "config.json");
+  yield* Console.log(`Reading: ${targetPath}`);
+  
+  // Safe, managed file reading
+  const content = yield* fs.readFileString(targetPath, "utf-8");
+  return JSON.parse(content);
+});
+
+// Run using the Node.js implementation layer
+Effect.runPromise(program.pipe(Effect.provide(NodeContext.layer)));
+```
+
+If you ever decide to migrate this code to Bun or a Browser environment, you simply change `NodeContext.layer` to `BunContext.layer` or a custom Browser sandbox layer, with absolutely zero changes to your core FileSystem reading code!
+
+---
+
+## 2. HTTP Client Abstractions
+
+Making HTTP calls across environments is traditionally frustrating, requiring different libraries (Axios on Node, native `fetch` in Browsers). `@effect/platform` provides a unified `HttpClient` service that handles request building, JSON decoding, and typed error catching:
+
+```ts twoslash
+import { Console, Effect } from "effect";
+import { HttpClient, HttpClientRequest } from "@effect/platform";
+import { NodeContext, NodeHttpClient } from "@effect/platform-node";
+
+interface User {
+  readonly id: number;
+  readonly name: string;
+}
+
+const fetchUser = (id: number) =>
+  Effect.gen(function* () {
+    // 1. Resolve HttpClient service from environment
+    const client = yield* HttpClient.HttpClient;
+    
+    // 2. Build request blueprint
+    const request = HttpClientRequest.get(`https://jsonplaceholder.typicode.com/users/${id}`);
+    
+    // 3. Execute request and decode payload
+    const response = yield* client.execute(request);
+    const body = yield* response.json;
+    
+    return body as User;
+  });
+
+const program = Effect.gen(function* () {
+  const user = yield* fetchUser(1);
+  yield* Console.log(`User: ${user.name}`);
+});
+
+// 4. Inject Node runtime and HTTP client dependencies
+Effect.runPromise(
+  program.pipe(
+    Effect.provide(NodeHttpClient.layer),
+    Effect.provide(NodeContext.layer)
+  )
+);
+```
+
+---
+
+## 3. High-Performance HTTP Routing
+
+Building high-overhead API servers usually relies on heavyweight frameworks like Express or Fastify. `@effect/platform` includes a modular, lightweight HTTP Router that executes asynchronously with fiber [[effect-ts/concurrency|concurrency]] limits:
+
+```ts
+import { Effect } from "effect";
+import { HttpRouter, HttpServer, HttpMiddleware, HttpRouterApp } from "@effect/platform";
+import { NodeHttpServer } from "@effect/platform-node";
+import { createServer } from "node:http";
+
+// 1. Construct the API Router
+const apiRouter = HttpRouter.empty.pipe(
+  HttpRouter.get("/health", Effect.succeed(HttpServer.response.text("OK"))),
+  HttpRouter.get("/user/:id", Effect.gen(function* () {
+    const params = yield* HttpRouter.schemaParams(HttpRouter.params);
+    return HttpServer.response.json({ id: params.id, name: "Alice" });
+  })),
+  // Apply a global CORS middleware
+  HttpRouter.use(HttpMiddleware.cors())
+);
+
+// 2. Configure the Node HTTP Server
+const ServerLive = NodeHttpServer.server.layer(() => createServer(), { port: 3000 });
+
+// 3. Assemble and serve
+const program = HttpRouterApp.serve(apiRouter).pipe(
+  Effect.provide(ServerLive),
+  Effect.provide(NodeHttpServer.server.layer)
+);
+
+Effect.runFork(program);
+```
+
+---
+
+<Aside type="caution" title="Do not manually inject platform contexts inside business layers">
+  Your business logic files should only ask for abstract services (like `FileSystem` or `HttpClient`). Never import platform-specific layers (like `@effect/platform-node` or `NodeContext`) inside your core modules. Keep platform imports strictly contained at the entrypoint of your application (like `main.ts`), preserving runtime decoupling.
+</Aside>
+
+---
+
+## See also
+
+- [[effect-ts/observability|Observability and telemetry]]
+- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]]
+- [[effect-ts|Effect-TS MoC]]
+- [Platform Introduction](https://effect.website/docs/platform/introduction/) (official)
+- [FileSystem Module reference](https://effect.website/docs/reference/platform/filesystem/) (official)

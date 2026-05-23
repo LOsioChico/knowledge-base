@@ -8,7 +8,6 @@ status: evergreen
 related:
   - "[[effect-ts]]"
   - "[[effect-ts/scoped-resources]]"
-  - "[[effect-ts/fault-tolerant-ingestion]]"
   - "[[effect-ts/streams]]"
 source:
   - https://effect.website/docs/concurrency/fibers/
@@ -16,7 +15,7 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Structured concurrency in Effect: asynchronous units of execution called **fibers** are organized in a strict parent-child hierarchy, guaranteeing no leaked operations or abandoned computations.
+> **Step 9: Concurrency & Fibers**: Structured concurrency in Effect. Asynchronous units of execution called **fibers** are organized in a strict parent-child hierarchy, guaranteeing no leaked operations or abandoned computations. Prerequisite: [[effect-ts/scoped-resources|Step 8: Scoped resources]]; next step: [[effect-ts/streams|Step 10: Streams]].
 
 <Steps>
 
@@ -306,7 +305,7 @@ Notice that even though the fiber was abruptly cancelled while sleeping, both co
 ---
 
 <Aside type="caution" title="Avoid manual Fiber.fork inside services">
-  Spawning manual background fibers using `Effect.fork` is generally discouraged inside service layers. It pulls complex synchronization and state management into your services. Instead, use declarative concurrency via `Effect.all(..., { concurrency })` or modular stream-based processing to handle high-throughput parallel pipelines naturally.
+  Spawning manual background fibers using `Effect.fork` is generally discouraged inside service layers. It pulls complex synchronization and [[effect-ts/state|state]] management into your services. Instead, use declarative concurrency via `Effect.all(..., { concurrency })` or modular stream-based processing to handle high-throughput parallel pipelines naturally.
 </Aside>
 
 ---

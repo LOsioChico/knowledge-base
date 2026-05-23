@@ -12,7 +12,7 @@ import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
 - The core type is [`Effect<Success, Error, Requirements>`](https://effect.website/docs/getting-started/the-effect-type/#type-parameters), abbreviated `A`, `E`, `R`. Errors and dependencies are tracked in the type, not lost in `try/catch` and DI containers.
 - Effect values are **lazy descriptions**, not running code. A runtime ([`Effect.runPromise` / `Effect.runSync` / `Effect.runFork`](https://effect.website/docs/getting-started/running-effects/)) executes them when you ask.
 - Replaces (and absorbs) [`fp-ts`](https://github.com/gcanti/fp-ts): per its README, fp-ts is "officially merging with the Effect-TS ecosystem" and "Effect-TS can be regarded as the successor to fp-ts v2".
-- Single npm package for the core (`effect`); the rest of the ecosystem ships under `@effect/*` (platform, cli, sql, ai, workflow, rpc, cluster, opentelemetry, vitest, …).
+- Single npm package for the core (`effect`); the rest of the ecosystem ships under `@effect/*` ([[effect-ts/platform|platform]], cli, sql, ai, workflow, rpc, cluster, [[effect-ts/observability|opentelemetry]], vitest, …).
 - Latest stable: check [npm `effect`](https://www.npmjs.com/package/effect) before citing a version in prose.
 
 ## When to use
@@ -44,63 +44,78 @@ See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 ## Start here
 
 <CardGrid>
-  <Card title="Quickstart" icon="rocket">
+  <Card title="Step 1: Quickstart" icon="rocket">
     <p>
       <a href="/knowledge-base/effect-ts/quickstart/">Install, write, and run</a> your first effect
       (~10 min).
     </p>
   </Card>
-  <Card title="What is Effect" icon="open-book">
+  <Card title="Step 2: What is Effect" icon="open-book">
     <p>
       <a href="/knowledge-base/effect-ts/what-is-effect/">What is Effect</a>: mental model,
       laziness, and the three channels.
     </p>
   </Card>
-  <Card title="Composition" icon="seti:typescript">
+  <Card title="Step 3: Composition" icon="seti:typescript">
     <p>
       <a href="/knowledge-base/effect-ts/composition/">pipe, gen, and fn</a>: when to reach for
       each.
     </p>
   </Card>
-  <Card title="Typed errors" icon="warning">
+  <Card title="Step 4: Typed errors" icon="warning">
     <p>
       The <code>E</code> channel:{" "}
       <a href="/knowledge-base/effect-ts/typed-errors/">try, catchTag</a>.
     </p>
   </Card>
-  <Card title="Schema" icon="document">
+  <Card title="Step 5: Schema" icon="document">
     <p>
       <a href="/knowledge-base/effect-ts/schema/">Runtime boundaries</a>: decode unknown input into
       typed effects.
     </p>
   </Card>
-  <Card title="Layers and DI" icon="setting">
+  <Card title="Step 6: Layers and DI" icon="setting">
     <p>
       The <code>R</code> channel:{" "}
       <a href="/knowledge-base/effect-ts/layers-and-di/">Context.Tag, Layer</a>.
     </p>
   </Card>
-  <Card title="Retry and Schedule" icon="retry">
+  <Card title="Step 7: Retry and Schedule" icon="retry">
     <p>
       <a href="/knowledge-base/effect-ts/retry-and-schedule/">Bounded retries and backoff</a>.
     </p>
   </Card>
-  <Card title="Scoped resources" icon="approve-check">
+  <Card title="Step 8: Scoped resources" icon="approve-check">
     <p>
       <a href="/knowledge-base/effect-ts/scoped-resources/">acquireRelease, Scope</a>.
     </p>
   </Card>
-  <Card title="Concurrency" icon="random">
+  <Card title="Step 9: Concurrency" icon="random">
     <p>
       <a href="/knowledge-base/effect-ts/concurrency/">Fibers, fork, and bounded execution</a>.
     </p>
   </Card>
-  <Card title="Streams" icon="list-format">
+  <Card title="Step 10: Streams" icon="list-format">
     <p>
       <a href="/knowledge-base/effect-ts/streams/">Pull-based streams and backpressure</a>.
     </p>
   </Card>
-  <Card title="Ingestion capstone" icon="list-format">
+  <Card title="Step 11: State coordinates" icon="seti:db">
+    <p>
+      <a href="/knowledge-base/effect-ts/state/">Lock-free fiber coordinates</a>: <code>[[effect-ts/state|Ref]]</code>, <code>SubscriptionRef</code>, and Software Transactional Memory (STM).
+    </p>
+  </Card>
+  <Card title="Step 12: Observability" icon="star">
+    <p>
+      <a href="/knowledge-base/effect-ts/observability/">Structured telemetry</a>: logging, <code>withLogSpan</code>, and OpenTelemetry.
+    </p>
+  </Card>
+  <Card title="Step 13: Platform layers" icon="laptop">
+    <p>
+      <a href="/knowledge-base/effect-ts/platform/">Runtime-agnostic contexts</a>: FileSystem, HttpClient, and modular routing.
+    </p>
+  </Card>
+  <Card title="Step 14: Ingestion capstone" icon="approve-check">
     <p>
       <a href="/knowledge-base/effect-ts/fault-tolerant-ingestion/">Fault-tolerant pipeline</a>{" "}
       recipe.
@@ -112,9 +127,6 @@ After the sequence above, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup 
 
 ## Pending notes (vault)
 
-- **Shared Mutable State Coordinates**: Managing concurrent fiber state modifications safely using `Ref`, `SubscriptionRef`, and STM (Software Transactional Memory) primitives.
-- **Distributed Observability & Telemetry**: Configuring structured logging (`Effect.log`), span hierarchies (`Effect.withLogSpan`), and full OpenTelemetry integrations (`@effect/opentelemetry`).
-- **Platform Abstractions & Integrations**: Utilizing `@effect/platform` for cross-environment HTTP clients, server hosting, and native file system interactions.
 - **Durability Boundaries**: Establishing reliable error recovery thresholds by contrasting in-memory `Effect.retry` scheduling patterns against durable distributed queues and workflow engines.
 
 ## See also

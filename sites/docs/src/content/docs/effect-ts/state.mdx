@@ -1,0 +1,175 @@
+---
+title: State coordinates
+description: Lock-free atomic references (Ref), reactive variables (SubscriptionRef), and Software Transactional Memory (STM) in Effect-TS.
+aliases: [state, Ref, STM, SubscriptionRef]
+tags: [type/concept, tech/typescript, tech/effect-ts]
+area: effect-ts
+status: evergreen
+related:
+  - "[[effect-ts]]"
+  - "[[effect-ts/streams]]"
+  - "[[effect-ts/observability]]"
+source:
+  - https://effect.website/docs/concurrency/ref/
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> **Step 11: State coordinates**: Lock-free, thread-safe mechanisms for managing shared mutable state safely across concurrent fibers. Prerequisite: [[effect-ts/streams|Step 10: Streams]]; next step: [[effect-ts/observability|Step 12: Observability]].
+
+<Steps>
+
+1. Manage single-variable state atomically using `Ref`.
+2. Expose state changes as reactive data streams using `SubscriptionRef`.
+3. Orchestrate complex multi-variable state changes using Software Transactional Memory (STM).
+4. Run memory transactions atomically using `TRef` and `STM.commit`.
+
+</Steps>
+
+## Lock-free concurrency
+
+In JavaScript, code runs on a single event-loop thread, so standard synchronous assignments (like `counter++`) are safe from parallel CPU thread races. However, in asynchronous architectures composed of concurrent [[effect-ts/concurrency|fibers]] that yield and suspend, complex race conditions can still emerge. 
+
+For example, if multiple fibers read a value, suspend (awaiting an API call or timer), and then write back an update, they will overwrite each other's updates (the lost-update problem).
+
+To coordinate state safely, Effect provides three layers of concurrency primitives, all operating lock-free to maximize performance and prevent deadlock conditions.
+
+---
+
+## 1. Ref for Atomic Updates
+
+A [`Ref<A>`](https://effect.website/docs/concurrency/ref) is a reference to a mutable value. All operations on a `Ref` (reads, writes, and updates) are **atomic** and guaranteed to run without interruption:
+
+```ts twoslash
+import { Console, Effect, Ref } from "effect";
+
+const incrementCounter = (counter: Ref.Ref<number>) =>
+  // Ref.update modifications are atomic and lock-free
+  Ref.update(counter, (n) => n + 1);
+
+const program = Effect.gen(function* () {
+  const counter = yield* Ref.make(0);
+  
+  // Spawn 3 background fibers updating the same Ref concurrently
+  yield* Effect.all([
+    incrementCounter(counter),
+    incrementCounter(counter),
+    incrementCounter(counter)
+  ], { concurrency: "unbounded" });
+  
+  const finalValue = yield* Ref.get(counter);
+  yield* Console.log(`Final Counter Value: ${finalValue}`);
+});
+
+Effect.runPromise(program);
+// Final Counter Value: 3
+```
+
+---
+
+## 2. SubscriptionRef for Reactive State
+
+A `SubscriptionRef<A>` behaves like a standard `Ref`, but it exposes a pull-based [[effect-ts/streams|Stream]] of its values. Whenever the value of the reference changes, all active stream subscribers receive the updated value:
+
+```ts twoslash
+import { Console, Effect, Fiber, Stream, SubscriptionRef } from "effect";
+
+const program = Effect.gen(function* () {
+  // Initialize the SubscriptionRef
+  const state = yield* SubscriptionRef.make("Idle");
+  
+  // Start reading state changes in the background as a Stream
+  const subscriber = state.changes.pipe(
+    Stream.tap((s) => Console.log(`Subscriber saw state: ${s}`)),
+    Stream.runCollect
+  );
+  
+  const bgFiber = yield* Effect.fork(subscriber);
+  
+  // Transition states
+  yield* SubscriptionRef.set(state, "Loading");
+  yield* Effect.sleep("10 millis");
+  yield* SubscriptionRef.set(state, "Success");
+  
+  // Abort the subscriber fiber when finished
+  yield* Effect.sleep("10 millis");
+  yield* Fiber.interrupt(bgFiber);
+});
+
+Effect.runPromise(program);
+// Subscriber saw state: Loading
+// Subscriber saw state: Success
+```
+
+---
+
+## 3. Software Transactional Memory (STM)
+
+While `Ref` is perfect for coordinating updates on a single variable, it falls short when you must update multiple independent variables atomically. In standard programming, you would use locking variables, which introduce complex deadlock risks.
+
+Effect solves this by providing **Software Transactional Memory (STM)**. STM is a database-like transaction engine for in-memory variables. You write your operations using transactional variables (`TRef`) and wrap them in `STM.commit`. The runtime guarantees that the transaction executes with strict **ACID properties**: either the entire transaction succeeds, or it fails and rolls back completely.
+
+### The transactional bank transfer example
+
+Consider transferring money from one bank account to another. If account A has funds deducted but a crash occurs before account B receives them, money is lost. STM ensures this can never happen:
+
+```ts twoslash
+import { Console, Effect, STM, TRef } from "effect";
+
+// Deduction operation in the transactional context
+const debit = (account: TRef.TRef<number>, amount: number) =>
+  TRef.update(account, (balance) => balance - amount);
+
+// Deposit operation in the transactional context
+const credit = (account: TRef.TRef<number>, amount: number) =>
+  TRef.update(account, (balance) => balance + amount);
+
+// The atomic bank transfer transaction
+const transfer = (
+  from: TRef.TRef<number>,
+  to: TRef.TRef<number>,
+  amount: number
+) =>
+  STM.gen(function* () {
+    const balance = yield* TRef.get(from);
+    if (balance < amount) {
+      return yield* STM.fail(new Error("Insufficient funds"));
+    }
+    yield* debit(from, amount);
+    yield* credit(to, amount);
+  });
+
+const program = Effect.gen(function* () {
+  const aliceAccount = yield* STM.commit(TRef.make(100));
+  const bobAccount = yield* STM.commit(TRef.make(50));
+  
+  yield* Console.log("Executing atomic transfer...");
+  // Commit executing the transaction atomically in memory
+  yield* STM.commit(transfer(aliceAccount, bobAccount, 30));
+  
+  const aliceBalance = yield* STM.commit(TRef.get(aliceAccount));
+  const bobBalance = yield* STM.commit(TRef.get(bobAccount));
+  
+  yield* Console.log(`Alice: $${aliceBalance}, Bob: $${bobBalance}`);
+});
+
+Effect.runPromise(program);
+// Executing atomic transfer...
+// Alice: $70, Bob: $80
+```
+
+---
+
+<Aside type="caution" title="Never perform side effects inside STM transactions">
+  STM transactions are **optimistic**: if a collision occurs (another fiber updates a `TRef` during execution), the transaction will discard its changes and automatically retry from scratch. Because of this, never run side effects (like sending emails, doing [[effect-ts/platform|HTTP]] requests, or calling `Console.log`) inside an `STM` block. Only manipulate `TRef` values within transactions.
+</Aside>
+
+---
+
+## See also
+
+- [[effect-ts/concurrency|Concurrency and fibers]]
+- [[effect-ts/streams|Streams and backpressure]]
+- [[effect-ts/observability|Observability and telemetry]]
+- [State Management](https://effect.website/docs/state-management/introduction/) (official)
+- [Software Transactional Memory](https://effect.website/docs/concurrency/stm/) (official)

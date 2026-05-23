@@ -28,6 +28,9 @@ const effectTsSidebar = [
   { label: "Scoped resources", slug: "effect-ts/scoped-resources" },
   { label: "Concurrency", slug: "effect-ts/concurrency" },
   { label: "Streams", slug: "effect-ts/streams" },
+  { label: "State coordinates", slug: "effect-ts/state" },
+  { label: "Observability", slug: "effect-ts/observability" },
+  { label: "Platform layers", slug: "effect-ts/platform" },
   {
     label: "Fault-tolerant ingestion",
     slug: "effect-ts/fault-tolerant-ingestion",

@@ -1,0 +1,161 @@
+---
+title: Observability and telemetry
+description: Structured logging, span hierarchies (withLogSpan), and OpenTelemetry integrations in Effect-TS.
+aliases: [observability, telemetry, logging, tracing, opentelemetry]
+tags: [type/concept, tech/typescript, tech/effect-ts]
+area: effect-ts
+status: evergreen
+related:
+  - "[[effect-ts]]"
+  - "[[effect-ts/state]]"
+  - "[[effect-ts/platform]]"
+source:
+  - https://effect.website/docs/observability/logging/
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> **Step 12: Observability & Telemetry**: Native structured logging, contextual tracking spans, and full OpenTelemetry integrations out of the box in the Effect runtime. Prerequisite: [[effect-ts/state|Step 11: State coordinates]]; next step: [[effect-ts/platform|Step 13: Platform layers]].
+
+<Steps>
+
+1. Write contextual structured logs using `Effect.log`.
+2. Segment execution boundaries using logical span hierarchies with `Effect.withLogSpan`.
+3. Configure custom logging formats and log levels globally.
+4. Export rich distributed trace telemetry to OpenTelemetry backends.
+
+</Steps>
+
+## Built-in observability
+
+In microservices architectures, debugging is difficult without proper diagnostic logs and tracing. In standard programming, you have to pass logging context or correlation IDs manually down the call stack or store them in thread-local storage.
+
+Effect addresses this by embedding observability directly into its runtime engine. Every [[effect-ts/concurrency|fiber]] maintains a context that carries trace spans, log levels, and context annotations. Whenever you call a logging operator, the runtime automatically enriches the output with this fiber context, delivering structured logging and trace context propagation with zero boilerplate code.
+
+---
+
+## 1. Structured Logging
+
+Effect provides built-in logging operators that replace native `console.log`. The standard log output captures crucial operational metadata: timestamp, log level, fiber ID, and any active spans:
+
+```ts twoslash
+import { Effect } from "effect";
+
+const program = Effect.gen(function* () {
+  yield* Effect.logInfo("Initializing request handshake...");
+  yield* Effect.logDebug("Handshake details resolved."); // Hidden under default log level
+  yield* Effect.logError("Handshake failed! Re-trying...");
+});
+
+Effect.runPromise(program);
+```
+
+### Understanding log formatting
+
+When running the program, the default console logger prints rich operational metadata in a structured format:
+
+```text
+timestamp=2026-05-23T05:32:00Z level=INFO fiber=#0 message="Initializing request handshake..."
+timestamp=2026-05-23T05:32:01Z level=ERROR fiber=#0 message="Handshake failed! Re-trying..."
+```
+
+Notice that `Handshake failed! Re-trying...` is captured with `level=ERROR`. The `Handshake details resolved.` log was ignored because it is a `DEBUG` level log, which sits below the default log filter (`INFO` and above).
+
+---
+
+## 2. Contextual Log Spans
+
+To track single request execution pipelines composed of multiple nested operations, you can wrap your computation in `Effect.withLogSpan`. This automatically creates a trace span and prefixes all logs inside the wrapped subtree with the span name and execution duration:
+
+```ts twoslash
+import { Effect } from "effect";
+
+const processItem = (id: number) =>
+  Effect.gen(function* () {
+    yield* Effect.logInfo(`Processing item ${id}`);
+    yield* Effect.sleep("50 millis");
+    yield* Effect.logInfo(`Item ${id} processed successfully`);
+  }).pipe(
+    // Wrap this execution subtree in a logical span
+    Effect.withLogSpan("item-processor")
+  );
+
+const program = Effect.gen(function* () {
+  yield* Effect.logInfo("Batch processing sequence initiated...");
+  yield* processItem(42);
+  yield* Effect.logInfo("Batch completed.");
+});
+
+Effect.runPromise(program);
+```
+
+### Visualizing span metadata output
+
+The console logs generated inside the processor are annotated with their active span parent name and execution time in milliseconds:
+
+```text
+timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 message="Batch processing sequence initiated..."
+timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 spans=[item-processor,0ms] message="Processing item 42"
+timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 spans=[item-processor,52ms] message="Item 42 processed successfully"
+timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 message="Batch completed."
+```
+
+Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (like Elasticsearch or Datadog) index operations by span name and instantly graph trace durations without requiring custom [[nestjs/fundamentals/middleware|middleware]] instrumentation.
+
+---
+
+## 3. OpenTelemetry Integration
+
+Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel)** standard. Under the hood, log spans are actual OpenTelemetry Tracer Spans.
+
+By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors:
+
+```ts
+import { Effect } from "effect";
+import { NodeSdk } from "@effect/opentelemetry";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { SimpleSpanProcessor } from "@opentelemetry/sdk-trace-base";
+
+// 1. Configure the OpenTelemetry Node SDK Layer
+const OTelLive = NodeSdk.layer(() => ({
+  resource: { serviceName: "payment-service" },
+  spanProcessor: new SimpleSpanProcessor(
+    new OTLPTraceExporter({ url: "http://localhost:4318/v1/traces" })
+  )
+}));
+
+const processPayment = Effect.gen(function* () {
+  yield* Effect.logInfo("Authorizing credit card transaction...");
+  yield* Effect.sleep("200 millis");
+  return "Tx-98314";
+}).pipe(
+  Effect.withLogSpan("cc-authorization")
+);
+
+const program = Effect.gen(function* () {
+  yield* Effect.logInfo("Payment processing request received.");
+  const txId = yield* processPayment;
+  yield* Effect.logInfo(`Payment successfully captured: ${txId}`);
+});
+
+// 2. Provide the OpenTelemetry Layer at the execution boundary
+Effect.runPromise(program.pipe(Effect.provide(OTelLive)));
+```
+
+All spans spawned inside `processPayment` (including their parent span relationship) are exported as rich JSON traces to the local OTLP collector.
+
+---
+
+<Aside type="caution" title="Do not mix console.log and Effect.log">
+  Using standard `console.log` bypassed the Effect fiber runtime context. It will not capture correlation IDs, log levels, span durations, or active fiber traces. Always use `Effect.logInfo`, `Effect.logDebug`, `Effect.logError`, and `Effect.logWarning` to maintain structured telemetry consistency across your codebases.
+</Aside>
+
+---
+
+## See also
+
+- [[effect-ts/state|State coordinates]]
+- [[effect-ts/platform|Platform layers]]
+- [[effect-ts/fault-tolerant-ingestion|Fault-tolerant ingestion]]
+- [Logging in Effect](https://effect.website/docs/observability/logging/) (official)
+- [Distributed Tracing](https://effect.website/docs/observability/tracing/) (official)

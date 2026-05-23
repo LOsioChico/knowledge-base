@@ -2,13 +2,13 @@
 title: Fault-Tolerant Ingestion Pipeline
 description: Compose tryPromise, Schema, timeout, selective retry, and forEach into a robust typed ingestion pipeline with bounded concurrency in Effect-TS.
 related:
-  - "[[effect-ts/concurrency]]"
-  - "[[effect-ts/streams]]"
+  - "[[effect-ts]]"
+  - "[[effect-ts/platform]]"
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Fetching resources from a flaky external network endpoint is a classic architectural challenge. This capstone recipe demonstrates how to leverage Effect-TS to type every failure mode explicitly, implement strict timeouts, retry selectively on transient failures, and control concurrent downstream execution.
+> **Step 14: Ingestion capstone**: Fetching resources from a flaky external network endpoint. This capstone recipe demonstrates how to leverage Effect-TS to type every failure mode explicitly, implement strict timeouts, retry selectively on transient failures, and control concurrent downstream execution. Prerequisite: [[effect-ts/platform|Step 13: Platform layers]].
 
 ---
 
@@ -64,7 +64,7 @@ The following workflow diagram illustrates how elements are batched, fetched, pa
 
 ## Complete Resilient Ingestion Implementation
 
-Below is the complete, self-contained, and compile-safe implementation. It implements each operational policy (timeouts, retry limits, concurrency bounds) as clean, composable functional operators.
+Below is the complete, self-contained, and compile-safe implementation. It implements each operational policy (timeouts, retry limits, [[effect-ts/concurrency|concurrency]] bounds) as clean, composable functional operators.
 
 ```ts twoslash
 import { Console, Data, Effect, Schedule, Schema } from "effect";

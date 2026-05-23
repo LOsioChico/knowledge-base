@@ -8,15 +8,14 @@ status: evergreen
 related:
   - "[[effect-ts]]"
   - "[[effect-ts/concurrency]]"
-  - "[[effect-ts/scoped-resources]]"
-  - "[[effect-ts/fault-tolerant-ingestion]]"
+  - "[[effect-ts/state]]"
 source:
   - https://effect.website/docs/streaming/stream/
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Pull-based streams in Effect: asynchronous data generators that naturally coordinate ingestion rates with consumer capacity, resolving backpressure without manual buffer management.
+> **Step 10: Streams & Backpressure**: Pull-based streams in Effect. Asynchronous data generators that naturally coordinate ingestion rates with consumer capacity, resolving backpressure without manual buffer management. Prerequisite: [[effect-ts/concurrency|Step 9: Concurrency & Fibers]]; next step: [[effect-ts/state|Step 11: State coordinates]].
 
 <Steps>
 
@@ -117,7 +116,7 @@ sequenceDiagram
 
 ## Batching and Windowing
 
-When communicating with external databases or HTTP APIs, processing items one-by-one is highly inefficient. You can group stream elements into batches of a specific size using `Stream.grouped`:
+When communicating with external databases or [[effect-ts/platform|HTTP]] APIs, processing items one-by-one is highly inefficient. You can group stream elements into batches of a specific size using `Stream.grouped`:
 
 ```ts twoslash
 import { Console, Effect, Stream } from "effect";
