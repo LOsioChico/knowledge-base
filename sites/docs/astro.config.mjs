@@ -253,6 +253,7 @@ const systemDesignSidebar = [
   { label: "Estimation Primitives", slug: "system-design/back-of-the-envelope-estimation" },
   { label: "Distributed Caching", slug: "system-design/distributed-caching" },
   { label: "Asynchronous Message Queues", slug: "system-design/message-queues" },
+  { label: "Rate Limiting & Traffic Shaping", slug: "system-design/rate-limiting" },
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },
   { label: "Logical Clocks", slug: "system-design/logical-clocks" },
