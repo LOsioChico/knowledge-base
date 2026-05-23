@@ -16,25 +16,26 @@ In a single-computer system, building software is straightforward: there is a si
 *   **No instant updates**: If a user updates their profile picture, how does every other server learn about it without slowing down the site?
 *   **No single truth of time**: Computers have physical clocks that drift. How do we know which event happened first if servers disagree on what time it is?
 
-[[system-design/consistent-hashing|Consistent Hashing]], [[system-design/consistency-models|Consistency Models]], and [[system-design/logical-clocks|Logical Clocks]] are the three foundational pillars that solve these exact core problems. Mastering them is the essential prerequisite before building complex distributed architectures.
-
+[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/consistent-hashing|Consistent Hashing]], [[system-design/consistency-models|Consistency Models]], and [[system-design/logical-clocks|Logical Clocks]] are the core foundational pillars of distributed software architecture.
 
 ## TL;DR
 
 *   **Estimation Primitives**: Frames system capacities and constraints using powers of two, network latencies, and SLA uptime compounding formulas. See [[system-design/back-of-the-envelope-estimation|Estimation Primitives]].
+*   **Distributed Caching**: Analyzes read/write synchronization patterns, LRU eviction models, and high-load database stampede mitigations. See [[system-design/distributed-caching|Distributed Caching]].
 *   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
 *   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
 *   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].
 
 ## Learning Pathway Sequence
 
-For a progressive learning flow, we recommend mastering quantitative estimation before diving into the CAP consistency spectrum (consistency models), event coordination (logical clocks), and data distribution rings (consistent hashing):
+For a progressive learning flow, we recommend mastering quantitative estimation and cache distribution before diving into the CAP consistency spectrum (consistency models), event coordination (logical clocks), and data distribution rings (consistent hashing):
 
 ```mermaid
 flowchart TD
-    EST["1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]] (Entry)"] --> CM["2. [[system-design/consistency-models|Consistency Models]]"]
-    CM --> LC["3. [[system-design/logical-clocks|Logical Clocks]]"]
-    CM --> CH["4. [[system-design/consistent-hashing|Consistent Hashing]]"]
+    EST["1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]] (Entry)"] --> CA["2. [[system-design/distributed-caching|Distributed Caching]]"]
+    CA --> CM["3. [[system-design/consistency-models|Consistency Models]]"]
+    CM --> LC["4. [[system-design/logical-clocks|Logical Clocks]]"]
+    CM --> CH["5. [[system-design/consistent-hashing|Consistent Hashing]]"]
 ```
 
 ## Choose a path
@@ -44,9 +45,10 @@ flowchart TD
     <Steps>
 
     1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Master the power-of-two scale, Jeff Dean latency numbers, compounding SLA availability math, and raw QPS/storage blueprints.
-    2. [[system-design/consistency-models|Consistency Models]]: Understand the CAP theorem, sequential/causal models, and client-centric guarantees like Read-Your-Writes.
-    3. [[system-design/logical-clocks|Logical Clocks]]: Solve time synchronization limits using Lamport Timestamps and Vector Clocks for causal histories.
-    4. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
+    2. [[system-design/distributed-caching|Distributed Caching]]: Analyze read/write strategies, LRU cache memory, cache invalidation models, and database stampede gotchas.
+    3. [[system-design/consistency-models|Consistency Models]]: Understand the CAP theorem, sequential/causal models, and client-centric guarantees like Read-Your-Writes.
+    4. [[system-design/logical-clocks|Logical Clocks]]: Solve time synchronization limits using Lamport Timestamps and Vector Clocks for causal histories.
+    5. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
 
     </Steps>
   </TabItem>
@@ -54,8 +56,9 @@ flowchart TD
     <Steps>
 
     1. **Quantitative Calculations**: Practice step-by-step arithmetic to estimate storage footprint, bandwidth requirements, and caching memory size: [[system-design/back-of-the-envelope-estimation#worked-example-capstone-high-scale-photo-platform|Worked Example Blueprint]].
-    2. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
-    3. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
+    2. **Cache Eviction Simulation**: Build and analyze an O(1) Least Recently Used cache using a doubly linked list and Map: [[system-design/distributed-caching#typescript-lru-cache-implementation|TypeScript LRU Cache Code]].
+    3. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
+    4. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
 
     </Steps>
   </TabItem>
@@ -66,6 +69,9 @@ flowchart TD
 <CardGrid>
   <Card title="Estimation Primitives" icon="calculator">
     <p><a href="/knowledge-base/system-design/back-of-the-envelope-estimation/">Quantitative scale</a>: Latency, availability nines, and worked math blueprints.</p>
+  </Card>
+  <Card title="Distributed Caching" icon="setting">
+    <p><a href="/knowledge-base/system-design/distributed-caching/">Cache tiers</a>: Read/Write strategies, LRU cache TS simulation, and stampede defenses.</p>
   </Card>
   <Card title="Consistency Models" icon="matrix">
     <p><a href="/knowledge-base/system-design/consistency-models/">Consistency spectrum</a>: CAP theorem, linearizability, and client models.</p>
@@ -83,6 +89,7 @@ flowchart TD
 | Guide | MOC Link | Key Primitives |
 | --- | --- | --- |
 | Estimation Primitives | [Estimation Primitives](/knowledge-base/system-design/back-of-the-envelope-estimation/) | Powers of two, Latency numbers, SLA nines, QPS math |
+| Distributed Caching | [Distributed Caching](/knowledge-base/system-design/distributed-caching/) | Read/Write patterns, Eviction LRU/LFU, Cache Stampede |
 | Consistency Models | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | Logical Clocks | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
 | Consistent Hashing | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
@@ -92,7 +99,6 @@ flowchart TD
 To expand our distributed systems curriculum and prepare for advanced real-world architectures, the following core topics are planned to be added next:
 
 - **[[nestjs/recipes/rate-limiting|Rate Limiting]] & Traffic Shaping**: Implementing token bucket, leaky bucket, and sliding window counter algorithms at the API Gateway layer to defend downstream services against DDoS attacks.
-- **Distributed [[nestjs/data/caching|Caching]] & Invalidation**: Master-replica caching architectures, invalidation models (cache-aside, write-through, write-behind), eviction policies (LRU, LFU), and cache stampede mitigations.
 - **Asynchronous Message Queues**: Decoupling compute using message queues and Pub/Sub hubs, handling dead-letter queues, horizontal worker scaling, and delivery guarantees (at-least-once, exactly-once).
 - **Distributed Transactions & Saga Patterns**: Resolving database coordination bottlenecks without two-phase commit locks by using the Saga and transactional outbox patterns.
 - **Distributed Consensus & Coordination**: Master election, split-brain mitigation, heartbeats, and leader coordination using consensus algorithms like Raft and Paxos.

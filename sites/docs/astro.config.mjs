@@ -251,6 +251,7 @@ const awsSidebar = [
 const systemDesignSidebar = [
   { label: "Overview", slug: "system-design" },
   { label: "Estimation Primitives", slug: "system-design/back-of-the-envelope-estimation" },
+  { label: "Distributed Caching", slug: "system-design/distributed-caching" },
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },
   { label: "Logical Clocks", slug: "system-design/logical-clocks" },

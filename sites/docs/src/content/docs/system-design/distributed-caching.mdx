@@ -1,0 +1,302 @@
+---
+title: Distributed Caching & Invalidation
+description: "Caching patterns: Cache-Aside, Read/Write-Through, and Write-Behind write strategies, LRU cache memory architectures, and database stampede gotchas."
+related:
+  - "[[system-design/back-of-the-envelope-estimation]]"
+  - "[[system-design/consistency-models]]"
+  - "[[system-design/consistent-hashing]]"
+  - "[[system-design/logical-clocks]]"
+---
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+
+> Designing low-latency data access layers using read/write [[nestjs/data/caching|caching]] patterns, optimal memory eviction algorithms, and thundering herd defenses.
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[Systems Design Track](/knowledge-base/system-design/)**. Before routing cache nodes, make sure you understand:
+- [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Calculate daily working sets, QPS boundaries, and cache memory footprints using the 80/20 rule.
+
+</Aside>
+
+Enforcing sub-millisecond response times is a core challenge of distributed software design. While databases persist terabytes of structured records on non-volatile SSDs or spinning disks, fetching those files takes milliseconds, a lifetime in computer execution.
+
+Caching solves this bottleneck by storing copies of hot, frequently accessed records in fast, volatile memory (RAM). When designed correctly, a cache tier reduces database workloads, eliminates scaling bottlenecks, and secures thundering herd resiliency.
+
+---
+
+## Caching Paradigms: Local vs. Distributed
+
+Before coordinating how data is read and written, you must choose the appropriate caching architecture:
+
+### Local In-Memory Caching
+
+Data is stored directly inside the application process's heap memory (for example, utilizing a local JavaScript Map or a cache library like Caffeine/Keyv in a Node.js process).
+
+*   **Pros**: Ultra-fast. Zero network overhead because lookup stays inside the process memory space.
+*   **Cons**:
+    *   **Scale Limits**: Caching capacity is restricted by the single server's RAM limits.
+    *   **Data Inconsistency**: If you have ten horizontal server instances behind a load balancer, each server maintains its own isolated cache. A user updating their profile might see their edits on Server 1, but get routed to Server 2 on the next click and see stale data.
+    *   **Loss on Restart**: Restarting the process or deploying new code completely wipes the cache.
+
+### Distributed Caching
+
+Data is stored on a dedicated, external cluster of caching servers (such as Redis or Memcached clusters) accessed by applications over a local network.
+
+*   **Pros**:
+    *   **Global Single Source of Truth**: All horizontal web servers read from and write to the same shared cache cluster, eliminating in-flight inconsistencies.
+    *   **Dynamic Scaling**: Caching tiers can be scaled out independently from the compute tier by adding more caching shards using [[system-design/consistent-hashing|Consistent Hashing]].
+    *   **Process Isolation**: Restarting a web server does not wipe cached data.
+*   **Cons**: Network latency. Accessing an external Redis node requires a network socket call (~500 microseconds), which is slower than process RAM lookup but still far faster than a database seek.
+
+---
+
+## Caching Read and Write Patterns
+
+The core contract of a caching tier is keeping volatile memory aligned with the persistent database. There are four primary read and write patterns, each optimized for different workloads:
+
+### 1. Cache-Aside (Lazy Loading)
+
+The application handles both the cache and the database directly. The cache acts as an independent bystander.
+
+*   **Read Workflow**:
+    1.  The client requests a key. The application checks the cache.
+    2.  If it is a **Cache Hit**, the application returns the cached data immediately.
+    3.  If it is a **Cache Miss**, the application queries the database, writes the retrieved value to the cache, and returns it to the client.
+*   **Write Workflow**:
+    1.  The application writes the updated value to the database.
+    2.  The application **invalidates (deletes)** the corresponding key from the cache to prevent stale reads.
+
+```
+Read Miss: Client -> App -> Cache (Miss) -> App -> DB -> App -> Cache (Set) -> Client
+Write:     Client -> App -> DB (Write) -> App -> Cache (Delete)
+```
+
+*   **Pros**: Simple, highly robust. If the caching tier crashes, the application falls back to querying the database directly. Caching memory is only consumed by keys that are actively requested (lazy loading).
+*   **Cons**: High read latency on cache misses. If a key is updated, the subsequent read must fetch from the database to re-warm the cache.
+
+### 2. Read-Through
+
+The application only communicates with the cache tier. The cache server itself is responsible for fetching missing data from the database.
+
+*   **Read Workflow**:
+    1.  The application requests a key from the cache.
+    2.  If it is a hit, the cache returns the value.
+    3.  If it is a miss, the cache server synchronously queries the database, updates its memory, and returns the value to the application.
+*   **Pros**: Simplifies application code. The business logic does not need to handle database fallback routines.
+*   **Cons**: Requires custom database adapters configured inside the caching provider.
+
+### 3. Write-Through
+
+The application writes directly to the cache, and the cache synchronously updates the database before confirming success to the application.
+
+*   **Write Workflow**:
+    1.  The application writes to the cache.
+    2.  The cache server synchronously writes the same value to the database.
+    3.  Once the database write completes, the cache returns a success status.
+*   **Pros**: Strong consistency. Stale cache reads are impossible because the cache and database are updated in a single transaction.
+*   **Cons**: Extremely high write latency. Every write operation is bottlenecked by the slow database disk, negating some performance benefits.
+
+### 4. Write-Behind (Write-Back)
+
+The application writes to the cache, which immediately returns a success status. The cache then asynchronously writes the accumulated updates to the database in background batches.
+
+*   **Write Workflow**:
+    1.  The application writes to the cache. The cache updates its memory and returns success immediately.
+    2.  The cache buffers the update in a queue.
+    3.  In the background, a worker batches the queued writes and flushes them to the database.
+*   **Pros**: Ultra-low write latency and massive write throughput. Perfect for write-heavy systems like IoT data collectors or high-frequency event counters, as it reduces database write operations by merging duplicates.
+*   **Cons**: Risk of data loss. If a caching node crashes before flushing its queue to the database, those in-memory writes are lost forever.
+
+### Strategies Comparison Matrix
+
+| Pattern | Read Latency | Write Latency | Stale Read Risk | Implementation Complexity | Primary Use Case |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **[Cache-Aside](/knowledge-base/system-design/distributed-caching/#1-cache-aside-lazy-loading)** | Low (on hit) | Low | Low (with invalidation) | Low | Standard read-heavy web apps |
+| **[Read-Through](/knowledge-base/system-design/distributed-caching/#2-read-through)** | Low (on hit) | Low | Zero | Medium | Unified data access layers |
+| **[Write-Through](/knowledge-base/system-design/distributed-caching/#3-write-through)** | Low | High | Zero | Medium | Financial systems, balance logs |
+| **[Write-Behind](/knowledge-base/system-design/distributed-caching/#4-write-behind-write-back)** | Low | Ultra-Low | High (eventual DB sync) | High | Write-heavy telemetry, game logs |
+
+---
+
+## Cache Eviction Policies
+
+Because RAM is highly expensive, caching clusters operate under strict memory limits. When the memory is exhausted, the cache must evict existing keys to make room for new records. The three primary eviction policies are:
+
+1.  **FIFO (First-In, First-Out)**: Evicts the oldest key in the cache, regardless of how frequently it is requested. Simple but inefficient, as it frequently discards highly active keys.
+2.  **LFU (Least Frequently Used)**: Evicts the key with the lowest request count. Excellent for static popularity patterns, but incurs high memory overhead to track frequency counters and can struggle when historical popularity changes (a historically hot key stays in memory even if it is no longer active).
+3.  **LRU (Least Recently Used)**: Evicts the key that has not been accessed for the longest duration. This is the industry standard for general workloads, as it naturally fits sliding-window access patterns.
+
+---
+
+## TypeScript LRU Cache Implementation
+
+To build complete engineering intuition, let us implement a production-grade Least Recently Used cache. 
+
+A naive LRU cache using a basic array runs in `O(N)` time because searching or removing elements requires scanning the entire collection. To achieve strict **O(1) time complexity** for both `get` and `put` operations, we must pair a **Doubly Linked List** and a **Hash Map**:
+*   The **Map** provides $O(1)$ key lookup to locate the node.
+*   The **Doubly Linked List** tracks access order: whenever an item is accessed, it is detached from its current position and pushed to the head. The tail node always represents the least recently used item.
+
+To keep the code clean and eliminate complex boundary null checks, our Doubly Linked List utilizes **head and tail sentinel (dummy) nodes**.
+
+```typescript
+class ListNode<K, V> {
+  public key: K;
+  public value: V;
+  public prev: ListNode<K, V> | null = null;
+  public next: ListNode<K, V> | null = null;
+
+  constructor(key: K, value: V) {
+    this.key = key;
+    this.value = value;
+  }
+}
+
+export class LRUCache<K, V> {
+  private readonly capacity: number;
+  private readonly cache = new Map<K, ListNode<K, V>>();
+  private readonly head: ListNode<K, V>;
+  private readonly tail: ListNode<K, V>;
+
+  constructor(capacity: number) {
+    if (capacity <= 0) {
+      throw new Error("Capacity must be greater than zero");
+    }
+    this.capacity = capacity;
+
+    // Initialize sentinel nodes to avoid boundary null checks
+    this.head = new ListNode<K, V>(null as any, null as any);
+    this.tail = new ListNode<K, V>(null as any, null as any);
+    this.head.next = this.tail;
+    this.tail.prev = this.head;
+  }
+
+  /**
+   * Retrieves a value from the cache in O(1) time.
+   */
+  public get(key: K): V | null {
+    const node = this.cache.get(key);
+    if (!node) return null;
+
+    // Refresh node position to mark it as most recently used
+    this.moveToHead(node);
+    return node.value;
+  }
+
+  /**
+   * Adds or updates a value in the cache in O(1) time, evicting the LRU item if capacity is reached.
+   */
+  public put(key: K, value: V): void {
+    const existingNode = this.cache.get(key);
+
+    if (existingNode) {
+      existingNode.value = value;
+      this.moveToHead(existingNode);
+      return;
+    }
+
+    if (this.cache.size >= this.capacity) {
+      // Evict the least recently used node at the tail
+      const lruNode = this.tail.prev!;
+      this.removeNode(lruNode);
+      this.cache.delete(lruNode.key);
+    }
+
+    const newNode = new ListNode<K, V>(key, value);
+    this.addNodeAtHead(newNode);
+    this.cache.set(key, newNode);
+  }
+
+  /**
+   * Helper: Detaches a node from its current position in the Doubly Linked List.
+   */
+  private removeNode(node: ListNode<K, V>): void {
+    const prevNode = node.prev!;
+    const nextNode = node.next!;
+    prevNode.next = nextNode;
+    nextNode.prev = prevNode;
+  }
+
+  /**
+   * Helper: Inserts a node immediately after the dummy head.
+   */
+  private addNodeAtHead(node: ListNode<K, V>): void {
+    const oldFirstNode = this.head.next!;
+    this.head.next = node;
+    node.prev = this.head;
+    node.next = oldFirstNode;
+    oldFirstNode.prev = node;
+  }
+
+  /**
+   * Helper: Refreshes a node's recency status by moving it to the head.
+   */
+  private moveToHead(node: ListNode<K, V>): void {
+    this.removeNode(node);
+    this.addNodeAtHead(node);
+  }
+
+  /**
+   * Returns current internal cache size (for validation).
+   */
+  public size(): number {
+    return this.cache.size;
+  }
+}
+```
+
+---
+
+## Production Gotchas & Operational Defenses
+
+Deploying a caching layer in high-volume production requires defending against specific failure states:
+
+### 1. The Cache Stampede (Thundering Herd)
+
+If a highly popular, hot key (for example, the home feed metadata of a celebrity) expires or is deleted, thousands of concurrent read requests will miss the cache simultaneously. Since the cache is empty, all these requests fall back to the database, causing a database crash.
+
+#### Solution A: Mutex Locking (Single Flight)
+
+Prevent concurrent database loads by enforcing a locking mechanism. When a cache miss occurs, the application acquires a lock for that key:
+*   Only the first request obtains the lock and queries the database to re-warm the cache.
+*   All other threads block, wait for the lock to be released, and then read the newly cached value safely.
+
+#### Solution B: Probabilistic Early Expiration (XFetch)
+
+As a popular key nears its expiration date, read requests trigger an asynchronous background update of the cache *before* it actually expires. The key is never allowed to hit a hard miss [[effect-ts/state|state]]. The probability of triggering an early refresh increases as the key gets closer to its TTL:
+
+```
+Refresh Probability = -beta * delta * ln(random()) > TTL
+```
+*   `delta`: The time taken to fetch the value from the database.
+*   `beta`: A scaling constant (typically set to > 0). If `random()` generates a small probability, the system initiates a background update early, avoiding a hard cache miss.
+
+### 2. Cache Invalidation & Stale Reads
+
+If the database is updated but the cache is not invalidated, subsequent reads return stale data.
+*   **Time-to-Live (TTL)**: Always set an explicit TTL on every key as a fallback safety net.
+*   **Active Invalidation**: On write operations, synchronously delete the cache key.
+*   **Version Pinning**: Embed a monotonic version number in keys (for example, `user:12:v2`) to render old cached states obsolete immediately.
+
+### 3. Cache Penetration
+
+An attacker intentionally floods the system with requests for non-existent keys (like querying random UUIDs `/users/uuid-999`). Because these keys do not exist in the database, they will never be cached, resulting in 100% of the requests hitting the database directly.
+
+#### Solution A: Cache Null Responses
+
+If the database returns a null or not-found status, store that null response in the cache with a very short TTL (for example, 5 minutes). Subsequent requests for the non-existent key will hit the cache directly, protecting the database.
+
+#### Solution B: Bloom Filters
+
+Configure a **Bloom Filter** (a space-efficient, probabilistic data structure used to test set membership) in front of the caching layer.
+*   The Bloom filter is pre-loaded with all valid IDs.
+*   If the Bloom filter reports that an ID does not exist, the request is immediately rejected at the API Gateway without ever querying the cache or database.
+*   Bloom filters have zero false negatives (if it says the key doesn't exist, it definitely doesn't), though they carry a small false positive rate.
+
+---
+
+## See Also
+*   [[system-design/back-of-the-envelope-estimation|Back-of-the-Envelope Estimation Primitives]]
+*   [[system-design/consistency-models|CAP Theorem & Consistency Models]]
+*   [[system-design/consistent-hashing|Consistent Hashing & Dynamic Ring Partitioning]]
+*   [[system-design/logical-clocks|Logical Clocks & Event Ordering]]
