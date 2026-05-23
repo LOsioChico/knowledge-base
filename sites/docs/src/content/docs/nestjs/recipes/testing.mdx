@@ -285,6 +285,10 @@ export class AuthModule {}
 ```
 
 ```typescript
+import { Test } from "@nestjs/testing";
+import { AppModule } from "./app.module";
+import { JwtAuthGuard } from "./jwt-auth.guard";
+
 const moduleRef = await Test.createTestingModule({
   imports: [AppModule],
 })
@@ -305,7 +309,7 @@ If the expensive boundary is a whole imported module rather than one guard, Nest
 
 ## Transactional database E2E test rollback pattern
 
-For true confidence, E2E tests should target a real database (e.g., local PostgreSQL or Docker test container) rather than an in-memory double. However, resetting database [[effect-ts/state|state]] between test runs is a major bottleneck: rebuilding schemas or truncating tables in `beforeEach` adds seconds to every test, slowing down CI pipelines.
+For true confidence, E2E tests should target a real database (e.g., local PostgreSQL or Docker test container) rather than an in-memory double. However, resetting database tables between test runs is a major bottleneck: rebuilding schemas or truncating tables in `beforeEach` adds seconds to every test, slowing down CI pipelines.
 
 The gold standard for high-performance database testing is the **transactional rollback pattern**. By wrapping every individual test case inside a database transaction and rolling it back in `afterEach`, the database never persists mutations, keeping tests completely isolated and running in milliseconds.
 
@@ -410,7 +414,7 @@ Content-Type: application/json
 }
 ```
 
-Because the test case ends and `afterEach` rolls back the transaction, the database returns to its clean state. A subsequent `GET /users/402` request in a different test case yields:
+Because the test case ends and `afterEach` rolls back the transaction, the database returns to its clean [[effect-ts/state|state]]. A subsequent `GET /users/402` request in a different test case yields:
 
 ```http
 HTTP/1.1 404 Not Found

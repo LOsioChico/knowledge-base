@@ -16,17 +16,17 @@ Before reading about the NestJS 11 release notes, make sure you understand:
 
 | Change | Type | Impact |
 | --- | --- | --- |
-| Node.js 20+ required | Breaking | Drop Node 16/18 from CI |
-| Express v5 default | Breaking | Named wildcards: `*splat` |
-| Fastify v5 | Breaking | Explicit CORS methods; named wildcards |
+| [Node.js 20+ required](#nodejs-20) | Breaking | Drop Node 16/18 from CI |
+| [Express v5 default](#express-v5-wildcards-must-be-named) | Breaking | Named wildcards: `*splat` |
+| [Fastify v5](#fastify-v5-cors-methods) | Breaking | Explicit CORS methods; named wildcards |
 | `CacheModule` + Keyv | Breaking | [caching recipe](/knowledge-base/nestjs/data/caching/) |
 | `ConfigService#get` order | Breaking | Custom config overrides `process.env` |
 | Termination hook order reversed | Breaking | [Lifecycle hooks](/knowledge-base/nestjs/fundamentals/lifecycle-hooks/) |
-| Dynamic module dedup by reference | Breaking (edge) | Share module variable in tests |
+| [Dynamic module dedup by reference](#dynamic-modules-reference-dedup) | Breaking (edge) | Share module variable in tests |
 | Global middleware runs first | Breaking (edge) | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) |
-| `getAllAndOverride` → `T \| undefined` | Type-only | Handle missing metadata |
+| [`getAllAndOverride` → `T \| undefined`](#reflector-getallandoverride) | Type-only | Handle missing metadata |
 | [`ConsoleLogger`](#consolelogger-json-mode) JSON mode | Feature | Structured logs without Pino |
-| Microservice `unwrap()`, `on()`, `status` | Feature | Native client access |
+| [Microservice `unwrap()`, `on()`, `status`](#microservices-unwrap-on-status) | Feature | Native client access |
 | `ParseDatePipe` | Feature | Built-in date parsing |
 | `@nestjs/cqrs` typed handlers | Feature | `Command<R>` / `Query<R>` |
 
@@ -154,7 +154,7 @@ Tests: `module.get(Target, { each: true })` or opt out with `moduleIdGeneratorAl
 
 Middleware from global modules runs before imported modules ([migration guide](https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md#middleware-registration-order)).
 
-### `Reflector#getAllAndOverride` is `T | undefined`
+### `Reflector#getAllAndOverride` is `T | undefined` {#reflector-getallandoverride}
 
 ```typescript
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";

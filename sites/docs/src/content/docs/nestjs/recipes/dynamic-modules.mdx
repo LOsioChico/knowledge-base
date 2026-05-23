@@ -357,11 +357,14 @@ If the dynamic options load an empty bucket name, the service throws, and the co
 If you import the same module class twice in the same `imports` list with different configurations, NestJS will **deduplicate** the imports, meaning only the first module configuration will take effect:
 
 ```typescript
+import { Module } from "@nestjs/common";
+import { StorageModule } from "./storage.module";
+
 // DANGER: NestJS will only instantiate ONE StorageModule and overwrite the other!
 @Module({
   imports: [
     StorageModule.register({ bucket: "avatars" }),
-    StorageModule.register({ bucket: "invoices" }), 
+    StorageModule.register({ bucket: "invoices" }),
   ],
 })
 export class AppModule {}
@@ -408,6 +411,9 @@ By default, dynamic modules are bounded to the module registry where they are im
 If using `ConfigurableModuleBuilder`, you can dynamically support optional global registration by configuring it on the builder:
 
 ```typescript
+import { ConfigurableModuleBuilder } from "@nestjs/common";
+import { StorageOptions } from "./storage-options.interface";
+
 export const { ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } =
   new ConfigurableModuleBuilder<StorageOptions>()
     .setClassMethodName("register")

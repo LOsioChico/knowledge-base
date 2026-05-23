@@ -18,7 +18,7 @@ Before diving into the SWC builder setup, make sure you understand:
 | --- | --- | --- |
 | Single Nest app (default here) | `swc` | Always `--type-check` or `typeCheck: true` |
 | `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required**: plugins need `tsc` metadata |
-| Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](https://docs.nestjs.com/recipes/swc#monorepo) |
+| Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](/knowledge-base/nestjs/recipes/monorepo/) |
 | SWC circular-metadata / custom transformer bug | `tsc` fallback | Built-in |
 
 ## Setup
@@ -86,9 +86,9 @@ SWC **does not type-check**: it transpiles only. `--type-check` (or `typeCheck: 
 
 | Builder | Speed | Type-checks alone? | Use when |
 | --- | --- | --- | --- |
-| `swc` | ~20× `tsc` | No | Default single app |
-| `tsc` | Baseline | Yes | SWC incompatibility |
-| `webpack` | Slow | Via loader | Nest CLI monorepo |
+| `swc` | ~20× `tsc` | No | Default single app (see [setup](#setup)) |
+| `tsc` | Baseline | Yes | SWC incompatibility (see [pick a builder](#pick-a-builder)) |
+| `webpack` | Slow | Via loader | [Nest CLI monorepos](/knowledge-base/nestjs/recipes/monorepo/) (see [monorepo note](#monorepo-note)) |
 
 Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L19)).
 

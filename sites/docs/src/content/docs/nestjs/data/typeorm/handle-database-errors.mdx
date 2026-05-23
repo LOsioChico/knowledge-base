@@ -53,10 +53,10 @@ export function isUniqueViolation(
 
 | Constraint | Postgres SQLSTATE | Mapped in filter below |
 | --- | --- | --- |
-| Unique | `23505` | [409](#recipe-1-global-exception-filter) |
-| Foreign key | `23503` | 409 |
-| Not null | `23502` | 422 |
-| Check | `23514` | 422 |
+| [Unique](#recipe-1-global-exception-filter) | `23505` | [409](#recipe-1-global-exception-filter) |
+| [Foreign key](#recipe-1-global-exception-filter) | `23503` | [409](#recipe-1-global-exception-filter) |
+| [Not null](#recipe-1-global-exception-filter) | `23502` | [422](#recipe-1-global-exception-filter) |
+| [Check](#recipe-1-global-exception-filter) | `23514` | [422](#recipe-1-global-exception-filter) |
 
 Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes, not `err.message`.
 
@@ -222,9 +222,9 @@ Duplicate email response:
   <TabItem label="When to use which">
     | Approach | Use when |
     | --- | --- |
-    | Global filter | Consistent JSON for every DB error |
-    | Service catch | Domain codes (`EMAIL_TAKEN` vs `USERNAME_TAKEN`) |
-    | Both | Service handles named constraints; filter handles the rest |
+    | Global filter | Consistent JSON for every DB error (see [Recipe 1](#recipe-1-global-exception-filter)) |
+    | Service catch | Domain codes (`EMAIL_TAKEN` vs `USERNAME_TAKEN`; see [Recipe 2](#recipe-2-service-level-domain-codes)) |
+    | Both | Service handles named constraints; filter handles the rest (see [Recipe 1](#recipe-1-global-exception-filter) and [Recipe 2](#recipe-2-service-level-domain-codes)) |
   </TabItem>
 </Tabs>
 
