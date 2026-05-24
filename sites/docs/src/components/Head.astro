@@ -1,0 +1,38 @@
+---
+import Default from "@astrojs/starlight/components/Head.astro";
+
+const { entry } = Astro.props;
+const title = entry?.data?.title;
+const description = entry?.data?.description;
+
+const structuredData = title
+  ? {
+      "@context": "https://schema.org",
+      "@type": "TechArticle",
+      headline: title,
+      description: description || "",
+      url: Astro.url.href,
+      author: {
+        "@type": "Person",
+        name: "LOsioChico",
+        url: "https://github.com/LOsioChico",
+      },
+      publisher: {
+        "@type": "Person",
+        name: "LOsioChico",
+      },
+      inLanguage: "en",
+    }
+  : null;
+---
+
+<Default {...Astro.props}><slot /></Default>
+{
+  structuredData && (
+    <script
+      is:inline
+      type="application/ld+json"
+      set:html={JSON.stringify(structuredData)}
+    />
+  )
+}

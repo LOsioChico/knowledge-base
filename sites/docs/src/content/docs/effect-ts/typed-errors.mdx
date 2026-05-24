@@ -370,7 +370,7 @@ Assigning an effect to the wrong `E` (or success type) is a compile error. Fence
 import { Effect } from "effect";
 
 const program = Effect.succeed("hello");
-// @errors: 2375
+// @errors: 2322
 const wrong: Effect.Effect<number, never, never> = program;
 ```
 

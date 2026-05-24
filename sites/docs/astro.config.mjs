@@ -4,6 +4,10 @@ import { defineConfig } from "astro/config";
 import mermaid from "astro-mermaid";
 import starlight from "@astrojs/starlight";
 import ecTwoSlash from "expressive-code-twoslash";
+import starlightSiteGraph from "starlight-site-graph";
+import starlightImageZoom from "starlight-image-zoom";
+import starlightLinksValidator from "starlight-links-validator";
+import starlightHeadingBadges from "starlight-heading-badges";
 
 import { remarkBacklinks } from "./src/plugins/remark-backlinks.mjs";
 import { remarkInternalBaseLinks } from "./src/plugins/remark-internal-base-links.mjs";
@@ -263,6 +267,7 @@ const systemDesignSidebar = [
 export default defineConfig({
   site: SITE,
   base: BASE,
+  prefetch: true,
   markdown: {
     remarkPlugins: [
       remarkWikilinks({ docsRoot, base: BASE }),
@@ -278,6 +283,15 @@ export default defineConfig({
       title: "Knowledge Base",
       description: "Personal knowledge base on Starlight: Effect-TS, NestJS, and AWS.",
       favicon: "/favicon.svg",
+      plugins: [
+        starlightSiteGraph(),
+        starlightImageZoom(),
+        starlightLinksValidator({
+          errorOnRelativeLinks: false,
+          errorOnInvalidHashes: false,
+        }),
+        starlightHeadingBadges(),
+      ],
       expressiveCode: {
         plugins: [ecTwoSlash()],
         themes: ["github-light", "github-dark"],
@@ -285,6 +299,10 @@ export default defineConfig({
       customCss: ["./src/styles/twoslash.css", "./src/styles/links.css"],
       editLink: {
         baseUrl: "https://github.com/LOsioChico/knowledge-base/edit/main/sites/docs/",
+      },
+      components: {
+        Head: "./src/components/Head.astro",
+        Header: "./src/components/Header.astro",
       },
       sidebar: [
         { label: "Home", link: "/" },

@@ -20,6 +20,13 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 | Link styling (visual) | `rehype-kb-link-classes` + `links.css` | **Internal:** accent solid underline. **External:** muted dashed underline + ↗, new tab |
 | Link hygiene lint | `bun run lint:mdx-link-hygiene` | Fails on full-site URLs in MDX when a wikilink should be used |
 | Package manager | Bun (`sites/docs/bun.lock`) | Matches rest of repo tooling |
+| Knowledge graph | `starlight-site-graph` | Interactive graph visualization of page connections in sidebar |
+| Image zoom | `starlight-image-zoom` | Click-to-zoom on documentation images |
+| Link validation | `starlight-links-validator` | Build-time broken link check (page-level; hash validation deferred) |
+| Heading badges | `starlight-heading-badges` | Visual badges on headings via `:badge[text]{variant}` directive syntax |
+| Reading progress | Custom `Header.astro` override | Horizontal scroll-progress bar at top of viewport |
+| Structured data | Custom `Head.astro` override | JSON-LD `TechArticle` schema injected per page for SEO |
+| Prefetch | `prefetch: true` in Astro config | Link prefetching (required by `starlight-site-graph`) |
 
 ## Twoslash authoring
 
@@ -42,11 +49,19 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 - **Composition**: import Starlight components only in MDX; vault `.md` keeps Obsidian callouts and blockquote taglines.
 - **Per-page frontmatter** (`title`, `description`) for SEO and social cards without vault schema.
 
+## Custom component overrides
+
+| Override | File | Purpose |
+| --- | --- | --- |
+| `Head` | `src/components/Head.astro` | Extends default `<Head>` with JSON-LD structured data from frontmatter |
+| `Header` | `src/components/Header.astro` | Extends default `<Header>` with a reading progress bar |
+
+Both components render the Starlight default first, then append their enhancement. Guard: `Head.astro` skips JSON-LD on pages without `entry.data` (e.g. 404).
+
 ## Starlight ecosystem (optional next)
 
 | Plugin / theme | Adds | When to adopt |
 | --- | --- | --- |
-| [`starlight-links-validator`](https://starlight.astro.build/resources/plugins/#starlight-links-validator) | Broken **markdown** link check at build | After more cross-area links |
 | [`starlight-blog`](https://starlight.astro.build/resources/plugins/) | Dated posts / changelog | If you want release notes as a blog |
 | [`starlight-theme-obsidian`](https://github.com/Fevol/starlight-theme-obsidian) | Obsidian Publish–like chrome | Visual parity only; not wikilinks |
 | `@astrojs/starlight` **sidebar autogenerate** | Less hand-maintained sidebar | If you want to drop hand-maintained sidebars |

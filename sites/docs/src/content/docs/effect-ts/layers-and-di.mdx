@@ -388,7 +388,7 @@ Two unrelated `Effect.provide(LoggerLive)` calls on two effects build two logger
 <Aside type="caution" title="Unsatisfied R is a type error">
 
 ```ts twoslash
-// @errors: 2379
+// @errors: 2345
 import { Context, Effect } from "effect";
 
 class Logger extends Context.Tag("Logger")<

@@ -1,0 +1,57 @@
+---
+import Default from "@astrojs/starlight/components/Header.astro";
+---
+
+<Default {...Astro.props}><slot /></Default>
+
+<div class="reading-progress-bar" id="reading-progress" aria-hidden="true"></div>
+
+<style>
+  .reading-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(
+      90deg,
+      var(--sl-color-accent-low),
+      var(--sl-color-accent),
+      var(--sl-color-accent-high)
+    );
+    z-index: 9999;
+    transition: width 0.1s linear;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reading-progress-bar {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  function initProgressBar() {
+    const bar = document.getElementById("reading-progress");
+    if (!bar) return;
+
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      if (docHeight > 0 && bar) {
+        bar.style.width = `${Math.min((scrollTop / docHeight) * 100, 100)}%`;
+      }
+    }
+
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+  }
+
+  // Run on initial load
+  initProgressBar();
+
+  // Re-run after Astro page transitions (View Transitions / ClientRouter)
+  document.addEventListener("astro:page-load", initProgressBar);
+</script>
