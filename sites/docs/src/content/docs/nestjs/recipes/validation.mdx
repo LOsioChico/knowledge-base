@@ -14,7 +14,8 @@ Before diving into this recipe, make sure you understand:
 - [[nestjs/fundamentals/pipes|Pipes]]: since validation in NestJS is built on the Pipes architecture.
 - [[nestjs/recipes/serialization|Response Serialization]]: since the same `class-transformer` / `class-validator` metadata pairs govern both validation and serialization.
 - [[nestjs/fundamentals/global-providers|Global Enhancers]]: since binding global validation pipes with dependency injection requires custom provider APP_PIPE tokens.
-- [[nestjs/recipes/testing|Testing DI container]]: since mocking global validation scopes is critical during E2E testing pipelines.
+- [[nestjs/recipes/testing|Testing DI container]]: since E2E testing with custom asynchronous validation constraints requires proper container cleanup to prevent memory leaks and hung CI runners.
+- [[nestjs/data/typeorm/postgresql-setup|TypeORM & PostgreSQL setup]]: since building database-backed asynchronous unique validation constraints assumes an active database connection.
 </Aside>
 
 ## When to reach for it
@@ -28,7 +29,7 @@ Before diving into this recipe, make sure you understand:
 
 <Steps>
 
-1. **Install `@nestjs/common` peer validation packages**: Install the required validator and transformer packages:
+1. **Install `@nestjs/common` peer validation packages**: Install the required validator and transformer packages, verifying that the package installer exits successfully:
 
    ```bash
    npm i class-validator class-transformer
@@ -171,35 +172,173 @@ Without it, `@Body() dto: CreateUserDto` is a plain object: `dto.fullName()` thr
 
 With `transform: true`, the pipe runs `plainToInstance` so decorators and instance methods work. The pipe only validates when the parameter **metatype** is a custom class ([`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts)); primitives still get coercion via `transformPrimitive`.
 
-`GET /items?page=abc` with `@Query("page") page: number` and only global `ValidationPipe({ transform: true })`:
+With a global `ValidationPipe({ transform: true })` registered and the following controller handler:
+
+```typescript
+import { Controller, Get, Query } from "@nestjs/common";
+
+@Controller("items")
+export class ItemsController {
+  @Get()
+  findAll(@Query("page") page: number) {
+    return { page };
+  }
+}
+```
+
+A request of `GET /items?page=abc` returns a successful response containing `NaN` coerced to `null`:
 
 ```json
-{ "page": null }
+// GET /items?page=abc
+// Response: 200 OK
+{
+  "page": null
+}
 ```
 
 (`JSON.stringify(NaN)` → `null`.) Prefer `@Query("page", ParseIntPipe)` when bad input should be `400`: see [[nestjs/fundamentals/pipes|Pipes]].
 
 `enableImplicitConversion: true` (in `transformOptions`) coerces whole query objects: `?limit=10` becomes number `10` for `@IsInt()` instead of failing on string `"10"`.
 
+### Query string validation and implicit conversion
+
+Query parameters always arrive in the [[effect-ts/platform|HTTP]] request as strings (e.g. `?limit=10&page=2`). To validate and coerce them into actual numeric values within a custom query DTO, use a combination of `@IsInt()`, `@IsOptional()`, and the `enableImplicitConversion: true` option:
+
+```typescript
+// dto/pagination-query.dto.ts
+import { IsInt, IsOptional, Max, Min } from "class-validator";
+
+export class PaginationQueryDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
+}
+```
+
+```typescript
+// items.controller.ts
+import { Controller, Get, Query } from "@nestjs/common";
+import { PaginationQueryDto } from "./dto/pagination-query.dto";
+
+@Controller("items")
+export class ItemsController {
+  @Get()
+  findAll(@Query() query: PaginationQueryDto) {
+    // query.page and query.limit are guaranteed to be number types
+    return {
+      pageType: typeof query.page,
+      limitType: typeof query.limit,
+      ...query,
+    };
+  }
+}
+```
+
+If a client requests `GET /items?limit=10&page=2`, the `enableImplicitConversion: true` option automatically transforms the string query parameters into numeric values:
+
+```json
+// GET /items?limit=10&page=2
+// Response: 200 OK
+{
+  "pageType": "number",
+  "limitType": "number",
+  "page": 2,
+  "limit": 10
+}
+```
+
+If a client sends an invalid non-numeric string (e.g., `GET /items?limit=abc`), the implicit conversion fails to parse it as an integer, and the `@IsInt()` validator triggers a standard bad request error response:
+
+```json
+// GET /items?limit=abc
+// Response: 400 Bad Request
+{
+  "statusCode": 400,
+  "message": [
+    "limit must be an integer number"
+  ],
+  "error": "Bad Request"
+}
+```
+
 <Tabs>
   <TabItem label="What gets validated">
     | Parameter | Metatype | Validation runs? |
     | --- | --- | --- |
     | `@Body() dto: CreateUserDto` | Custom class | Yes: [full DTO](#first-dto-show-the-400) |
-    | `@Query() q: PaginationQuery` | Custom class | Yes: needs `enableImplicitConversion` for numbers |
+    | `@Query() q: PaginationQueryDto` | Custom class | Yes: needs [enableImplicitConversion](#query-string-validation-and-implicit-conversion) for numbers |
     | `@Param('id') id: string` | `String` | No: use [ParseIntPipe](/knowledge-base/nestjs/fundamentals/request-lifecycle/#one-route-all-layers) for strict coercion |
     | `@Body() raw: object` | `Object` | No: plain body from Express |
 
     Source: [`validation.pipe.ts`](https://github.com/nestjs/nest/blob/master/packages/common/pipes/validation.pipe.ts) metatype check.
   </TabItem>
   <TabItem label="transform: true and methods">
-    DTO with `fullName()` only works when `transform: true`: the pipe must call `plainToInstance`. Without it:
+    DTO with custom methods (like `fullName()`) only works when `transform: true`, which instructs the pipe to instantiate the class via `plainToInstance`. Without it, sending a valid payload to a handler that calls the custom method yields a runtime type error:
 
+    Request payload:
+    ```json
+    // POST /users
+    {
+      "firstName": "Ada",
+      "lastName": "Lovelace"
+    }
+    ```
+
+    Response:
     ```text
     TypeError: dto.fullName is not a function
     ```
 
-    With `transform: true`, handler can return `{ fullName: dto.fullName() }` → `{ "fullName": "Ada Lovelace" }`.
+    With `transform: true`, the handler can safely call and return instance methods:
+
+    ```typescript
+    import { Body, Controller, Post } from "@nestjs/common";
+    import { IsString } from "class-validator";
+
+    export class UserDto {
+      @IsString()
+      firstName: string;
+
+      @IsString()
+      lastName: string;
+
+      fullName(): string {
+        return `${this.firstName} ${this.lastName}`;
+      }
+    }
+
+    @Controller("users")
+    export class UsersController {
+      @Post()
+      create(@Body() dto: UserDto) {
+        return { fullName: dto.fullName() };
+      }
+    }
+    ```
+
+    Request payload:
+    ```json
+    // POST /users
+    {
+      "firstName": "Ada",
+      "lastName": "Lovelace"
+    }
+    ```
+
+    Response:
+    ```json
+    // Response: 201 Created
+    {
+      "fullName": "Ada Lovelace"
+    }
+    ```
   </TabItem>
 </Tabs>
 
@@ -241,7 +380,44 @@ export class UsersController {
 }
 ```
 
-`POST /users` with `{ "email": "a@b.c" }` → `400` (password required). `PATCH /users/1` with the same body → `200` and `{ "email": "a@b.c" }`.
+Request to create a user without a password:
+
+```json
+// POST /users
+{
+  "email": "a@b.c"
+}
+```
+
+Because the `create` group requires a password, the validation pipe rejects the request:
+
+```json
+// Response: 400 Bad Request
+{
+  "statusCode": 400,
+  "message": [
+    "password must be longer than or equal to 8 characters",
+    "password must be a string"
+  ],
+  "error": "Bad Request"
+}
+```
+
+Request to update the user (where the `update` validation group designates the password as optional):
+
+```json
+// PATCH /users/1
+{
+  "email": "a@b.c"
+}
+```
+
+```json
+// Response: 200 OK
+{
+  "email": "a@b.c"
+}
+```
 
 ## Nested arrays
 
@@ -296,7 +472,8 @@ To return clean, standardized validation details (e.g. mapping internal validato
 // main.ts
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, ValidationPipe } from "@nestjs/common";
+import { ValidationError } from "class-validator";
 import { AppModule } from "./app.module";
 
 async function bootstrap() {
@@ -351,7 +528,7 @@ Content-Type: application/json
 
 ## Custom asynchronous validation with Dependency Injection
 
-Often, validation requires checking [[effect-ts/state|state]] outside the payload (e.g., verifying database uniqueness before executing an insert).
+Often, validation requires checking state outside the payload (e.g., verifying database uniqueness before executing an insert, see [[nestjs/data/typeorm/postgresql-setup|TypeORM setup]] for database configuration).
 
 ### 1. Define the custom validator and constraint
 Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):
@@ -401,6 +578,29 @@ export function IsUnique(tableAndColumn: [string, string], validationOptions?: V
 }
 ```
 
+<Aside type="caution" title="Register custom constraints in Module Providers">
+
+Since `IsUniqueConstraint` is decorated with `@Injectable()`, you **must** register it in your module's `providers` array (e.g., in `users.module.ts`), otherwise NestJS will fail to resolve the class dependencies during injection:
+
+```typescript
+// users.module.ts
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { User } from "./entities/user.entity";
+import { UsersController } from "./users.controller";
+import { UsersService } from "./users.service";
+import { IsUniqueConstraint } from "./is-unique.validator";
+
+@Module({
+  imports: [TypeOrmModule.forFeature([User])],
+  controllers: [UsersController],
+  providers: [UsersService, IsUniqueConstraint], // <-- Register custom validator here!
+})
+export class UsersModule {}
+```
+
+</Aside>
+
 ### 2. DTO usage
 Add your custom decorator to your DTO fields:
 
@@ -428,6 +628,12 @@ Content-Type: application/json
 
 // Response (201 Created):
 HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+  "id": 1,
+  "email": "unique-email@example.com"
+}
 
 // Second Request (Fails because email is already registered):
 POST /users HTTP/1.1
@@ -452,12 +658,17 @@ Content-Type: application/json
 ```
 
 ### 3. Bind the NestJS DI container in `main.ts`
-By default, `class-validator` instantiates custom validation constraint classes using `new`, bypassing the NestJS DI container and making database repository injection crash. 
+By default, `class-validator` instantiates custom validation constraint classes using `new`, bypassing the NestJS DI container. This makes database repository injection crash on startup with a dependency resolution error:
 
-Bind the class-validator engine to the NestJS container in `main.ts` using `useContainer`:
+```text
+Error: Nest can't resolve dependencies of the IsUniqueConstraint (?, ...). Please make sure that the argument DataSource at index [0] is available in the UsersModule context.
+```
+
+Bind the class-validator engine to the NestJS container in `main.ts` using `useContainer` to resolve constraints correctly:
 
 ```typescript
 // main.ts
+import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { useContainer } from "class-validator";
 import { AppModule } from "./app.module";
@@ -481,12 +692,18 @@ Asynchronous custom validators are non-atomic. Two concurrent API requests with 
 
 ### 4. The container-leak test suite hang gotcha
 
-In [[nestjs/recipes/testing|testing]] environments (Jest/Vitest/Bun), calling `useContainer` binds validation constraints to the compiled `TestingModule` container. If you do not reset this reference during test teardowns, **the entire compiled application container remains in memory**. This triggers major memory leaks and prevents the runner process from exiting, hanging CI pipelines indefinitely.
+In [[nestjs/recipes/testing|testing]] environments (Jest/Vitest/Bun), calling `useContainer` binds validation constraints to the compiled `TestingModule` container. If you do not reset this reference during test teardowns, **the entire compiled application container remains in memory**. This triggers major memory leaks and prevents the runner process from exiting, hanging CI pipelines indefinitely with Jest's open handles warning:
+
+```text
+Jest did not exit one second after the test run has completed.
+This usually means that there are asynchronous operations that weren't stopped in your tests. Consider running Jest with `--detectOpenHandles` to troubleshoot this issue.
+```
 
 **Resolution**: Always reset `useContainer(null)` in the E2E test teardown:
 
 ```typescript
 // users.e2e.spec.ts
+import { describe, beforeAll, afterAll } from "@jest/globals";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import { useContainer } from "class-validator";

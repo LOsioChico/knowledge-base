@@ -119,6 +119,30 @@
       "reason": "user preference: clean, concise step-by-step ASCII flows are highly preferred over verbose HTTP/XML tabs",
       "date": "2026-05-23",
       "originalLine": "1. Signed:   PUT request generated with Content-Type: application/pdf"
+    },
+    {
+      "path": "sites/docs/src/content/docs/nestjs/recipes/validation.mdx",
+      "sig": "f3904336370f98f2d5974e3b9f5cbc1c32b67bb7",
+      "rule": "show-dont-tell",
+      "reason": "Performance gotcha details are conceptual (synchronous recursion event-loop blockage); displaying a mock benchmark or latency curl adds visual noise without clarifying the code pattern.",
+      "date": "2026-05-24",
+      "originalLine": "Standard NestJS validation pipes execute **synchronously** when parsing and transforming. If your application handles bulk file records or highly nested arrays (e.g., validating a JSON spreadsheet upload with 10,000 recursive sub-objects):"
+    },
+    {
+      "path": "sites/docs/src/content/docs/nestjs/recipes/validation.mdx",
+      "sig": "b0334f555a3eda997eb0e451eccdeea4d6ab22a2",
+      "rule": "prerequisite-coverage",
+      "reason": "RabbitMQ, BullMQ, and worker threads are mentioned briefly as architectural mitigation strategies at the end of the note; they are not prerequisites for understanding validation with class-validator.",
+      "date": "2026-05-24",
+      "originalLine": "- **Microservice offloading**: Offload validation to an isolated worker thread or a secondary microservice using NestJS queues (RabbitMQ/BullMQ)."
+    },
+    {
+      "path": "sites/docs/src/content/docs/nestjs/recipes/validation.mdx",
+      "sig": "1e7f842f39592ab5b62694bb1457cc6e559f0a24",
+      "rule": "show-dont-tell",
+      "reason": "Displaying a complete benchmark code comparison for Zod/TypeBox performance vs class-validator is beyond the scope of a basic validation pipe recipe.",
+      "date": "2026-05-24",
+      "originalLine": "- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized schema libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster."
     }
   ]
 }
