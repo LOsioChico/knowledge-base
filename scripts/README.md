@@ -10,6 +10,7 @@ Repo-root tooling for the knowledge base. **Inventory:** [`docs/TOOLING.md`](../
 | `bun run algomaster:intake`       | Extract authorized AlgoMaster/local exports into Markdown files under `tmp/`              |
 | `bun run lint:docs`               | Starlight check + MDX wikilinks + table + link hygiene                                    |
 | `bun run lint:ec-titles`          | Code blocks with `// filename` comments that should be `title=` annotations               |
+| `bun run lint:mermaid-wikilinks`  | Wikilinks inside Mermaid blocks that render as literal bracket text                        |
 | `bun run lint:ci`                 | Full CI lint chain (see TOOLING.md)                                                       |
 | `bun run vault:check`             | Publish parity + diff-scoped vault/MDX Pass 0 + optional vault/`mdx-triage` + `lint:docs` |
 | `bun run test` / `test:ci`        | Root unit tests + `scripts/audit-notes` tests                                             |

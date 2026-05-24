@@ -70,7 +70,7 @@ Run on every `.mdx` you add or materially change. Playbook: `docs/PUBLISHING.md`
 | **S2** | TL;DR, symptom tables, contrast, MOC CardGrids | [audits/S2-reader-clarity.md](audits/S2-reader-clarity.md) |
 | **S3** | Recipes: request + response JSON for behavioral claims | [audits/S3-show-dont-tell-mdx.md](audits/S3-show-dont-tell-mdx.md) |
 | **S4** | Steps/Tabs/Aside/mermaid only when they teach | [audits/S4-enrichment-fit.md](audits/S4-enrichment-fit.md) |
-| **S5** | Copy-pasteable fences; twoslash when types teach | [audits/S5-code-fences-mdx.md](audits/S5-code-fences-mdx.md) |
+| **S5** | Copy-pasteable fences; twoslash; EC annotations (`title=`, `ins=`/`del=`, `collapse=`); no wikilinks in Mermaid | [audits/S5-code-fences-mdx.md](audits/S5-code-fences-mdx.md) |
 | **S6** | lint:docs, build, publish parity, no stale site URLs | [audits/S6-publish-validate.md](audits/S6-publish-validate.md) |
 
 Other linter-enforced checks (orphans, discoverability, agents-mirror, listing-completeness)

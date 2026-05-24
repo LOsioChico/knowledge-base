@@ -7,6 +7,61 @@ Run on every `.mdx` you touch.
 
 Same bar as vault audit A: full imports, class wrappers, no undefined symbols. Prefer `ts twoslash` when types teach.
 
+## Expressive Code annotations (MANDATORY)
+
+Starlight renders code blocks with [Expressive Code](https://expressive-code.com/). Use these
+annotations to improve readability. Enforced by `bun run lint:ec-titles` (CI) and the pre-commit
+autofixer (`scripts/pre-commit-autofix.ts`).
+
+### `title=` — filename on the tab bar
+
+Every code block that represents a **specific file** MUST carry `title="filename.ext"` on the
+opening fence. Conceptual snippets (pseudocode, output examples, release notes) stay untitled.
+
+```
+```typescript title="cats.controller.ts"
+```
+
+The pre-commit autofixer auto-promotes `// filename.ext` first-line comments to `title=`.
+The CI lint (`lint:ec-titles`) fails on any remaining comment-as-title.
+
+### `ins=` / `del=` — progressive diffs
+
+When a code block builds on a previous one in the same note (e.g., step 2 adds a guard to step 1's
+controller), use `ins={lines}` for additions and `del={lines}` for removals. This renders green/red
+diff highlighting.
+
+```
+```typescript title="app.module.ts" ins={3-4} del={2}
+```
+
+### `collapse=` — hide boilerplate
+
+Collapse long import blocks or setup code that readers have already seen:
+
+```
+```typescript title="dynamic-serializer.interceptor.ts" collapse={1-7}
+```
+
+### `showLineNumbers` — opt-in line numbers
+
+Use `showLineNumbers` on long algorithm implementations (30+ lines) when surrounding prose
+references specific lines. Installed via `@expressive-code/plugin-line-numbers`; default is off.
+
+## Mermaid diagrams
+
+Mermaid blocks MUST NOT contain Obsidian wikilinks (`[[slug|Label]]`). Mermaid doesn't understand
+them — they render as literal bracket text. Use plain text labels and Mermaid `click` directives:
+
+```
+```mermaid
+flowchart TD
+    A["Plain Label"] --> B["Another Label"]
+    click A "/knowledge-base/slug/"
+```
+
+Enforced: `bun run lint:mermaid-wikilinks`.
+
 ## Shell placeholders in AWS recipes
 
 | Fence | Placeholder style | Why |

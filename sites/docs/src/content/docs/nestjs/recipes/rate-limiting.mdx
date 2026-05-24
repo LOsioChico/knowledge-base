@@ -23,9 +23,23 @@ Before diving into rate limiting, make sure you understand:
 
 1. **Install `@nestjs/throttler`**: Install the package as a dependency. Version 5 or higher is required to support the modern array-based multiple-throttler syntax and millisecond `ttl` units.
    
-   ```bash
-   npm install --save @nestjs/throttler
-   ```
+   <Tabs>
+     <TabItem label="npm">
+     ```bash
+     npm install @nestjs/throttler
+     ```
+     </TabItem>
+     <TabItem label="pnpm">
+     ```bash
+     pnpm add @nestjs/throttler
+     ```
+     </TabItem>
+     <TabItem label="bun">
+     ```bash
+     bun add @nestjs/throttler
+     ```
+     </TabItem>
+   </Tabs>
 
    *Verification: Confirm that `@nestjs/throttler` appears under `dependencies` in your `package.json` with a version `^5.0.0` or higher before proceeding.*
 
@@ -450,9 +464,23 @@ To scale horizontally, you must wire up a distributed Redis store.
 
 To share rate-limiting counters across all application nodes, install the NestJS Redis storage provider along with `ioredis`:
 
-```bash
-npm install --save @nest-lab/throttler-storage-redis ioredis
-```
+<Tabs>
+  <TabItem label="npm">
+  ```bash
+  npm install @nest-lab/throttler-storage-redis ioredis
+  ```
+  </TabItem>
+  <TabItem label="pnpm">
+  ```bash
+  pnpm add @nest-lab/throttler-storage-redis ioredis
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```bash
+  bun add @nest-lab/throttler-storage-redis ioredis
+  ```
+  </TabItem>
+</Tabs>
 
 *Verification: Verify that `@nest-lab/throttler-storage-redis` and `ioredis` are listed in your `dependencies` block in `package.json` and can be imported in your Nest modules.*
 

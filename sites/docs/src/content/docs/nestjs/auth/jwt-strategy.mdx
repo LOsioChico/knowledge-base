@@ -31,10 +31,26 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into the JWT
 
 ## Setup
 
-```bash
-npm install @nestjs/passport passport @nestjs/jwt passport-jwt
-npm install --save-dev @types/passport-jwt
-```
+<Tabs>
+  <TabItem label="npm">
+  ```bash
+  npm install @nestjs/passport passport @nestjs/jwt passport-jwt
+  npm install --save-dev @types/passport-jwt
+  ```
+  </TabItem>
+  <TabItem label="pnpm">
+  ```bash
+  pnpm add @nestjs/passport passport @nestjs/jwt passport-jwt
+  pnpm add -D @types/passport-jwt
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```bash
+  bun add @nestjs/passport passport @nestjs/jwt passport-jwt
+  bun add -D @types/passport-jwt
+  ```
+  </TabItem>
+</Tabs>
 
 ## Login endpoint
 

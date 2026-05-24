@@ -15,10 +15,26 @@ Before diving into handling database errors, make sure you understand:
 
 ## Setup
 
-```bash
-npm install @nestjs/typeorm typeorm pg
-npm install --save-dev @types/pg
-```
+<Tabs>
+  <TabItem label="npm">
+  ```bash
+  npm install @nestjs/typeorm typeorm pg
+  npm install --save-dev @types/pg
+  ```
+  </TabItem>
+  <TabItem label="pnpm">
+  ```bash
+  pnpm add @nestjs/typeorm typeorm pg
+  pnpm add -D @types/pg
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```bash
+  bun add @nestjs/typeorm typeorm pg
+  bun add -D @types/pg
+  ```
+  </TabItem>
+</Tabs>
 
 ## The shape of `QueryFailedError`
 

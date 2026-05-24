@@ -3,7 +3,7 @@ title: S3 presigned URLs
 description: Time-limited S3 GET and PUT URLs for browser download and direct upload without public buckets.
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 > A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials: recipients need no AWS account.
 
@@ -47,9 +47,23 @@ curl -i -o object.pdf "<presigned-url>"
 
 To generate presigned URLs programmatically within a NestJS application, install the AWS SDK v3 S3 client and request-presigner helper packages:
 
-```bash
-npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
-```
+<Tabs>
+  <TabItem label="npm">
+  ```bash
+  npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+  ```
+  </TabItem>
+  <TabItem label="pnpm">
+  ```bash
+  pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+  ```
+  </TabItem>
+  <TabItem label="bun">
+  ```bash
+  bun add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+  ```
+  </TabItem>
+</Tabs>
 
 *Verification: Ensure both packages are listed under `dependencies` in your `package.json` with compatible version tags (e.g. `^3.x.x`).*
 
