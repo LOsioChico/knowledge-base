@@ -176,9 +176,9 @@ export class AppModule {}
 
 | Form         | When                                                 |
 | ------------ | ---------------------------------------------------- |
-| `useClass`   | Nest resolves every constructor dep (worked example: [Request-scoped APP_GUARD](#request-scoped-app-guard)) |
+| `useClass`   | Nest resolves every constructor dep (worked example: [Request-scoped APP_GUARD](#request-scoped-app_guard)) |
 | `useValue`   | Pre-built instance, e.g. `new ValidationPipe({ … })` (worked example: [combined array](#provider-shapes)) |
-| `useFactory` | Async setup, env, or manual `inject: [...]` (worked example: [Config-driven APP_PIPE](#config-driven-app-pipe)) |
+| `useFactory` | Async setup, env, or manual `inject: [...]` (worked example: [Config-driven APP_PIPE](#config-driven-app_pipe)) |
 
 ```typescript
 import { Logger, ValidationPipe } from "@nestjs/common";

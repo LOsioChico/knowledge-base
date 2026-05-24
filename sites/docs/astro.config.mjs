@@ -288,7 +288,7 @@ export default defineConfig({
         starlightImageZoom(),
         starlightLinksValidator({
           errorOnRelativeLinks: false,
-          errorOnInvalidHashes: false,
+          errorOnInvalidHashes: true,
         }),
         starlightHeadingBadges(),
       ],

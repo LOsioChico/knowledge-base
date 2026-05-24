@@ -417,8 +417,8 @@ CMD ["node", "apps/api/dist/main"]
 | Tooling Feature | Native Nest CLI Monorepo | Turborepo Workspaces (pnpm) | Nx Platform |
 | :--- | :--- | :--- | :--- |
 | **[Dependency Bleed](#why-turborepo-over-simple-scripts)** | High (Single shared root manifest) | None (Strictly isolated packages) | None (Enforced modular boundaries) |
-| **[Build Caching](#5-configure-turborepo-pipelines)** | None | Full Local and Remote caching | Advanced caching with remote store |
-| **[Orchestration](#6-run-parallel-tasks-with-turborepo)** | Brittle manual script triggers | Automated DAG-based pipeline graph | Advanced execution graph and analyzers |
+| **[Build Caching](#setup-walkthrough)** | None | Full Local and Remote caching | Advanced caching with remote store |
+| **[Orchestration](#setup-walkthrough)** | Brittle manual script triggers | Automated DAG-based pipeline graph | Advanced execution graph and analyzers |
 | **Code Generation** | Native `nest g` schematics | Manually configured or raw templates | Rich, extensible code generators |
 | **Ideal Use Case** | Single-team, highly uniform Nest servers | High-performance, multi-service workspaces | Enterprise multi-stack monorepos |
 

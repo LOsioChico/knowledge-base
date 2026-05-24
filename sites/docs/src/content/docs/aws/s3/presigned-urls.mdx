@@ -95,8 +95,8 @@ curl -i -X PUT -T "photo.png" \
 | Signer | Effective max |
 | --- | --- |
 | IAM user access key | 7 days (SigV4) |
-| STS role session | [Remaining session lifetime (often 1 h)](#7-day-url-from-lambda-expires-in-1-hour) |
-| EC2/ECS/Lambda role | [Credential rotation window](#7-day-url-from-lambda-expires-in-1-hour) |
+| STS role session | [Remaining session lifetime (often 1 h)](#max-expiry-depends-on-signer-credentials) |
+| EC2/ECS/Lambda role | [Credential rotation window](#max-expiry-depends-on-signer-credentials) |
 
 **URL dies when underlying credentials die**, regardless of `--expires-in` ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrl-Expiration)).
 
@@ -152,7 +152,7 @@ Example permission failure:
 | `403 Forbidden` | [Missing IAM/bucket policy](#insufficient-permissions-gotcha); Block Public Access |
 | `SignatureDoesNotMatch` | Clock skew; [header mismatch on PUT](#put-gotchas) |
 | `ExpiredToken` | STS session expired between sign and use |
-| Early expiry | [Signed with short-lived role creds](#7-day-url-from-lambda-expires-in-1-hour) |
+| Early expiry | [Signed with short-lived role creds](#max-expiry-depends-on-signer-credentials) |
 
 ## See also
 

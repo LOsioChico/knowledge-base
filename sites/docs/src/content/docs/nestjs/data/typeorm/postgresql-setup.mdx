@@ -308,11 +308,11 @@ npm install --save-dev @types/pg
 
 | Option | Purpose | When to change |
 | --- | --- | --- |
-| `synchronize` | Auto schema from entities; see [step 1](#1-smoke-test-with-forroot-dev-only) & [step 5](#5-migrations-standalone-datasource) | Dev only; never prod |
-| `autoLoadEntities` | Pull from `forFeature`; see [step 2](#2-forrootasync--configservice) & [step 3](#3-entities--forfeature) | Almost always `true` |
-| `migrationsRun` | Run pending on boot; see [step 2](#2-forrootasync--configservice) & [step 5](#5-migrations-standalone-datasource) | `true` in prod if desired |
-| `ssl` | TLS to server; see [step 2](#2-forrootasync--configservice) | Managed Postgres providers |
-| `extra` | `pg` pool options; see [step 2](#2-forrootasync--configservice) | `max`, `statement_timeout` ([pool docs](https://node-postgres.com/apis/pool)) |
+| `synchronize` | Auto schema from entities; see [step 1](#setup) & [step 5](#setup) | Dev only; never prod |
+| `autoLoadEntities` | Pull from `forFeature`; see [step 2](#setup) & [step 3](#setup) | Almost always `true` |
+| `migrationsRun` | Run pending on boot; see [step 2](#setup) & [step 5](#setup) | `true` in prod if desired |
+| `ssl` | TLS to server; see [step 2](#setup) | Managed Postgres providers |
+| `extra` | `pg` pool options; see [step 2](#setup) | `max`, `statement_timeout` ([pool docs](https://node-postgres.com/apis/pool)) |
 
 Full list: [TypeOrmModuleOptions](https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts), [data source options](https://typeorm.io/data-source-options).
 
