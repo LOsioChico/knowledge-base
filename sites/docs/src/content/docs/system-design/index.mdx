@@ -35,13 +35,22 @@ For a progressive learning flow, we recommend mastering quantitative estimation 
 
 ```mermaid
 flowchart TD
-    EST["1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]] (Entry)"] --> CA["2. [[system-design/distributed-caching|Distributed Caching]]"]
-    CA --> MQ["3. [[system-design/message-queues|Asynchronous Message Queues]]"]
-    MQ --> RL["4. [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]"]
-    RL --> CM["5. [[system-design/consistency-models|Consistency Models]]"]
-    CM --> LC["6. [[system-design/logical-clocks|Logical Clocks]]"]
-    CM --> CH["7. [[system-design/consistent-hashing|Consistent Hashing]]"]
-    CH --> DT["8. [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]]"]
+    EST["1. Estimation Primitives (Entry)"] --> CA["2. Distributed Caching"]
+    CA --> MQ["3. Asynchronous Message Queues"]
+    MQ --> RL["4. Rate Limiting & Traffic Shaping"]
+    RL --> CM["5. Consistency Models"]
+    CM --> LC["6. Logical Clocks"]
+    CM --> CH["7. Consistent Hashing"]
+    CH --> DT["8. Distributed Transactions & Saga Patterns"]
+
+    click EST "/knowledge-base/system-design/back-of-the-envelope-estimation/"
+    click CA "/knowledge-base/system-design/distributed-caching/"
+    click MQ "/knowledge-base/system-design/message-queues/"
+    click RL "/knowledge-base/system-design/rate-limiting/"
+    click CM "/knowledge-base/system-design/consistency-models/"
+    click LC "/knowledge-base/system-design/logical-clocks/"
+    click CH "/knowledge-base/system-design/consistent-hashing/"
+    click DT "/knowledge-base/system-design/distributed-transactions/"
 ```
 
 ## Choose a path
