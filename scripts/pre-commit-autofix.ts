@@ -491,6 +491,37 @@ export function convertEffectBlocksToTwoslash(body: string): { updatedBody: stri
 
 
 // ---------------------------------------------------------
+// 2.7. Expressive Code Title Promoter
+// ---------------------------------------------------------
+/**
+ * Finds code blocks where the first line is `// filename.ext` and moves
+ * the filename into a `title="filename.ext"` attribute on the opening fence.
+ * This is an autofix — the matching lint is scripts/lint-ec-titles.mjs.
+ */
+const EC_FILENAME_RE = /^([\w./-]+\.[a-z]{1,5})$/;
+
+export function promoteFileCommentToTitle(body: string): { updatedBody: string, modified: boolean } {
+  let modified = false;
+  // Match fenced TS/JS code blocks with optional indentation
+  const regex = /(^[ \t]*)(```(?:typescript|ts|javascript|js))([ \t]*)\r?\n(\1[ \t]*\/\/\s+(.+))\r?\n/gm;
+
+  const updatedBody = body.replace(regex, (match, indent, fence, trailingSpace, commentLine, rawFilename) => {
+    const filename = rawFilename.trim();
+    // Must look like a filename (has extension, no spaces, no parens)
+    if (!EC_FILENAME_RE.test(filename)) return match;
+    // Skip if already has title= (shouldn't happen but safety)
+    if (fence.includes('title=')) return match;
+    // Skip twoslash
+    if (trailingSpace.includes('twoslash')) return match;
+
+    modified = true;
+    return `${indent}${fence} title="${filename}"\n`;
+  });
+
+  return { updatedBody, modified };
+}
+
+// ---------------------------------------------------------
 // 3. First-Mention Wikilink Auto-Fixer
 // ---------------------------------------------------------
 function buildProseMask(body: string): string {
@@ -710,6 +741,14 @@ function processNoteFile(filePath: string, concepts: Concept[], dryRun: boolean)
   if (twoslashResult.modified) {
     console.log(`  ${green}✓ Converted Effect code blocks to Twoslash.${reset}`);
     currentBody = twoslashResult.updatedBody;
+    fileModified = true;
+  }
+
+  // 1.7. Expressive Code Title Promoter
+  const ecResult = promoteFileCommentToTitle(currentBody);
+  if (ecResult.modified) {
+    console.log(`  ${green}✓ Promoted // filename comments to title= annotations.${reset}`);
+    currentBody = ecResult.updatedBody;
     fileModified = true;
   }
 

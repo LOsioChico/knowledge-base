@@ -6,7 +6,8 @@ import {
   addRelatedLinkToFrontmatter,
   injectImportsIntoCodeBlocks,
   fixFirstMentionWikilinks,
-  convertEffectBlocksToTwoslash
+  convertEffectBlocksToTwoslash,
+  promoteFileCommentToTitle
 } from "./pre-commit-autofix";
 
 test("getFrontmatterAndBody correctly splits frontmatter and body", () => {
@@ -328,4 +329,72 @@ import { Effect } from "effect";
   assert.equal(updatedBody, body);
 });
 
+// ---------------------------------------------------------
+// promoteFileCommentToTitle tests
+// ---------------------------------------------------------
 
+test("promoteFileCommentToTitle moves // filename.ts to title= on fence", () => {
+  const body = `Some intro.
+
+\`\`\`typescript
+// app.module.ts
+import { Module } from "@nestjs/common";
+\`\`\`
+
+Conclusion.`;
+
+  const { updatedBody, modified } = promoteFileCommentToTitle(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /```typescript title="app.module.ts"/);
+  // The comment line should be removed
+  assert.doesNotMatch(updatedBody, /\/\/ app\.module\.ts/);
+});
+
+test("promoteFileCommentToTitle skips blocks that already have title=", () => {
+  const body = `\`\`\`typescript title="app.module.ts"
+// app.module.ts
+import { Module } from "@nestjs/common";
+\`\`\``;
+
+  const { modified } = promoteFileCommentToTitle(body);
+  assert.equal(modified, false);
+});
+
+test("promoteFileCommentToTitle skips non-filename comments like // description text", () => {
+  const body = `\`\`\`typescript
+// This is a description of the code
+import { Module } from "@nestjs/common";
+\`\`\``;
+
+  const { modified } = promoteFileCommentToTitle(body);
+  assert.equal(modified, false);
+});
+
+test("promoteFileCommentToTitle handles indented fences inside Steps/Tabs", () => {
+  const body = `<Steps>
+
+1. Step one:
+
+   \`\`\`typescript
+   // users.service.ts
+   import { Injectable } from "@nestjs/common";
+   \`\`\`
+
+</Steps>`;
+
+  const { updatedBody, modified } = promoteFileCommentToTitle(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /```typescript title="users.service.ts"/);
+  assert.doesNotMatch(updatedBody, /\/\/ users\.service\.ts/);
+});
+
+test("promoteFileCommentToTitle handles path-style filenames like dto/user.dto.ts", () => {
+  const body = `\`\`\`typescript
+// dto/user.dto.ts
+import { IsEmail } from "class-validator";
+\`\`\``;
+
+  const { updatedBody, modified } = promoteFileCommentToTitle(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /```typescript title="dto\/user.dto.ts"/);
+});

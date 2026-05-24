@@ -11,6 +11,7 @@
     "lint:docs": "bun run --cwd sites/docs check && bun run lint:mdx-wikilinks && bun run lint:mdx-table-wikilinks && bun run lint:mdx-link-hygiene --strict",
     "lint:publish-parity": "node scripts/check-publish-parity.mjs",
     "lint:aws-profile-consistency": "node scripts/lint-aws-profile-consistency.mjs",
+    "lint:ec-titles": "node scripts/lint-ec-titles.mjs",
     "algomaster:intake": "node scripts/algomaster-intake.mjs",
     "lint:mdx-recipe-context": "node scripts/lint-mdx-recipe-context.mjs",
     "lint:mdx-recipe-context:strict": "node scripts/lint-mdx-recipe-context.mjs --strict",
@@ -18,14 +19,14 @@
     "audit:mdx-ci": "bun run --cwd scripts/audit-notes audit:mdx-ci",
     "audit:mdx-triage": "bun run --cwd scripts/audit-notes audit:mdx-triage",
     "lint:ci": "bun run lint:ci:tooling && bun run lint:docs",
-    "lint:ci:tooling": "bun run lint:wikilinks && bun run lint:publish-parity && bun run lint:aws-profile-consistency && bun run lint:mdx-recipe-context && bun run --cwd scripts/audit-notes lint:mdx-content && node scripts/lint-mdx-prerequisite-sequence.mjs",
+    "lint:ci:tooling": "bun run lint:wikilinks && bun run lint:publish-parity && bun run lint:aws-profile-consistency && bun run lint:ec-titles && bun run lint:mdx-recipe-context && bun run --cwd scripts/audit-notes lint:mdx-content && node scripts/lint-mdx-prerequisite-sequence.mjs",
     "docs:build:ci": "bun run --cwd sites/docs build:ci",
     "test:ci": "bun run test && bun run --cwd scripts/audit-notes test",
     "docs:dev": "bun run --cwd sites/docs dev",
     "docs:build": "bun run --cwd sites/docs build",
     "skills:sync": "bun scripts/sync-skills.ts",
     "vault:check": "node scripts/vault-check.mjs",
-    "test": "tsx --test scripts/*.test.mjs"
+    "test": "tsx --test scripts/*.test.mjs && tsx --test scripts/*.test.ts"
   },
   "engines": {
     "node": ">=22"

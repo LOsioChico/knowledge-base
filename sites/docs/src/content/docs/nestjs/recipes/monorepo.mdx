@@ -228,8 +228,7 @@ A standard high-performance NestJS monorepo uses the following structure:
 
     Create the standard application Nest config files.
     
-    ```json
-    // apps/api/tsconfig.json
+    ```json title="apps/api/tsconfig.json"
     {
       "extends": "../../tsconfig.json",
       "compilerOptions": {
@@ -240,8 +239,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     }
     ```
 
-    ```json
-    // apps/api/nest-cli.json
+    ```json title="apps/api/nest-cli.json"
     {
       "$schema": "https://json.schemastore.org/nest-cli",
       "collection": "@nestjs/schematics",
