@@ -161,8 +161,7 @@ A standard high-performance NestJS monorepo uses the following structure:
 
     Create the module classes:
 
-    ```typescript
-    // packages/logger/src/logger.service.ts
+    ```typescript title="packages/logger/src/logger.service.ts"
     import { Injectable, Logger } from "@nestjs/common";
 
     @Injectable()
@@ -175,8 +174,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     }
     ```
 
-    ```typescript
-    // packages/logger/src/logger.module.ts
+    ```typescript title="packages/logger/src/logger.module.ts"
     import { Module } from "@nestjs/common";
     import { SharedLoggerService } from "./logger.service";
 
@@ -187,8 +185,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     export class SharedLoggerModule {}
     ```
 
-    ```typescript
-    // packages/logger/src/index.ts
+    ```typescript title="packages/logger/src/index.ts"
     export * from "./logger.module";
     export * from "./logger.service";
     ```
@@ -257,8 +254,7 @@ A standard high-performance NestJS monorepo uses the following structure:
 
     Now build the core entrypoint code for `apps/api/src/app.module.ts`:
 
-    ```typescript
-    // apps/api/src/app.module.ts
+    ```typescript title="apps/api/src/app.module.ts"
     import { Module } from "@nestjs/common";
     import { SharedLoggerModule } from "@repo/logger";
 
@@ -268,8 +264,7 @@ A standard high-performance NestJS monorepo uses the following structure:
     export class AppModule {}
     ```
 
-    ```typescript
-    // apps/api/src/main.ts
+    ```typescript title="apps/api/src/main.ts"
     import { NestFactory } from "@nestjs/core";
     import { AppModule } from "./app.module";
     import { SharedLoggerService } from "@repo/logger";

@@ -59,8 +59,7 @@ This page uses exported shell variables so the load path stays explicit. If you 
 
 Use one global `ConfigModule` at the app entry point, then read required values through `ConfigService`.
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { AppController } from "./app.controller";
@@ -74,8 +73,7 @@ import { AppService } from "./app.service";
 export class AppModule {}
 ```
 
-```typescript
-// app.service.ts
+```typescript title="app.service.ts"
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
@@ -93,8 +91,7 @@ export class AppService {
 }
 ```
 
-```typescript
-// app.controller.ts
+```typescript title="app.controller.ts"
 import { Controller, Get } from "@nestjs/common";
 import { AppService } from "./app.service";
 
@@ -147,8 +144,7 @@ TypeError: Configuration key "APP_NAME" does not exist
 
 `ConfigService.get<T>(...)` gives type information to your TypeScript code. It does **not** magically parse runtime strings into numbers or booleans. If a value should behave like a number or boolean, parse it once in the factory that owns it.
 
-```typescript
-// app.config.ts
+```typescript title="app.config.ts"
 import { registerAs } from "@nestjs/config";
 
 function parsePort(value: string | undefined): number {
@@ -176,8 +172,7 @@ export default registerAs("app", () => ({
 }));
 ```
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts" ins={3-4}
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import appConfig from "./app.config";
@@ -192,8 +187,7 @@ import { AppSettingsService } from "./app-settings.service";
 export class AppModule {}
 ```
 
-```typescript
-// app-settings.service.ts
+```typescript title="app-settings.service.ts"
 import { Inject, Injectable } from "@nestjs/common";
 import { ConfigType } from "@nestjs/config";
 import appConfig from "./app.config";
@@ -221,8 +215,7 @@ That is the payoff: every consumer sees a real `number` for `port` and a real `b
 
 Use `validationSchema` for required env keys and basic shape checks.
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts" ins={3,8-13}
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import * as Joi from "joi";
@@ -267,8 +260,7 @@ That is the production win: bad config becomes a boot-time error, not a surprise
 
 This is where `ConfigService` pays for itself: module options stay inside Nest DI instead of reaching for top-level constants.
 
-```typescript
-// auth.module.ts
+```typescript title="auth.module.ts"
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -301,8 +293,7 @@ Use the same pattern when a module's options depend on env or other app settings
 
 In modern modular NestJS applications, dynamic modules (like the `StorageModule` we designed in the [[nestjs/recipes/dynamic-modules|Dynamic Modules recipe]]) must accept configurations driven by our environment. Rather than passing raw static parameters, bind the dynamic module asynchronously using `registerAsync` and inject `ConfigService`:
 
-```typescript
-// storage.config.ts
+```typescript title="storage.config.ts"
 import { registerAs } from "@nestjs/config";
 
 export default registerAs("storage", () => ({
@@ -311,8 +302,7 @@ export default registerAs("storage", () => ({
 }));
 ```
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { StorageModule } from "./storage/storage.module";
@@ -353,8 +343,7 @@ For enterprise-grade security, fetch configuration credentials dynamically at ap
 
 Create an asynchronous custom loader file `database-secrets.loader.ts`:
 
-```typescript
-// database-secrets.loader.ts
+```typescript title="database-secrets.loader.ts"
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 export async function databaseSecretsLoader() {
@@ -386,8 +375,7 @@ export async function databaseSecretsLoader() {
 
 Now, wire the custom asynchronous loader into `AppModule`:
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { databaseSecretsLoader } from "./database-secrets.loader";

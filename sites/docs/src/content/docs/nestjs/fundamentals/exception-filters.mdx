@@ -163,7 +163,7 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
 
 ## Contract
 
-```typescript
+```typescript title="http-exception.filter.ts"
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from "@nestjs/common";
 import { Request, Response } from "express";
 
@@ -305,8 +305,7 @@ Throw these from services/controllers; filters map domain errors when you want s
 
 ### Domain error → HTTP
 
-```typescript
-// user-not-found.error.ts
+```typescript title="user-not-found.error.ts"
 export class UserNotFoundError extends Error {
   constructor(public readonly id: string) {
     super(`User ${id} not found`);
@@ -314,7 +313,7 @@ export class UserNotFoundError extends Error {
 }
 ```
 
-```typescript
+```typescript title="user-not-found.filter.ts"
 import { ArgumentsHost, Catch, ExceptionFilter, HttpStatus } from "@nestjs/common";
 import { Response } from "express";
 import { UserNotFoundError } from "./user-not-found.error";
@@ -333,7 +332,7 @@ export class UserNotFoundFilter implements ExceptionFilter<UserNotFoundError> {
 
 Register the filter on your controller or route handler:
 
-```typescript
+```typescript title="users.controller.ts"
 import { Controller, Get, Param, UseFilters } from "@nestjs/common";
 import { UserNotFoundError } from "./user-not-found.error";
 import { UserNotFoundFilter } from "./user-not-found.filter";
@@ -363,7 +362,7 @@ export class UsersController {
 
 Use `HttpAdapterHost` instead of accessing the platform-specific response object directly so the same filter works seamlessly on both Express and Fastify ([HTTP adapter](https://docs.nestjs.com/faq/http-adapter)).
 
-```typescript
+```typescript title="all-exceptions.filter.ts"
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";
 

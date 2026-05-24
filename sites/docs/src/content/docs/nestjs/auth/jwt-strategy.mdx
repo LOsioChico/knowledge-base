@@ -38,14 +38,13 @@ npm install --save-dev @types/passport-jwt
 
 ## Login endpoint
 
-```typescript
-// auth/constants.ts
+```typescript title="auth/constants.ts"
 export const jwtConstants = {
   secret: process.env.JWT_SECRET ?? "dev-only-change-me",
 };
 ```
 
-```typescript
+```typescript title="auth.module.ts"
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { PassportModule } from "@nestjs/passport";
@@ -72,7 +71,7 @@ import { jwtConstants } from "./constants";
 export class AuthModule {}
 ```
 
-```typescript
+```typescript title="auth.service.ts"
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UsersService } from "../users/users.service";
@@ -95,7 +94,7 @@ export class AuthService {
 }
 ```
 
-```typescript
+```typescript title="auth.controller.ts"
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 
@@ -125,7 +124,7 @@ Wrong credentials (`401`):
 
 ## JWT strategy
 
-```typescript
+```typescript title="jwt.strategy.ts"
 import { Injectable } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
@@ -161,7 +160,7 @@ Do not re-verify the JWT in `validate()`. Use it for revocation lists, active-us
 
 ## Protected route
 
-```typescript
+```typescript title="jwt-auth.guard.ts"
 import { Injectable } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
 
@@ -169,7 +168,7 @@ import { AuthGuard } from "@nestjs/passport";
 export class JwtAuthGuard extends AuthGuard("jwt") {}
 ```
 
-```typescript
+```typescript title="profile.controller.ts"
 import { Controller, Get, Request, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
@@ -201,7 +200,7 @@ With `Authorization: Bearer <token>` (`200`):
 
 1. Decorator:
 
-   ```typescript
+   ```typescript title="public.decorator.ts"
    import { SetMetadata } from "@nestjs/common";
 
    export const IS_PUBLIC_KEY = "isPublic";
@@ -210,7 +209,7 @@ With `Authorization: Bearer <token>` (`200`):
 
 2. Guard:
 
-   ```typescript
+   ```typescript title="jwt-auth.guard.ts" ins={4,7-14}
    import { ExecutionContext, Injectable } from "@nestjs/common";
    import { Reflector } from "@nestjs/core";
    import { AuthGuard } from "@nestjs/passport";
@@ -235,7 +234,7 @@ With `Authorization: Bearer <token>` (`200`):
 
 3. Register globally:
 
-   ```typescript
+   ```typescript title="auth.module.ts"
    import { Module } from "@nestjs/common";
    import { APP_GUARD } from "@nestjs/core";
    import { JwtAuthGuard } from "./jwt-auth.guard";
@@ -248,7 +247,7 @@ With `Authorization: Bearer <token>` (`200`):
 
 4. Mark login public:
 
-   ```typescript
+   ```typescript title="auth.controller.ts" ins={3,9-10}
    import { Body, Controller, Get, HttpCode, HttpStatus, Post, Request } from "@nestjs/common";
    import { AuthService } from "./auth.service";
    import { Public } from "./public.decorator";

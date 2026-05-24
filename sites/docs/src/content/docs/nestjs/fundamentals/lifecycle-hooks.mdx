@@ -61,7 +61,7 @@ Init runs when you call `app.init()` or `app.listen()`. Terminate runs on `app.c
 Hooks apply to **modules, providers, and controllers**. One class can implement several.
 
 <span id="worked-example"></span>
-```typescript
+```typescript title="prisma.service.ts"
 import { Injectable, OnModuleInit, OnApplicationShutdown } from "@nestjs/common";
 
 @Injectable()
@@ -106,7 +106,7 @@ export class UsersService implements OnModuleInit, OnApplicationShutdown {
 
 ## Enable shutdown hooks
 
-```typescript
+```typescript title="main.ts"
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
 

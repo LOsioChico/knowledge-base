@@ -43,7 +43,7 @@ Pair with [[nestjs/recipes/validation|validation]] on the way in: same `class-tr
 
 Bind once so every endpoint serializes outbound data:
 
-```typescript
+```typescript title="app.module.ts"
 import { ClassSerializerInterceptor, Module } from "@nestjs/common";
 import { APP_INTERCEPTOR, Reflector } from "@nestjs/core";
 
@@ -70,7 +70,7 @@ Decorators need metadata. `main.ts` that imports `NestFactory` from `@nestjs/cor
 
 ## `@Exclude()`: drop fields
 
-```typescript
+```typescript title="user.entity.ts"
 import { Controller, Get, Param } from "@nestjs/common";
 import { Exclude } from "class-transformer";
 
@@ -111,7 +111,7 @@ The handler still sees `password` on the instance; stripping happens after `retu
 
 Hide everything by default; new DB columns stay off the wire until explicitly exposed:
 
-```typescript
+```typescript title="user.dto.ts"
 import { Controller, Get, Param } from "@nestjs/common";
 import { Exclude, Expose, plainToInstance } from "class-transformer";
 
@@ -146,7 +146,7 @@ export class UsersController {
 
 ## `@Transform()`: reshape values
 
-```typescript
+```typescript title="user.dto.ts"
 import { Controller, Get, Param } from "@nestjs/common";
 import { plainToInstance, Transform } from "class-transformer";
 
@@ -253,7 +253,7 @@ While `@Expose({ groups: [...] })` coupled with `@SerializeOptions({ groups: [..
 
 By extending `ClassSerializerInterceptor`, we can intercept the outgoing response context, extract the request object, and dynamically inject user roles from context directly into the active serialization groups.
 
-```typescript
+```typescript title="dynamic-serializer.interceptor.ts" collapse={1-7}
 import {
   CallHandler,
   ClassSerializerInterceptor,
@@ -300,7 +300,7 @@ export class DynamicSerializerInterceptor
 
 Annotate your entity to associate specific fields with role groups, then apply the dynamic interceptor at the controller level:
 
-```typescript
+```typescript title="user.entity.ts"
 import { Exclude, Expose } from "class-transformer";
 
 export class UserEntity {
@@ -325,7 +325,7 @@ export class UserEntity {
 }
 ```
 
-```typescript
+```typescript title="users.controller.ts"
 import {
   Controller,
   Get,

@@ -119,8 +119,7 @@ Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com
     npm i : save-dev vitest unplugin-swc @swc/core
     ```
 
-    ```typescript
-    // vitest.config.ts
+    ```typescript title="vitest.config.ts"
     import { dirname, resolve } from "node:path";
     import { fileURLToPath } from "node:url";
     import swc from "unplugin-swc";

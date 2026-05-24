@@ -4,6 +4,8 @@ import { defineConfig } from "astro/config";
 import mermaid from "astro-mermaid";
 import starlight from "@astrojs/starlight";
 import ecTwoSlash from "expressive-code-twoslash";
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 import starlightSiteGraph from "starlight-site-graph";
 import starlightImageZoom from "starlight-image-zoom";
 import starlightLinksValidator from "starlight-links-validator";
@@ -293,8 +295,11 @@ export default defineConfig({
         starlightHeadingBadges(),
       ],
       expressiveCode: {
-        plugins: [ecTwoSlash()],
+        plugins: [ecTwoSlash(), pluginLineNumbers(), pluginCollapsibleSections()],
         themes: ["github-light", "github-dark"],
+        defaultProps: {
+          showLineNumbers: false,
+        },
       },
       customCss: ["./src/styles/twoslash.css", "./src/styles/links.css"],
       editLink: {

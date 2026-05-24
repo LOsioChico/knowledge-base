@@ -39,7 +39,7 @@ Before diving into this recipe, make sure you understand:
 
 2. Register a global pipe in `main.ts` (secure defaults):
 
-   ```typescript
+   ```typescript title="main.ts"
    import "reflect-metadata";
    import { NestFactory } from "@nestjs/core";
    import { ValidationPipe } from "@nestjs/common";
@@ -72,7 +72,7 @@ Before diving into this recipe, make sure you understand:
 
 ## First DTO (show the 400)
 
-```typescript
+```typescript title="create-user.dto.ts"
 import { IsEmail, IsString, MinLength } from "class-validator";
 
 export class CreateUserDto {
@@ -85,7 +85,7 @@ export class CreateUserDto {
 }
 ```
 
-```typescript
+```typescript title="users.controller.ts"
 import { Body, Controller, Post } from "@nestjs/common";
 import { CreateUserDto } from "./dto/create-user.dto";
 
@@ -174,7 +174,7 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
 
 With a global `ValidationPipe({ transform: true })` registered and the following controller handler:
 
-```typescript
+```typescript title="items.controller.ts"
 import { Controller, Get, Query } from "@nestjs/common";
 
 @Controller("items")
@@ -204,8 +204,7 @@ A request of `GET /items?page=abc` returns a successful response containing `NaN
 
 Query parameters always arrive in the [[effect-ts/platform|HTTP]] request as strings (e.g. `?limit=10&page=2`). To validate and coerce them into actual numeric values within a custom query DTO, use a combination of `@IsInt()`, `@IsOptional()`, and the `enableImplicitConversion: true` option:
 
-```typescript
-// dto/pagination-query.dto.ts
+```typescript title="dto/pagination-query.dto.ts"
 import { IsInt, IsOptional, Max, Min } from "class-validator";
 
 export class PaginationQueryDto {
@@ -222,8 +221,7 @@ export class PaginationQueryDto {
 }
 ```
 
-```typescript
-// items.controller.ts
+```typescript title="items.controller.ts"
 import { Controller, Get, Query } from "@nestjs/common";
 import { PaginationQueryDto } from "./dto/pagination-query.dto";
 
@@ -346,7 +344,7 @@ If a client sends an invalid non-numeric string (e.g., `GET /items?limit=abc`), 
 
 Same DTO, different routes:
 
-```typescript
+```typescript title="dto/user.dto.ts"
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator";
 
 export class UserDto {
@@ -360,7 +358,7 @@ export class UserDto {
 }
 ```
 
-```typescript
+```typescript title="users.controller.ts"
 import { Body, Controller, Patch, Post, UsePipes, ValidationPipe } from "@nestjs/common";
 import { UserDto } from "./dto/user.dto";
 
@@ -423,8 +421,7 @@ Request to update the user (where the `update` validation group designates the p
 
 Decorators do not recurse without `@ValidateNested()` and `@Type()` from `class-transformer`:
 
-```typescript
-// create-order.dto.ts
+```typescript title="create-order.dto.ts"
 import { Type } from "class-transformer";
 import { IsArray, IsString, ValidateNested } from "class-validator";
 
@@ -468,8 +465,7 @@ The pipe automatically traverses the array and throws a nested path error:
 
 To return clean, standardized validation details (e.g. mapping internal validator constraints to a friendly list of fields), customize the `exceptionFactory` in `main.ts`:
 
-```typescript
-// main.ts
+```typescript title=\"main.ts\" ins={4,11-19}
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { BadRequestException, ValidationPipe } from "@nestjs/common";
@@ -533,8 +529,7 @@ Often, validation requires checking state outside the payload (e.g., verifying d
 ### 1. Define the custom validator and constraint
 Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):
 
-```typescript
-// is-unique.validator.ts
+```typescript title="is-unique.validator.ts" collapse={1-9}
 import { Injectable } from "@nestjs/common";
 import { 
   registerDecorator, 
@@ -582,8 +577,7 @@ export function IsUnique(tableAndColumn: [string, string], validationOptions?: V
 
 Since `IsUniqueConstraint` is decorated with `@Injectable()`, you **must** register it in your module's `providers` array (e.g., in `users.module.ts`), otherwise NestJS will fail to resolve the class dependencies during injection:
 
-```typescript
-// users.module.ts
+```typescript title="users.module.ts"
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { User } from "./entities/user.entity";
@@ -604,8 +598,7 @@ export class UsersModule {}
 ### 2. DTO usage
 Add your custom decorator to your DTO fields:
 
-```typescript
-// create-user.dto.ts
+```typescript title="create-user.dto.ts"
 import { IsEmail, IsNotEmpty } from "class-validator";
 import { IsUnique } from "./is-unique.validator";
 
@@ -666,8 +659,7 @@ Error: Nest can't resolve dependencies of the IsUniqueConstraint (?, ...). Pleas
 
 Bind the class-validator engine to the NestJS container in `main.ts` using `useContainer` to resolve constraints correctly:
 
-```typescript
-// main.ts
+```typescript title="main.ts" ins={3,8-9}
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { useContainer } from "class-validator";
@@ -701,8 +693,7 @@ This usually means that there are asynchronous operations that weren't stopped i
 
 **Resolution**: Always reset `useContainer(null)` in the E2E test teardown:
 
-```typescript
-// users.e2e.spec.ts
+```typescript title="users.e2e.spec.ts" collapse={1-5} ins={17}
 import { describe, beforeAll, afterAll } from "@jest/globals";
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";

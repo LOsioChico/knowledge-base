@@ -26,7 +26,7 @@ npm install --save-dev @types/pg
 
 1. **Smoke test with `forRoot` (dev only)**
 
-   ```typescript
+   ```typescript title="app.module.ts"
    import { Module } from "@nestjs/common";
    import { TypeOrmModule } from "@nestjs/typeorm";
 
@@ -69,7 +69,7 @@ npm install --save-dev @types/pg
 
 2. **`forRootAsync` + `ConfigService`**
 
-   ```typescript
+   ```typescript title="app.module.ts" ins={2-3,9-17}
    import { Module } from "@nestjs/common";
    import { ConfigModule, ConfigService } from "@nestjs/config";
    import { TypeOrmModule } from "@nestjs/typeorm";
@@ -121,7 +121,7 @@ npm install --save-dev @types/pg
 
 3. **Entities + `forFeature`**
 
-   ```typescript
+   ```typescript title="user.entity.ts"
    import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
 
    @Entity({ name: "users" })
@@ -141,7 +141,7 @@ npm install --save-dev @types/pg
    }
    ```
 
-   ```typescript
+   ```typescript title="users.module.ts"
    import { Module } from "@nestjs/common";
    import { TypeOrmModule } from "@nestjs/typeorm";
    import { UsersController } from "./users.controller";
@@ -165,7 +165,7 @@ npm install --save-dev @types/pg
 
 4. **Repository CRUD**
 
-   ```typescript
+   ```typescript title="users.service.ts"
    import { Injectable, NotFoundException } from "@nestjs/common";
    import { InjectRepository } from "@nestjs/typeorm";
    import { Repository } from "typeorm";
@@ -201,7 +201,7 @@ npm install --save-dev @types/pg
    }
    ```
 
-   ```typescript
+   ```typescript title="users.controller.ts"
    import {
    Body,
    Controller,
@@ -266,7 +266,7 @@ npm install --save-dev @types/pg
 
 5. **Migrations (standalone `DataSource`)**
 
-   ```typescript
+   ```typescript title="data-source.ts"
    import "dotenv/config";
    import { DataSource } from "typeorm";
 

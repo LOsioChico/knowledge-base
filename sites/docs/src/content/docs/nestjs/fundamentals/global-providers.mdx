@@ -41,8 +41,7 @@ flowchart TD
   <TabItem label="app.useGlobalX()">
     Instantiate in `main.ts` **outside** the DI container:
 
-    ```typescript
-    // main.ts
+    ```typescript title="main.ts"
     import { NestFactory } from "@nestjs/core";
     import { ValidationPipe } from "@nestjs/common";
     import { AppModule } from "./app.module";
@@ -61,8 +60,7 @@ flowchart TD
   <TabItem label="APP_* provider">
     Register in **any** module's `providers` array; Nest builds the instance:
 
-    ```typescript
-    // app.module.ts
+    ```typescript title="app.module.ts"
     import { Module, ValidationPipe } from "@nestjs/common";
     import { APP_PIPE } from "@nestjs/core";
 
@@ -102,8 +100,7 @@ flowchart TD
 
 ### Config-driven `APP_PIPE`
 
-```typescript
-// validation.config.ts
+```typescript title="validation.config.ts"
 import { ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { APP_PIPE } from "@nestjs/core";
@@ -119,8 +116,7 @@ export const validationPipeProvider = {
 };
 ```
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { validationPipeProvider } from "./validation.config";
@@ -136,8 +132,7 @@ With `useGlobalPipes` in `main.ts`, you can hand-resolve `app.get(ConfigService)
 
 ### Request-scoped `APP_GUARD`
 
-```typescript
-// tenant.guard.ts
+```typescript title="tenant.guard.ts"
 import { CanActivate, ExecutionContext, Inject, Injectable, Scope } from "@nestjs/common";
 import { REQUEST } from "@nestjs/core";
 import type { Request } from "express";
@@ -157,8 +152,7 @@ export class TenantGuard implements CanActivate {
 }
 ```
 
-```typescript
-// app.module.ts
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { TenantGuard } from "./tenant.guard";
@@ -180,7 +174,7 @@ export class AppModule {}
 | `useValue`   | Pre-built instance, e.g. `new ValidationPipe({ … })` (worked example: [combined array](#provider-shapes)) |
 | `useFactory` | Async setup, env, or manual `inject: [...]` (worked example: [Config-driven APP_PIPE](#config-driven-app_pipe)) |
 
-```typescript
+```typescript title="main.ts"
 import { Logger, ValidationPipe } from "@nestjs/common";
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from "@nestjs/core";
 

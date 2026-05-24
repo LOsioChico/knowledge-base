@@ -19,7 +19,7 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Middlew
 
 ## Signature
 
-```typescript
+```typescript title="logger.middleware.ts"
 import { Injectable, NestMiddleware } from "@nestjs/common";
 import { NextFunction, Request, Response } from "express";
 
@@ -51,7 +51,7 @@ Middleware cannot read `@Roles()`, the controller class, or which handler will r
 
 <Tabs>
   <TabItem label="Global (main.ts)">
-    ```typescript
+    ```typescript title="main.ts"
     import { NestFactory } from "@nestjs/core";
     import { AppModule } from "./app.module";
     import { requestId } from "./request-id.middleware";
@@ -65,7 +65,7 @@ Middleware cannot read `@Roles()`, the controller class, or which handler will r
     ```
   </TabItem>
   <TabItem label="Module (DI)">
-    ```typescript
+    ```typescript title="app.module.ts"
     import { MiddlewareConsumer, Module, NestModule, RequestMethod } from "@nestjs/common";
     import { CatsController } from "./cats.controller";
     import { LoggerMiddleware } from "./logger.middleware";
@@ -115,7 +115,7 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 
 Functional middleware: pair with [[nestjs/recipes/trace-id|trace IDs]] for `AsyncLocalStorage` logging.
 
-```typescript
+```typescript title="request-id.middleware.ts"
 import { randomUUID } from "node:crypto";
 import { NextFunction, Request, Response } from "express";
 
@@ -149,7 +149,7 @@ Content-Type: application/json; charset=utf-8
 | Method, URL, status, duration | Middleware (`res.on("finish", ...)` worked example: [HttpLoggerMiddleware](#access-log-http-layer)) |
 | Business events inside the handler | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) |
 
-```typescript
+```typescript title="request-logger.middleware.ts"
 import { Injectable, Logger, NestMiddleware } from "@nestjs/common";
 import { NextFunction, Request, Response } from "express";
 
@@ -199,7 +199,7 @@ Buffer.from('{"id":"evt_123","type":"payment_intent.succeeded"}')
 // Stripe SDK successfully constructs Event object: { id: "evt_123", ... }
 ```
 
-```typescript
+```typescript title="main.ts"
 import { json, raw } from "express";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";

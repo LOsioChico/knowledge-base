@@ -26,7 +26,7 @@ npm i @nestjs/cache-manager cache-manager
 
 1. Register `CacheModule` globally:
 
-   ```typescript
+   ```typescript title="app.module.ts"
    import { Module } from "@nestjs/common";
    import { CacheModule } from "@nestjs/cache-manager";
    import { BooksController } from "./books.controller";
@@ -47,7 +47,7 @@ npm i @nestjs/cache-manager cache-manager
 
 2. Inject `CACHE_MANAGER` in a service:
 
-   ```typescript
+   ```typescript title="items.service.ts"
    import { Inject, Injectable } from "@nestjs/common";
    import { CACHE_MANAGER, type Cache } from "@nestjs/cache-manager";
 
@@ -97,7 +97,7 @@ npm i @nestjs/cache-manager cache-manager
 
 ## Auto-caching GET responses
 
-```typescript
+```typescript title="items.controller.ts"
 import { Controller, Get, UseInterceptors } from "@nestjs/common";
 import { CacheInterceptor, CacheKey, CacheTTL } from "@nestjs/cache-manager";
 import { BooksService, type Book } from "./books.service";
@@ -124,7 +124,7 @@ export class BooksController {
 
 Global binding via [[nestjs/fundamentals/global-providers|APP_INTERCEPTOR]]:
 
-```typescript
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { APP_INTERCEPTOR } from "@nestjs/core";
 import { CacheInterceptor, CacheModule } from "@nestjs/cache-manager";
@@ -169,7 +169,7 @@ Interceptors run per field resolver, not per request. `CacheInterceptor` keys by
 npm i @keyv/redis keyv cacheable
 ```
 
-```typescript
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { CacheModule } from "@nestjs/cache-manager";
 import { Keyv } from "keyv";
@@ -205,7 +205,7 @@ Reads check stores in order; `set`/`del` hit each store (optional `nonBlocking: 
 
 Use [[nestjs/recipes/configuration|Configuration with @nestjs/config]] when TTLs, Redis URLs, or other cache options come from environment-driven app settings.
 
-```typescript
+```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";
 import { CacheModule } from "@nestjs/cache-manager";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -230,7 +230,7 @@ export class AppModule {}
 
 ## Custom tracking (per-user keys)
 
-```typescript
+```typescript title="http-cache.interceptor.ts"
 import { ExecutionContext, Injectable } from "@nestjs/common";
 import { CacheInterceptor } from "@nestjs/cache-manager";
 import type { Request } from "express";

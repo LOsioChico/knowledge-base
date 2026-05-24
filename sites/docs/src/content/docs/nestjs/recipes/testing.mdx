@@ -35,8 +35,7 @@ Before diving into testing recipes, make sure you understand:
 
 If the behavior is pure business logic, stop at `compile()`. This is the same auth flow explained in [[nestjs/auth/jwt-strategy|JWT strategy with Passport]], but reduced to one provider test.
 
-```typescript
-// auth.service.ts
+```typescript title="auth.service.ts"
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 
@@ -73,8 +72,7 @@ export class AuthService {
 }
 ```
 
-```typescript
-// auth.service.spec.ts
+```typescript title="auth.service.spec.ts"
 import { UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Test } from "@nestjs/testing";
@@ -157,8 +155,7 @@ If the behavior lives in validation, [[nestjs/fundamentals/guards|guards]], [[ne
 
 This example assumes the same DTO validation setup as [[nestjs/recipes/validation|Validation with class-validator]].
 
-```typescript
-// users.module.ts
+```typescript title="users.module.ts"
 import { Body, Controller, Module, Post } from "@nestjs/common";
 import { IsString, MinLength } from "class-validator";
 
@@ -182,8 +179,7 @@ export class UsersController {
 export class UsersModule {}
 ```
 
-```typescript
-// users.integration.spec.ts
+```typescript title="users.integration.spec.ts"
 import { INestApplication, ValidationPipe } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
@@ -266,8 +262,7 @@ Most route tests are **not** auth tests. When the route behavior matters more th
 
 Nest's testing docs document the footgun here: a global enhancer registered as `{ provide: APP_GUARD, useClass: JwtAuthGuard }` is a multi-provider slot, so the override target should be the concrete guard class instead. The fix is to register the guard with `useExisting`, then override `JwtAuthGuard` in the test module ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers), [[nestjs/fundamentals/global-providers|Global enhancers]]).
 
-```typescript
-// auth.module.ts
+```typescript title="auth.module.ts"
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { JwtAuthGuard } from "./jwt-auth.guard";
@@ -336,8 +331,7 @@ The gold standard for high-performance database testing is the **transactional r
 
 Here is a compile-safe, production-ready TypeORM E2E test implementation:
 
-```typescript
-// users-transactional.e2e.spec.ts
+```typescript title="users-transactional.e2e.spec.ts"
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
 import request from "supertest";
@@ -456,8 +450,7 @@ Active database connection pools (such as those maintained by `pg` or `mysql2` d
 
 When testing repository layers or individual services directly without booting a full `INestApplication` (which calls `app.close()`), you must manually destroy the connection pool in `afterAll()`:
 
-```typescript
-// users.repository.spec.ts
+```typescript title="users.repository.spec.ts"
 import { Test, TestingModule } from "@nestjs/testing";
 import { DataSource } from "typeorm";
 import { AppModule } from "../src/app.module";

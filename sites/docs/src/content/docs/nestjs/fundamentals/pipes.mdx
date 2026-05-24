@@ -28,7 +28,7 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Pipes, 
 
 ## Contract
 
-```typescript
+```typescript title="parse-int.pipe.ts"
 import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from "@nestjs/common";
 
 @Injectable()
@@ -76,7 +76,7 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
   </TabItem>
 </Tabs>
 
-```typescript
+```typescript title="items.controller.ts"
 import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
 
 @Controller("orders")
@@ -101,8 +101,7 @@ export class OrdersController {
 
 </Steps>
 
-```typescript
-// main.ts
+```typescript title="main.ts"
 import { NestFactory } from "@nestjs/core";
 import { ValidationPipe } from "@nestjs/common";
 import { AppModule } from "./app.module";
@@ -155,7 +154,7 @@ Deep DTO patterns: [[nestjs/recipes/validation|validation recipe]].
 
 ### Zod (not built-in)
 
-```typescript
+```typescript title="trim-string.pipe.ts"
 import { BadRequestException, PipeTransform } from "@nestjs/common";
 import { ZodSchema } from "zod";
 

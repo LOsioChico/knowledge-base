@@ -13,6 +13,8 @@
     "@astrojs/starlight": "^0.39.2",
     "@effect/platform": "^0.96.1",
     "@effect/platform-node": "^0.106.0",
+    "@expressive-code/plugin-collapsible-sections": "^0.42.0",
+    "@expressive-code/plugin-line-numbers": "^0.42.0",
     "astro": "^6.3.0",
     "astro-mermaid": "^2.0.1",
     "effect": "^3.19.0",

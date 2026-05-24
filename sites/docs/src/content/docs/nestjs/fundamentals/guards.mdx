@@ -122,15 +122,13 @@ export class AuthGuard implements CanActivate {
 
 </Steps>
 
-```typescript
-// roles.decorator.ts
+```typescript title="roles.decorator.ts"
 import { Reflector } from "@nestjs/core";
 
 export const Roles = Reflector.createDecorator<string[]>();
 ```
 
-```typescript
-// roles.guard.ts
+```typescript title="roles.guard.ts"
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { Request } from "express";
@@ -155,8 +153,7 @@ export class RolesGuard implements CanActivate {
 
 ### Controller binding
 
-```typescript
-// cats.controller.ts
+```typescript title="cats.controller.ts"
 import { Controller, Get, UseGuards, Param } from "@nestjs/common";
 import { RolesGuard } from "./roles.guard";
 import { Roles } from "./roles.decorator";

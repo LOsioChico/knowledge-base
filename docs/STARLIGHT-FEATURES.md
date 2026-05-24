@@ -22,11 +22,61 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 | Package manager | Bun (`sites/docs/bun.lock`) | Matches rest of repo tooling |
 | Knowledge graph | `starlight-site-graph` | Interactive graph visualization of page connections in sidebar |
 | Image zoom | `starlight-image-zoom` | Click-to-zoom on documentation images |
-| Link validation | `starlight-links-validator` | Build-time broken link check (page-level; hash validation deferred) |
+| Link validation | `starlight-links-validator` | Build-time broken link + hash anchor check |
 | Heading badges | `starlight-heading-badges` | Visual badges on headings via `:badge[text]{variant}` directive syntax |
 | Reading progress | Custom `Header.astro` override | Horizontal scroll-progress bar at top of viewport |
 | Structured data | Custom `Head.astro` override | JSON-LD `TechArticle` schema injected per page for SEO |
 | Prefetch | `prefetch: true` in Astro config | Link prefetching (required by `starlight-site-graph`) |
+| Line numbers | `@expressive-code/plugin-line-numbers` | Opt-in per block via `showLineNumbers` |
+| Collapsible sections | `@expressive-code/plugin-collapsible-sections` | Collapse boilerplate with `collapse={lines}` |
+
+## Expressive Code block features
+
+All code blocks support these annotations on the opening fence line. Combine freely.
+
+### File title (most common)
+
+Shows a filename tab above the code block. Add to every block representing a real file:
+
+` ```typescript title="cats.controller.ts" `
+
+### Diff markers (ins/del)
+
+Green-highlighted insertions and red deletions. Use when a recipe step builds on previous code:
+
+` ```typescript title="app.module.ts" ins={3-4} del={2} `
+
+Or use inline diff syntax (prefix lines with `+`/`-`):
+
+` ```typescript title="app.module.ts" `  
+```
+- import { OldModule } from './old.module';
++ import { NewModule } from './new.module';
+```
+
+### Line highlighting
+
+Yellow-highlighted lines to draw attention:
+
+` ```typescript {5,8-10} `
+
+### Line numbers
+
+Opt-in per block (globally disabled by `defaultProps: { showLineNumbers: false }`):
+
+` ```typescript showLineNumbers `
+
+### Collapsible sections
+
+Collapse long import blocks or repeated boilerplate:
+
+` ```typescript collapse={1-6, "Imports"} `
+
+### Terminal frames
+
+Bash/sh/zsh blocks auto-render as terminal windows (no `title=` needed):
+
+` ```bash `
 
 ## Twoslash authoring
 

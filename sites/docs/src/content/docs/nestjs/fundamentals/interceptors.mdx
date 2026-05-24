@@ -19,7 +19,7 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Interce
 
 ## Contract
 
-```typescript
+```typescript title="logging.interceptor.ts"
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Observable, tap } from "rxjs";
 
@@ -101,7 +101,7 @@ A global [[effect-ts/observability|logging]] interceptor sees the **final** resp
 
 ### Response envelope
 
-```typescript
+```typescript title="transform.interceptor.ts"
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { map, Observable } from "rxjs";
 
@@ -121,7 +121,7 @@ Handler returns `{ id: 1 }` → client receives:
 
 ### Cache short-circuit
 
-```typescript
+```typescript title="cache.interceptor.ts"
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from "@nestjs/common";
 import { Observable, of, tap } from "rxjs";
 
@@ -168,7 +168,7 @@ Suppose a client makes two successive requests to a route `/cats` using `CacheIn
 
 ### Per-route timeout
 
-```typescript
+```typescript title="timeout.interceptor.ts"
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor, RequestTimeoutException } from "@nestjs/common";
 import { catchError, Observable, throwError, timeout, TimeoutError } from "rxjs";
 
