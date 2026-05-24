@@ -51,6 +51,17 @@ When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a 
 
 **LLM judges** (`kb-mdx-auditor`, show-dont-tell, source-verifier, etc.) run directly on **Starlight MDX** under `sites/docs/src/content/docs/**/*.mdx` via the `mdx-audit-notes.ts` orchestrator (using the `mdx-triage` or `mdx-full` profiles). deterministic checks (`lint:docs`, kb-author audits **S1–S6**) run in CI.
 
+## Third-party course & book intake policy (Copyright & Originality)
+
+This knowledge base synthesizes concepts from various high-quality engineering books and online courses (e.g., **ByteByteGo**, **AlgoMaster.io**, or structural system-design references) to build a structured curriculum. 
+
+To maintain academic integrity and avoid plagiarism, all agentic editor flows **must** adhere strictly to the following intake and editing guidelines:
+
+1. **Extraction is temporary and isolated**: Use specialized scripts (e.g., `algomaster-intake.mjs` for AlgoMaster pages) to extract lesson content only as raw, private text files under `tmp/` or local scratch spaces. **Never** check verbatim third-party text or images into the main repository branch.
+2. **Concept verification is mandatory**: Never treat courses or books as primary technical evidence. You **must** verify all factual claims, performance metrics, and configuration options against the official primary documentation (e.g., AWS Developer Guides, official NestJS Docs, Node.js canonical docs) using `kb-research-author`.
+3. **Draft with original structure**: Do not mimic the exact prose flow, sentences, or illustrations of the intake material. Explain the concept from scratch in original wording, designing customized code examples that compile and run cleanly within NestJS/Effect-TS patterns.
+4. **Citing sources**: You may optionally link to the third-party course or book in the `## See also` section as a further reading reference when their specific framing shaped the concept, but the frontmatter `source:` list should exclusively cite official primary technical sources.
+
 ## What this repo is
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
