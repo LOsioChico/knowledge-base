@@ -47,7 +47,7 @@ Effect uses **pull-based streams** (`Stream<A, E, R>`). In a pull-based model, t
 
 Creating and executing a stream in Effect is lazy. A stream is simply a description of a data pipeline; no data is pulled until you execute a runner like `Stream.runCollect` or `Stream.runForEach`:
 
-```ts twoslash
+```ts twoslash title="minimal-stream.ts"
 import { Console, Effect, Stream } from "effect";
 
 // Create a lazy stream of numbers and double them
@@ -72,7 +72,7 @@ While native pull-based iteration guarantees that a slow consumer will never be 
 
 Effect provides `Stream.buffer` to boundedly buffer elements. This spawns a background [[effect-ts/concurrency|fiber]] to pull elements from the producer up to a specified capacity, allowing the producer and consumer to operate at different speeds within safe memory bounds:
 
-```ts twoslash
+```ts twoslash title="backpressure-buffers.ts"
 import { Console, Effect, Stream } from "effect";
 
 const source = Stream.range(1, 5).pipe(
@@ -119,7 +119,7 @@ sequenceDiagram
 
 When communicating with external databases or [[effect-ts/platform|HTTP]] APIs, processing items one-by-one is highly inefficient. You can group stream elements into batches of a specific size using `Stream.grouped`:
 
-```ts twoslash
+```ts twoslash title="batching-windowing.ts"
 import { Console, Effect, Stream } from "effect";
 
 // Emit numbers 1 to 10
@@ -147,7 +147,7 @@ If your stream opens external resources (like database connections, files, or ne
 
 Effect streams fully support the `Scope` model. Using `Stream.acquireRelease`, resource allocation is bound directly to the stream execution boundary:
 
-```ts twoslash
+```ts twoslash title="stream-scoped-resources.ts"
 import { Console, Effect, Stream } from "effect";
 
 class SocketConnection {

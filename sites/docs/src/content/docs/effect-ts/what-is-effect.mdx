@@ -20,7 +20,7 @@ Per the [Effect type docs](https://effect.website/docs/getting-started/the-effec
 
 Read `Effect<User, NotFound, UserRepo>` as: when you run this, you get a `User`, or it fails with `NotFound`, and you must provide a `UserRepo`:
 
-```ts twoslash
+```ts twoslash title="effect-type-signature.ts"
 import { Effect } from "effect";
 
 type FindUser = (id: string) => Effect.Effect<{ name: string }, { _tag: "NotFound" }, never>;
@@ -30,7 +30,7 @@ type FindUser = (id: string) => Effect.Effect<{ name: string }, { _tag: "NotFoun
 
 Per the [Effect type docs](https://effect.website/docs/getting-started/the-effect-type/), values are lazily executed: importing a module, constructing an `Effect`, or `pipe(Effect.map(...))` runs **nothing** until a runner executes it.
 
-```ts twoslash
+```ts twoslash title="lazy-description.ts"
 import { Effect } from "effect";
 
 const program = Effect.sync(() => {
@@ -68,7 +68,7 @@ Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; p
   <TabItem label="Typed errors (E)">
     `Promise<T>` rejects with `unknown`. `Effect<A, E, R>` puts failures in `E`:
 
-    ```ts twoslash
+    ```ts twoslash title="why-effect-design.ts"
     import { Data, Effect } from "effect";
 
     class NetworkError extends Data.TaggedError("NetworkError") {}
@@ -86,7 +86,7 @@ Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; p
   <TabItem label="Dependencies (R)">
     The `R` channel lists services the effect still needs. After `Layer.provide`, `R` becomes `never` and the effect is runnable:
 
-    ```ts twoslash
+    ```ts twoslash title="effect-vs-promise.ts"
     import { Context, Data, Effect, Layer } from "effect";
 
     class NotFound extends Data.TaggedError("NotFound")<{ readonly id: string }> {}

@@ -30,7 +30,7 @@ bun add effect
 
 ## 1. Retry N times
 
-```ts twoslash
+```ts twoslash title="retry-n-times.ts"
 import { Effect } from "effect";
 
 let count = 0;
@@ -68,7 +68,7 @@ Here is the step-by-step visual execution trace of the synchronous runtime execu
 
 ## 2. Exponential backoff (cap it)
 
-```ts twoslash
+```ts twoslash title="exponential-backoff.ts"
 import { Effect, Schedule } from "effect";
 
 let attempts = 0;
@@ -119,7 +119,7 @@ Here is the step-by-step visual execution trace illustrating the exponential bac
 
 ## 3. Jitter
 
-```ts twoslash
+```ts twoslash title="jitter.ts"
 import { Schedule } from "effect";
 
 const policy = Schedule.intersect(
@@ -143,7 +143,7 @@ Use when many clients can fail together (thundering herd). See [[effect-ts/fault
 
 ## 4. Retry only specific errors
 
-```ts twoslash
+```ts twoslash title="retry-specific-errors.ts"
 import { Data, Effect } from "effect";
 
 class TransientError extends Data.TaggedError("TransientError")<{}> {}
@@ -182,7 +182,7 @@ Pair with [[effect-ts/typed-errors|typed errors]] so `while` can discriminate on
 
 ## 5. Fallback when retries exhaust
 
-```ts twoslash
+```ts twoslash title="fallback-on-exhaust.ts"
 import { Console, Effect, Schedule } from "effect";
 
 const liveFetch = Effect.fail(new Error("upstream down"));

@@ -39,7 +39,7 @@ A fiber is a lightweight description of a execution thread managed entirely by t
 
 To run an `Effect` in the background, spawn it as a fiber using `Effect.fork`. This returns a [`Fiber<Success, Error>`](https://effect.website/docs/concurrency/fibers) handle:
 
-```ts twoslash
+```ts twoslash title="fork-background.ts"
 import { Console, Effect, Fiber } from "effect";
 
 const backgroundJob = Effect.gen(function* () {
@@ -87,7 +87,7 @@ sequenceDiagram
 
 Every fiber can be aborted by calling `Fiber.interrupt`. Aborting a fiber halts its execution immediately and triggers its finalization cleanup hooks:
 
-```ts twoslash
+```ts twoslash title="fiber-lifecycle.ts"
 import { Console, Effect, Fiber } from "effect";
 
 const longRunning = Effect.gen(function* () {
@@ -129,7 +129,7 @@ High-level APIs like `Effect.all` (combinator for arrays) and `Effect.forEach` (
 
 <Tabs>
   <TabItem label="Sequential (Default)">
-    ```ts twoslash
+    ```ts twoslash title="sequential-vs-parallel.ts"
     import { Console, Effect } from "effect";
 
     const task = (id: number) => Effect.gen(function* () {
@@ -148,7 +148,7 @@ High-level APIs like `Effect.all` (combinator for arrays) and `Effect.forEach` (
     ```
   </TabItem>
   <TabItem label="Parallel (Unbounded)">
-    ```ts twoslash
+    ```ts twoslash title="parallel-variants.ts"
     import { Console, Effect } from "effect";
 
     const task = (id: number) => Effect.gen(function* () {
@@ -177,7 +177,7 @@ Unbounded parallel execution is dangerous for high-throughput tasks like fetchin
 
 Effect allows you to enforce bounded concurrency by passing a numeric limit (`N`) directly to combinators or by configuring the context using `Effect.withConcurrency`:
 
-```ts twoslash
+```ts twoslash title="bounded-concurrency.ts"
 import { Effect } from "effect";
 
 const fetchRecord = (id: number) => Effect.gen(function* () {
@@ -197,7 +197,7 @@ Effect.runPromise(program);
 
 By setting `{ concurrency: "inherit" }`, your combinators defer to the surrounding lexical boundary, allowing you to configure execution bounds globally or dynamically:
 
-```ts twoslash
+```ts twoslash title="inherited-concurrency.ts"
 import { Console, Effect } from "effect";
 
 const fetchItem = (id: number) => Effect.gen(function* () {
@@ -226,7 +226,7 @@ When a fiber is interrupted, all its finalizers and cleanup boundaries execute c
 
 Register a callback that executes only if the computation is aborted:
 
-```ts twoslash
+```ts twoslash title="on-interrupt.ts"
 import { Console, Effect, Fiber } from "effect";
 
 const queryApi = Effect.gen(function* () {
@@ -256,7 +256,7 @@ Effect.runPromise(program);
 
 When using `Effect.acquireRelease` within a fiber, finalizers run in reverse order (LIFO) if the fiber is interrupted. This guarantees that half-acquired sockets, database pools, or open files are cleanly closed:
 
-```ts twoslash
+```ts twoslash title="guarded-scope.ts"
 import { Console, Effect, Fiber } from "effect";
 
 class Resource {

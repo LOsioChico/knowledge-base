@@ -41,7 +41,7 @@ To coordinate state safely, Effect provides three layers of concurrency primitiv
 
 A [`Ref<A>`](https://effect.website/docs/concurrency/ref) is a reference to a mutable value. All operations on a `Ref` (reads, writes, and updates) are **atomic** and guaranteed to run without interruption:
 
-```ts twoslash
+```ts twoslash title="ref-atomic.ts"
 import { Console, Effect, Ref } from "effect";
 
 const incrementCounter = (counter: Ref.Ref<number>) =>
@@ -72,7 +72,7 @@ Effect.runPromise(program);
 
 A `SubscriptionRef<A>` behaves like a standard `Ref`, but it exposes a pull-based [[effect-ts/streams|Stream]] of its values. Whenever the value of the reference changes, all active stream subscribers receive the updated value:
 
-```ts twoslash
+```ts twoslash title="subscription-ref.ts"
 import { Console, Effect, Fiber, Stream, SubscriptionRef } from "effect";
 
 const program = Effect.gen(function* () {
@@ -114,7 +114,7 @@ Effect solves this by providing **Software Transactional Memory (STM)**. STM is 
 
 Consider transferring money from one bank account to another. If account A has funds deducted but a crash occurs before account B receives them, money is lost. STM ensures this can never happen:
 
-```ts twoslash
+```ts twoslash title="transactional-transfer.ts"
 import { Console, Effect, STM, TRef } from "effect";
 
 // Deduction operation in the transactional context

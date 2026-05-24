@@ -38,7 +38,7 @@ Effect addresses this by embedding observability directly into its runtime engin
 
 Effect provides built-in logging operators that replace native `console.log`. The standard log output captures crucial operational metadata: timestamp, log level, fiber ID, and any active spans:
 
-```ts twoslash
+```ts twoslash title="structured-logging.ts"
 import { Effect } from "effect";
 
 const program = Effect.gen(function* () {
@@ -67,7 +67,7 @@ Notice that `Handshake failed! Re-trying...` is captured with `level=ERROR`. The
 
 To track single request execution pipelines composed of multiple nested operations, you can wrap your computation in `Effect.withLogSpan`. This automatically creates a trace span and prefixes all logs inside the wrapped subtree with the span name and execution duration:
 
-```ts twoslash
+```ts twoslash title="contextual-spans.ts"
 import { Effect } from "effect";
 
 const processItem = (id: number) =>
@@ -110,7 +110,7 @@ Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel
 
 By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors:
 
-```ts
+```ts title="opentelemetry-integration.ts"
 import { Effect } from "effect";
 import { NodeSdk } from "@effect/opentelemetry";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";

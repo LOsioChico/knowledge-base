@@ -30,6 +30,23 @@ flowchart TD
     DM --> CFG["8. Config Injection"]
     CFG --> AUTH["9. Auth Stack"]
     CFG --> DB["10. PostgreSQL Setup"]
+    P --> VAL["Validation"]
+    I --> SER["Serialization"]
+    EF --> RATE["Rate Limiting"]
+
+    click RL "/knowledge-base/nestjs/fundamentals/request-lifecycle/"
+    click MW "/knowledge-base/nestjs/fundamentals/middleware/"
+    click G "/knowledge-base/nestjs/fundamentals/guards/"
+    click I "/knowledge-base/nestjs/fundamentals/interceptors/"
+    click P "/knowledge-base/nestjs/fundamentals/pipes/"
+    click EF "/knowledge-base/nestjs/fundamentals/exception-filters/"
+    click DM "/knowledge-base/nestjs/recipes/dynamic-modules/"
+    click CFG "/knowledge-base/nestjs/recipes/configuration/"
+    click AUTH "/knowledge-base/nestjs/auth/jwt-strategy/"
+    click DB "/knowledge-base/nestjs/data/typeorm/postgresql-setup/"
+    click VAL "/knowledge-base/nestjs/recipes/validation/"
+    click SER "/knowledge-base/nestjs/recipes/serialization/"
+    click RATE "/knowledge-base/nestjs/recipes/rate-limiting/"
 ```
 
 ## Start here

@@ -40,7 +40,7 @@ You need:
 
 Create `src/hello.ts`:
 
-```ts twoslash
+```ts twoslash title="hello-effect.ts"
 import { Effect } from "effect";
 
 // Effect.sync wraps a synchronous side effect into an Effect<void, never, never>.
@@ -62,7 +62,7 @@ Two things to internalize:
 
 Effect ships five `run*` entry points ([running-effects docs](https://effect.website/docs/getting-started/running-effects/)): `runSync`, `runSyncExit`, `runPromise`, `runPromiseExit`, and `runFork`. The three you reach for first:
 
-```ts twoslash
+```ts twoslash title="run-effect.ts"
 import { Effect } from "effect";
 
 const log = (message: string) =>
@@ -101,7 +101,7 @@ Pick the runner at the **entry point** only. Inside the program, compose with `p
 
 Effect's idiomatic [[effect-ts/composition|composition]] is the generator DSL: `yield*` an effect to "await" it. Same shape as `async/await`, but for `Effect`. Replace the body of `src/hello.ts`:
 
-```ts twoslash
+```ts twoslash title="compose-with-gen.ts"
 import { Effect } from "effect";
 
 const greet = (name: string) => Effect.sync(() => `Hello, ${name}!`);
@@ -128,7 +128,7 @@ console.log("returned:", result);
 
 Failures belong in the type signature. Wrap fallible work with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
 
-```ts twoslash
+```ts twoslash title="typed-error.ts"
 import { Data, Effect } from "effect";
 
 class ParseError extends Data.TaggedError("ParseError")<{

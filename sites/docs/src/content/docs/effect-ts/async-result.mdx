@@ -31,7 +31,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 In clientside applications, representing the state of remote asynchronous operations (such as API fetches) is a frequent source of bugs. The common footgun is **flattening state into generic defaults** (e.g., initializing an unresolved user list as an empty array `[]` or `null`):
 
-```typescript
+```typescript title="remote-state-dilemma.ts"
 // A dangerous, flattened state model
 interface State {
   users: User[];      // Empty [] initially, or is it loaded/empty?
@@ -64,7 +64,7 @@ flowchart TD
 
 We structure the state machine using precise TypeScript types, where the data and error channels are strongly typed and bounded:
 
-```ts twoslash
+```ts twoslash title="algebraic-model.ts"
 export type AsyncResult<A, E = never> =
   | { readonly _tag: "Waiting" }
   | { readonly _tag: "Loading" }
@@ -84,7 +84,7 @@ export const failure = <A, E>(error: E): AsyncResult<A, E> => ({ _tag: "Failure"
 
 Below is a complete, compile-safe, and standalone example demonstrating how to model a remote store that manages user profiles, processes transitions atomically, and exports its state changes as a reactive [[effect-ts/streams|stream]]:
 
-```ts twoslash
+```ts twoslash title="remote-ingestion-store.ts"
 import { Console, Effect, SubscriptionRef, Stream } from "effect";
 
 // 1. Declare Domain Types and State
@@ -178,7 +178,7 @@ Instead:
 ### II. Explicit UI State Matching
 When rendering an `AsyncResult`, always cover the complete state taxonomy. Prohibit shortcuts that collapse loading and failure:
 
-```typescript
+```typescript title="explicit-ui-matching.ts"
 type AsyncResult<A, E = never> =
   | { readonly _tag: "Waiting" }
   | { readonly _tag: "Loading" }

@@ -39,7 +39,7 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   <TabItem label="acquireUseRelease">
     <a id="acquire-use-release-example"></a>
 
-    ```ts twoslash
+    ```ts twoslash title="acquire-release.ts"
     import { Console, Effect } from "effect";
 
     interface Page {
@@ -76,7 +76,7 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   <TabItem label="acquireRelease + scoped">
     <a id="acquire-release-example"></a>
 
-    ```ts twoslash
+    ```ts twoslash title="ensure-finalizer.ts"
     import { Effect } from "effect";
 
     interface DbPool {
@@ -113,7 +113,7 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   <TabItem label="addFinalizer">
     <a id="add-finalizer-example"></a>
 
-    ```ts twoslash
+    ```ts twoslash title="add-finalizer.ts"
     import { Console, Effect, Exit } from "effect";
 
     const program = Effect.gen(function* () {
@@ -136,7 +136,7 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   <TabItem label="ensuring">
     <a id="ensuring-example"></a>
 
-    ```ts twoslash
+    ```ts twoslash title="scope-make.ts"
     import { Console, Effect } from "effect";
 
     const work = Console.log("doing work").pipe(
@@ -161,7 +161,7 @@ To understand how scopes operate in production, consider a multi-step database t
 
 By wrapping our resource initialization in `Effect.acquireRelease`, the Effect runtime automatically tracks the resource and wires its release logic to the enclosing `Scope` context.
 
-```ts twoslash
+```ts twoslash title="resource-lifecycle.ts"
 import { Effect, Console } from "effect";
 
 class DbConnection {
@@ -250,7 +250,7 @@ The finalizer safety is represented in the sequence below:
 
 Finalizers run **LIFO** when the scope closes ([Scope docs](https://effect.website/docs/resource-management/scope/)):
 
-```ts twoslash
+```ts twoslash title="finalizer-ordering.ts"
 import { Console, Effect } from "effect";
 
 const program = Effect.gen(function* () {
@@ -269,7 +269,7 @@ Effect.runPromise(Effect.scoped(program));
 
 When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try: the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
 
-```ts twoslash
+```ts twoslash title="retry-timeout-interrupt.ts"
 import { Effect, Console } from "effect";
 
 let attempts = 0;

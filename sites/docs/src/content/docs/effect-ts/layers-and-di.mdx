@@ -34,7 +34,7 @@ No string tokens or decorator metadata: missing dependencies are compile errors,
   <TabItem label="Context.Tag">
     The foundation since Effect 2.x. A class extends `Context.Tag(<key>)` with `<Self, Shape>` ([services docs](https://effect.website/docs/requirements-management/services/)):
 
-    ```ts twoslash
+    ```ts twoslash title="declare-service.ts"
     import { Context, Effect } from "effect";
 
     class Random extends Context.Tag("MyRandomService")<
@@ -58,7 +58,7 @@ No string tokens or decorator metadata: missing dependencies are compile errors,
   <TabItem label="Effect.Service">
     Since `effect@3.9.0` as `@experimental` ([`Effect.Service` source](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13540-L13620)): one class declares tag + default layer.
 
-    ```ts twoslash
+    ```ts twoslash title="consume-service.ts"
     import { Effect } from "effect";
 
     class Random extends Effect.Service<Random>()("MyRandomService", {
@@ -99,7 +99,7 @@ Here is a side-by-side comparison of declaring the boundary:
 
 <Tabs>
   <TabItem label="NestJS (Abstract Class Token)">
-    ```typescript
+    ```typescript title="oop-analogy.ts"
     import { Injectable, Module } from "@nestjs/common";
 
     // 1. Declare the boundary (Token + API shape)
@@ -134,7 +134,7 @@ Here is a side-by-side comparison of declaring the boundary:
     ```
   </TabItem>
   <TabItem label="Effect (Context.Tag)">
-    ```typescript twoslash
+    ```typescript twoslash title="oop-context-tag.ts"
     // 1. Declare the boundary (Token + API shape)
     import { Context, Effect } from "effect";
 
@@ -162,7 +162,7 @@ A `Layer<ROut, E, RIn>` constructs services `ROut`, may fail with `E`, and may n
 | [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289) | Construction is an effect (I/O, other services); [example below](#building-a-layer) | From the builder effect's `R` |
 | [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727) | Service owns a resource with cleanup; [cleanup example](#scoped-layers-and-cleanup) | Inferred; `Scope` excluded |
 
-```ts twoslash
+```ts twoslash title="build-layer.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Config extends Context.Tag("Config")<
@@ -198,7 +198,7 @@ const LoggerLive = Layer.effect(
 
 When a service holds a pool, handle, or socket, use `Layer.scoped` with `Effect.acquireRelease` ([scoped layers](https://effect.website/docs/requirements-management/layers/), [[effect-ts/scoped-resources|scoped resources]]):
 
-```ts twoslash
+```ts twoslash title="scoped-layer.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Database extends Context.Tag("Database")<
@@ -255,7 +255,7 @@ Release runs at program end, including on interruption.
                   └────────────────────────┘
 ```
 
-```ts twoslash
+```ts twoslash title="scoped-layer-demo.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Config extends Context.Tag("Config")<
@@ -304,7 +304,7 @@ Two operators ([`Layer.merge`](https://github.com/Effect-TS/effect/blob/main/pac
 - **`Layer.merge(a, b)`**: parallel union: produces both outputs, requires the union of inputs (siblings).
 - **`Layer.provide(outer, inner)`**: sequential [[effect-ts/composition|composition]]: `inner` satisfies part of `outer`'s requirements.
 
-```ts twoslash
+```ts twoslash title="compose-layers.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Config extends Context.Tag("Config")<
@@ -347,7 +347,7 @@ Effect.runSync(
 
 Layers are **shared by default** within one `Effect.provide` graph ([memoization docs](https://effect.website/docs/requirements-management/layer-memoization/)): if two consumers need `LoggerLive`, the pool is built once.
 
-```ts twoslash
+```ts twoslash title="memoization.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Counter extends Context.Tag("Counter")<
@@ -387,7 +387,7 @@ Two unrelated `Effect.provide(LoggerLive)` calls on two effects build two logger
 
 <Aside type="caution" title="Unsatisfied R is a type error">
 
-```ts twoslash
+```ts twoslash title="gotcha-missing-layer.ts"
 // @errors: 2345
 import { Context, Effect } from "effect";
 
@@ -410,7 +410,7 @@ The compiler names the missing tag in `R`. Provide layers until `R` is `never`.
 
 <Aside type="caution" title="Layer factory functions defeat memoization">
 
-```ts twoslash
+```ts twoslash title="gotcha-fix.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Logger extends Context.Tag("Logger")<

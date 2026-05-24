@@ -34,7 +34,7 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Tabs>
   <TabItem label="Effect">
-    ```ts twoslash
+    ```ts twoslash title="effect-logger-greeter.ts"
     import { Context, Effect, Layer } from "effect";
 
     class Logger extends Context.Tag("Logger")<
@@ -82,7 +82,7 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
   </TabItem>
   <TabItem label="NestJS">
-    ```typescript
+    ```typescript title="nestjs-logger-greeter.ts"
     import { Injectable, Module } from "@nestjs/common";
     import { NestFactory } from "@nestjs/core";
 
@@ -138,7 +138,7 @@ Effect surfaces the mistake in the editor. Nest surfaces it when `NestFactory.cr
 
 ### Compile-time `R` vs bootstrap DI
 
-```ts twoslash
+```ts twoslash title="compile-time-r.ts"
 // @errors: 2345
 import { Context, Effect } from "effect";
 
@@ -161,7 +161,7 @@ NestJS resolves the graph at bootstrap ([custom providers](https://docs.nestjs.c
 
 In NestJS, provider identity defaults to the class itself, but you can decouple implementation from interface using custom string or symbol injection tokens with `@Inject()`:
 
-```typescript
+```typescript title="nestjs-inject-token.ts"
 // NestJS: Decouple boundary using an injection token
 import { Injectable, Inject, Module } from "@nestjs/common";
 
@@ -196,7 +196,7 @@ export class GameModule {}
 
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
 
-```typescript twoslash
+```typescript twoslash title="effect-context-tag.ts"
 // Effect: The Tag is both the token and the type interface
 import { Context, Effect } from "effect";
 
@@ -216,7 +216,7 @@ export const logMessage = Effect.gen(function* () {
 
 NestJS uses **[[nestjs/recipes/dynamic-modules|Dynamic Modules]]** (`register()`, `forRoot()`) to construct provider configurations dynamically (e.g., passing a [[nestjs/recipes/configuration|configuration]] object or reading from environment variables at startup):
 
-```typescript
+```typescript title="nestjs-dynamic-module.ts"
 // NestJS: Dynamic Module configuration
 import { Module, DynamicModule } from "@nestjs/common";
 
@@ -244,7 +244,7 @@ export class DatabaseModule {
 
 In Effect, **Layers are values** that can be composed and constructed dynamically using ordinary functions and standard functional operators. There is no special container ceremony or dynamic module API:
 
-```typescript twoslash
+```typescript twoslash title="effect-layer-composition.ts"
 // Effect: Dynamic Layer factory function
 import { Context, Effect, Layer } from "effect";
 
@@ -268,7 +268,7 @@ Nest providers are **singletons** unless scoped (see [[nestjs/fundamentals/globa
 
 Here is how a Nest singleton is shared across the provider graph, compared to a request-scoped provider that instantiates a fresh class per request execution path:
 
-```typescript
+```typescript title="nestjs-scope.ts"
 // NestJS: Singleton vs Request Scope lifetime
 import { Injectable, Scope } from "@nestjs/common";
 
@@ -297,7 +297,7 @@ Request 1 -> ServiceA counter ID: 2, ServiceB counter ID: 2
 Request 2 -> ServiceA counter ID: 3, ServiceB counter ID: 3 // Isolated across requests!
 ```
 
-```ts twoslash
+```ts twoslash title="effect-scope.ts"
 import { Context, Effect, Layer, ManagedRuntime } from "effect";
 
 class Counter extends Context.Tag("Counter")<
@@ -351,7 +351,7 @@ NestJS: `OnModuleDestroy` / `OnApplicationShutdown`: requires `app.close()` or `
 
 ### Tests
 
-```ts twoslash
+```ts twoslash title="effect-test-layer.ts"
 import { Context, Effect, Layer } from "effect";
 
 class Logger extends Context.Tag("Logger")<
@@ -392,7 +392,7 @@ Effect.runPromise(program.pipe(Effect.provide(AppTest)));
 
 NestJS provides a [[nestjs/recipes/testing|testing]] module builder that allows mocking or overriding providers at bootstrap:
 
-```typescript
+```typescript title="nestjs-test-module.ts"
 import { Injectable } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 
@@ -440,7 +440,7 @@ runTest();
 
 ## Using both together
 
-```ts twoslash
+```ts twoslash title="effect-with-nestjs.ts"
 import { Context, Data, Effect, Layer, ManagedRuntime } from "effect";
 
 class Http extends Context.Tag("Http")<

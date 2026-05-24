@@ -10,7 +10,7 @@ import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
 ## The three idioms in one minute
 
-```ts twoslash
+```ts twoslash title="three-idioms.ts"
 import { Effect } from "effect";
 
 const fetchUser = (id: string) => Effect.succeed({ name: `user_${id}` });
@@ -51,7 +51,7 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
     `pipe` composes functions sequentially: the output of one step becomes the input of the next ([building-pipelines docs](https://effect.website/docs/getting-started/building-pipelines/)). Effect values also expose `.pipe(...)` with the same semantics.
 
-    ```ts twoslash
+    ```ts twoslash title="pipe-transform.ts"
     import { Data, Effect } from "effect";
 
     class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
@@ -82,7 +82,7 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
     `Effect.gen` writes effectful code with generator functions; `yield*` an effect to await its result ([using-generators docs](https://effect.website/docs/getting-started/using-generators/)). The compiler unions every yielded error into the block's `E`.
 
-    ```ts twoslash
+    ```ts twoslash title="gen-control-flow.ts"
     import { Data, Effect } from "effect";
 
     class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
@@ -135,7 +135,7 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
     `Effect.fn` (since Effect 3.11.0; [`Effect.ts` export](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14630)) wraps a generator or a function that returns an `Effect`. The JSDoc lists two benefits: **stack traces with location details** on failure, and **automatic spans** when you pass a name ([Effect.ts#L14493-L14506](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14493-L14506)).
 
-    ```ts twoslash
+    ```ts twoslash title="effect-fn.ts"
     import { Data, Effect } from "effect";
 
     class DbError extends Data.TaggedError("DbError")<{ readonly message: string }> {}
@@ -168,7 +168,7 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
     The official JSDoc example shows three stack frames on failure (raise, definition, call) that a plain `(id) => Effect.gen(...)` wrapper often loses ([Effect.ts#L14512-L14528](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L14512-L14528)):
 
-    ```ts twoslash
+    ```ts twoslash title="when-to-use.ts"
     import { Effect } from "effect";
 
     const myfunc = Effect.fn("myspan")(function* <N extends number>(n: N) {

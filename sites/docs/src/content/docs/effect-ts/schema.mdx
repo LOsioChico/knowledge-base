@@ -17,7 +17,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 In standard TypeScript, `JSON.parse` returns `any`, and casting it with `as Todo` only changes what the compiler believes at compile time. It does not perform any runtime checks on the actual data shape.
 
-```ts twoslash
+```ts twoslash title="boundary-problem.ts"
 interface Todo {
   readonly id: number;
   readonly title: string;
@@ -56,7 +56,7 @@ While Zod is an industry-standard validation library, `Effect Schema` is designe
 
 Use `Schema.Struct` to build an object schema from field schemas. Primitive schemas use PascalCase names like `Schema.String`, `Schema.Number`, and `Schema.Boolean`.
 
-```ts twoslash
+```ts twoslash title="declare-schema.ts"
 import { Schema } from "effect";
 
 const Todo = Schema.Struct({
@@ -72,7 +72,7 @@ const Todo = Schema.Struct({
 
 Instead of duplicating declarations by writing an `interface` manually, you can extract the derived type directly from your runtime schema using `Schema.Schema.Type`:
 
-```ts twoslash
+```ts twoslash title="infer-types.ts"
 import { Schema } from "effect";
 
 const Todo = Schema.Struct({
@@ -97,7 +97,7 @@ const validTodo: Todo = {
 
 Unlike typical parsers, `Schema` models transformations that preserve both the raw wire shape and the clean domain shape. `Schema.Schema.Encoded` extracts the raw input shape, while `Schema.Schema.Type` extracts the output shape.
 
-```ts twoslash
+```ts twoslash title="bidirectional-transforms.ts"
 import { Schema } from "effect";
 
 const User = Schema.Struct({
@@ -116,7 +116,7 @@ type UserEncoded = Schema.Schema.Encoded<typeof User>;
 
 You can write custom, bidirectional mappings using `Schema.transform()`. This function accepts an input schema, an output schema, and mapping functions for decoding and encoding:
 
-```ts twoslash
+```ts twoslash title="custom-transforms.ts"
 import { Schema } from "effect";
 
 // Custom transformation: trims leading and trailing whitespaces from a string
@@ -140,7 +140,7 @@ const UserProfile = Schema.Struct({
 
 Use `Schema.decodeUnknown(schema)(input)` to parse untrusted data (like `JSON.parse` outputs or network response bodies). This returns an `Effect` that succeeds with the validated domain type, or fails with a structured `ParseResult.ParseError` in the error channel.
 
-```ts twoslash
+```ts twoslash title="decode-inbound.ts"
 import { Effect, Schema } from "effect";
 
 const Todo = Schema.Struct({
@@ -169,7 +169,7 @@ console.log(result);
 
 Raw parse errors are extremely useful for debugging, but you should map them to clean, domain-specific tagged errors before they cross your internal application layer. Use `ParseResult.TreeFormatter.formatErrorSync` to turn a `ParseError` into a highly readable hierarchical diagnostic message.
 
-```ts twoslash
+```ts twoslash title="domain-error-mapping.ts"
 import { Data, Effect, ParseResult, Schema } from "effect";
 
 // Define a custom, tagged domain error
@@ -198,7 +198,7 @@ const parseTodo = (input: unknown): Effect.Effect<Todo, ParseFailure> =>
 
 If we pass invalid data, the formatted error output clearly highlights the failing nested fields:
 
-```typescript twoslash
+```typescript twoslash title="full-validation-pipeline.ts"
 import { Data, Effect } from "effect";
 
 class ParseFailure extends Data.TaggedError("ParseFailure")<{

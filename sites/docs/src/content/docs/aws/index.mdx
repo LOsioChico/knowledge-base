@@ -23,10 +23,35 @@ A highly structured roadmap designed to take you from foundational cloud credent
 ```mermaid
 flowchart TD
     CLI["1. CLI Credentials (Entry)"] --> QRY["2. Query & Output"]
-    QRY --> S3QS["3. S3 Quickstart"]
-    S3QS --> S3SC["4. Storage Classes"]
-    S3SC --> S3LC["5. S3 Lifecycles"]
-    S3LC --> EB["6. EventBridge Asynchronous Decoupling"]
+    QRY --> IAM["3. IAM Policies"]
+    IAM --> S3QS["4. S3 Quickstart"]
+    S3QS --> S3SC["S3 Storage Classes"]
+    S3SC --> S3LC["S3 Lifecycles"]
+    S3QS --> S3PS["Presigned URLs"]
+    IAM --> XACCT["Cross-Account Roles"]
+    XACCT --> RDS["RDS Snapshots"]
+    XACCT --> KMS["KMS Keys"]
+    S3LC --> EB["EventBridge Decoupling"]
+    EB --> SQS["SQS Queues"]
+    EB --> SNS["SNS Fan-out"]
+    IAM --> LAM["Lambda Quickstart"]
+    LAM --> EC2["EC2 & VPC"]
+
+    click CLI "/knowledge-base/aws/cli/profiles-and-credentials/"
+    click QRY "/knowledge-base/aws/cli/query-and-output/"
+    click IAM "/knowledge-base/aws/iam/"
+    click S3QS "/knowledge-base/aws/s3/quickstart/"
+    click S3SC "/knowledge-base/aws/s3/storage-classes/"
+    click S3LC "/knowledge-base/aws/s3/lifecycle-rules/"
+    click S3PS "/knowledge-base/aws/s3/presigned-urls/"
+    click XACCT "/knowledge-base/aws/recipes/cross-account-role-pattern/"
+    click RDS "/knowledge-base/aws/rds/"
+    click KMS "/knowledge-base/aws/kms/"
+    click EB "/knowledge-base/aws/eventbridge/event-driven-decoupling/"
+    click SQS "/knowledge-base/aws/sqs/"
+    click SNS "/knowledge-base/aws/sns/"
+    click LAM "/knowledge-base/aws/lambda/quickstart/"
+    click EC2 "/knowledge-base/aws/ec2/"
 ```
 
 ## Services

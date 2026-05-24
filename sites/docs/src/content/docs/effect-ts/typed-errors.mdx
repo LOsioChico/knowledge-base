@@ -25,7 +25,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 In standard JavaScript and TypeScript, exceptions thrown synchronously or rejected asynchronously via `Promise` are completely untyped:
 
-```typescript
+```typescript title="error-channel-vs-throws.ts"
 interface User {
   id: string;
   name: string;
@@ -52,7 +52,7 @@ Any calling code has to wrap the call in a generic `try/catch` block where the e
 
 Effect solves this by elevating expected errors into a dedicated, type-checked **error channel `E`** in the triple `Effect<SuccessType, ErrorType, Requirements>`:
 
-```typescript twoslash
+```typescript twoslash title="error-channel-demo.ts"
 import { Data, Effect } from "effect";
 
 interface User {
@@ -80,7 +80,7 @@ bun add effect
 
 `Data.TaggedError` is the canonical form ([expected-errors docs](https://effect.website/docs/error-management/expected-errors/), [`Data.TaggedError`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Data.ts#L580-L582)): `_tag`, constructor, and structural equality in one line.
 
-```ts twoslash
+```ts twoslash title="tagged-error.ts"
 import { Data } from "effect";
 
 class HttpError extends Data.TaggedError("HttpError")<{}> {}
@@ -102,7 +102,7 @@ console.log(e._tag, e.id);
 
 A class with a literal `_tag` field works for `catchTag` discrimination. `Data.TaggedError` is preferred because the docs and ecosystem standardize on it and you get constructor + equality for free.
 
-```ts twoslash
+```ts twoslash title="tagged-error-usage.ts"
 class HttpError {
   readonly _tag = "HttpError";
 }
@@ -116,7 +116,7 @@ class HttpError {
   <TabItem label="Effect.try (sync)">
     Synchronous code that might throw maps into `E` with `Effect.try` ([creating-effects](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
 
-    ```ts twoslash
+    ```ts twoslash title="lift-fallible-code.ts"
     import { Data, Effect } from "effect";
 
     class ParseError extends Data.TaggedError("ParseError")<{
@@ -143,7 +143,7 @@ class HttpError {
   <TabItem label="Effect.tryPromise (async)">
     A `Promise` that might reject maps with `Effect.tryPromise` ([creating-effects](https://effect.website/docs/getting-started/creating-effects/#trypromise)):
 
-    ```ts twoslash
+    ```ts twoslash title="try-catch-lift.ts"
     import { Data, Effect } from "effect";
 
     class NetworkError extends Data.TaggedError("NetworkError")<{
@@ -165,7 +165,7 @@ class HttpError {
 
     The `catch` callback is **optional**. Without it, failures become `UnknownException` in `E` ([tryPromise docs](https://effect.website/docs/getting-started/creating-effects/#trypromise)): still typed, but not discriminable with `catchTag("YourTag", ...)`. Pass `catch` when you want a `_tag` you own.
 
-    ```ts twoslash
+    ```ts twoslash title="try-promise-lift.ts"
     import { Effect } from "effect";
 
     const withoutCatch = Effect.tryPromise(() => Promise.reject("offline"));
@@ -183,7 +183,7 @@ class HttpError {
 
 Inside `Effect.gen`, each `yield*` unions its error into the block's `E`:
 
-```ts twoslash
+```ts twoslash title="compose-widens-errors.ts"
 import { Data, Effect } from "effect";
 
 class ParseError extends Data.TaggedError("ParseError")<{}> {}
@@ -215,7 +215,7 @@ Add a new failure anywhere in the chain and the inferred `E` updates; forget to 
 
 `Effect.catchTag` matches `_tag` and **removes** that case from residual `E` ([`Effect.ts` L3882+](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3882-L3947)):
 
-```ts twoslash
+```ts twoslash title="catch-tag.ts"
 import { Data, Effect } from "effect";
 
 class HttpError extends Data.TaggedError("HttpError")<{}> {}
@@ -231,7 +231,7 @@ const recovered = program.pipe(
 
 After `catchTag("HttpError", ...)`, `recovered` is `Effect<string, ValidationError, never>`: `HttpError` left the union. Handle every tag and `E` becomes `never`:
 
-```ts twoslash
+```ts twoslash title="catch-tag-narrowing.ts"
 import { Data, Effect } from "effect";
 
 class HttpError extends Data.TaggedError("HttpError")<{}> {}
@@ -259,7 +259,7 @@ Effect.runSync(fullyHandled);
 
 `catchTag` **handles** and removes an error. `mapError` **re-types** `E` while the effect still fails ([error-channel operations](https://effect.website/docs/error-management/error-channel-operations/), [`mapError` L5310+](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L5310-L5345)):
 
-```ts twoslash
+```ts twoslash title="map-error.ts"
 import { Data, Effect, pipe } from "effect";
 
 class DbConnectionError extends Data.TaggedError("DbConnectionError")<{}> {}
@@ -291,7 +291,7 @@ Callers of `getOrder` should not need to know whether the failure was a connecti
 
 When you do not care which expected error fired, `catchAll` handles the whole `E` union ([expected errors](https://effect.website/docs/error-management/expected-errors/)):
 
-```ts twoslash
+```ts twoslash title="catch-all.ts"
 import { Data, Effect } from "effect";
 
 class HttpError extends Data.TaggedError("HttpError")<{}> {}
@@ -309,7 +309,7 @@ Effect.runSync(safe);
 
 ## 7. Putting it together
 
-```ts twoslash
+```ts twoslash title="full-pipeline.ts"
 import { Data, Effect } from "effect";
 
 class NotFoundError extends Data.TaggedError("NotFoundError")<{
@@ -366,7 +366,7 @@ Effect.runPromise(getDisplayName("missing")).then(console.log);
 
 Assigning an effect to the wrong `E` (or success type) is a compile error. Fences on this site can show that inline:
 
-```ts twoslash
+```ts twoslash title="compiler-catches.ts"
 import { Effect } from "effect";
 
 const program = Effect.succeed("hello");

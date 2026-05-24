@@ -66,7 +66,7 @@ The following workflow diagram illustrates how elements are batched, fetched, pa
 
 Below is the complete, self-contained, and compile-safe implementation. It implements each operational policy (timeouts, retry limits, [[effect-ts/concurrency|concurrency]] bounds) as clean, composable functional operators.
 
-```ts twoslash
+```ts twoslash title="resilient-ingestion.ts"
 import { Console, Data, Effect, Schedule, Schema } from "effect";
 import { TimeoutException } from "effect/Cause";
 
@@ -168,7 +168,7 @@ Effect.runPromise(ingestionProgram)
 
 In the `fetchRaw` block, standard `fetch` is configured with an `AbortSignal`:
 
-```typescript
+```typescript title="resource-cleanup.ts"
 try: (signal) => fetch(url, { signal })
 ```
 
@@ -235,7 +235,7 @@ Conversely, if a transient network drop triggers a `FetchError` or a hung proces
 
 By using the `while` predicate, we enforce strict boundary separation:
 
-```typescript
+```typescript title="abort-signal.ts"
 while: (error) => error._tag === "FetchError" || error._tag === "TimeoutException"
 ```
 
@@ -289,7 +289,7 @@ For example, when running a batch of three items `[1, 2, 3]` in parallel, if ite
 
 If your ingestion logic requires a **non-blocking collector** that saves all successful operations and logs individual failures without halting, wrap each item in `Effect.either`:
 
-```typescript twoslash
+```typescript twoslash title="full-pipeline.ts"
 import { Effect } from "effect";
 
 // Hypothetical resilient fetch and input list
