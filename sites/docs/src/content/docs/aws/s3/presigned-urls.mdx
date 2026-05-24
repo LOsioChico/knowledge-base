@@ -10,6 +10,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/s3/quickstart|S3 quickstart]]: since generating secure presigned links assumes existing S3 object paths.
+- [[aws/iam|IAM Policies & Resource Permissions]]: since signatures inherit the signer's IAM capabilities, and bucket policies can block presigned operations.
 </Aside>
 
 ## When to reach for one
@@ -22,21 +23,35 @@ For always-public CDN content, front with [[aws/cloudfront|CloudFront]] instead.
 
 ## CLI
 
+To generate a quick read link from your local machine, run the AWS CLI `presign` command. This calculates a SigV4 signature using your active CLI credentials:
+
 ```bash
 aws s3 presign s3://my-bucket/path/to/object.pdf --expires-in 3600
 ```
 
+The command outputs a fully qualified HTTPS URL containing authentication parameters as query string variables:
+`https://my-bucket.s3.amazonaws.com/path/to/object.pdf?AWSAccessKeyId=AKIAIOSFODNN7EXAMPLE&Signature=vjbyPxybdZaNmGa%2ByT272YEAiv4%3D&Expires=1470002800`
+
 `--expires-in` is seconds; max **604800 (7 days)** with SigV4 ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html#ShareObjectPresignedCLI)).
 
+You can verify the generated link by fetching it using `curl`. This downloads the private object directly without supplying any additional AWS headers:
+
 ```bash
-curl -o object.pdf "<presigned-url>"
+curl -i -o object.pdf "<presigned-url>"
 ```
+*Verification: Verify that `curl` returns `HTTP/1.1 200 OK` and saves a non-empty, valid PDF file matching your original object.*
 
 ## SDK (NestJS + AWS SDK v3)
+
+> Prerequisite: [[nestjs/fundamentals/global-providers|NestJS Providers]]
+
+To generate presigned URLs programmatically within a NestJS application, install the AWS SDK v3 S3 client and request-presigner helper packages:
 
 ```bash
 npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
 ```
+
+*Verification: Ensure both packages are listed under `dependencies` in your `package.json` with compatible version tags (e.g. `^3.x.x`).*
 
 ```typescript
 import { Injectable } from "@nestjs/common";
@@ -53,34 +68,61 @@ export class S3PresignService {
     return getSignedUrl(this.s3, cmd, { expiresIn: 3600 });
   }
 
-  async uploadUrl(key: string): Promise<string> {
-    const cmd = new PutObjectCommand({ Bucket: this.bucket, Key: key });
+  async uploadUrl(key: string, contentType: string): Promise<string> {
+    const cmd = new PutObjectCommand({ 
+      Bucket: this.bucket, 
+      Key: key,
+      ContentType: contentType
+    });
     return getSignedUrl(this.s3, cmd, { expiresIn: 900 });
   }
 }
 ```
+
+### Client upload example
+
+To upload an object from a client application (or locally using `curl`) using the generated PUT URL, pass the exact signed headers:
+
+```bash
+curl -i -X PUT -T "photo.png" \
+  -H "Content-Type: image/png" \
+  "<presigned-upload-url>"
+```
+*Verification: Verify that `curl` returns `HTTP/1.1 200 OK`. S3 returns a `200` status code with an empty response body on successful direct PUT uploads.*
 
 ## Max expiry depends on signer credentials
 
 | Signer | Effective max |
 | --- | --- |
 | IAM user access key | 7 days (SigV4) |
-| STS role session | Remaining session lifetime (often 1 h) |
-| EC2/ECS/Lambda role | Credential rotation window |
+| STS role session | [Remaining session lifetime (often 1 h)](#7-day-url-from-lambda-expires-in-1-hour) |
+| EC2/ECS/Lambda role | [Credential rotation window](#7-day-url-from-lambda-expires-in-1-hour) |
 
 **URL dies when underlying credentials die**, regardless of `--expires-in` ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrl-Expiration)).
 
 <Aside type="caution" title="7-day URL from Lambda expires in ~1 hour">
 
-Runtime roles use short-lived STS creds. For true 7-day links, sign from long-lived keys (dedicated IAM user in [[aws/secrets-manager|Secrets Manager]]).
+Runtime roles use short-lived STS creds. For true 7-day links, you must retrieve long-lived IAM user access keys securely via [[aws/secrets-manager|Secrets Manager]] and sign links using those credentials instead.
 
 </Aside>
 
 ## Signer permissions
 
+The presigned URL does not grant any permission beyond what the signing identity possesses.
 - GET URL → `s3:GetObject` on the key.
 - PUT URL → `s3:PutObject` on the key.
-- URL generates even if signer lacks permission: usage returns `403`.
+
+The S3 API generates presigned links purely clientside without verifying the signer's AWS privileges. If the signer lacks `s3:GetObject`, the URL will still generate successfully, but using it will return an `AccessDenied` error ([[effect-ts/platform|HTTP]] 403) from S3.
+
+### Insufficient Permissions Gotcha
+
+```text
+Example permission failure:
+1. Signer generates GET link for "s3://my-bucket/private.pdf" (but has no s3:GetObject permission)
+2. URL is generated successfully and sent to recipient
+3. Recipient requests GET https://my-bucket.s3.amazonaws.com/private.pdf?Signature=...
+4. Response: HTTP 403 Forbidden (AccessDenied)
+```
 
 ## Limit blast radius
 
@@ -90,18 +132,27 @@ Runtime roles use short-lived STS creds. For true 7-day links, sign from long-li
 
 ## PUT gotchas
 
-- Signed headers must match on upload: or `SignatureDoesNotMatch`.
-- Presigned PUT has no size cap (up to 5 TB per object): use POST policies to limit size.
-- Same-key PUT overwrites: use UUID prefixes if undesired.
+- **Signed headers must match on upload**: S3 includes any custom headers specified during URL creation (such as `Content-Type` or encryption headers) in the signature calculation. If the uploader omits or changes these headers during the HTTP upload, S3 will reject the upload with a `SignatureDoesNotMatch` error.
+
+  ```text
+  Example header mismatch:
+  1. Signed:   PUT request generated with Content-Type: application/pdf
+  2. Uploaded: Client PUTs object with Content-Type: image/png (or auto-injected by HTTP library)
+  3. Response: HTTP 403 Forbidden (SignatureDoesNotMatch)
+  ```
+- **Presigned PUT has no size cap**: S3 allows objects up to 5 TB per upload. If you want to limit upload sizes, use POST policies instead.
+- **Same-key PUT overwrites**: If desired, append UUID or timestamp prefixes to keys to prevent accidental overwrites.
+
+
 
 ## Common errors
 
 | Error | Likely cause |
 | --- | --- |
-| `403 Forbidden` | Missing IAM/bucket policy; Block Public Access |
-| `SignatureDoesNotMatch` | Clock skew; header mismatch on PUT |
+| `403 Forbidden` | [Missing IAM/bucket policy](#insufficient-permissions-gotcha); Block Public Access |
+| `SignatureDoesNotMatch` | Clock skew; [header mismatch on PUT](#put-gotchas) |
 | `ExpiredToken` | STS session expired between sign and use |
-| Early expiry | Signed with short-lived role creds |
+| Early expiry | [Signed with short-lived role creds](#7-day-url-from-lambda-expires-in-1-hour) |
 
 ## See also
 

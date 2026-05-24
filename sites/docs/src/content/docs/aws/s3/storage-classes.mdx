@@ -12,7 +12,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[AWS Serverless Track](/knowledge-base/aws/)**. Before analyzing S3 storage classes, make sure you understand:
+This note is part of the **[[aws|AWS Serverless Track]]**. Before analyzing S3 storage classes, make sure you understand:
 - [[aws/s3/quickstart|S3 Quickstart]]: Creating buckets and uploading files via AWS CLI.
 
 </Aside>
@@ -31,12 +31,12 @@ From [AWS storage-class comparison](https://docs.aws.amazon.com/AmazonS3/latest/
 
 | Class | API name | Availability | AZs | Min duration | Retrieval fee |
 | --- | --- | --- | --- | --- | --- |
-| S3 Standard | `STANDARD` | 99.99% | ≥3 | None | No |
+| [S3 Standard](/knowledge-base/aws/s3/quickstart/) | `STANDARD` | 99.99% | ≥3 | None | No |
 | Intelligent-Tiering | `INTELLIGENT_TIERING` | 99.9% | ≥3 | None | No (monitoring) |
-| Standard-IA | `STANDARD_IA` | 99.9% | ≥3 | 30 days | Yes |
+| [Standard-IA](#setting-the-class) | `STANDARD_IA` | 99.9% | ≥3 | 30 days | Yes |
 | One Zone-IA | `ONEZONE_IA` | 99.5% | 1 | 30 days | Yes |
 | Glacier Instant Retrieval | `GLACIER_IR` | 99.9% | ≥3 | 90 days | Yes |
-| Glacier Flexible Retrieval | `GLACIER` | 99.99% after restore | ≥3 | 90 days | Yes |
+| [Glacier Flexible Retrieval](#setting-the-class) | `GLACIER` | 99.99% after restore | ≥3 | 90 days | Yes |
 | Glacier Deep Archive | `DEEP_ARCHIVE` | 99.99% after restore | ≥3 | 180 days | Yes |
 
 ## When to reach for which

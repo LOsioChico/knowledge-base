@@ -12,7 +12,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[AWS Serverless Track](/knowledge-base/aws/)**. Before organizing S3 lifecycle rules, make sure you understand:
+This note is part of the **[[aws|AWS Serverless Track]]**. Before organizing S3 lifecycle rules, make sure you understand:
 - [[aws/s3/storage-classes|S3 Storage Classes]]: Cost, latency, and retrieval behaviors governing each storage class tier.
 
 </Aside>
@@ -71,7 +71,7 @@ aws s3api put-bucket-lifecycle-configuration \
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `Transition`                     | Move current versions to another class after N days; [logs example](#multi-action-example-logs)             |
 | `Expiration`                     | Delete current versions (delete marker on versioned buckets); [minimum rule](#minimum-rule)                 |
-| `NoncurrentVersionTransition`    | Tier old versions; [logs example](#multi-action-example-logs)                                               |
+| `NoncurrentVersionTransition`    | Tier old versions; not shown in the basic logs example                                                     |
 | `NoncurrentVersionExpiration`    | **Deletes overwritten versions: stops versioning bill runaway**; [logs example](#multi-action-example-logs) |
 | `AbortIncompleteMultipartUpload` | Clean in-progress multipart after N days; [logs example](#multi-action-example-logs)                        |
 

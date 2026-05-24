@@ -12,6 +12,9 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 <Aside type="tip" title="Prerequisites">
 Before diving into this recipe, make sure you understand:
 - [[nestjs/fundamentals/pipes|Pipes]]: since validation in NestJS is built on the Pipes architecture.
+- [[nestjs/recipes/serialization|Response Serialization]]: since the same `class-transformer` / `class-validator` metadata pairs govern both validation and serialization.
+- [[nestjs/fundamentals/global-providers|Global Enhancers]]: since binding global validation pipes with dependency injection requires custom provider APP_PIPE tokens.
+- [[nestjs/recipes/testing|Testing DI container]]: since mocking global validation scopes is critical during E2E testing pipelines.
 </Aside>
 
 ## When to reach for it
@@ -25,11 +28,13 @@ Before diving into this recipe, make sure you understand:
 
 <Steps>
 
-1. Install packages:
+1. **Install `@nestjs/common` peer validation packages**: Install the required validator and transformer packages:
 
    ```bash
    npm i class-validator class-transformer
    ```
+
+   *Verification: Verify that `class-validator` and `class-transformer` are listed in your `dependencies` block in `package.json` before registering the pipe.*
 
 2. Register a global pipe in `main.ts` (secure defaults):
 
@@ -154,7 +159,7 @@ Invalid input:
 
 Use **both** in production. Strip-only is for migrations where old clients still send deprecated fields.
 
-<Aside type="danger" title="Without whitelist, mass-assignment is real">
+<Aside type="caution" title="Without whitelist, mass-assignment is real">
 
 `Object.assign(user, dto)` on an un-whitelisted DTO is how `isAdmin: true` reaches the database. The pipe default allows unknown properties until you flip the switch.
 
@@ -180,7 +185,7 @@ With `transform: true`, the pipe runs `plainToInstance` so decorators and instan
   <TabItem label="What gets validated">
     | Parameter | Metatype | Validation runs? |
     | --- | --- | --- |
-    | `@Body() dto: CreateUserDto` | Custom class | Yes: full DTO |
+    | `@Body() dto: CreateUserDto` | Custom class | Yes: [full DTO](#first-dto-show-the-400) |
     | `@Query() q: PaginationQuery` | Custom class | Yes: needs `enableImplicitConversion` for numbers |
     | `@Param('id') id: string` | `String` | No: use [ParseIntPipe](/knowledge-base/nestjs/fundamentals/request-lifecycle/#one-route-all-layers) for strict coercion |
     | `@Body() raw: object` | `Object` | No: plain body from Express |
@@ -289,19 +294,59 @@ To return clean, standardized validation details (e.g. mapping internal validato
 
 ```typescript
 // main.ts
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
 import { BadRequestException, ValidationError, ValidationPipe } from "@nestjs/common";
+import { AppModule } from "./app.module";
 
-new ValidationPipe({
-  exceptionFactory: (errors: ValidationError[]) =>
-    new BadRequestException({
-      statusCode: 400,
-      error: "Validation failed",
-      details: errors.map((e) => ({
-        field: e.property,
-        messages: Object.values(e.constraints ?? {}),
-      })),
-    }),
-});
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      exceptionFactory: (errors: ValidationError[]) =>
+        new BadRequestException({
+          statusCode: 400,
+          error: "Validation failed",
+          details: errors.map((e) => ({
+            field: e.property,
+            messages: Object.values(e.constraints ?? {}),
+          })),
+        }),
+    })
+  );
+  await app.listen(3000);
+}
+bootstrap();
+```
+
+```http
+// Invalid Request Payload:
+POST /users HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "short"
+}
+
+// Custom 400 Response (Using exceptionFactory map):
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "statusCode": 400,
+  "error": "Validation failed",
+  "details": [
+    {
+      "field": "email",
+      "messages": ["email must be an email"]
+    },
+    {
+      "field": "password",
+      "messages": ["password must be longer than or equal to 8 characters"]
+    }
+  ]
+}
 ```
 
 ## Custom asynchronous validation with Dependency Injection
@@ -372,6 +417,40 @@ export class CreateUserDto {
 }
 ```
 
+```http
+// First Request (Creates user successfully):
+POST /users HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "unique-email@example.com"
+}
+
+// Response (201 Created):
+HTTP/1.1 201 Created
+
+// Second Request (Fails because email is already registered):
+POST /users HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "unique-email@example.com"
+}
+
+// Response (400 Bad Request):
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{
+  "statusCode": 400,
+  "message": [
+    "email must be unique. The value is already registered."
+  ],
+  "error": "Bad Request"
+}
+```
+```
+
 ### 3. Bind the NestJS DI container in `main.ts`
 By default, `class-validator` instantiates custom validation constraint classes using `new`, bypassing the NestJS DI container and making database repository injection crash. 
 
@@ -396,7 +475,7 @@ bootstrap();
 
 <Aside type="caution" title="The race-condition vulnerability">
 
-Asynchronous custom validators are non-atomic. Two concurrent API requests with the exact same email can validate concurrently, pass the database uniqueness check, and both proceed to write, resulting in a duplicate DB error. **Always** back custom validators with a unique index (`UNIQUE`) inside the physical database [[effect-ts/schema|schema]] to ensure absolute atomicity.
+Asynchronous custom validators are non-atomic. Two concurrent API requests with the exact same email can validate concurrently, pass the database uniqueness check, and both proceed to write, resulting in a duplicate DB error. **Always** back custom validators with a unique index (`UNIQUE`) inside the physical database schema to ensure absolute atomicity.
 
 </Aside>
 
@@ -452,7 +531,7 @@ Standard NestJS validation pipes execute **synchronously** when parsing and tran
 
 - **Validate in chunks**: Chop massive arrays into small batches (e.g. processing batches of 100) and execute validation iteratively with `setImmediate` or `setTimeout` breaks to yield CPU back to the event loop.
 - **Microservice offloading**: Offload validation to an isolated worker thread or a secondary microservice using NestJS queues (RabbitMQ/BullMQ).
-- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized schema libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
+- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized [[effect-ts/schema|schema]] libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
 
 ---
 

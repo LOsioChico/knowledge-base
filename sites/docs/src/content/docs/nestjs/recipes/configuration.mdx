@@ -12,7 +12,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Configuration, make sure you understand:
+This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Configuration, make sure you understand:
 - [[nestjs/recipes/dynamic-modules|Dynamic Modules]]: Dynamic dependency injection patterns used to initialize global app configuration layers asynchronously.
 
 </Aside>
@@ -29,9 +29,9 @@ This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before div
 | Need                                                               | Use                                     |
 | ------------------------------------------------------------------ | --------------------------------------- |
 | Read one shell variable during bootstrap or in a standalone script | `process.env` directly                  |
-| Read config inside a Nest provider or `registerAsync()` factory    | `ConfigService`                         |
-| Reuse parsed settings in multiple places                           | `registerAs(...)` + one central factory |
-| Reject bad or missing env before the app binds a port              | `validationSchema`                      |
+| Read config inside a Nest provider or `registerAsync()` factory    | [`ConfigService`](#minimal-working-example) |
+| Reuse parsed settings in multiple places                           | [`registerAs(...)`](#parse-once-inject-many-times) + one central factory |
+| Reject bad or missing env before the app binds a port              | [`validationSchema`](#validate-env-at-startup) |
 
 <Aside type="note" title="Why the examples use exported shell vars">
 

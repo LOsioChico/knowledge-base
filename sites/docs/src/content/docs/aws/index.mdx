@@ -22,20 +22,20 @@ A highly structured roadmap designed to take you from foundational cloud credent
 
 ```mermaid
 flowchart TD
-    CLI["1. [[aws/cli/profiles-and-credentials|CLI Credentials]] (Entry)"] --> QRY["2. [[aws/cli/query-and-output|Query & Output]]"]
-    QRY --> S3QS["3. [[aws/s3/quickstart|S3 Quickstart]]"]
-    S3QS --> S3SC["4. [[aws/s3/storage-classes|Storage Classes]]"]
-    S3SC --> S3LC["5. [[aws/s3/lifecycle-rules|S3 Lifecycles]]"]
-    S3LC --> EB["6. [[aws/eventbridge/event-driven-decoupling|EventBridge Asynchronous Decoupling]]"]
+    CLI["1. CLI Credentials (Entry)"] --> QRY["2. Query & Output"]
+    QRY --> S3QS["3. S3 Quickstart"]
+    S3QS --> S3SC["4. Storage Classes"]
+    S3SC --> S3LC["5. S3 Lifecycles"]
+    S3LC --> EB["6. EventBridge Asynchronous Decoupling"]
 ```
 
 ## Services
 
 | Service    | Index                                           | Notes                                                                                              |
 | ---------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| S3         | [S3](/knowledge-base/aws/s3/)                   | Deep siblings: storage classes, lifecycle, events, presigned URLs, static site                     |
+| S3         | [S3](/knowledge-base/aws/s3/)                   | Deep siblings: [storage classes](/knowledge-base/aws/s3/storage-classes/), [lifecycle](/knowledge-base/aws/s3/lifecycle-rules/), [events](/knowledge-base/aws/s3/event-notifications/), [presigned URLs](/knowledge-base/aws/s3/presigned-urls/), [static site](/knowledge-base/aws/s3/static-website/) |
 | IAM        | [IAM](/knowledge-base/aws/iam/)                 | Authn/authz and [policy evaluation](/knowledge-base/aws/iam/policy-evaluation/) for every API call |
-| RDS        | [RDS](/knowledge-base/aws/rds/)                 | Snapshots as the migration primitive                                                               |
+| RDS        | [RDS](/knowledge-base/aws/rds/)                 | Snapshots as the migration primitive: [cross-account snapshot](/knowledge-base/aws/rds/cross-account-snapshot/) |
 | CloudFront | [CloudFront](/knowledge-base/aws/cloudfront/)   | CDN; aliases globally unique                                                                       |
 | Amplify    | [Amplify Hosting](/knowledge-base/aws/amplify/) | Managed frontend; CloudFront under the hood                                                        |
 | KMS        | [KMS](/knowledge-base/aws/kms/)                 | Encryption keys; cross-account needs both policies                                                 |
@@ -46,7 +46,7 @@ flowchart TD
 | SQS        | [SQS](/knowledge-base/aws/sqs/)                 | Managed queue                                                                                      |
 | SNS        | [SNS](/knowledge-base/aws/sns/)                 | Pub/sub fan-out                                                                                    |
 | ECS        | [ECS and Fargate](/knowledge-base/aws/ecs/)     | Containers                                                                                         |
-| EventBridge| [EventBridge](/knowledge-base/aws/eventbridge/) | Serverless event bus for decoupling distributed microservices                                      |
+| EventBridge| [EventBridge](/knowledge-base/aws/eventbridge/) | Serverless event bus for [decoupling distributed microservices](/knowledge-base/aws/eventbridge/event-driven-decoupling/) |
 
 ## Cross-cutting
 

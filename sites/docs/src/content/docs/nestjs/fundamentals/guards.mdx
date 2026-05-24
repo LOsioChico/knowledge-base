@@ -14,7 +14,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 
-This note is part of the **[NestJS Track](/knowledge-base/nestjs/)**. Before diving into Guards, make sure you understand:
+This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Guards, make sure you understand:
 - [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]: How request enhancers plug into the NestJS pipeline execution zone.
 - [[nestjs/fundamentals/middleware|Middleware]]: Low-level HTTP middleware which runs prior to Nest's enhancer execution.
 
@@ -95,8 +95,8 @@ export class AuthGuard implements CanActivate {
     | Scope | How |
     | --- | --- |
     | Global | `APP_GUARD` provider (preferred) or `app.useGlobalGuards()` |
-    | Controller | `@UseGuards(RolesGuard)` on the class |
-    | Route | `@UseGuards(RolesGuard)` on the method |
+    | Controller | `@UseGuards(RolesGuard)` on the class; [example](#controller-binding) |
+    | Route | `@UseGuards(RolesGuard)` on the method; [example](#controller-binding) |
 
     Global DI pattern: [[nestjs/fundamentals/global-providers|global enhancers]].
   </TabItem>
@@ -153,6 +153,25 @@ export class RolesGuard implements CanActivate {
 }
 ```
 
+### Controller binding
+
+```typescript
+// cats.controller.ts
+import { Controller, Get, UseGuards, Param } from "@nestjs/common";
+import { RolesGuard } from "./roles.guard";
+import { Roles } from "./roles.decorator";
+
+@Controller("cats")
+@UseGuards(RolesGuard)
+export class CatsController {
+  @Get(":id")
+  @Roles(["admin"])
+  findOne(@Param("id") id: string) {
+    return { id: Number(id) };
+  }
+}
+```
+
 ### Show the behavior
 
 When a route is protected with `@Roles(['admin'])`, the incoming request headers and internal user [[effect-ts/state|state]] determine whether Nest allows execution or throws a `403`:
@@ -203,7 +222,7 @@ Nest core exports `CanActivate` and `@UseGuards` only ([`common/index.ts`](https
 
 | Symptom | Likely cause |
 | --- | --- |
-| `403` unexpectedly | Guard returned `false`: check order; earlier guard may have failed |
+| `403` unexpectedly | Guard returned `false`: check order; earlier guard may have failed (see worked [unauthorized example](#2-unauthorized-request-role-mismatch)) |
 | `this.reflector` undefined | Passed `new RolesGuard()` instead of `RolesGuard` (which bypasses DI; see correct [Reflector DI injection](#roles-guard-canonical-recipe)) |
 | `@Roles()` ignored | Wrong reflector method: use `getAllAndOverride` for override semantics ([worked example](#roles-guard-canonical-recipe)) |
 | Public route blocked | Global guard runs first: add `@Public()` + `Reflector` skip ([Passport recipe](https://docs.nestjs.com/recipes/passport)) |

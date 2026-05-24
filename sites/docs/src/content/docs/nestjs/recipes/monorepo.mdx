@@ -15,7 +15,9 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 Before diving into monorepo setup, make sure you understand:
-- [[nestjs/fundamentals|Dependency Injection]] & [[nestjs/fundamentals|Modules]]: since monorepo architecture relies on sharing encapsulated modules across multiple applications.
+- [[nestjs/fundamentals/global-providers|Dependency Injection]]: since custom providers must resolve cleanly across shared workspace boundaries.
+- [[nestjs/fundamentals/lifecycle-hooks|NestJS Modules]]: since monorepo architecture relies on encapsulating and exporting modules across multiple applications.
+- **pnpm Workspaces & Turborepo**: Standard workspace directory conventions, multi-package linking, and task pipelines (see [pnpm workspaces](https://pnpm.io/workspaces) and [Turborepo conceptual graphs](https://turbo.build/repo/docs/core-concepts/pipelines)).
 </Aside>
 
 ## Why Turborepo over simple scripts
@@ -70,13 +72,15 @@ A standard high-performance NestJS monorepo uses the following structure:
 
 1.  **Initialize the workspace**
 
-    Create a new directory and initialize a workspace using pnpm, which is highly recommended for its symlink speed and strict dependency checks:
+    Create a new directory and initialize a root workspace using pnpm, which is highly recommended for its symlink speed and strict dependency checks:
 
     ```bash
     mkdir nest-turbo-workspace
     cd nest-turbo-workspace
     pnpm init
     ```
+
+    *Verification: Verify that a `package.json` file exists in the directory and that the terminal current working directory is `nest-turbo-workspace` before proceeding.*
 
     Create the `pnpm-workspace.yaml` file in the root to define your application and package folders:
 
@@ -114,11 +118,13 @@ A standard high-performance NestJS monorepo uses the following structure:
 
 3.  **Scaffold a shared library**
 
-    Create the shared logger package inside `packages/logger/`:
+    Create the shared logger library package inside `packages/logger/`. Shared libraries are housed in the `packages/` directory and compiled before the applications:
 
     ```bash
     mkdir -p packages/logger/src
     ```
+
+    *Verification: Confirm that `packages/logger/src` has been successfully created in your project workspace tree.*
 
     Create the shared logger's `packages/logger/package.json` manifest:
 
@@ -189,11 +195,13 @@ A standard high-performance NestJS monorepo uses the following structure:
 
 4.  **Create the NestJS application**
 
-    Scaffold a standard NestJS application under `apps/api/`:
+    Scaffold a standard NestJS application under `apps/api/`. Workspace applications are housed under the `apps/` directory:
 
     ```bash
     mkdir -p apps/api/src
     ```
+
+    *Verification: Confirm that the folder structure `apps/api/src` has been successfully created, which will contain our module classes and entrypoints.*
 
     Define the application's manifest in `apps/api/package.json`. Notice how it explicitly imports our shared workspace module `@repo/logger`:
 
@@ -279,11 +287,13 @@ A standard high-performance NestJS monorepo uses the following structure:
 
 5.  **Configure Turborepo pipelines**
 
-    Now install Turborepo as a root dev dependency:
+    Now install Turborepo as a root developer dependency:
 
     ```bash
     pnpm add -wD turbo
     ```
+
+    *Verification: Verify that `turbo` is listed in your root `package.json` under `devDependencies` and is available to run via `pnpm exec turbo --version`.*
 
     Create a `turbo.json` configuration file at the root of your workspace to model task pipelines:
 
@@ -327,6 +337,8 @@ A standard high-performance NestJS monorepo uses the following structure:
     ```bash
     pnpm dev
     ```
+
+    *Verification: Verify that the command boots the workspace applications successfully. You should see parallel console outputs showing Turborepo running the `api:start:dev` task, standard Nest compilation watch logs, and the custom bootstrap message: `[Nest] ... LOG [SharedWorkspace] Action recorded: API server bootstrap complete`.*
 
     When you save changes to your shared module `@repo/logger`, the dev pipeline detects the updates, triggers rebuilds in topological order, and reboots the corresponding Nest servers.
 

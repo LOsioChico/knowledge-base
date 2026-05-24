@@ -102,18 +102,18 @@ Event [[effect-ts/streams|streams]] treat messages as a durable, chronological h
 *   **Replayability**: Because messages are not deleted, a consumer can roll back its offset and replay the entire message history from scratch. This is invaluable for recovering from bugs or training new machine learning models on historical data.
 
 ### Design Trade-Off Matrix
-
+ 
 The following matrix contrasts these two paradigms across primary operational dimensions.
-
+ 
 | Dimension | Traditional Message Brokers | Log-Based Event Streamers |
 | :--- | :--- | :--- |
-| **Storage Engine** | Volatile, transient queues (deleted on ACK) | Durable, append-only sequential log on disk |
-| **Consumer State** | Tracked by the broker (ACKs, locks) | Tracked by the consumer (log read offset) |
-| **Message Replay** | No (destructive consumption) | Yes (rewind offset to reread history) |
-| **Routing Power** | High (exchange routing, wildcards) | Low (routing is determined by Partition keys) |
-| **Parallelism Scale** | Limited by single-queue locking overhead | Massive (horizontal partitions scale out) |
-| **Typical Tech** | RabbitMQ, SQS, ActiveMQ | Apache Kafka, Apache Pulsar, Kinesis |
-
+| [**Storage Engine**](#architectural-comparison-message-brokers-vs-event-streams) | Volatile, transient queues (deleted on ACK) | Durable, append-only sequential log on disk |
+| [**Consumer State**](#architectural-comparison-message-brokers-vs-event-streams) | Tracked by the broker (ACKs, locks) | Tracked by the consumer (log read offset) |
+| [**Message Replay**](#log-based-event-streamers-eg-apache-kafka-apache-pulsar) | No (destructive consumption) | Yes (rewind offset to reread history) |
+| [**Routing Power**](#traditional-message-brokers-eg-rabbitmq-amazon-sqs) | High (exchange routing, wildcards) | Low (routing is determined by Partition keys) |
+| [**Parallelism Scale**](#log-based-event-streamers-eg-apache-kafka-apache-pulsar) | Limited by single-queue locking overhead | Massive (horizontal partitions scale out) |
+| **Typical Tech** | RabbitMQ, [SQS](/knowledge-base/aws/sqs/), ActiveMQ | Apache Kafka, Apache Pulsar, Kinesis |
+ 
 ---
 
 ## Delivery Protocols: Push vs. Pull Delivery
@@ -227,11 +227,16 @@ interface Message {
   payload: any;
 }
 
+interface RedisClient {
+  set(key: string, value: string, ...args: (string | number)[]): Promise<string | null>;
+  del(key: string): Promise<number>;
+}
+
 export class IdempotentConsumer {
-  private readonly redisClient: any; // Redis client wrapper
+  private readonly redisClient: RedisClient; // Redis client wrapper
   private readonly dedupeTTL = 86400; // 24-hour key expiration
 
-  constructor(redisClient: any) {
+  constructor(redisClient: RedisClient) {
     this.redisClient = redisClient;
   }
 

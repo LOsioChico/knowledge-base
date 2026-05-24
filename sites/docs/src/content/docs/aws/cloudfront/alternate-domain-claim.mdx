@@ -9,7 +9,9 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
-- [[aws/cloudfront/cli|CloudFront CLI cheatsheet]]: since managing CNAMEs, alternate domains, and ghost distributions requires navigating CloudFront distribution configurations.
+- [[aws/cloudfront|CloudFront alternate domains]]: since CloudFront enforces global CNAME uniqueness across all AWS accounts.
+- [[aws/amplify|Amplify Hosting]]: since the ghost-claim gotcha frequently affects Amplify-managed CDN distributions.
+- [[aws/cloudfront/cli|CloudFront CLI cheatsheet]]: since diagnosing CNAME claims requires querying current active configurations.
 </Aside>
 
 ## Symptom
@@ -23,6 +25,8 @@ DNS is correct, nothing else claims the alias today, error persists. Each retry 
 
 ## Diagnose
 
+To diagnose whether the conflict is in active CloudFront distributions or an Amplify domain association, execute the following CLI queries:
+
 ```bash
 aws cloudfront list-distributions \
   --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, 'app.example.com')].{Id:Id,Domain:DomainName,Status:Status}" \
@@ -33,6 +37,8 @@ aws amplify get-domain-association \
   --query 'domainAssociation.{status:domainStatus,reason:statusReason}' \
   --output json
 ```
+
+*Verification: If the first query returns a row, you have an active distribution holding the alias. If the second returns a status of `CREATING` or `PENDING` with a reason of `CNAMEAlreadyExists`, you have a ghost-claim race condition.*
 
 If you control the holding distribution, prefer documented [`update-domain-association`](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html). Workaround below is when source is unreachable or Amplify-managed.
 
@@ -57,13 +63,17 @@ Empirical unblock when vanilla retries fail ([CNAME restrictions](https://docs.a
    --validation-method DNS
    ```
 
-2. **Add DNS [[nestjs/recipes/validation|validation]] CNAME** from `describe-certificate` output.
+   *Verification: Note the `CertificateArn` returned in the JSON output, which you will use for [[nestjs/recipes/validation|validation]] and attachment.*
+
+2. **Add DNS validation CNAME** from `describe-certificate` output.
 
 3. **Wait for ISSUED**:
 
    ```bash
    aws acm wait certificate-validated --certificate-arn <CERT_ARN>
    ```
+
+   *Verification: The wait command blocks and exits with code 0 once validation is complete. You can confirm status by running `aws acm describe-certificate --certificate-arn <CERT_ARN> --query 'Certificate.Status'` and verifying it outputs `"ISSUED"`.*
 
 4. **Attach custom cert to Amplify**:
 
@@ -74,6 +84,8 @@ Empirical unblock when vanilla retries fail ([CNAME restrictions](https://docs.a
    --certificate-settings type=CUSTOM,customCertificateArn=<CERT_ARN> \
    --sub-domain-settings prefix=app,branchName=main
    ```
+
+   *Verification: Confirm the JSON response shows the `domainStatus` as `UPDATING` with the custom certificate ARN successfully attached.*
 
 5. **Poll** until `domainStatus: AVAILABLE`.
 

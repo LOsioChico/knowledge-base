@@ -26,6 +26,7 @@ import {
   runMdxDeterministicAdvisory,
 } from "./mdx-deterministic.js";
 import { postFilter } from "./post-filter.js";
+import { filterDismissed } from "./dismissed.js";
 import type {
   ConfidenceTier,
   FileReport,
@@ -548,7 +549,8 @@ async function main(): Promise<void> {
       })),
       ...detAdvisoryFlat.map((f) => ({ ...f, tier: "advisory" as const })),
     ];
-    emitReportAndExit(args.targets, tiered);
+    const { kept: filteredTiered } = filterDismissed(REPO_ROOT, tiered);
+    emitReportAndExit(args.targets, filteredTiered);
     return;
   }
 
@@ -577,7 +579,8 @@ async function main(): Promise<void> {
     ...subjective.map((f) => ({ ...f, tier: "advisory" as const })),
     ...detAdvisoryFlat.map((f) => ({ ...f, tier: "advisory" as const })),
   ];
-  emitReportAndExit(args.targets, tiered);
+  const { kept: filteredTiered } = filterDismissed(REPO_ROOT, tiered);
+  emitReportAndExit(args.targets, filteredTiered);
 }
 
 main().catch((err: unknown) => {

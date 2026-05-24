@@ -197,8 +197,6 @@ export class GameModule {}
 In Effect, **every service boundary is declared explicitly as a Tag**. The Tag acts as the unique runtime symbol and the compiler's type index simultaneously:
 
 ```typescript twoslash
-import { Logger } from "@nestjs/common";
-
 // Effect: The Tag is both the token and the type interface
 import { Context, Effect } from "effect";
 
@@ -330,12 +328,15 @@ Effect.runSync(
 // b: 2
 
 const runtime = ManagedRuntime.make(CounterLive);
-await runtime.runPromise(
-  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`c: ${c.id}`))),
-);
-await runtime.runPromise(
-  Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`d: ${c.id}`))),
-);
+const run = async () => {
+  await runtime.runPromise(
+    Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`c: ${c.id}`))),
+  );
+  await runtime.runPromise(
+    Effect.flatMap(Counter, (c) => Effect.sync(() => console.log(`d: ${c.id}`))),
+  );
+};
+run();
 // c: 3
 // d: 3
 ```
@@ -480,14 +481,17 @@ const HttpLive = Layer.succeed(Http, {
 
 const runtime = ManagedRuntime.make(HttpLive);
 
-await runtime.runPromise(
-  Effect.gen(function* () {
-    const http = yield* Http;
-    return yield* http.get("https://example.com").pipe(Effect.retry({ times: 3 }));
-  }),
-);
+const run = async () => {
+  await runtime.runPromise(
+    Effect.gen(function* () {
+      const http = yield* Http;
+      return yield* http.get("https://example.com").pipe(Effect.retry({ times: 3 }));
+    }),
+  );
 
-await runtime.dispose();
+  await runtime.dispose();
+};
+run();
 ```
 
 <Aside type="caution" title="Do not merge the containers">

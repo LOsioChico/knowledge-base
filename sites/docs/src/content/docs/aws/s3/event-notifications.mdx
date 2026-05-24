@@ -5,7 +5,7 @@ description: S3 object event notifications to SQS, SNS, Lambda, or EventBridge â
 
 import { Aside } from "@astrojs/starlight/components";
 
-> S3 event notifications fire to SNS, SQS, [[aws/lambda|Lambda]], or EventBridge when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
+> S3 event notifications fire to [[aws/sns|SNS]], [[aws/sqs|SQS]], [[aws/lambda|Lambda]], or [[aws/eventbridge|EventBridge]] when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -18,7 +18,7 @@ Ten activity types including Intelligent-Tiering auto-tier ([source](https://doc
 
 | Family | Wildcard | Notes |
 | --- | --- | --- |
-| Object created | `s3:ObjectCreated:*` | Put, Post, Copy, CompleteMultipartUpload |
+| Object created | `s3:ObjectCreated:*` | Put, Post, Copy, CompleteMultipartUpload; [example](#minimum-config-sqs-prefix-filter) |
 | Object removed | `s3:ObjectRemoved:*` | **Not fired for lifecycle deletes**: use `LifecycleExpiration:*` |
 | Object restored | `s3:ObjectRestore:*` | Glacier restore lifecycle |
 | Lifecycle expiration | `s3:LifecycleExpiration:*` | Lifecycle-driven deletes |
@@ -75,6 +75,8 @@ Two rules cannot match the same object: use disjoint prefixes or fan out via SNS
 </Aside>
 
 ## When EventBridge instead
+
+Reach for [[aws/eventbridge|EventBridge]] instead of direct S3 notifications when you need:
 
 - Content-based filtering beyond prefix/suffix.
 - Multiple downstream consumers without SNS fan-out.

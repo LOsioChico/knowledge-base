@@ -9,7 +9,7 @@ description: AWS Identity and Access Management — principals, policies, roles,
 
 - **Every authenticated API call is signed by a principal** (user, role session, or root) and evaluated against policies; default is deny ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)).
 - **Identity-based policies** attach to user/group/role; **resource-based policies** attach to a resource (S3 bucket, KMS key, role trust policy). Cross-account: principal needs BOTH allows ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html#policies_resource-based)).
-- **Cross-account access is `sts:AssumeRole`**: account A defines a role with a trust policy; B calls AssumeRole for short-lived credentials.
+- **Cross-account access is [[aws/recipes/cross-account-role-pattern|sts:AssumeRole]]**: account A defines a role with a trust policy; B calls AssumeRole for short-lived credentials.
 - **Roles, not users, for code.** Long-lived access keys are the most common leak vector.
 - **SCPs / RCPs / permission boundaries are intersections** with identity policy: they subtract, never add.
 
@@ -23,7 +23,7 @@ IAM is non-optional. The relevant question is which **principal kind**: root (ra
 | -------------- | ----------------------- | ----------------------------------------------------------------------------- |
 | **Root user**  | Yes                     | Only tasks that require root                                                  |
 | **IAM user**   | Yes                     | Avoid; humans federate via IAM Identity Center                                |
-| **IAM role**   | No (STS short-lived)    | EC2/ECS/[Lambda](/knowledge-base/aws/lambda/) roles; cross-account AssumeRole |
+| **IAM role**   | No (STS short-lived)    | [EC2](/knowledge-base/aws/ec2/), [ECS](/knowledge-base/aws/ecs/), and [Lambda](/knowledge-base/aws/lambda/) roles; [cross-account AssumeRole](/knowledge-base/aws/recipes/cross-account-role-pattern/) |
 
 ## Pending notes
 

@@ -10,6 +10,9 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 <Aside type="tip" title="Prerequisites">
 Before diving into rate limiting, make sure you understand:
 - [[nestjs/fundamentals/guards|Guards]]: since rate limiting is enforced in NestJS via `ThrottlerGuard` which runs within the NestJS Guard layer.
+- [[nestjs/recipes/configuration|Configuration]]: since production rate limiters are configured asynchronously via `ConfigService`.
+- [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]: since when chaining global enhancers (like authentication guards), registration order decides which provider runs first.
+- [[nestjs/auth/jwt-strategy|JWT Strategy & Authentication]]: since per-user rate limiting requires extracting user IDs from request metadata populated by authentication guards.
 </Aside>
 
 ---
@@ -18,11 +21,13 @@ Before diving into rate limiting, make sure you understand:
 
 <Steps>
 
-1. Install the required packages (requires `@nestjs/throttler` v5+):
-
+1. **Install `@nestjs/throttler`**: Install the package as a dependency. Version 5 or higher is required to support the modern array-based multiple-throttler syntax and millisecond `ttl` units.
+   
    ```bash
    npm install --save @nestjs/throttler
    ```
+
+   *Verification: Confirm that `@nestjs/throttler` appears under `dependencies` in your `package.json` with a version `^5.0.0` or higher before proceeding.*
 
 2. Register the module and global guard:
 
@@ -54,7 +59,14 @@ Before diving into rate limiting, make sure you understand:
    - `ThrottlerModule.forRoot([{ ttl, limit }])`: `ttl` is the sliding window duration in **milliseconds** (use `seconds()` or `minutes()` helper functions), `limit` is the maximum number of requests allowed in that window.
    - `APP_GUARD` registers `ThrottlerGuard` globally with dependency injection.
 
-3. Exceed the limit: the 11th request from the same client within the sliding window yields a **429 Too Many Requests**:
+3. Exceed the limit: when a client fires an 11th request within the sliding window, the server rejects the request:
+
+   Request:
+
+   ```http
+   GET / HTTP/1.1
+   Host: localhost:3000
+   ```
 
    Response headers:
 
@@ -105,7 +117,7 @@ You can override or bypass the global rate limiter using decorators on individua
     }
     ```
 
-    Five login attempts are permitted per minute, regardless of the global 10/min default.
+    The `@Throttle` decorator overrides the global configuration, setting a dedicated limit of 5 requests per minute specifically for the `login` endpoint.
   </TabItem>
   <TabItem label="@SkipThrottle()">
     Opt out entirely for health check endpoints or third-party webhooks:
@@ -177,11 +189,72 @@ export class ReportsController {
 }
 ```
 
+### Limit Behavior (Show-Don't-Tell)
+
+When hitting `GET /reports/expensive` twice in a single second:
+
+<Tabs>
+  <TabItem label="Request 1 (0ms)">
+    ```http
+    GET /reports/expensive HTTP/1.1
+    Host: localhost:3000
+    ```
+    ```json
+    HTTP/1.1 200 OK
+    Content-Type: application/json
+
+    {
+      "data": "huge PDF"
+    }
+    ```
+  </TabItem>
+  <TabItem label="Request 2 (200ms)">
+    ```http
+    GET /reports/expensive HTTP/1.1
+    Host: localhost:3000
+    ```
+    ```json
+    HTTP/1.1 429 Too Many Requests
+    Content-Type: application/json
+
+    {
+      "statusCode": 429,
+      "message": "ThrottlerException: Too Many Requests"
+    }
+    ```
+  </TabItem>
+</Tabs>
+
+For the `GET /reports/dashboard` handler, the `@SkipThrottle({ burst: true })` decorator disables the `burst` bucket entirely, meaning the client is exempt from the 1-second burst rate limit on this endpoint. The global `sustained` bucket (100 requests per minute) remains active as defined in the global AppModule.
+
 ---
 
 ## Reverse Proxies and Header Security
 
 By default, `ThrottlerGuard` uses the incoming request IP address (`req.ip`) as the unique identifier for rate limiting. When your application runs behind a reverse proxy (like Cloudflare, AWS ALB, Nginx, or an API Gateway), `req.ip` will resolve to the **internal IP of the proxy**, meaning every single user will share the same bucket and throttle each other.
+
+```http
+// Outbound Client A Request (Spoofed/Proxied):
+GET /users HTTP/1.1
+Host: api.example.com
+X-Forwarded-For: 203.0.113.195
+
+// Outbound Client B Request (From separate WAN IP):
+GET /users HTTP/1.1
+Host: api.example.com
+X-Forwarded-For: 198.51.100.42
+
+// Server-Side Behavior (Without proxy trust):
+// NestJS sees both requests coming from Nginx/ALB internal IP: 10.0.0.15
+// Client A consumes the remaining 10 hits. Client B immediately receives:
+HTTP/1.1 429 Too Many Requests
+Content-Type: application/json
+
+{
+  "statusCode": 429,
+  "message": "ThrottlerException: Too Many Requests"
+}
+```
 
 To solve this, you must configure NestJS to trust headers like `X-Forwarded-For`.
 
@@ -205,7 +278,7 @@ async function bootstrap() {
 bootstrap();
 ```
 
-<Aside type="danger" title="Blindly trusting proxy headers is a security vulnerability">
+<Aside type="caution" title="Blindly trusting proxy headers is a security vulnerability">
 
 Setting `app.set('trust proxy', true)` instructs the server to blindly trust the leftmost IP in the client-sent `X-Forwarded-For` header. A malicious client can easily spoof their IP address by passing a custom `X-Forwarded-For` header, bypassing all rate-limiting constraints.
 
@@ -217,7 +290,7 @@ Always use a narrow setting:
 
 ### 2. Custom Secure Proxy Guard
 
-If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Nginx), you must extract the real client IP address securely. Since `ThrottlerGuard` relies on the request object injected by your underlying [[effect-ts/platform|HTTP]] platform adapter, you should implement an adapter-specific guard depending on whether you use Express or Fastify.
+If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Nginx), you must extract the real client IP address securely. Since `ThrottlerGuard` relies on the request object injected by the underlying [[effect-ts/platform|HTTP]] platform adapter, you should implement an adapter-specific guard for your platform. The implementation is different for the Express and Fastify adapters.
 
 <Tabs>
   <TabItem label="Express HTTP Adapter">
@@ -270,6 +343,7 @@ If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Ng
       );
       await app.listen(3000);
     }
+    bootstrap();
     ```
   </TabItem>
 </Tabs>
@@ -325,7 +399,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
 }
 ```
 
-Note: when combining multiple global [[nestjs/fundamentals/interceptors|interceptors]] or guards, ensure your authentication guard (e.g. `JwtAuthGuard`) is registered **before** the `ThrottlerGuard` in `AppModule`. NestJS executes guards in the order they are registered in the providers array.
+Note: when combining multiple global guards, ensure your authentication guard (e.g. `JwtAuthGuard`) is registered **before** the `ThrottlerGuard` in `AppModule`. NestJS executes guards in the order they are registered in the providers array.
 
 ### 2. Asynchronous Dynamic Configuration
 
@@ -367,15 +441,32 @@ export class AppModule {}
 
 ## Distributed Storage (Redis Scaling)
 
-The default in-memory storage driver stores rate counters inside the Node.js process heap memory. In production, when you run multiple instances or containers behind a load balancer, client requests will hit different servers. In-memory counters fail: a client can bypass limits because their requests are distributed across processes.
+The default in-memory storage driver stores rate counters inside the Node.js process heap memory. In production, when you run multiple instances or containers behind a load balancer, client requests will hit different servers.
+
+Because the ALB distributes the load across processes, the local in-memory counters remain independent. A single client can make up to 10 requests to Instance A and up to 10 requests to Instance B simultaneously, effectively doubling their allowance to 20 requests per minute without any instance-level rate limits triggering. In-memory storage completely fails to coordinate and enforce the global 10-request limit.
+
+```text
+Scenario: Limit is 10 requests/min. Two container instances run behind a Round-Robin ALB.
+
+Request 1  -> ALB -> Instance A (hits: 1/10) -> HTTP 200
+Request 2  -> ALB -> Instance B (hits: 1/10) -> HTTP 200
+...
+Request 20 -> ALB -> Instance B (hits: 10/10) -> HTTP 200
+
+Outcome: Client successfully fires 20 requests in 1 minute, bypassing the global 10-request limit because counters are not shared.
+```
 
 To scale horizontally, you must wire up a distributed Redis store.
 
 ### 1. Install Redis Integration Packages
 
+To share rate-limiting counters across all application nodes, install the NestJS Redis storage provider along with `ioredis`:
+
 ```bash
 npm install --save @nest-lab/throttler-storage-redis ioredis
 ```
+
+*Verification: Verify that `@nest-lab/throttler-storage-redis` and `ioredis` are listed in your `dependencies` block in `package.json` and can be imported in your Nest modules.*
 
 ### 2. Configure Redis Storage
 
@@ -417,7 +508,7 @@ export class AppModule {}
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="Throttler ttl unit changed in v5">
+<Aside type="caution" title="Throttler ttl unit changed in v5">
 
 Pre-v5 versions of `@nestjs/throttler` accepted `ttl` in **seconds**. In `@nestjs/throttler` v5 and higher, `ttl` is parsed in **milliseconds**. Passing a raw value like `ttl: 60` now sets the window to 60 **milliseconds** instead of 60 seconds, which will block all clients immediately. Always use helper methods like `seconds(60)` or pass the raw millisecond value (`60000`).
 

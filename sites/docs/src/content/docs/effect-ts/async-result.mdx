@@ -179,8 +179,14 @@ Instead:
 When rendering an `AsyncResult`, always cover the complete state taxonomy. Prohibit shortcuts that collapse loading and failure:
 
 ```typescript
+type AsyncResult<A, E = never> =
+  | { readonly _tag: "Waiting" }
+  | { readonly _tag: "Loading" }
+  | { readonly _tag: "Success"; readonly data: A }
+  | { readonly _tag: "Failure"; readonly error: E };
+
 // Correct pattern: Cover all states explicitly
-const renderUI = <A, E>(result: AsyncResult<A, E>) => {
+const renderUI = (result: AsyncResult<{ name: string }, { message: string }>) => {
   switch (result._tag) {
     case "Waiting":
       return "Handshake pending...";

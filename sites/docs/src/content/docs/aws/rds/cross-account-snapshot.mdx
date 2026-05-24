@@ -39,13 +39,13 @@ export ACCOUNT_B_ID=444455556666
 
 | Step | Account (profile) | What it does |
 | --- | --- | --- |
-| 1 | `account-a` | Create CMK + grant `account-b` decrypt |
-| 2 | `account-a` | Manual snapshot |
-| 3 | `account-a` | Copy snapshot with CMK (re-encrypt) |
-| 4 | `account-a` | Share via `restore` attribute |
-| 5 | `account-b` | Copy shared snapshot locally |
-| 6 | `account-b` | Restore DB instance |
-| 7 | `account-b` | Smoke test (read-only) |
+| 1 | `account-a` | [Create CMK + grant `account-b` decrypt](#2a-create-a-customer-managed-kms-key) |
+| 2 | `account-a` | [Manual snapshot](#2c-take-a-manual-snapshot) |
+| 3 | `account-a` | [Copy snapshot with CMK (re-encrypt)](#2d-re-encrypt-by-copying-the-snapshot) |
+| 4 | `account-a` | [Share via `restore` attribute](#2e-share-with-account-b) |
+| 5 | `account-b` | [Copy shared snapshot locally](#3b-copy-the-shared-snapshot-into-account-b) |
+| 6 | `account-b` | [Restore DB instance](#3c-restore-and-smoke-test) |
+| 7 | `account-b` | [Smoke test (read-only)](#3c-restore-and-smoke-test) |
 
 ## 1. Pre-flight: confirm each profile points at the right account
 

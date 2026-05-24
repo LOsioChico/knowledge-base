@@ -38,7 +38,7 @@ Before diving in, make sure you understand:
 | [CloudFront](/knowledge-base/aws/cloudfront/) | [Alternate domain claim](/knowledge-base/aws/cloudfront/alternate-domain-claim/)                                                        | Ghost-claim gotcha; ACM workaround                 |
 | [IAM](/knowledge-base/aws/iam/)               | [Cross-account role pattern](/knowledge-base/aws/recipes/cross-account-role-pattern/)                                                   | Trust + ExternalId + scoped permissions            |
 | [EC2](/knowledge-base/aws/ec2/)               | [Snapshot all instances](/knowledge-base/aws/ec2/snapshot-all-instances/) + [AMI copy](/knowledge-base/aws/ec2/ami-cross-account-copy/) | AMI per instance, share + `copy-image`             |
-| [KMS](/knowledge-base/aws/kms/)               | [KMS](/knowledge-base/aws/kms/)                                                                                                         | Key policy + IAM pattern for cross-account encrypt |
+| [KMS](/knowledge-base/aws/kms/)               | [Cross-account RDS snapshot](/knowledge-base/aws/rds/cross-account-snapshot/)                                                            | Key policy + IAM pattern for cross-account encrypt |
 
 ## Recommended order
 
@@ -48,7 +48,7 @@ Before diving in, make sure you understand:
 2. **IAM cross-account roles**: early, for services staying behind.
 3. **Data** (RDS, S3): longest copy windows.
 4. **Compute** ([[aws/lambda|Lambda]], [[aws/ecs|ECS]]): after data validates.
-5. **Frontend + DNS** (Amplify, CloudFront, Route 53): user-visible cutover last.
+5. **Frontend + DNS** ([[aws/amplify|Amplify]], [[aws/cloudfront|CloudFront]], Route 53): user-visible cutover last.
 6. **Cleanup**: revoke grants; delete source after rollback window.
 
 </Steps>

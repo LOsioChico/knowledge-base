@@ -23,7 +23,7 @@ When developers think of "file upload," they usually think of a browser sending 
 
 ### Architectural Comparison
 
-| Metric | [Tier 1: Local Multer (RAM/Disk)](#the-three-architectural-tiers) | [Tier 2: Stream-to-Cloud Middleware](#the-three-architectural-tiers) | [Tier 3: Direct S3 Presigned PUT](#the-three-architectural-tiers) |
+| Metric | [Tier 1: Local Multer (RAM/Disk)](#standard-multipart-upload-with-magic-number-check) | [Tier 2: Stream-to-Cloud Middleware](#bypassing-ram-buffering-using-s3-streaming) | [Tier 3: Direct S3 Presigned PUT](#the-production-gold-standard) |
 | :--- | :--- | :--- | :--- |
 | **RAM Impact** | High (N × File Size) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
 | **Disk Lifetime** | Ephemeral (Lost on restart) | **Cloud-Safe** (Saves directly) | **Cloud-Safe** (Saves directly) |
@@ -205,7 +205,7 @@ When developers think of "file upload," they usually think of a browser sending 
     *NestJS never touches the file bytes!* This frees up 100% of your server's RAM and network bandwidth.
 
     ```typescript
-    import { Controller, Post, Body, Injectable } from "@nestjs/common";
+    import { Controller, Post, Body, Injectable, Module, ValidationPipe } from "@nestjs/common";
     import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
     import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
     import { IsString, IsNotEmpty, Matches } from "class-validator";
@@ -251,7 +251,7 @@ When developers think of "file upload," they usually think of a browser sending 
       constructor(private readonly signerService: S3SignerService) {}
 
       @Post("presign")
-      async generateUrl(@Body() body: GeneratePresignedUrlDto) {
+      async generateUrl(@Body(new ValidationPipe()) body: GeneratePresignedUrlDto) {
         // Enforces strict class-validator DTO check first
         const uploadUrl = await this.signerService.createUploadUrl(
           body.fileName,
@@ -261,6 +261,12 @@ When developers think of "file upload," they usually think of a browser sending 
         return { uploadUrl };
       }
     }
+
+    @Module({
+      providers: [S3SignerService],
+      controllers: [PresignController],
+    })
+    export class UploadsModule {}
     ```
 
     #### Show, Don't Tell: Presigned URL Generation & PUT Payload

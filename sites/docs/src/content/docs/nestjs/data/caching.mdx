@@ -151,11 +151,11 @@ Interceptors run per field resolver, not per request. `CacheInterceptor` keys by
 
 ## Configuration reference
 
-| Option     | Type      | Default     | Notes                                             |
-| ---------- | --------- | ----------- | ------------------------------------------------- |
-| `ttl`      | `number`  | `0` (never) | Default expiration in **milliseconds**            |
-| `isGlobal` | `boolean` | `false`     | Skip re-importing in feature modules              |
-| `stores`   | `Keyv[]`  | in-memory   | One or more [Keyv](https://keyv.org/docs/) stores |
+| Option     | Type      | Default     | Notes                                                                            |
+| ---------- | --------- | ----------- | -------------------------------------------------------------------------------- |
+| `ttl`      | `number`  | `0` (never) | Default expiration in **milliseconds**; [example](#minimal-working-example)      |
+| `isGlobal` | `boolean` | `false`     | Skip re-importing in feature modules; [example](#minimal-working-example)        |
+| `stores`   | `Keyv[]`  | in-memory   | One or more [Keyv](https://keyv.org/docs/) stores; [example](#distributed-cache-with-redis) |
 
 | Decorator                            | Scope                | Purpose                                                                   |
 | ------------------------------------ | -------------------- | ------------------------------------------------------------------------- |
