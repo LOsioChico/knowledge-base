@@ -18,7 +18,7 @@ Before diving into the SWC builder setup, make sure you understand:
 | Project shape | Builder | Type-check |
 | --- | --- | --- |
 | [Single Nest app (default here)](#setup) | `swc` | Always `--type-check` or `typeCheck: true` |
-| `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required**: plugins need `tsc` metadata; [why](#cli-plugins-require-type-check) |
+| `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required**: plugins need `tsc` metadata; see danger box in [What `--type-check` does](#what---type-check-does) |
 | Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](/knowledge-base/nestjs/recipes/monorepo/) |
 | SWC circular-metadata / custom transformer bug | `tsc` fallback | Built-in; [comparison](#pick-a-builder) |
 
