@@ -44,7 +44,16 @@ jobs:
           bun run lint:docs
       - name: Unit tests
         run: bun run test:ci
+      - name: Cache Astro build
+        if: github.event_name != 'pull_request'
+        uses: actions/cache@v4
+        with:
+          path: sites/docs/node_modules/.astro
+          key: astro-${{ runner.os }}-${{ hashFiles('sites/docs/src/content/docs/**/*.mdx') }}
+          restore-keys: |
+            astro-${{ runner.os }}-
       - name: Build Starlight (Twoslash)
+        if: github.event_name != 'pull_request'
         run: bun run docs:build:ci
       - name: Verify published paths
         if: github.event_name != 'pull_request'
