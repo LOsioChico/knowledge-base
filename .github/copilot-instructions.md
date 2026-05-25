@@ -452,6 +452,54 @@ Every TypeScript snippet that resembles a real file MUST be copy-pasteable as-is
 
 When editing an existing snippet, audit the imports too — adding a new symbol means adding its import.
 
+## Implementation notes (MANDATORY for non-trivial changes)
+
+During any non-trivial implementation (SDD apply phases, multi-file edits, significant refactors, or new feature work), maintain a **running `implementation-notes.md`** file that captures decisions and context as they emerge. Do NOT reconstruct this after the fact: write entries in real-time as you implement.
+
+The file lives at the conversation artifact directory (or `openspec/changes/{change-name}/implementation-notes.md` when using OpenSpec). It is the single place a reviewer looks to understand what happened between "spec approved" and "PR opened".
+
+### What to capture
+
+| Category | What to write |
+| --- | --- |
+| **Design decisions** | Where the spec was ambiguous and a call had to be made. Name the ambiguity, the options considered, and why you chose this one. |
+| **Deviations** | Where the implementation intentionally diverged from the spec or design, and why. Not bugs: conscious trade-offs that the reviewer should sign off on. |
+| **Tradeoffs** | What else was considered and why the chosen path won. Include rejected alternatives so the reviewer doesn't re-derive them. |
+| **Open questions** | Anything you'd want the reviewer to sign off on, flag for follow-up, or validate before merging. |
+| **Discoveries** | Non-obvious findings about the codebase, dependencies, or platform behavior that surfaced during implementation. |
+
+### Format
+
+```markdown
+# Implementation Notes: {change-name}
+
+## Decisions
+- **{short title}**: {ambiguity encountered} → chose {option} because {reason}.
+
+## Deviations from Spec
+- **{what changed}**: spec said {X}, implemented {Y} because {reason}.
+
+## Tradeoffs
+- **{choice}**: considered {alternatives}; chose {this} because {criteria}.
+
+## Open Questions
+- {question that needs reviewer input}
+
+## Discoveries
+- {non-obvious finding about the codebase or dependencies}
+```
+
+### When to skip
+
+Skip for trivial, mechanical, single-file changes (typo fix, lint fix, adding one import, updating a version number). The threshold: if the change requires no judgment calls, there's nothing to note.
+
+### Persistence
+
+- **SDD (engram)**: save as `sdd/{change-name}/implementation-notes` topic key.
+- **SDD (openspec/hybrid)**: write to `openspec/changes/{change-name}/implementation-notes.md`.
+- **Non-SDD**: write to the conversation artifact directory.
+- The verify phase SHOULD read implementation notes to validate that deviations were intentional and open questions were addressed.
+
 ## When you finish
 
 - To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
