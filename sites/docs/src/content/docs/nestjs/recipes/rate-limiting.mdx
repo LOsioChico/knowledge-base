@@ -4,6 +4,7 @@ description: Global ThrottlerGuard, per-route @Throttle and @SkipThrottle, named
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Cap how many requests a single client can fire at your API in a time window. `@nestjs/throttler` ships a [[nestjs/fundamentals/guards|guard]] you bind globally: per-route overrides come from two decorators. In-memory store by default, Redis when you scale past one instance.
 
@@ -23,23 +24,7 @@ Before diving into rate limiting, make sure you understand:
 
 1. **Install `@nestjs/throttler`**: Install the package as a dependency. Version 5 or higher is required to support the modern array-based multiple-throttler syntax and millisecond `ttl` units.
    
-   <Tabs>
-     <TabItem label="npm">
-     ```bash
-     npm install @nestjs/throttler
-     ```
-     </TabItem>
-     <TabItem label="pnpm">
-     ```bash
-     pnpm add @nestjs/throttler
-     ```
-     </TabItem>
-     <TabItem label="bun">
-     ```bash
-     bun add @nestjs/throttler
-     ```
-     </TabItem>
-   </Tabs>
+   <PackageManagers pkg="@nestjs/throttler" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
    *Verification: Confirm that `@nestjs/throttler` appears under `dependencies` in your `package.json` with a version `^5.0.0` or higher before proceeding.*
 
@@ -464,23 +449,7 @@ To scale horizontally, you must wire up a distributed Redis store.
 
 To share rate-limiting counters across all application nodes, install the NestJS Redis storage provider along with `ioredis`:
 
-<Tabs>
-  <TabItem label="npm">
-  ```bash
-  npm install @nest-lab/throttler-storage-redis ioredis
-  ```
-  </TabItem>
-  <TabItem label="pnpm">
-  ```bash
-  pnpm add @nest-lab/throttler-storage-redis ioredis
-  ```
-  </TabItem>
-  <TabItem label="bun">
-  ```bash
-  bun add @nest-lab/throttler-storage-redis ioredis
-  ```
-  </TabItem>
-</Tabs>
+<PackageManagers pkg="@nest-lab/throttler-storage-redis ioredis" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 *Verification: Verify that `@nest-lab/throttler-storage-redis` and `ioredis` are listed in your `dependencies` block in `package.json` and can be imported in your Nest modules.*
 

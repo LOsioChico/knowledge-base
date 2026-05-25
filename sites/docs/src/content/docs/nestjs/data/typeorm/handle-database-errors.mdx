@@ -4,6 +4,7 @@ description: Map TypeORM QueryFailedError and Postgres SQLSTATE codes to HTTP re
 ---
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.
 
@@ -15,26 +16,8 @@ Before diving into handling database errors, make sure you understand:
 
 ## Setup
 
-<Tabs>
-  <TabItem label="npm">
-  ```bash
-  npm install @nestjs/typeorm typeorm pg
-  npm install --save-dev @types/pg
-  ```
-  </TabItem>
-  <TabItem label="pnpm">
-  ```bash
-  pnpm add @nestjs/typeorm typeorm pg
-  pnpm add -D @types/pg
-  ```
-  </TabItem>
-  <TabItem label="bun">
-  ```bash
-  bun add @nestjs/typeorm typeorm pg
-  bun add -D @types/pg
-  ```
-  </TabItem>
-</Tabs>
+<PackageManagers pkg="@nestjs/typeorm typeorm pg" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+<PackageManagers pkg="@types/pg" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 ## The shape of `QueryFailedError`
 

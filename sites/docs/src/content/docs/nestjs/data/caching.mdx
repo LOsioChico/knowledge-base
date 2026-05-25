@@ -4,6 +4,7 @@ description: "In-memory or Redis caching via cache-manager v6+ and Keyv: CacheIn
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for keys you control.
 
@@ -14,9 +15,7 @@ Before diving into caching, make sure you understand:
 
 ## Setup
 
-```bash
-npm i @nestjs/cache-manager cache-manager
-```
+<PackageManagers pkg="@nestjs/cache-manager cache-manager" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 `@nestjs/cache-manager` v3+ uses `cache-manager` v6+, which delegates storage to [Keyv](https://keyv.org/docs/). All TTLs are in **milliseconds**.
 
@@ -165,9 +164,7 @@ Interceptors run per field resolver, not per request. `CacheInterceptor` keys by
 
 ## Distributed cache with Redis
 
-```bash
-npm i @keyv/redis keyv cacheable
-```
+<PackageManagers pkg="@keyv/redis keyv cacheable" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 ```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";

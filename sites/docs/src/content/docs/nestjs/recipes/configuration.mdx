@@ -7,6 +7,7 @@ related:
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Load configuration once, fail fast on missing or malformed env, and inject typed settings where Nest resolves dependencies.
 
@@ -45,9 +46,7 @@ This page uses exported shell variables so the load path stays explicit. If you 
 
 1. Install the config package plus Joi for startup validation. After the command finishes, verify both packages land in `dependencies`.
 
-   ```bash
-   npm i @nestjs/config joi
-   ```
+   <PackageManagers pkg="@nestjs/config joi" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 2. Paste the minimal example below into a fresh Nest app.
 

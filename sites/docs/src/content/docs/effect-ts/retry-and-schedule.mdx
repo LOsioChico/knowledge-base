@@ -4,6 +4,7 @@ description: Effect.retry with Schedule — capped exponential backoff, jitter, 
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Retry a failing effect with `Effect.retry` and a `Schedule`: a value that decides whether to recur and how long to wait between attempts.
 
@@ -24,9 +25,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
 Install the core `effect` package before trying the retry examples. After the command finishes, confirm `package.json` contains `effect`; `Effect`, `Schedule`, and `Console` all come from that one package ([`Schedule.ts`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts), [`Effect.retry` L4399+](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L4399-L4410)).
 
-```bash
-bun add effect
-```
+<PackageManagers pkg="effect" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 ## 1. Retry N times
 

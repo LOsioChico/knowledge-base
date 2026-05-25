@@ -7,6 +7,7 @@ related:
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.
 
@@ -31,26 +32,8 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into the JWT
 
 ## Setup
 
-<Tabs>
-  <TabItem label="npm">
-  ```bash
-  npm install @nestjs/passport passport @nestjs/jwt passport-jwt
-  npm install --save-dev @types/passport-jwt
-  ```
-  </TabItem>
-  <TabItem label="pnpm">
-  ```bash
-  pnpm add @nestjs/passport passport @nestjs/jwt passport-jwt
-  pnpm add -D @types/passport-jwt
-  ```
-  </TabItem>
-  <TabItem label="bun">
-  ```bash
-  bun add @nestjs/passport passport @nestjs/jwt passport-jwt
-  bun add -D @types/passport-jwt
-  ```
-  </TabItem>
-</Tabs>
+<PackageManagers pkg="@nestjs/passport passport @nestjs/jwt passport-jwt" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+<PackageManagers pkg="@types/passport-jwt" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 ## Login endpoint
 

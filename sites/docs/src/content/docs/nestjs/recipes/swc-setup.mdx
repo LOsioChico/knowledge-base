@@ -4,6 +4,7 @@ description: Fast Nest builds with nest start -b swc, type-check pairing, and Je
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since NestJS 10, the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
 
@@ -27,9 +28,7 @@ Before diving into the SWC builder setup, make sure you understand:
 
 1. Install dev dependencies (both required: the CLI loads `@swc/cli` and exits with an install hint if either is missing):
 
-   ```bash
-   npm i --save-dev @swc/core @swc/cli
-   ```
+   <PackageManagers pkg="@swc/core @swc/cli" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 2. Run once with type-check:
 

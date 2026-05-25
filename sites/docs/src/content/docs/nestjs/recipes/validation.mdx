@@ -6,6 +6,7 @@ related:
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Validate bodies, query strings, and route params with one global pipe and declarative DTO classes. Same `class-transformer` / `class-validator` pair as [[nestjs/recipes/serialization|response serialization]].
 
@@ -31,9 +32,7 @@ Before diving into this recipe, make sure you understand:
 
 1. **Install `@nestjs/common` peer validation packages**: Install the required validator and transformer packages, verifying that the package installer exits successfully:
 
-   ```bash
-   npm i class-validator class-transformer
-   ```
+   <PackageManagers pkg="class-validator class-transformer" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
    *Verification: Verify that `class-validator` and `class-transformer` are listed in your `dependencies` block in `package.json` before registering the pipe.*
 

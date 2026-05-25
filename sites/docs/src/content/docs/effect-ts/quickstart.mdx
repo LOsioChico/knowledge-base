@@ -4,6 +4,7 @@ description: Install effect, write a tiny program, run it three ways, then handl
 ---
 
 import { Aside, Steps } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Install `effect`, write a tiny program, run it three different ways, then handle a typed error. The 10-minute path from "I've heard of Effect" to "I have a working `Effect<A, E, R>` in front of me".
 > Prerequisite: [[effect-ts|Effect-TS MOC]]
@@ -29,8 +30,13 @@ You need:
   ```bash
   mkdir effect-quickstart && cd effect-quickstart
   npm init -y
-  npm install effect
-  npm install -D typescript tsx @types/node
+  ```
+
+  <PackageManagers pkg="effect" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+
+  <PackageManagers pkg="typescript tsx @types/node" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+
+  ```bash
   npx tsc --init --target es2022 --module nodenext --moduleResolution nodenext --strict
   ```
 

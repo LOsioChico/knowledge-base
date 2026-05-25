@@ -3,7 +3,8 @@ title: PostgreSQL setup with TypeORM
 description: Wire @nestjs/typeorm to Postgres with forRootAsync, forFeature repositories, and CLI migrations from a standalone DataSource.
 ---
 
-import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside, Steps } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Wire `@nestjs/typeorm` to Postgres via `forRootAsync` + `ConfigService`, register entities per feature, inject repositories, and run migrations from a standalone `DataSource`. One `forRoot` per process; `forFeature` per module.
 
@@ -15,26 +16,8 @@ Before diving into PostgreSQL setup, make sure you understand:
 
 ## Setup
 
-<Tabs>
-  <TabItem label="npm">
-  ```bash
-  npm install @nestjs/typeorm typeorm pg @nestjs/config joi dotenv
-  npm install --save-dev @types/pg
-  ```
-  </TabItem>
-  <TabItem label="pnpm">
-  ```bash
-  pnpm add @nestjs/typeorm typeorm pg @nestjs/config joi dotenv
-  pnpm add -D @types/pg
-  ```
-  </TabItem>
-  <TabItem label="bun">
-  ```bash
-  bun add @nestjs/typeorm typeorm pg @nestjs/config joi dotenv
-  bun add -D @types/pg
-  ```
-  </TabItem>
-</Tabs>
+<PackageManagers pkg="@nestjs/typeorm typeorm pg @nestjs/config joi dotenv" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+<PackageManagers pkg="@types/pg" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 `pg` is the [Postgres driver](https://node-postgres.com/) TypeORM loads when `type: "postgres"`.
 

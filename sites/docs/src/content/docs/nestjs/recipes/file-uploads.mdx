@@ -4,6 +4,7 @@ description: Accept multipart form-data uploads, prevent memory exhaustion and e
 ---
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { PackageManagers } from 'starlight-package-managers';
 
 > Composing secure, high-performance file uploads in NestJS. We contrast traditional local buffering against modern cloud-native streaming and direct-to-cloud presigned uploads to protect API event loops from RAM starvation and Ephemeral Disk loss.
 
@@ -39,15 +40,11 @@ When developers think of "file upload," they usually think of a browser sending 
 
 1. Install Multer typings (the Express [[effect-ts/platform|platform]] adapter includes the runtime dependency; only typescript types are needed):
 
-   ```bash
-   npm i -D @types/multer
-   ```
+   <PackageManagers pkg="@types/multer" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 2. To support Tier 2 (S3 streaming) or Tier 3 (direct presigned URLs), install the AWS SDK v3 client and helper packages:
 
-   ```bash
-   npm i @aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/lib-storage multer-s3
-   ```
+   <PackageManagers pkg="@aws-sdk/client-s3 @aws-sdk/s3-request-presigner @aws-sdk/lib-storage multer-s3" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 </Steps>
 
