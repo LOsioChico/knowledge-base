@@ -29,6 +29,7 @@ What the **published site** (`sites/docs/`) supports. Vault markdown under `cont
 | Prefetch | `prefetch: true` in Astro config | Link prefetching (required by `starlight-site-graph`) |
 | Line numbers | `@expressive-code/plugin-line-numbers` | Opt-in per block via `showLineNumbers` |
 | Collapsible sections | `@expressive-code/plugin-collapsible-sections` | Collapse boilerplate with `collapse={lines}` |
+| Package manager tabs | `starlight-package-managers` | `<PackageManagers pkg="..." />` replaces manual `<Tabs>` for install commands |
 
 ## Expressive Code block features
 
@@ -62,7 +63,7 @@ Yellow-highlighted lines to draw attention:
 
 ### Line numbers
 
-Opt-in per block (globally disabled by `defaultProps: { showLineNumbers: false }`):
+Opt-in per block (globally disabled in `ec.config.mjs`: `defaultProps: { showLineNumbers: false }`):
 
 ` ```typescript showLineNumbers `
 
@@ -113,7 +114,7 @@ Both components render the Starlight default first, then append their enhancemen
 | Plugin / theme | Adds | When to adopt |
 | --- | --- | --- |
 | [`starlight-blog`](https://starlight.astro.build/resources/plugins/) | Dated posts / changelog | If you want release notes as a blog |
-| [`starlight-theme-obsidian`](https://github.com/Fevol/starlight-theme-obsidian) | Obsidian Publish–like chrome | Visual parity only; not wikilinks |
+| [`starlight-theme-obsidian`](https://github.com/Fevol/starlight-theme-obsidian) | Obsidian Publish–like chrome | Visual parity only; evaluated and deferred (CSS conflict risk) |
 | `@astrojs/starlight` **sidebar autogenerate** | Less hand-maintained sidebar | If you want to drop hand-maintained sidebars |
 | **Custom remark** (e.g. glossary, callout transform) | Vault callout → `<Aside>` on import | If you automate vault → MDX |
 

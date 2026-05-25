@@ -25,6 +25,9 @@ flowchart LR
     rest --> R[Response with<br/>x-request-id header]
     rest -. logs .-> L[Logger reads traceId<br/>from store]
     rest -. outbound .-> H[HttpService propagates<br/>x-request-id header]
+
+    click M "/knowledge-base/nestjs/fundamentals/middleware/"
+    click rest "/knowledge-base/nestjs/fundamentals/request-lifecycle/"
 ```
 
 ---
@@ -169,7 +172,7 @@ No external npm packages are required for the core correlation pattern. `AsyncLo
 
    Register the filter globally:
 
-   ```typescript title="app.module.ts"
+   ```typescript title="app.module.ts" ins={2,4,6-12}
    import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
    import { APP_FILTER } from "@nestjs/core";
    import { TraceMiddleware } from "./trace/trace.middleware";

@@ -62,6 +62,28 @@ flowchart TD
 
 Enforced: `bun run lint:mermaid-wikilinks`.
 
+## Install commands (`<PackageManagers>`)
+
+Install commands MUST use the `<PackageManagers>` component from `starlight-package-managers`
+instead of bare `npm install` / `pnpm add` code blocks. This renders synced tabs for all 4 managers.
+
+```mdx
+import { PackageManagers } from 'starlight-package-managers';
+
+<PackageManagers pkg="@nestjs/config joi" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+```
+
+For dev dependencies, add `dev`:
+
+```mdx
+<PackageManagers pkg="@types/multer" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
+```
+
+Do NOT convert:
+- Non-install commands (`npm run`, `bun test`, `pnpm dev`, `npm init`)
+- Workspace commands (`pnpm add -wD`)
+- Multi-command blocks mixing install with other commands (e.g., `nest start -b swc`)
+
 ## Shell placeholders in AWS recipes
 
 | Fence | Placeholder style | Why |
@@ -85,3 +107,7 @@ Enforced: `bun run lint:mdx-table-wikilinks` (table alias rule).
 ## Twoslash
 
 Default on teaching fences. Do not add hover-tutorial sections on every page.
+
+Effect-TS rule: any `ts`/`typescript` fence that imports from `effect` or `@effect/*` MUST have
+`twoslash`. Use `// @noErrors` for blocks importing uninstalled packages (e.g., `@effect/opentelemetry`).
+Enforced: `bun run lint:effect-twoslash`.

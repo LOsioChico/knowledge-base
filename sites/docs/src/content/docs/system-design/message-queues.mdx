@@ -50,6 +50,8 @@ flowchart LR
     classDef primary fill:#00ceff,stroke:#000,color:#000
     classDef purple fill:#9775fa,stroke:#000,color:#000
     classDef teal fill:#38d9a9,stroke:#000,color:#000
+
+    click Q "/knowledge-base/aws/sqs/"
 ```
 
 *   **How it works**: The broker acts as a workload distributor. If Consumer Instance 1 pulls Message A, Message A is locked and hidden from Consumer Instance 2.
@@ -74,6 +76,8 @@ flowchart TD
     classDef purple fill:#9775fa,stroke:#000,color:#000
     classDef orange fill:#ffa94d,stroke:#000,color:#000
     classDef teal fill:#38d9a9,stroke:#000,color:#000
+
+    click T "/knowledge-base/aws/sns/"
 ```
 
 *   **How it works**: The topic acts as a broadcasting hub. When an event (like `OrderPlaced`) arrives, the topic clones and routes it to every registered subscription. Within each subscription, a competing consumer group can process that subscription's copy.

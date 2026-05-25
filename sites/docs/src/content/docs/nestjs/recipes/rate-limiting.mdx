@@ -340,7 +340,7 @@ If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Ng
 
 Register your custom guard as the global guard in your module:
 
-```typescript title="app.module.ts"
+```typescript title="app.module.ts" del={3, 18} ins={3-4, 18}
 import { Module } from "@nestjs/common";
 import { APP_GUARD } from "@nestjs/core";
 import { ThrottlerModule, seconds } from "@nestjs/throttler";

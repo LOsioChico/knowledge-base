@@ -79,7 +79,12 @@ graph TD
 
     SQSBilling -->|Pull / Process| BillingSvc
     SQSInv -->|Pull / Process| InvSvc
-    SNSNotify -->|Trigger Fan-out| NotifySvc
+    SNSNotify -->|"Trigger Fan-out"| NotifySvc
+
+    click Bus "/knowledge-base/aws/eventbridge/"
+    click SQSBilling "/knowledge-base/aws/sqs/"
+    click SQSInv "/knowledge-base/aws/sqs/"
+    click SNSNotify "/knowledge-base/aws/sns/"
 ```
 
 ---

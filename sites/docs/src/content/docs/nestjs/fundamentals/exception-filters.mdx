@@ -248,7 +248,7 @@ Every other layer: **global → controller → route**. Filters: **route → con
     { "statusCode": 500, "message": "Internal server error" }
     ```
 
-    ```typescript
+    ```typescript del={8} ins={8}
     import { Controller, Get, UseFilters, ExceptionFilter, Catch, HttpException } from "@nestjs/common";
 
     // Dummy filters for compiler/import completeness
