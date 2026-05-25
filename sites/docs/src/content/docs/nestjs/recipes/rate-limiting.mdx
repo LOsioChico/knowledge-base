@@ -283,7 +283,7 @@ Always use a narrow setting:
 
 ### 2. Custom Secure Proxy Guard
 
-If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Nginx), you must extract the real client IP address securely. Since `ThrottlerGuard` relies on the request object injected by the underlying [[effect-ts/platform|HTTP]] platform adapter, you should implement an adapter-specific guard for your platform. The implementation is different for the Express and Fastify adapters.
+If your application runs behind reverse proxies (like Cloudflare, AWS ALB, or Nginx), you must extract the real client IP address securely. Since `ThrottlerGuard` relies on the request object injected by the underlying HTTP platform adapter, you should implement an adapter-specific guard for your platform. The implementation is different for the Express and Fastify adapters.
 
 <Tabs>
   <TabItem label="Express HTTP Adapter">

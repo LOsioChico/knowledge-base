@@ -81,7 +81,7 @@ done
 
 ## 2. Wait for available
 
-Block until every AMI tagged `Backup=manual-${STAMP}` reaches `available` (creation is async). This command runs silently, blocking the shell execution until all matched AMIs reach the `available` [[effect-ts/state|state]]. On successful completion, the command exits with code `0` and prints no stdout. If the waiter times out (max attempts exceeded), it will exit with code `255` and print an error message:
+Block until every AMI tagged `Backup=manual-${STAMP}` reaches `available` (creation is async). This command runs silently, blocking the shell execution until all matched AMIs reach the `available` state. On successful completion, the command exits with code `0` and prints no stdout. If the waiter times out (max attempts exceeded), it will exit with code `255` and print an error message:
 
 ```bash
 aws ec2 wait image-available \

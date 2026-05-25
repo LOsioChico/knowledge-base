@@ -198,7 +198,7 @@ const providers = [
 
 <Aside type="caution" title="Hybrid apps">
 
-`app.useGlobalGuards()` / `useGlobalPipes()` / etc. apply to the **[[effect-ts/platform|HTTP]]** layer only. Microservice listeners and WebSocket gateways stay uncovered unless you pass `{ inheritAppConfig: true }` to `connectMicroservice`, or register via `APP_*` so Nest's enhancer registries pick up globals on every transport ([hybrid application FAQ](https://docs.nestjs.com/faq/hybrid-application)).
+`app.useGlobalGuards()` / `useGlobalPipes()` / etc. apply to the **HTTP** layer only. Microservice listeners and WebSocket gateways stay uncovered unless you pass `{ inheritAppConfig: true }` to `connectMicroservice`, or register via `APP_*` so Nest's enhancer registries pick up globals on every transport ([hybrid application FAQ](https://docs.nestjs.com/faq/hybrid-application)).
 
 </Aside>
 
@@ -210,7 +210,7 @@ const providers = [
 
 ## Edge cases
 
-- **Multiple `APP_*` registrations stack**: e.g. [[effect-ts/observability|logging]] + timeout interceptors both run.
+- **Multiple `APP_*` registrations stack**: e.g. logging + timeout interceptors both run.
 - **Mixing `useGlobalPipes` and `APP_PIPE`**: both land in the same global list ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62), [`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695)). Pick one style per enhancer kind so order stays predictable.
 - **No `exports` needed**: official binding examples never export the `APP_*` token; Nest scans `providers` from any module.
 - **Testing overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). See [[nestjs/recipes/testing|Testing with @nestjs/testing]] for the full pattern.

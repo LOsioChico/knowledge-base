@@ -34,7 +34,7 @@ This note is part of the **[[aws|AWS Serverless Track]]**. Before designing deco
 To understand EventBridge's role in a distributed architecture, think of it as a **high-speed post office sorting facility**:
 
 - **Publishers (Mailboxes)**: Your microservices drop events (letters) into the system without knowing or caring who will eventually receive them.
-- **Event Bus (Conveyor Belt)**: A central [[effect-ts/streams|stream]] where all incoming events circulate.
+- **Event Bus (Conveyor Belt)**: A central stream where all incoming events circulate.
 - **Rules (Optical Scanners)**: High-speed cameras that inspect the outside of each envelope (its JSON metadata). If a letter has a specific destination zip code prefix or detail-type, the rule routes it to a specific bin.
 - **Targets (Delivery Bins)**: [[aws/sqs|SQS]] queues, [[aws/lambda|Lambda]] functions, or [[aws/ecs|ECS]] tasks where matching events are deposited for processing.
 
@@ -196,7 +196,7 @@ Checks for the presence or absence of specific properties inside the event envel
 
 ## Type-Safe Event Validation with `effect/Schema`
 
-In distributed architectures, contract drift is a major footgun. If a publisher alters its event structure, downstream consumers lacking a [[nestjs/recipes/validation|validation]] boundary may operate on unexpected null or undefined values or throw unhandled runtime exceptions. 
+In distributed architectures, contract drift is a major footgun. If a publisher alters its event structure, downstream consumers lacking a validation boundary may operate on unexpected null or undefined values or throw unhandled runtime exceptions. 
 
 To prevent this, we construct a runtime boundary validation layer using `effect/Schema` (see [[effect-ts/schema|Schema deep-dive]]). This ensures that raw inbound payloads from SQS or EventBridge targets are decoded, validated, and translated into strict, type-safe TypeScript structures before executing business logic.
 

@@ -34,7 +34,7 @@ console.log(todo.completed);
 // Prints undefined because the completed property was missing!
 ```
 
-This code type-checks perfectly, but it fails silently at runtime. `Schema` puts the [[nestjs/recipes/validation|validation]] check directly at the boundary, ensuring that malformed payloads are rejected immediately before they propagate deeper into your application logic.
+This code type-checks perfectly, but it fails silently at runtime. `Schema` puts the validation check directly at the boundary, ensuring that malformed payloads are rejected immediately before they propagate deeper into your application logic.
 
 ---
 
@@ -233,7 +233,7 @@ const result = Effect.runSyncExit(parseTodo(badInput));
 
 <Aside type="note" title="Validate at the boundary only">
 
-Parse your incoming network payloads or [[nestjs/recipes/configuration|configuration]] objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
+Parse your incoming network payloads or configuration objects once at the entry point of your module or service. Once the data is proven valid, propagate the clean, inferred TypeScript type (`Todo`) throughout the rest of your inner domain services instead of re-parsing the same values recursively.
 
 </Aside>
 

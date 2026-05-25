@@ -90,7 +90,7 @@ To build immediate engineering intuition from these abstract decimal figures, im
 
 1.  **Memory is Fast, Disk is Slow**: RAM references are five orders of magnitude faster than a physical disk seek. Avoid physical disk lookups at all costs for high-throughput reads; use memory [[system-design/distributed-caching|caching]].
 2.  **Network is Extremely Expensive**: a network roundtrip to another continent takes longer than a local disk seek and dwarfs memory lookups. Minimize cross-data center requests for synchronous transaction pipelines.
-3.  **Compress Before Sending**: Simple compression (like Zippy/Snappy) takes only 10 microseconds per KB, whereas sending data over a network takes far longer. Compressing data before [[nestjs/recipes/serialization|serialization]] is a highly effective performance trade-off.
+3.  **Compress Before Sending**: Simple compression (like Zippy/Snappy) takes only 10 microseconds per KB, whereas sending data over a network takes far longer. Compressing data before serialization is a highly effective performance trade-off.
 
 </Steps>
 

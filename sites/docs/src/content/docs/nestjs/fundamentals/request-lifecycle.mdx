@@ -93,7 +93,7 @@ The following table maps common production concerns to their precise layer in th
 One of the most critical structural gotchas is that **Middleware runs completely outside Nest's exception zone**. 
 
 - **Inside the Exception Zone**: If an error is thrown inside a Guard, Interceptor, Pipe, or Controller handler, the Nest runtime catches it and delegates it directly to the matching [[nestjs/fundamentals/exception-filters|Exception filter]] chain.
-- **Outside the Exception Zone**: If an exception is thrown synchronously or asynchronously inside a Middleware function, the Nest Exception Filters **never** catch it. Instead, the error bypasses Nest entirely and falls back to the underlying [[effect-ts/platform|platform]]'s default error handler (such as Express's default HTML error page or Fastify's default JSON error formatter). 
+- **Outside the Exception Zone**: If an exception is thrown synchronously or asynchronously inside a Middleware function, the Nest Exception Filters **never** catch it. Instead, the error bypasses Nest entirely and falls back to the underlying platform's default error handler (such as Express's default HTML error page or Fastify's default JSON error formatter). 
 
 <Aside type="caution" title="Middleware exception exclusion">
 

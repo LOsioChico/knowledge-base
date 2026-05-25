@@ -178,7 +178,7 @@ export class HttpLoggerMiddleware implements NestMiddleware {
 
 ### Raw body for signed webhooks
 
-`express.json()` consumes the [[effect-ts/streams|stream]] once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
+`express.json()` consumes the stream once. Stripe/GitHub sign **exact bytes**: re-serializing `req.body` breaks verification ([Stripe manual verify](https://docs.stripe.com/webhooks/signature#verify-manually)).
 
 ```json
 // OUTCOME 1: Body parsed before signature verification (Fails!)

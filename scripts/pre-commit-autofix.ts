@@ -666,19 +666,16 @@ export function fixFirstMentionWikilinks(
     // If target note is already linked, skip
     if (existingTargets.has(concept.slug.toLowerCase())) continue;
     
-    // Cross-area guard: skip single-word terms from other areas.
-    // Generic words like "HTTP", "state", "stream", "schema" in e.g. an AWS note
-    // should NOT auto-link to effect-ts/platform, effect-ts/state, etc.
-    // Multi-word terms ("Typed errors", "JWT strategy") are specific enough to link cross-area.
+    // Cross-area guard: in a different area, only allow multi-word terms.
+    // Single-word terms like "HTTP", "state", "stream" are too generic to
+    // link cross-area — they mean different things in different areas.
     const isCrossArea = concept.area !== currentArea;
-    const hasCrossAreaSafeTerm = concept.terms.some(t => t.includes(" "));
-    const skipCrossAreaShortTerms = isCrossArea && !hasCrossAreaSafeTerm;
 
     // Find all matches for all terms
     const matches: { index: number; length: number; term: string }[] = [];
     for (const term of concept.terms) {
-      // Cross-area guard: skip single-word terms from other areas
-      if (skipCrossAreaShortTerms && !term.includes(" ")) continue;
+      // Cross-area guard: skip ALL single-word terms from other areas
+      if (isCrossArea && !term.includes(" ")) continue;
       // Word boundary matching, escape regex special characters
       const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
       const re = new RegExp(`\\b${escapedTerm}\\b`, "gi");

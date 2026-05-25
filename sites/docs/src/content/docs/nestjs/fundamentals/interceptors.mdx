@@ -42,7 +42,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
 1. **Pre**: code before `next.handle()` (auth side effects, cache lookup).
 2. **Handler**: `next.handle()` returns `Observable<T>`; skipping it skips the handler.
-3. **Post**: RxJS operators on that [[effect-ts/streams|stream]] (`map`, `tap`, `catchError`, `timeout`).
+3. **Post**: RxJS operators on that stream (`map`, `tap`, `catchError`, `timeout`).
 
 </Steps>
 
@@ -83,7 +83,7 @@ flowchart LR
     H --> RPo[Route post] --> CPo[Controller post] --> GPo[Global post]
 ```
 
-A global [[effect-ts/observability|logging]] interceptor sees the **final** response after route-level `map()` transforms.
+A global logging interceptor sees the **final** response after route-level `map()` transforms.
 
 **Example:** global wraps `{ data }`, route adds `meta`: client sees both transforms; global's post runs last.
 
@@ -143,8 +143,8 @@ export class CacheInterceptor implements NestInterceptor {
 Suppose a client makes two successive requests to a route `/cats` using `CacheInterceptor`:
 
 #### 1. First request (cache miss)
-* **Internal [[effect-ts/state|state]]**: Cache map is empty. Handler executes and queries database.
-* **[[effect-ts/platform|HTTP]] exchange**:
+* **Internal state**: Cache map is empty. Handler executes and queries database.
+* **HTTP exchange**:
   ```json
   GET /cats
 

@@ -38,7 +38,7 @@ When developers think of "file upload," they usually think of a browser sending 
 
 <Steps>
 
-1. Install Multer typings (the Express [[effect-ts/platform|platform]] adapter includes the runtime dependency; only typescript types are needed):
+1. Install Multer typings (the Express platform adapter includes the runtime dependency; only typescript types are needed):
 
    <PackageManagers pkg="@types/multer" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
@@ -345,7 +345,7 @@ When developers think of "file upload," they usually think of a browser sending 
 </Aside>
 
 <Aside type="caution" title="OpenAPI / Swagger File Pickers">
-  To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a [[effect-ts/schema|schema]] with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
+  To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a schema with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
 </Aside>
 
 ---

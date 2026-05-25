@@ -133,7 +133,7 @@ If the SQS queue policy applies successfully, the command completes with zero ou
 
 ## 4. Create the EventBridge Routing Rule
 
-Define a routing rule that matches events containing a specific [[effect-ts/schema|schema]] structure. We use a declarative JSON filter pattern that matches any event published with `source` set to `"mycompany.orders"` and `detail-type` set to `"ORDER_COMPLETED"`:
+Define a routing rule that matches events containing a specific schema structure. We use a declarative JSON filter pattern that matches any event published with `source` set to `"mycompany.orders"` and `detail-type` set to `"ORDER_COMPLETED"`:
 
 ```bash
 # 1. Define the event filtering pattern

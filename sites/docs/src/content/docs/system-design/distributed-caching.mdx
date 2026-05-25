@@ -13,7 +13,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
-> Designing low-latency data access layers using read/write [[nestjs/data/caching|caching]] patterns, optimal memory eviction algorithms, and thundering herd defenses.
+> Designing low-latency data access layers using read/write caching patterns, optimal memory eviction algorithms, and thundering herd defenses.
 
 <Aside type="tip" title="Prerequisites">
 
@@ -272,7 +272,7 @@ Prevent concurrent database loads by enforcing a locking mechanism. When a cache
 
 #### Solution B: Probabilistic Early Expiration (XFetch)
 
-As a popular key nears its expiration date, read requests trigger an asynchronous background update of the cache *before* it actually expires. The key is never allowed to hit a hard miss [[effect-ts/state|state]]. The probability of triggering an early refresh increases as the key gets closer to its TTL:
+As a popular key nears its expiration date, read requests trigger an asynchronous background update of the cache *before* it actually expires. The key is never allowed to hit a hard miss state. The probability of triggering an early refresh increases as the key gets closer to its TTL:
 
 ```
 Refresh Probability = -beta * delta * ln(random()) > TTL

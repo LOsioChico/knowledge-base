@@ -27,7 +27,7 @@ In a distributed database or [[system-design/distributed-caching|caching]] clust
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
-Imagine you have a website with a cluster of `N` servers [[nestjs/data/caching|caching]] user session data. When a request comes in, how do you decide which server stores that user's session? 
+Imagine you have a website with a cluster of `N` servers caching user session data. When a request comes in, how do you decide which server stores that user's session? 
 
 A simple, traditional strategy is **modulo hashing** (also known as Modulo-N). We compute a numerical hash of the user's key and divide it by the number of active servers (`N`). The **remainder** of that division determines the server index:
 

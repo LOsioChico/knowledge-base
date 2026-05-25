@@ -111,7 +111,7 @@ The presigned URL does not grant any permission beyond what the signing identity
 - GET URL → `s3:GetObject` on the key.
 - PUT URL → `s3:PutObject` on the key.
 
-The S3 API generates presigned links purely clientside without verifying the signer's AWS privileges. If the signer lacks `s3:GetObject`, the URL will still generate successfully, but using it will return an `AccessDenied` error ([[effect-ts/platform|HTTP]] 403) from S3.
+The S3 API generates presigned links purely clientside without verifying the signer's AWS privileges. If the signer lacks `s3:GetObject`, the URL will still generate successfully, but using it will return an `AccessDenied` error (HTTP 403) from S3.
 
 ### Insufficient Permissions Gotcha
 

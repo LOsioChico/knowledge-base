@@ -63,7 +63,7 @@ export class AuthGuard implements CanActivate {
     `async` guards: JWT verify, DB lookup, remote authz service (`Promise<boolean>`).
   </TabItem>
   <TabItem label="Observable">
-    Return RxJS [[effect-ts/streams|streams]] directly when the source is already Observable ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L62) uses `lastValueFrom`).
+    Return RxJS streams directly when the source is already Observable ([`guards-consumer.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-consumer.ts#L48-L62) uses `lastValueFrom`).
   </TabItem>
 </Tabs>
 
@@ -171,10 +171,10 @@ export class CatsController {
 
 ### Show the behavior
 
-When a route is protected with `@Roles(['admin'])`, the incoming request headers and internal user [[effect-ts/state|state]] determine whether Nest allows execution or throws a `403`:
+When a route is protected with `@Roles(['admin'])`, the incoming request headers and internal user state determine whether Nest allows execution or throws a `403`:
 
 #### 1. Authorized Request (user has 'admin' role)
-* **[[effect-ts/platform|HTTP]] exchange**:
+* **HTTP exchange**:
   ```json
   GET /cats/1
   Headers: Authorization: Bearer <valid-admin-token>

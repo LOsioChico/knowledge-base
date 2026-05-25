@@ -100,7 +100,7 @@ timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 spans=[item-processor,52ms] m
 timestamp=2026-05-23T05:33:00Z level=INFO fiber=#0 message="Batch completed."
 ```
 
-Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (like Elasticsearch or Datadog) index operations by span name and instantly graph trace durations without requiring custom [[nestjs/fundamentals/middleware|middleware]] instrumentation.
+Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (like Elasticsearch or Datadog) index operations by span name and instantly graph trace durations without requiring custom middleware instrumentation.
 
 ---
 

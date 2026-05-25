@@ -67,7 +67,7 @@ While 2PC guarantees strong consistency, it introduces severe bottlenecks in hig
 
 ## The Saga Pattern (BASE Consistency)
 
-To overcome the performance limits of 2PC, modern distributed systems trade strict ACID properties for **BASE** (Basically Available, Soft [[effect-ts/state|State]], Eventual Consistency) using the **Saga Pattern**.
+To overcome the performance limits of 2PC, modern distributed systems trade strict ACID properties for **BASE** (Basically Available, Soft State, Eventual Consistency) using the **Saga Pattern**.
 
 A Saga coordinates a business transaction through a sequence of local transactions. Each step in the Saga executes a local transaction in a single service and commits instantly, releasing database locks immediately. 
 *   If all local transactions succeed, the Saga is complete.

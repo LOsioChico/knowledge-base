@@ -52,7 +52,7 @@ Nest ships a global filter:
   }
   ```
 
-Write a custom filter when you need a stable JSON shape, domain-error mapping, or [[effect-ts/observability|logging]] to Sentry/Datadog.
+Write a custom filter when you need a stable JSON shape, domain-error mapping, or logging to Sentry/Datadog.
 
 <Aside type="caution" title="Filters do not catch middleware errors">
 
@@ -113,7 +113,7 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
     }
     ```
 
-    This is the normal filter path: the exception bubbles through Nest, the filter matches, and the filter owns the [[effect-ts/platform|HTTP]] body.
+    This is the normal filter path: the exception bubbles through Nest, the filter matches, and the filter owns the HTTP body.
 
   </TabItem>
   <TabItem label="Outside Nest">

@@ -139,7 +139,7 @@ POST /cats
 
 <Aside type="caution" title="transform: true changes what the handler receives">
 
-With `whitelist: true`, unknown keys are stripped **before** your method runs. [[effect-ts/observability|Logging]] `req.body` elsewhere may not match the DTO instance passed to `@Body()`.
+With `whitelist: true`, unknown keys are stripped **before** your method runs. Logging `req.body` elsewhere may not match the DTO instance passed to `@Body()`.
 
 </Aside>
 

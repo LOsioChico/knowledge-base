@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs"
 import { readFile, readdir } from "node:fs/promises"
-import { join, relative, sep } from "node:path"
+import { dirname, join, relative, sep } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import matter from "gray-matter"
 import remarkGfm from "remark-gfm"
@@ -225,7 +226,7 @@ async function walkFiles(dir) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name)
     if (entry.isDirectory()) out.push(...(await walkFiles(path)))
-    else if (entry.isFile() && path.endsWith(".md")) out.push(path)
+    else if (entry.isFile() && (path.endsWith(".md") || path.endsWith(".mdx"))) out.push(path)
   }
   return out
 }
@@ -728,6 +729,100 @@ function validateRelationshipConsistency(result, notesBySlug, notes) {
   }
 }
 
+/**
+ * Identify line ranges in the body that belong to "See also" sections or
+ * Prerequisite Aside blocks so cross-area-links can skip wikilinks inside them.
+ */
+function parseCrossAreaExcludedRegions(body) {
+  const regions = []
+  const lines = body.split("\n")
+
+  // See also: from the heading to the next heading (or EOF)
+  for (let i = 0; i < lines.length; i++) {
+    if (/^#{1,6}\s+See\s+also/i.test(lines[i])) {
+      let end = lines.length
+      for (let j = i + 1; j < lines.length; j++) {
+        if (/^#{1,6}\s/.test(lines[j])) {
+          end = j
+          break
+        }
+      }
+      regions.push({ startLine: i + 1, endLine: end })
+    }
+  }
+
+  // Prerequisite Aside blocks: <Aside ... title="Prerequisites"> ... </Aside>
+  for (let i = 0; i < lines.length; i++) {
+    if (/<Aside[^>]*title\s*=\s*["']Prerequisites["']/i.test(lines[i])) {
+      let end = lines.length
+      for (let j = i; j < lines.length; j++) {
+        if (/<\/Aside>/i.test(lines[j])) {
+          end = j + 1
+          break
+        }
+      }
+      regions.push({ startLine: i + 1, endLine: end })
+    }
+  }
+
+  return regions
+}
+
+async function validateCrossAreaLinks(result, notes) {
+  const scriptDir = dirname(fileURLToPath(import.meta.url))
+  const allowlistPath = join(scriptDir, "cross-area-allowlist.json")
+  let allowlist = []
+  if (existsSync(allowlistPath)) {
+    try {
+      const raw = JSON.parse(await readFile(allowlistPath, "utf8"))
+      allowlist = Array.isArray(raw) ? raw : []
+    } catch {
+      allowlist = []
+    }
+  }
+  const allowSet = new Set(
+    allowlist.map((entry) => `${entry.file}::${entry.target}`),
+  )
+
+  for (const note of notes) {
+    if (isIndexNote(note)) continue
+    if (note.baseName.includes("-vs-")) continue
+
+    const noteArea = note.slug.split("/")[0]
+    const excludedRegions = parseCrossAreaExcludedRegions(note.body)
+
+    for (const link of note.bodyLinks) {
+      if (!link.target) continue
+
+      const targetArea = link.target.split("/")[0]
+      if (targetArea === noteArea) continue
+
+      const displayText = (link.alias || link.target.split("/").pop()).trim()
+      if (displayText.includes(" ")) continue
+
+      // Line relative to body (1-indexed)
+      const bodyLine = link.line - note.bodyStartLine
+      const inExcluded = excludedRegions.some(
+        (region) => bodyLine >= region.startLine && bodyLine <= region.endLine,
+      )
+      if (inExcluded) continue
+
+      // Check allowlist
+      const noteRel = note.file.replace(/^sites\/docs\/src\/content\/docs\//, "")
+      const allowKey = `${noteRel}::${link.target}`
+      if (allowSet.has(allowKey)) continue
+
+      addViolation(result, {
+        check: "cross-area-links",
+        col: link.col,
+        file: note.file,
+        line: link.line,
+        message: `cross-area wikilink [[${link.target}|${displayText}]] uses single-word display text; use a multi-word display (e.g. "Effect Platform" instead of "HTTP") or add to cross-area-allowlist.json`,
+      })
+    }
+  }
+}
+
 function validateOrphans(result, notes) {
   const inbound = new Map(notes.map((note) => [note.slug, 0]))
   for (const note of notes) {
@@ -1129,6 +1224,16 @@ export function formatHuman(result) {
       consistency,
     )
 
+  const crossArea = groupByCheck(errors, "cross-area-links")
+  if (crossArea.length === 0)
+    stdout.push("✓ cross-area-links: no single-word cross-area wikilinks in body text")
+  else
+    printGeneric(
+      stderr,
+      `✗ cross-area-links: ${crossArea.length} single-word cross-area wikilink${crossArea.length === 1 ? "" : "(s)"}`,
+      crossArea,
+    )
+
   const orphans = groupByCheck(errors, "orphans")
   if (orphans.length === 0) stdout.push("✓ orphans: all non-index notes have inbound references")
   else
@@ -1231,7 +1336,7 @@ export async function lintVault({
   for (const path of files) {
     const src = await readFile(path, "utf8")
     const parsed = parseFrontmatter(src)
-    const rel = relative(contentRoot, path).split(sep).join("/").replace(/\.md$/, "")
+    const rel = relative(contentRoot, path).split(sep).join("/").replace(/\.mdx?$/, "")
     const baseName = rel.split("/").pop()
     const data = parsed.data
     notes.push({
@@ -1272,6 +1377,7 @@ export async function lintVault({
   await validateListingCompleteness(result, notes, repoRoot, indexedFolders)
   validateRelatedSymmetry(result, notesBySlug, notes)
   validateRelationshipConsistency(result, notesBySlug, notes)
+  await validateCrossAreaLinks(result, notes)
   validateOrphans(result, notes)
   validateTagline(result, notes)
   validateInlineSourceCitations(result, notes)
@@ -1285,7 +1391,7 @@ export async function lintVault({
 
 /** Repo-relative path for a note slug (e.g. `nestjs/fundamentals/guards`). */
 export function slugToContentPath(slug) {
-  return `content/${slug}.md`
+  return `sites/docs/src/content/docs/${slug}.mdx`
 }
 
 function pairTouchesChanged(a, b, changedSet) {

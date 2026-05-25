@@ -23,7 +23,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before queu
 
 </Aside>
 
-Synchronous request-response communication (like REST over [[effect-ts/platform|HTTP]] or gRPC) binds microservices together in a tight, temporal execution chain. If Service A must call Service B synchronously, Service A is bound by Service B's latency, availability, and scaling limits. A failure in Service B cascades directly back to Service A, threatening system-wide uptime.
+Synchronous request-response communication (like REST over HTTP or gRPC) binds microservices together in a tight, temporal execution chain. If Service A must call Service B synchronously, Service A is bound by Service B's latency, availability, and scaling limits. A failure in Service B cascades directly back to Service A, threatening system-wide uptime.
 
 Asynchronous message queues solve this bottleneck. By introducing an intermediary buffer (a message broker or event log), services can communicate asynchronously. Producers push events into the queue and immediately return, allowing background consumers to process workloads at their own pace. This decoupling levels out traffic spikes, enhances system fault tolerance, and scales horizontal workers independently.
 
@@ -94,12 +94,12 @@ Asynchronous platforms are divided into two fundamentally different architecture
 Traditional brokers focus on transient delivery using a **smart broker, dumb consumer** model. 
 
 *   **Transient Storage**: Messages are treated as temporary tasks. The broker keeps messages in memory or on disk until a consumer pulls them and sends a successful acknowledgment (ACK). Upon receiving the ACK, the broker immediately deletes the message.
-*   **[[effect-ts/state|State]] Control**: The broker is responsible for tracking which consumer has locked which message, managing visibility timeouts, and coordinating message retries.
+*   **State Control**: The broker is responsible for tracking which consumer has locked which message, managing visibility timeouts, and coordinating message retries.
 *   **Routing Logic**: Supports rich routing features (like header-based routing, wildcards, and direct exchanges), allowing complex routing graphs inside the broker itself.
 
 ### Log-Based Event Streamers (e.g., Apache Kafka, Apache Pulsar)
 
-Event [[effect-ts/streams|streams]] treat messages as a durable, chronological history using a **dumb broker, smart consumer** model.
+Event streams treat messages as a durable, chronological history using a **dumb broker, smart consumer** model.
 
 *   **Durable Append-Only Log**: Messages are written to disk as an append-only, sequential log. Messages are **never** deleted upon consumption; they persist on disk until a configured time-to-live or size-based retention policy is met (for example, keeping data for 7 days).
 *   **State Control**: The broker does not track consumer state. Instead, each consumer tracks its own read position using an integer pointer called an **Offset**. To consume messages, the consumer simply reads sequentially from that offset.
@@ -151,7 +151,7 @@ Messaging platforms offer three levels of delivery guarantees:
 Messages are delivered zero or one times. The sender makes a single attempt to deliver the message but never retries.
 
 *   **Implementation**: The broker dispatches the message and immediately deletes it or updates its offset before waiting for the consumer to finish. If the consumer crashes during processing, the message is lost forever.
-*   **Use Case**: Ephemeral metrics, [[effect-ts/observability|telemetry]], or sensor logs where speed is critical and minor data loss is acceptable.
+*   **Use Case**: Ephemeral metrics, telemetry, or sensor logs where speed is critical and minor data loss is acceptable.
 
 ### 2. At-Least-Once Delivery
 
@@ -281,8 +281,8 @@ export class IdempotentConsumer {
 When a message repeatedly fails to process, it cannot remain at the head of the queue. If it does, it blocks all subsequent messages, causing massive consumer lag. These unprocessable messages are called **Poison Pills**.
 
 Common causes of poison pills include:
-*   **Malformed payloads**: The message payload has syntax errors or violates the expected JSON [[effect-ts/schema|schema]].
-*   **Business [[nestjs/recipes/validation|validation]] failures**: The message contains references to missing resources (like a deleted user).
+*   **Malformed payloads**: The message payload has syntax errors or violates the expected JSON schema.
+*   **Business validation failures**: The message contains references to missing resources (like a deleted user).
 *   **Software bugs**: The consumer code crashes on specific edge cases in the payload.
 
 ### The Dead Letter Queue (DLQ) Pipeline

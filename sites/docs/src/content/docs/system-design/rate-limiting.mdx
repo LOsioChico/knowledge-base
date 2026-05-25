@@ -62,7 +62,7 @@ flowchart TD
 The Leaky Bucket algorithm models a bucket with a small hole at the bottom. Requests are poured into the bucket like water, forming a queue. The server processes requests at a constant, smooth rate by dripping them out of the bottom hole. If the inflow rate exceeds the outflow rate, the bucket fills up. Once the bucket is completely full, incoming water overflows, meaning new requests are dropped.
 
 *   **Mechanism**: A queue of size $Q$ leaks requests at a constant output rate of $d$ requests per second.
-*   **Burst Support**: None. It smooths out bursty traffic into a completely flat, predictable [[effect-ts/streams|stream]] of processing.
+*   **Burst Support**: None. It smooths out bursty traffic into a completely flat, predictable stream of processing.
 *   **Memory Efficiency**: Low to medium. Requires maintaining a physical FIFO queue to hold the pending requests.
 *   **Use Case**: Ingress processing for asynchronous worker threads or database write pipelines where downstream systems cannot tolerate sudden load variations.
 
@@ -195,7 +195,7 @@ Rate limiting can be deployed at multiple layers of a system. The choice of arch
 ### 1. Client-Side Limiting
 Implementing rate limits within the client application (such as mobile apps or web frontends) before the network call is made.
 *   *Pros*: Eliminates unnecessary network egress cost and gateway overhead. Excellent user experience if structured as optimistic delay queues.
-*   *Cons*: Entirely untrusted. Any client can bypass the logic by calling the [[effect-ts/platform|HTTP]] endpoint directly or spoofing the client SDK.
+*   *Cons*: Entirely untrusted. Any client can bypass the logic by calling the HTTP endpoint directly or spoofing the client SDK.
 
 ### 2. API Gateway / Reverse Proxy
 Rate limiting is handled at the network edge via a dedicated proxy (e.g., Nginx, Envoy, or AWS API Gateway) before the request ever reaches application servers.
@@ -203,7 +203,7 @@ Rate limiting is handled at the network edge via a dedicated proxy (e.g., Nginx,
 *   *Cons*: Complex routing rules. Can create a single point of failure (SPOF) if proxy layers are not scaled independently.
 
 ### 3. Distributed Cache Tier (Shared Middleware)
-Application servers invoke a shared, centralized cache like Redis to store and evaluate rate limiting [[effect-ts/state|state]].
+Application servers invoke a shared, centralized cache like Redis to store and evaluate rate limiting state.
 *   *Pros*: Allows scaling the compute layer horizontally while maintaining a single, unified global limit across all servers.
 *   *Cons*: Introduces network hops (1 to 2 milliseconds of latency) for every incoming request to inspect Redis state.
 

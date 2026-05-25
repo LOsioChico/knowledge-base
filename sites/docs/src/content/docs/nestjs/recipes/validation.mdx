@@ -201,7 +201,7 @@ A request of `GET /items?page=abc` returns a successful response containing `NaN
 
 ### Query string validation and implicit conversion
 
-Query parameters always arrive in the [[effect-ts/platform|HTTP]] request as strings (e.g. `?limit=10&page=2`). To validate and coerce them into actual numeric values within a custom query DTO, use a combination of `@IsInt()`, `@IsOptional()`, and the `enableImplicitConversion: true` option:
+Query parameters always arrive in the HTTP request as strings (e.g. `?limit=10&page=2`). To validate and coerce them into actual numeric values within a custom query DTO, use a combination of `@IsInt()`, `@IsOptional()`, and the `enableImplicitConversion: true` option:
 
 ```typescript title="dto/pagination-query.dto.ts"
 import { IsInt, IsOptional, Max, Min } from "class-validator";
@@ -738,7 +738,7 @@ Standard NestJS validation pipes execute **synchronously** when parsing and tran
 
 - **Validate in chunks**: Chop massive arrays into small batches (e.g. processing batches of 100) and execute validation iteratively with `setImmediate` or `setTimeout` breaks to yield CPU back to the event loop.
 - **Microservice offloading**: Offload validation to an isolated worker thread or a secondary microservice using NestJS queues (RabbitMQ/BullMQ).
-- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized [[effect-ts/schema|schema]] libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
+- **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized schema libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
 
 ---
 
