@@ -151,7 +151,7 @@ export class AppModule {}
 }
 ```
 
-<Aside type="danger" title="detail leaks PII">
+<Aside type="caution" title="detail leaks PII">
 
 Postgres `detail` includes the offending value. Redact before sending to clients; keep full detail in server logs.
 

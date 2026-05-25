@@ -151,7 +151,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 | `ignoreExpiration` | `false` → expired token → 401 via default `handleRequest`; [strategy constructor](#jwt-strategy) |
 | `secretOrKey`      | Must match `JwtModule.register({ secret })`; [setup](#setup)                                     |
 
-<Aside type="note" title="validate runs after signature check">
+<Aside type="caution" title="validate runs after signature check">
 
 Do not re-verify the JWT in `validate()`. Use it for revocation lists, active-user checks, role enrichment. Throw `UnauthorizedException` to reject otherwise-valid tokens.
 

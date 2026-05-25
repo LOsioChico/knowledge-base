@@ -367,7 +367,7 @@ Response payload:
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="Use als.run(), not als.enterWith()">
+<Aside type="caution" title="Use als.run(), not als.enterWith()">
 
 `enterWith(store)` is highly susceptible to context leakage: it modifies the async context of the current execution globally and can leak information between concurrent HTTP requests on the same keep-alive connection. Always use `run(store, callback)` to isolate context to the callback tree.
 

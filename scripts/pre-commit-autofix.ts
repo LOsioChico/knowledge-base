@@ -583,6 +583,7 @@ function buildProseMask(body: string): string {
 
 interface Concept {
   slug: string;
+  area: string;
   terms: string[];
 }
 
@@ -618,8 +619,11 @@ function buildConceptCatalog(notes: Note[]): Concept[] {
         add(baseTerm);
       }
       
+      // Derive area from slug (first path segment)
+      const area = note.slug.split("/")[0] || "";
+      
       terms.sort((a, b) => b.length - a.length);
-      return { slug: note.slug, terms };
+      return { slug: note.slug, area, terms };
     })
     .sort((a, b) => {
       const aMax = a.terms[0] ? a.terms[0].length : 0;
@@ -633,6 +637,8 @@ export function fixFirstMentionWikilinks(
   currentSlug: string,
   concepts: Concept[]
 ): { updatedBody: string, modified: boolean } {
+  // Derive the current file's area from its slug
+  const currentArea = currentSlug.split("/")[0] || "";
   let updatedBody = body;
   let modified = false;
 
@@ -659,10 +665,20 @@ export function fixFirstMentionWikilinks(
     if (concept.slug.toLowerCase() === currentSlug.toLowerCase()) continue;
     // If target note is already linked, skip
     if (existingTargets.has(concept.slug.toLowerCase())) continue;
+    
+    // Cross-area guard: skip single-word terms from other areas.
+    // Generic words like "HTTP", "state", "stream", "schema" in e.g. an AWS note
+    // should NOT auto-link to effect-ts/platform, effect-ts/state, etc.
+    // Multi-word terms ("Typed errors", "JWT strategy") are specific enough to link cross-area.
+    const isCrossArea = concept.area !== currentArea;
+    const hasCrossAreaSafeTerm = concept.terms.some(t => t.includes(" "));
+    const skipCrossAreaShortTerms = isCrossArea && !hasCrossAreaSafeTerm;
 
     // Find all matches for all terms
     const matches: { index: number; length: number; term: string }[] = [];
     for (const term of concept.terms) {
+      // Cross-area guard: skip single-word terms from other areas
+      if (skipCrossAreaShortTerms && !term.includes(" ")) continue;
       // Word boundary matching, escape regex special characters
       const escapedTerm = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
       const re = new RegExp(`\\b${escapedTerm}\\b`, "gi");

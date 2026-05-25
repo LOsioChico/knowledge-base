@@ -58,7 +58,7 @@ Unblessed 5-minute ping keeps **one** env warm: second concurrent request still 
 - **6 MB sync response**: stream via S3 [[aws/s3/presigned-urls|presigned URLs]] or response streaming.
 - **No long-lived sockets** on Function URL: API Gateway WebSocket or other compute.
 
-<Aside type="note" title="Durable Functions change the model">
+<Aside type="tip" title="Durable Functions change the model">
 
 Can run up to one year with checkpoints ([source](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html)): different SDK contract, not "timeout lifted".
 

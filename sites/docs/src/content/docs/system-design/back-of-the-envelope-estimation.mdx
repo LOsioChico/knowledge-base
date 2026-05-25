@@ -24,7 +24,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before buil
 
 In a systems design interview or real-world architectural review, you are frequently asked to estimate system capacity and performance requirements. This process, known as **back-of-the-envelope estimation**, uses a combination of thought experiments, basic arithmetic, and common performance constants to get a quantitative feel for which designs will meet requirements.
 
-Without quantitative math, architectures are designed in the dark: you cannot choose a database, size cache clusters, or provision network [[nestjs/fundamentals/pipes|pipes]] without knowing the raw throughput and storage volumes your system must handle under peak pressure.
+Without quantitative math, architectures are designed in the dark: you cannot choose a database, size cache clusters, or provision network pipes without knowing the raw throughput and storage volumes your system must handle under peak pressure.
 
 ---
 
@@ -120,12 +120,13 @@ If a system relies on multiple sequential components to complete a request (for 
 A_system = A_1 * A_2 * ... * A_n
 ```
 
-> **The Cost of Series Chains**:
-> Imagine a system with a Web Server (99.9% availability) and a Database (99.9% availability) set up in series. The compound availability drops:
-> ```
-> A_system = 0.999 * 0.999 = 0.998001 (99.8% availability)
-> ```
-> By chaining two 99.9% components without redundancy, you have lowered your availability to 99.8%, doubling your expected downtime!
+<Aside type="caution" title="The Cost of Series Chains">
+Imagine a system with a Web Server (99.9% availability) and a Database (99.9% availability) set up in series. The compound availability drops:
+```
+A_system = 0.999 * 0.999 = 0.998001 (99.8% availability)
+```
+By chaining two 99.9% components without redundancy, you have lowered your availability to 99.8%, doubling your expected downtime!
+</Aside>
 
 #### Parallel Components (Redundant Clustering)
 

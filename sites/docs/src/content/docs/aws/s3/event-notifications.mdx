@@ -64,9 +64,9 @@ S3 sends a one-time `s3:TestEvent` on configure: if missing, fix destination pol
 - **Not ordered**: use `versionId` / `LastModified`, not delivery order.
 - **Seconds typical**, sometimes minutes ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications)).
 
-## Recursion footgun
-
+<Aside type="caution" title="Recursion footgun">
 Lambda writes back to the same bucket without prefix filter → infinite loop billed by the second. Safe patterns: separate buckets or disjoint prefixes (`in/` trigger, `out/` writes).
+</Aside>
 
 <Aside type="caution" title="Overlapping filters rejected">
 

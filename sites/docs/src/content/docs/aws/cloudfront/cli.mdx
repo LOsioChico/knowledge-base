@@ -54,7 +54,9 @@ aws cloudfront update-distribution \
   --if-match "$ETAG"
 ```
 
+<Aside type="caution" title="Stale ETag rejects updates">
 Stale `--if-match` rejects the update: refetch and retry.
+</Aside>
 
 ## Tips
 

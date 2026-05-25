@@ -327,7 +327,7 @@ Call `TypeOrmModule.forRoot` once. Each feature uses `forFeature([Entity])`. Mul
 
 </Aside>
 
-<Aside type="note" title="EntityNotFoundError is not QueryFailedError">
+<Aside type="caution" title="EntityNotFoundError is not QueryFailedError">
 
 `findOneOrFail()` throws `EntityNotFoundError`. Add `@Catch(EntityNotFoundError)` or use `findOne` + `NotFoundException` as in step 4.
 

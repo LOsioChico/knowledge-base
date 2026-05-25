@@ -283,8 +283,9 @@ In high-throughput routing servers, a VNode count between 100 and 200 is general
 ### 1. Heterogeneous Server Capacities
 If Node-0 has double the RAM/CPU of Node-1, you can assign it double the VNodes (namely, 200 replicas for Node-0 and 100 replicas for Node-1). This forces the hash ring to route proportionally more keys to Node-0, mapping capacity directly to cluster load.
 
-### 2. Cascading Cache Stampedes
+<Aside type="caution" title="Cascading Cache Stampedes">
 If a server goes down, its keys immediately shift to the next clockwise server. If the keys are temporary cache layers, the clockwise neighbor will experience a sudden cache miss stampede. Distributed systems mitigate this by replicating each key to multiple successive clockwise servers on the ring (referred to as a replication factor, `R`) instead of just a single server.
+</Aside>
 
 ---
 

@@ -142,7 +142,7 @@ export class AppModule {}
 
 </Aside>
 
-<Aside type="note" title="GraphQL">
+<Aside type="caution" title="GraphQL">
 
 Interceptors run per field resolver, not per request. `CacheInterceptor` keys by URL and collides across resolvers. Cache in the resolver or service instead.
 
@@ -245,7 +245,7 @@ export class HttpCacheInterceptor extends CacheInterceptor {
 
 Returning `undefined` skips caching ([cache.interceptor.ts#L50-L52](https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts#L50-L52)).
 
-<Aside type="danger" title="Authenticated GET without trackBy leaks across users">
+<Aside type="caution" title="Authenticated GET without trackBy leaks across users">
 
 Default key is the URL. `GET /me` from Alice and Bob shares one entry. Subclass and include the user id, or use imperative keys.
 

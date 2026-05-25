@@ -344,7 +344,7 @@ When developers think of "file upload," they usually think of a browser sending 
   `FileInterceptor` lives in `@nestjs/platform-express` and does not work under `@nestjs/platform-fastify`. If you are using Fastify, install and register `@fastify/multipart` and use Fastify's native request parsing APIs instead.
 </Aside>
 
-<Aside type="note" title="OpenAPI / Swagger File Pickers">
+<Aside type="caution" title="OpenAPI / Swagger File Pickers">
   To show a file-upload picker in the Swagger UI, decorate the controller route with `@ApiConsumes("multipart/form-data")` and define a [[effect-ts/schema|schema]] with `type: "string", format: "binary"`. Otherwise, Swagger UI will render a generic text input instead of a file upload button.
 </Aside>
 

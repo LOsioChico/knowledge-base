@@ -78,7 +78,7 @@ No string tokens or decorator metadata: missing dependencies are compile errors,
 
     `Random.Default` is the generated layer. Variant keys map to layer constructors (`succeed`, `sync`, `effect`, `scoped`).
 
-    <Aside type="note" title="Experimental API">
+    <Aside type="caution" title="Experimental API">
 
     `Effect.Service` may change between releases ([source note](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L13582)). Pin `effect` and read release notes when upgrading. Libraries usually stick to `Context.Tag` + `Layer`.
 

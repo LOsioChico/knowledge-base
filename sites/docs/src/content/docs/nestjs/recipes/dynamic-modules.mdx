@@ -343,7 +343,7 @@ If the dynamic options load an empty bucket name, the service throws, and the co
 
 ## Gotchas and Best Practices
 
-<Aside type="danger" title="Dynamic Module Deduplication Collision">
+<Aside type="caution" title="Dynamic Module Deduplication Collision">
 
 If you import the same module class twice in the same `imports` list with different configurations, NestJS will **deduplicate** the imports, meaning only the first module configuration will take effect:
 

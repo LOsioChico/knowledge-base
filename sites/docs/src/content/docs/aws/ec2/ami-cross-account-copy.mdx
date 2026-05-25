@@ -95,9 +95,9 @@ aws ec2 wait image-available --profile dest --region DEST_REGION --image-ids $NE
 
 Tags from other accounts do not copy ([CopyingAMIs](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html)). Tag the new AMI and each snapshot ID in account B separately.
 
-## Anti-pattern: share without copy
-
+<Aside type="caution" title="Anti-pattern: share without copy">
 Destination can launch while A owns the AMI: closing A or revoking share loses access. For "keep forever in B", **copy is mandatory**.
+</Aside>
 
 ## See also
 

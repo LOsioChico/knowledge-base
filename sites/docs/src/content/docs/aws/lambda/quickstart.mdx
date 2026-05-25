@@ -100,7 +100,7 @@ aws lambda create-function \
   --region "$REGION"
 ```
 
-<Aside type="tip" title="Use fileb:// for binary data">
+<Aside type="caution" title="Use fileb:// for binary data">
 The standard `file://` prefix tells the AWS CLI to parse the target file as text (e.g. JSON). You must specify `fileb://` (file binary) to transmit the raw zipped bytes.
 </Aside>
 
