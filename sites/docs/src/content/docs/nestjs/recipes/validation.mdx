@@ -464,7 +464,7 @@ The pipe automatically traverses the array and throws a nested path error:
 
 To return clean, standardized validation details (e.g. mapping internal validator constraints to a friendly list of fields), customize the `exceptionFactory` in `main.ts`:
 
-```typescript title=\"main.ts\" ins={4,11-19}
+```typescript title="main.ts" ins={4,11-19}
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { BadRequestException, ValidationPipe } from "@nestjs/common";
