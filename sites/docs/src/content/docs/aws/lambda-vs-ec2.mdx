@@ -26,8 +26,8 @@ Before diving in, make sure you understand:
 | --- | --- | --- | --- |
 | Unit | Function | Container task | VM |
 | Scale-to-zero | Yes | No | No |
-| Max execution | **15 min** ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)) | Unlimited | Unlimited |
-| Cold start | Under 100 ms to 1+ s ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#cold-start-latency)) | Tens of seconds | Minutes |
+| Max execution | **15 min** ([source](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html)); [tradeoffs](#hard-limits) | Unlimited | Unlimited |
+| Cold start | Under 100 ms to 1+ s ([source](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html#cold-start-latency)); [discussion](#cold-starts--warming-anti-patterns) | Tens of seconds | Minutes |
 | [Persistent connections](#db-connections--rds-proxy) | No (use RDS Proxy) | Yes | Yes |
 | [WebSockets on compute](#hard-limits) | No (API GW WebSocket) | Yes | Yes |
 | [Pricing](#pricing-math-one-concrete-workload) | Per req + GB-s | Per vCPU-s + GB-s | Per instance-hour |

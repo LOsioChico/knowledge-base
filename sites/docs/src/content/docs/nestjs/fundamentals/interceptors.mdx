@@ -210,7 +210,7 @@ Serialization: [[nestjs/recipes/serialization|response serialization]] (`ClassSe
 | Symptom | Likely cause |
 | --- | --- |
 | Handler never runs | Returned `of(cached)` or threw in pre without `next.handle()` (worked example: [CacheInterceptor](#cache-short-circuit)) |
-| DI `undefined` | Passed `new Interceptor()` to `@UseInterceptors` |
+| DI `undefined` | Passed `new Interceptor()` to `@UseInterceptors` ([pass the class](#pass-the-class-not-an-instance)) |
 | Pre-phase throw not caught by `catchError` on stream | Error never reached `next.handle()`: use `try/catch` or `defer` |
 
 ## See also

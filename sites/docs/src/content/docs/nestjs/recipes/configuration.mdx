@@ -340,7 +340,9 @@ In modern containerized deployments, secrets are stored in secure key vaults (su
 ### Pattern 2: Dynamic Runtime Fetching (AWS Secrets Manager)
 For enterprise-grade security, fetch configuration credentials dynamically at application startup from a dedicated secrets vault. This bypasses static env variable storage completely.
 
-Create an asynchronous custom loader file `database-secrets.loader.ts`:
+Create an asynchronous custom loader file `database-secrets.loader.ts`. Install the AWS SDK client first:
+
+<PackageManagers pkg="@aws-sdk/client-secrets-manager" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 ```typescript title="database-secrets.loader.ts"
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";

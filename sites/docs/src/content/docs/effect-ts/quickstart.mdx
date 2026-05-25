@@ -132,7 +132,7 @@ console.log("returned:", result);
 
 ## 4. Add a typed error
 
-Failures belong in the type signature. Wrap fallible work with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
+Failures belong in the type signature (see [[effect-ts/typed-errors|Typed errors]]). Wrap fallible work with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
 
 ```ts twoslash title="typed-error.ts"
 import { Data, Effect } from "effect";
@@ -157,7 +157,7 @@ console.log(Effect.runSync(recover(parseJson("not json"))));
 // { recovered: "invalid JSON: SyntaxError: Unexpected token 'o', \"not json\" is not valid JSON" }
 ```
 
-[`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) narrows on `_tag` and **removes** the handled error from `E`; after `recover` handles `ParseError`, both examples are safe to pass to `Effect.runSync`.
+[`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) (see also [[effect-ts/typed-errors|Typed errors]]) narrows on `_tag` and **removes** the handled error from `E`; after `recover` handles `ParseError`, both examples are safe to pass to `Effect.runSync`.
 
 ## 5. Where to go next
 

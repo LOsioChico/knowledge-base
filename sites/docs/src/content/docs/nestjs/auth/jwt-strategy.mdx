@@ -23,7 +23,7 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into the JWT
 
 | Layer        | Package                        | Role                                           |
 | ------------ | ------------------------------ | ---------------------------------------------- |
-| Orchestrator | `passport`                     | Strategy registry and verify callback          |
+| Orchestrator | `passport`                     | Strategy registry and verify callback; [login setup](#login-endpoint) |
 | Strategy     | [`passport-jwt`](#jwt-strategy) | Extract and verify JWT from the request        |
 | Nest wrapper | [`@nestjs/passport`](#protected-route) | `PassportStrategy`, `AuthGuard(name)`          |
 | Your code    | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` (see [JwtStrategy](#jwt-strategy) and [JwtAuthGuard](#protected-route)) |

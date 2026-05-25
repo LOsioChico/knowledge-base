@@ -10,7 +10,7 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 ## TL;DR
 
 - Every HTTP request walks the same **pipeline**: middleware → guards → interceptors → pipes → handler → (filters on error). See [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
-- **[[nestjs/fundamentals/guards|Guards]]** authorize; **[[nestjs/fundamentals/pipes|pipes]]** validate one argument; **[[nestjs/fundamentals/interceptors|interceptors]]** wrap the handler stream; **filters** shape errors.
+- **[[nestjs/fundamentals/guards|Guards]]** authorize; **[[nestjs/fundamentals/pipes|pipes]]** validate one argument; **[[nestjs/fundamentals/interceptors|interceptors]]** wrap the handler stream; **[[nestjs/fundamentals/exception-filters|filters]]** shape errors.
 - **Globals** register once via `APP_*` (DI) or `useGlobalX()` (manual `new`): [[nestjs/fundamentals/global-providers|Global enhancers]].
 - **Boot/shutdown** is separate from per-request flow: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
 - Default dev build in this KB: [[nestjs/recipes/swc-setup|SWC]] + `--type-check`.
@@ -59,7 +59,7 @@ flowchart TD
     Review the [[nestjs/fundamentals|Fundamentals MOC]] to understand the core parts of NestJS.
   </Card>
   <Card title="Recipes" icon="rocket">
-    Explore [[nestjs/recipes/validation|Validation]], file uploads, SWC setup, and [[nestjs/recipes/trace-id|request tracing]] (see [[nestjs/recipes|all recipes]]).
+    Explore [[nestjs/recipes/validation|Validation]], [[nestjs/recipes/file-uploads|file uploads]], [[nestjs/recipes/swc-setup|SWC setup]], and [[nestjs/recipes/trace-id|request tracing]] (see [[nestjs/recipes|all recipes]]).
   </Card>
   <Card title="Data" icon="document">
     Configure [[nestjs/data/typeorm/postgresql-setup|TypeORM]] database setup and configure [[nestjs/data/caching|caching]] layers (see [[nestjs/data|all data guides]]).
