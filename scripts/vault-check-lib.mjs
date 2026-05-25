@@ -161,7 +161,7 @@ export function formatHumanReport(report) {
     if (report.publishParity) {
       lines.push(
         report.publishParity.ok
-          ? `✓ publish-parity: ${report.publishParity.vaultCount} legacy vault covered by ${report.publishParity.mdxCount} MDX${report.publishParity.mdxOnlyCount ? ` (${report.publishParity.mdxOnlyCount} MDX-only)` : ""}`
+          ? `✓ publish-parity: ${report.publishParity.mdxCount} MDX pages published`
           : `✗ publish-parity: ${report.publishParity.errors.join("; ")}`,
       );
       lines.push("");
@@ -235,7 +235,7 @@ export function formatHumanReport(report) {
   if (report.publishParity) {
     lines.push(
       report.publishParity.ok
-        ? `✓ publish-parity: ${report.publishParity.vaultCount} legacy vault covered by ${report.publishParity.mdxCount} MDX${report.publishParity.mdxOnlyCount ? ` (${report.publishParity.mdxOnlyCount} MDX-only)` : ""}`
+        ? `✓ publish-parity: ${report.publishParity.mdxCount} MDX pages published`
         : `✗ publish-parity: ${report.publishParity.errors.join("; ")}`,
     );
     lines.push("");

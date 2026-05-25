@@ -100,13 +100,13 @@ test("formatHumanReport includes publish parity status", () => {
     links: { ok: true, violations: [], warnings: [] },
     pass0: { ok: true, findings: 0, files: 1, details: [] },
     auditSkipped: "CURSOR_API_KEY not set",
-    publishParity: { ok: true, vaultCount: 82, mdxCount: 82, mdxOnlyCount: 0, errors: [] },
+    publishParity: { ok: true, vaultCount: 0, mdxCount: 82, mdxOnlyCount: 82, errors: [] },
     suggestions: [],
   };
 
   const output = formatHumanReport(report);
 
-  assert.match(output, /publish-parity: 82 legacy vault covered by 82 MDX/);
+  assert.match(output, /publish-parity: 82 MDX pages published/);
 });
 
 test("formatHumanReport shows MDX-only changes", () => {

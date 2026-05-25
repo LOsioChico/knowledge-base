@@ -23,7 +23,7 @@ import type { FlatFinding, RuleId } from "./types.js";
 const AUDIT_DIR: string = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT: string = resolve(AUDIT_DIR, "../..");
 
-const hasVault: boolean = existsSync(resolve(REPO_ROOT, "content"));
+const hasMdx: boolean = existsSync(resolve(REPO_ROOT, "sites/docs/src/content/docs"));
 
 interface CorpusManifest {
   paths: string[];
@@ -116,7 +116,7 @@ describe("dismissed registry contract", (): void => {
     );
   });
 
-  it("filterDismissed suppresses manifest dismissedShouldSuppress entries", { skip: !hasVault }, (): void => {
+  it("filterDismissed suppresses manifest dismissedShouldSuppress entries", { skip: !hasMdx }, (): void => {
     const manifest: CorpusManifest = loadManifest();
     const entries = loadDismissed();
     const bySig = new Map(entries.map((e) => [e.sig, e]));
