@@ -48,7 +48,7 @@ export function changedPathsFromBase(ref, repoRoot = REPO_ROOT) {
 /** Same resolution as audit-notes `targetsFromBase`. */
 export function targetsFromBase(ref, repoRoot = REPO_ROOT) {
   return changedPathsFromBase(ref, repoRoot)
-    .filter((p) => p.startsWith("content/") && p.endsWith(".md"))
+    .filter((p) => p.startsWith("sites/docs/src/content/docs/") && p.endsWith(".mdx"))
     .filter((p) => existsSync(resolve(repoRoot, p)));
 }
 
@@ -139,7 +139,7 @@ export function formatHumanReport(report) {
   lines.push("");
 
   if (report.changedFiles.length === 0) {
-    lines.push("No content/**/*.md changes in range.");
+    lines.push("No MDX changes in range.");
     if (mdxCount > 0) {
       lines.push("");
       lines.push("Changed MDX:");
@@ -280,7 +280,7 @@ export async function buildVaultCheckReport({ baseRef, repoRoot = REPO_ROOT }) {
       suggestions: [],
       pass0: { ok: true, findings: 0, files: 0, details: [] },
       pass0Mdx: null,
-      auditSkipped: changedMdxFiles.length === 0 ? "no changed content/**/*.md files" : undefined,
+      auditSkipped: changedMdxFiles.length === 0 ? "no changed MDX files" : undefined,
       mdxAuditSkipped: undefined,
       publishParity,
     };

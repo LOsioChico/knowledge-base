@@ -97,7 +97,7 @@ Rules:
 
 ## AWS service indexes (slim shape)
 
-In the `content/aws/` area, **only `aws/s3/index.md` is a deeply-developed concept note**. Every other service's `index.md` follows a slim shape that fits on roughly one screen:
+In the `sites/docs/src/content/docs/aws/` area, **only `aws/s3/index.mdx` is a deeply-developed concept note**. Every other service's `index.mdx` follows a slim shape that fits on roughly one screen:
 
 1. Tagline (single `>` blockquote, mandatory).
 2. `## TL;DR` — 4-6 bullets naming the service's primitives, defaults, pricing model.
@@ -207,7 +207,7 @@ Only after those five steps may you draft the note. Then:
 
 6. Add the note with the full frontmatter schema.
 7. Update `related:` in EVERY note you linked from.
-8. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
+8. Update the closest `index.mdx` MOC and, if a new area, the root `sites/docs/src/content/docs/index.mdx`.
 9. **Audit every code block you touched** against the "Code examples (MANDATORY)" rules below: each fenced ` ```ts ` / ` ```typescript ` block (including those inside `> [!warning]` / `> [!example]` callouts) must carry all imports it uses, wrap class methods in their `@Controller` / `@Module` / `@Injectable` container, declare every field/constructor it references, and have zero undefined symbols. Do this as a final pass before commit, not while drafting — it's the step that's easiest to skip and the one that produces the most reader-facing breakage.
 
 Skipping any step is a bug.
@@ -223,6 +223,7 @@ Skipping any step is a bug.
 - **Listing-completeness rule** (same linter): every note under an indexed sub-folder (currently `nestjs/recipes/`) MUST appear in the area `index.md`. Add new indexed folders to the `INDEXED_FOLDERS` array in `scripts/lint-wikilinks.mjs`.- **Discoverability rule** (same linter, BLOCKING): every pair of notes whose TF-IDF cosine similarity is ≥ 0.20 MUST be connected — either via `related:` (either direction), a body wikilink (either direction), or an explicit `unrelated:` opt-out (either direction). This is the safety net for "you don't know what you don't know": when you write a new note, the linter compares it against every existing note and flags semantic neighbors you didn't realize existed. Resolution is one of three: (1) add the missing `related:` link both ways, (2) add a body wikilink at first mention, or (3) if the overlap is genuinely coincidental (shared vocabulary, different topic), declare it via `unrelated:` on either side. **You cannot ignore the warning** — every above-threshold pair must be acknowledged. Threshold (0.20) was calibrated against the natural similarity cliff in the current vault; revisit if the false-positive rate grows. Algorithm details: title × 3 + aliases × 2 + masked body × 1, smoothed IDF, ~120 English stopwords, `index` notes excluded.
 - **Agents-mirror rule** (same linter, BLOCKING): `.github/copilot-instructions.md` MUST be a byte-identical copy of `AGENTS.md`. The mirror exists so VS Code Copilot Chat (which reads `.github/copilot-instructions.md` universally) gets the same conventions as agentic flows that read `AGENTS.md`. After any edit to `AGENTS.md`, run `cp AGENTS.md .github/copilot-instructions.md` and commit both. The linter fails CI on drift.
 - **Inline-source-citations rule** (same linter, BLOCKING): every inline link in note bodies pointing at a primary-source URL (currently `https://github.com/<owner>/<repo>/blob/...` and `https://docs.nestjs.com/...`) must have its fragment-stripped form present in the note's frontmatter `source:` list. Fragment (`#L<m>-L<n>`, `#section-anchor`) and trailing slash are stripped before comparison, so inline links keep their precision while `source:` stays file-level. Don't try to remember this rule — the linter catches misses and tells you exactly which URL to add. Add new domain prefixes to `PRIMARY_SOURCE_RE` in `scripts/lint-wikilinks-core.mjs` when the vault grows beyond NestJS sources.
+- **Cross-area wikilink rule** (enforced by `bun run lint:mdx-wikilinks`, BLOCKING): body wikilinks that cross area boundaries (target area ≠ file area) MUST use **multi-word display text** that includes area context (e.g. `[[effect-ts/schema|Schema deep-dive]]`, `[[nestjs/recipes/rate-limiting|NestJS Rate Limiting Recipe]]`). Single-word display text like `[[effect-ts/platform|HTTP]]` or `[[effect-ts/state|state]]` is forbidden — these words are too generic to link cross-area meaningfully. Index/MOC files, `*-vs-*` comparison notes, `## See also` sections, and prerequisite Aside blocks are exempt. Intentional exceptions go in `scripts/cross-area-allowlist.json`.
 - A note never wikilinks to itself. Self-mentions stay plain. **In-note cross-references** (e.g., a row in a reference table pointing to a worked example further down the same note) MUST use a plain markdown anchor link like `[the section below](#defaultvaluepipe)` — never `[[note#Heading]]`, which the linter treats as a self-wikilink and rejects.
 - **Reference-table linking rule**: when a note contains a reference table that enumerates entities (built-in pipes, built-in guards, decorators, common operators, etc.), every row whose entity is **demonstrated by a worked example** — either elsewhere in the same note or in another note — MUST link to that example from the row's notes/description column. Use a wikilink for cross-note targets (`[[nestjs/recipes/file-uploads|File uploads recipe]]`) and a plain anchor for in-note targets (`[composing pipes](#common-recipes)`). A row with no example to point to stays unlinked. Audit this every time you add a new example or a new table row: a freshly added example without a back-link from the table is a discoverability bug.
 - `related:` is the safety net (machine-readable), wikilinks are the surface (reader-facing). Both must agree: if it's in `related:`, the body should link it at first mention; if the body links it, it must be in `related:`.
@@ -236,7 +237,7 @@ Skipping any step is a bug.
 
 ## Recipe template
 
-Use `content/nestjs/recipes/file-uploads.md` as the canonical example. Structure:
+Use `sites/docs/src/content/docs/nestjs/recipes/file-uploads.mdx` as the canonical example. Structure:
 
 1. tagline (single `>` blockquote)
 2. setup (`npm install` + types)
@@ -421,7 +422,7 @@ Open vs collapsed (`[!type]` vs `[!type]-`):
 
 Negative example: `> [!warning]- Pass the class, not an instance` collapsed for the *primary* binding rule of a fundamentals note — the reader misses it and writes broken code. Required: open the canonical "pass the class" warning at the top of the binding section, collapse the secondary footguns ("BaseExceptionFilter cannot be `new`'d at route scope", etc.) below it.
 
-No automated enforcement (callout intent is too subjective for a linter). Audit advisory: `grep -rE '^> \[!(tip|success|question|failure|danger|bug|quote|note|abstract|cite)\]' content/` should always return zero matches.
+No automated enforcement (callout intent is too subjective for a linter). Audit advisory: `grep -rE '^> \[!(tip|success|question|failure|danger|bug|quote|note|abstract|cite)\]' sites/docs/src/content/docs/` should always return zero matches.
 
 ## Open review items in notes
 
@@ -436,7 +437,7 @@ Rules:
 
 - Use `[!todo]-` (collapsed) so the reader doesn't trip on it; the maintainer expands during review sweeps.
 - One concrete, actionable sentence. If it grows past two lines, it's no longer a polish item — promote it to a real edit or split it into a planned note.
-- Greppable: `grep -rn "\[!todo\]" content/` lists every open item across the vault.
+- Greppable: `grep -rn "\[!todo\]" sites/docs/src/content/docs/` lists every open item across the vault.
 - Resolve or delete in the same PR that addresses the underlying concern. Do not let `[!todo]-` callouts accumulate as decoration.
 
 ## Code examples (MANDATORY)
@@ -504,7 +505,7 @@ Skip for trivial, mechanical, single-file changes (typo fix, lint fix, adding on
 
 - To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
 - **MDX links:** `[[slug|label]]` in prose and lists; **never** `[[slug|label]]` inside markdown table rows (the `|` breaks columns). In tables use `[label](/knowledge-base/slug/)`. See `docs/STARLIGHT-FEATURES.md`. Enforced by `bun run lint:mdx-table-wikilinks`.
-- **Vault** preview: Obsidian on `content/` (wikilinks, graph). The vault is never published as HTML; only `sites/docs/dist/` ships to GitHub Pages.
+- **Vault (removed)**: The legacy `content/` vault has been fully migrated and removed. Only `sites/docs/dist/` ships to GitHub Pages.
 - **Default post-edit quality gate** (from repo root; full publish parity, diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
@@ -513,10 +514,10 @@ Skip for trivial, mechanical, single-file changes (typo fix, lint fix, adding on
 
   Linter-only (no LLM audit), matches CI lint job: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Install deps under `scripts/audit-notes` and `sites/docs` first. If formatting fails, run `bun run format` in `scripts/audit-notes/`. Prettier ignores the top-level docs (`AGENTS.md`, `CLAUDE.md`, `README.md`); see `.prettierignore`. `vault:check` is not a full `lint:ci` replacement: it scopes wikilink and Pass 0 output to changed vault files and does not run Prettier. Forbidden: committing after running only a subset (e.g. vault wikilinks without `lint:docs` after MDX edits). If a commit slips through with a lint failure, the next commit fixes it; do not chain more content edits on top of a red CI.
 - **Corpus regression** (after changing `skip-zones.ts`, `dismissed.json` patterns, or `fixtures/corpus-manifest.json`): `cd scripts/audit-notes && bun test`. Skip-zone rules live in [`skip-zones.ts`](scripts/audit-notes/skip-zones.ts); the manifest lists paths/lines that must stay silent for specific rules ([`corpus-silent.test.ts`](scripts/audit-notes/corpus-silent.test.ts)).
-- **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `bun run autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `bun run autofix` (no args walks `content/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
+- **Frontmatter `source:` is auto-maintained** by the linter rule `source-list-completeness` (BLOCKING) plus `bun run autofix` (in `scripts/audit-notes/`). The contract is bidirectional: every URL in `source:` must appear somewhere in the body, and every inline primary-source URL must appear in `source:` (the existing `inline-source-citations` rule). Workflow: cite primary sources **inline** in prose with the precise anchor (`#L<m>-L<n>` or `#section`); run `bun run autofix` (no args walks `sites/docs/src/content/docs/`) and it strips any `source:` URL not referenced in the body. Forbidden: editing `source:` by hand to satisfy an audit finding. Adding a URL to `source:` that does not appear inline is a phantom citation: the linter catches it at commit time, the autofixer strips it, and the underlying claim still has no reader-visible source. The single source of truth for which URLs back a note is the inline citations.
 - After editing any `source:` frontmatter or adding inline citations to GitHub blob URLs, run `scripts/check-source-urls.sh` from the repo root. It HEADs every `https://github.com/<owner>/<repo>/blob/<ref>/<path>` URL through `raw.githubusercontent.com` and fails on any 404. Local-only (network-dependent, hits GitHub's 60 req/hr unauth limit so unsuited for CI). Forbidden: skipping this after touching frontmatter URLs — typos like `parse-file-pipe-builder.ts` (real path: `parse-file-pipe.builder.ts`) sail past every other lint and only surface as silent gaps in the LLM audit's source verification.
 - Commit only when explicitly asked. Do NOT push: pushing is the user's call.
-- After committing any change under `content/`, run the audit on touched files and surface findings in chat for triage. **Default post-edit workflow** (diff-aware, no full-vault cost):
+- After committing any change under `sites/docs/src/content/docs/`, run the audit on touched files and surface findings in chat for triage. **Default post-edit workflow** (diff-aware, no full-vault cost):
 
   ```bash
   set -a; source .env; set +a   # loads CURSOR_API_KEY (gitignored)

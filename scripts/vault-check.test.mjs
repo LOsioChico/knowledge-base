@@ -81,8 +81,8 @@ test("buildLinkSuggestions includes discoverability pairs for changed files", ()
     ],
   };
   const suggestions = buildLinkSuggestions(lintResult, [
-    "content/nestjs/a.md",
-    "content/nestjs/c.md",
+    "sites/docs/src/content/docs/nestjs/a.mdx",
+    "sites/docs/src/content/docs/nestjs/c.mdx",
   ]);
   assert.equal(suggestions.length, 2);
   const blocking = suggestions.find((s) => s.a === "nestjs/a");
