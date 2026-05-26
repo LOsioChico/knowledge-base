@@ -37,7 +37,7 @@ Does order/spatial structure teach (pipeline, FILO, decision flow)?
 | `caution` | Footgun, easy misconfiguration |
 | `danger` | Security / data-loss class (whitelist off, mass assignment) |
 
-No `[!tip]`, `[!success]`, etc. (vault vocabulary stays in vault).
+No `[!tip]`, `[!success]`, etc. (only the four canonical callout types).
 
 ## Decoration test
 
@@ -46,4 +46,4 @@ Remove a component mentally. If the page is **equally clear**, remove it.
 ## Minimum bar
 
 Every published MDX page needs **at least one** structural aid (table, Steps, Tabs, Aside, or mermaid)
-**unless** the page is a deliberately minimal stub (prefer not to ship stubs — keep them vault-only until enriched).
+**unless** the page is a deliberately minimal stub (prefer not to ship stubs — keep them as drafts until enriched).

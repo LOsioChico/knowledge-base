@@ -64,4 +64,4 @@ moment it's drafted.
 4. Re-grep after edits to confirm clean.
 
 The audit is cheap (one grep, a few seconds of judgement per hit). The bug it prevents is
-expensive (silent misinformation that erodes the vault's trustworthiness).
+expensive (silent misinformation that erodes the knowledge base's trustworthiness).

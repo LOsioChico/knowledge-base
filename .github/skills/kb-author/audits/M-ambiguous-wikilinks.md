@@ -3,7 +3,7 @@
 The first-mention linter (`scripts/lint-wikilinks.mjs`) builds its concept catalog from every
 note's title, aliases, and filename, then flags the first occurrence of any of those strings
 in any other note's body. That catalog is **lexical**, not semantic. The same English word can
-name two different technical concepts in the same vault, and the linter cannot tell them apart.
+name two different technical concepts in the same knowledge base, and the linter cannot tell them apart.
 
 Real example caught in the wild: `nestjs/data/typeorm/postgresql-setup.md` had a sentence about
 **Joi env-shape checks at bootstrap** that used the word "validate". The linter flagged it as a
@@ -13,7 +13,7 @@ stage, different reader intent. Accepting the suggested wikilink dragged validat
 TypeORM territory it had no business in (forced into `related:` by the symmetry rule, then into
 the discoverability check, etc.).
 
-Other vocabulary collisions that exist in this vault or are likely to appear:
+Other vocabulary collisions that exist in this knowledge base or are likely to appear:
 
 | Bare word | Concept A (note) | Concept B (different concept) |
 | --- | --- | --- |

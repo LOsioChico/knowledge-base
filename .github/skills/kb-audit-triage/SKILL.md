@@ -65,7 +65,7 @@ Scripts (from `scripts/audit-notes/`): `bun run audit:mdx-triage`, `bun run audi
 - `--base origin/main` — everything since the branch diverged.
 - `--base <ref>` — committed + staged + unstaged changes since `<ref>`.
 - Explicit paths: `npx tsx scripts/audit-notes/mdx-audit-notes.ts --json --profile=mdx-triage sites/docs/src/content/docs/<path>.mdx`.
-- **Full vault**: `set -a; source .env; set +a; find sites/docs/src/content/docs -name "*.mdx" | xargs npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage > /tmp/audit.json 2> /tmp/audit.err`.
+- **Full scan**: `set -a; source .env; set +a; find sites/docs/src/content/docs -name "*.mdx" | xargs npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage > /tmp/audit.json 2> /tmp/audit.err`.
 - Bare `bun start` (no args, no `--base`) runs `mdx-audit-notes.ts` targets — pass `--base` or explicit paths.
 - Empty diff exits cleanly (`{ "files": [] }`).
 

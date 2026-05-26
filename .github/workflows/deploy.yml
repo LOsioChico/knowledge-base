@@ -38,7 +38,7 @@ jobs:
           bun install --frozen-lockfile
           bun install --frozen-lockfile --cwd scripts/audit-notes
           bun install --frozen-lockfile --cwd sites/docs
-      - name: Lint (vault + MDX check, no build)
+      - name: Lint (wikilinks + MDX check, no build)
         run: |
           bun run lint:ci:tooling
           bun run lint:docs

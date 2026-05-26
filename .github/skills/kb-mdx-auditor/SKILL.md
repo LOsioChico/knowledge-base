@@ -21,14 +21,14 @@ Read [`docs/PUBLISHING.md`](../../../docs/PUBLISHING.md) and kb-author audits **
 | --- | --- | --- | --- |
 | `code-imports` | objective | TS fences include imports; methods inside `@Controller` / `@Module`; no undefined symbols | [S5](../kb-author/audits/S5-code-fences-mdx.md) + [A](../kb-author/audits/A-code-examples.md) |
 | `table-link` | objective | Reference-table rows link to worked examples (wikilink in prose, `/knowledge-base/...` in tables) | [S4](../kb-author/audits/S4-enrichment-fit.md) + [B](../kb-author/audits/B-table-linking.md) |
-| `express-first` | objective | NestJS HTTP snippets use Express types unless prose is an explicit Fastify adapter note | kb-auditor inline rule |
+| `express-first` | objective | NestJS HTTP snippets use Express types unless prose is an explicit Fastify adapter note | AGENTS.md style rule |
 | `mdx-internal-link` | objective | On-site topics use `[[slug\|label]]` in prose; tables use `/knowledge-base/slug/` not `[[\|]]` | [S6](../kb-author/audits/S6-publish-validate.md) |
-| `aside-hygiene` | subjective | `<Aside>` type matches stakes (`caution` for footguns); no Obsidian `> [!warning]` in MDX | [S4](../kb-author/audits/S4-enrichment-fit.md) + [K](../kb-author/audits/K-callout-severity.md) |
+| `aside-hygiene` | subjective | `<Aside>` type matches stakes (`caution` for footguns); no raw `> [!warning]` callouts in MDX (use `<Aside>`) | [S4](../kb-author/audits/S4-enrichment-fit.md) + [K](../kb-author/audits/K-callout-severity.md) |
 | `show-dont-tell` | subjective | Behavioral claims in recipe MDX include request + response payloads | [S3](../kb-author/audits/S3-show-dont-tell-mdx.md) |
 | `recipe-command-context` | subjective | Each `bash`/`sh` fence has prose above explaining **why** to run it and **what to verify** in output | [S2](../kb-author/audits/S2-reader-clarity.md) + [S1](../kb-author/audits/S1-publish-bar.md) |
 | `prerequisite-coverage` | subjective | Prerequisites defined; checks that advanced concepts are not assumed without their predecessors | [Audit Q](../kb-author/audits/Q-prerequisite-badge.md) |
 
-Do **not** emit vault-only rules (`related:`, discoverability, `source:` frontmatter).
+Do **not** emit linter-covered rules (`related:`, discoverability, `source:` frontmatter).
 
 ### `recipe-command-context` (recipes only)
 

@@ -9,7 +9,7 @@ bun run lint:docs
 bun run docs:build
 ```
 
-Prose style (em-dash, `--`): if Pass 0 flags style, run `bun run autofix:mdx` from repo root (same fixer as vault `cd scripts/audit-notes && bun run autofix`).
+Prose style (em-dash, `--`): if Pass 0 flags style, run `bun run autofix:mdx` from repo root (same fixer as `cd scripts/audit-notes && bun run autofix`).
 
 | Check | What it catches |
 | --- | --- |
@@ -21,7 +21,7 @@ Prose style (em-dash, `--`): if Pass 0 flags style, run `bun run autofix:mdx` fr
 | `lint:mdx-recipe-context` | Recipe MDX: bash fence without teaching prose (advisory; `--strict` blocks orphan/thin only) |
 | `docs:build` | Twoslash failures, Starlight export |
 
-Before push or handoff: `bun run lint:ci` (vault wikilinks + publish parity + vault Pass 0 +
+Before push or handoff: `bun run lint:ci` (wikilinks + publish parity + Pass 0 +
 MDX structural Pass 0 + format + Starlight) and `bun run test:ci` (root scripts + audit-notes tests).
 
 Optional after MDX edits: `bun run audit:mdx-triage -- --base HEAD~1` (LLM; needs `CURSOR_API_KEY`).
@@ -49,7 +49,7 @@ high-traffic paths (paths are under `sites/docs/dist/`).
 1. A new reader knows **when** to read this page.
 2. They know **what failure looks like** (status + JSON where relevant).
 3. No link on the published site points at a **full-site URL** for a slug that already has MDX (use `[[slug|label]]`).
-4. **Cold read** in `bun run docs:dev`: every `bash` block still makes sense without opening the vault note.
+4. **Cold read** in `bun run docs:dev`: every `bash` block still makes sense without the source note.
 
 After recipe MDX edits, scan `bun run lint:mdx-recipe-context` output and fix `orphan-bash-after-heading` / `thin-context-before-bash` before merge.
 

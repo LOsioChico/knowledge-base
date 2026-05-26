@@ -2,7 +2,7 @@
 
 Personal knowledge base, deployed to https://losiochico.github.io/knowledge-base (Starlight on GitHub Pages).
 
-> **Step 1: Welcome & Vault Layout**: Introduction to the personal knowledge base repositories structure, folders layout, and local dev server setup. Prerequisite: none; next step: [Step 2: Publishing on Starlight](docs/PUBLISHING.md).
+> **Step 1: Welcome & Layout**: Introduction to the personal knowledge base repositories structure, folders layout, and local dev server setup. Prerequisite: none; next step: [Step 2: Publishing on Starlight](docs/PUBLISHING.md).
 
 ## Layout
 

@@ -94,11 +94,11 @@ Bash/sh/zsh blocks auto-render as terminal windows (no `title=` needed):
 - Author with a fenced ` ```mermaid ` block (flowchart, sequence, etc.). Used on NestJS lifecycle pages and a few AWS notes.
 - **Not** the same as Starlight `<Steps>` — mermaid is markdown-only.
 
-## MDX-specific (not available in plain vault `.md`)
+## MDX-specific features
 
 - **Embed React** in prose: custom components, small interactive widgets (no WebContainers in scope yet).
-- **Composition**: import Starlight components only in MDX; vault `.md` keeps Obsidian callouts and blockquote taglines.
-- **Per-page frontmatter** (`title`, `description`) for SEO and social cards without vault schema.
+- **Composition**: import Starlight components directly in MDX.
+- **Per-page frontmatter** (`title`, `description`) for SEO and social cards.
 
 ## Custom component overrides
 
@@ -116,7 +116,7 @@ Both components render the Starlight default first, then append their enhancemen
 | [`starlight-blog`](https://starlight.astro.build/resources/plugins/) | Dated posts / changelog | If you want release notes as a blog |
 | [`starlight-theme-obsidian`](https://github.com/Fevol/starlight-theme-obsidian) | Obsidian Publish–like chrome | Visual parity only; evaluated and deferred (CSS conflict risk) |
 | `@astrojs/starlight` **sidebar autogenerate** | Less hand-maintained sidebar | If you want to drop hand-maintained sidebars |
-| **Custom remark** (e.g. glossary, callout transform) | Vault callout → `<Aside>` on import | If you automate vault → MDX |
+| **Custom remark** (e.g. glossary, callout transform) | Callout → `<Aside>` transform | If you automate imports |
 
 ## Link classes (authoring)
 
@@ -140,7 +140,7 @@ Preview any published page: internal wikilinks vs `effect.website` / GitHub link
 
 **Build:** `rehype-kb-link-classes` adds `kb-link-internal` or `kb-link-external` on every prose `<a>`; `links.css` styles them (see `sites/docs/src/styles/links.css`).
 
-## Wikilinks: vault vs Starlight
+## Wikilinks in Starlight
 
 | Feature | Starlight MDX |
 | --- | --- |

@@ -25,4 +25,4 @@ Audit procedure:
    it's authz (`RolesGuard`, `JwtAuthGuard`). Match the demo to the lesson.
 
 This audit is cheap, catches a high-cost bug (silent miseducation by repetition), and rarely
-fires once the vault is consistent. Run it on any note where you're naming things from scratch.
+fires once the knowledge base is consistent. Run it on any note where you're naming things from scratch.

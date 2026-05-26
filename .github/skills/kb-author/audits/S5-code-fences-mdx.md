@@ -5,7 +5,7 @@ Run on every `.mdx` you touch.
 
 ## Copy-pasteable TypeScript
 
-Same bar as vault audit A: full imports, class wrappers, no undefined symbols. Prefer `ts twoslash` when types teach.
+Same bar as audit A: full imports, class wrappers, no undefined symbols. Prefer `ts twoslash` when types teach.
 
 ## Expressive Code annotations (MANDATORY)
 

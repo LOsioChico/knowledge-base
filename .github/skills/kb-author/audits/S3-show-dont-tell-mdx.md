@@ -1,6 +1,6 @@
 # Audit S3 — Show, don't tell (MDX / recipes)
 
-Same intent as [audit F](F-show-dont-tell.md) (vault), applied to Starlight **recipes** and any MDX section that claims
+Same intent as [audit F](F-show-dont-tell.md), applied to Starlight **recipes** and any MDX section that claims
 an observable HTTP or CLI outcome.
 
 ## When this audit applies

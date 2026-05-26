@@ -1,6 +1,6 @@
 ---
 name: kb-show-dont-tell-judge
-description: Binary show-dont-tell judge for behavioral-claim candidates. Pass 1a in audit-notes (vault); also mdx-audit-notes mdx-full (MDX). Vault recipes use audit F; MDX recipes use audit S3.
+description: Binary show-dont-tell judge for behavioral-claim candidates. Pass 1a in audit-notes; also mdx-audit-notes mdx-full (MDX). Recipes use audit S3.
 ---
 
 # kb-show-dont-tell-judge

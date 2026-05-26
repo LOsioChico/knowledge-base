@@ -1,6 +1,6 @@
 ---
 name: kb-research-author
-description: End-to-end workflow for researching a topic from external courses/docs, verifying every claim against primary sources, and authoring audit-clean canonical Starlight MDX. Legacy vault content is read-only context, not the publication target.
+description: End-to-end workflow for researching a topic from external courses/docs, verifying every claim against primary sources, and authoring audit-clean canonical Starlight MDX.
 ---
 
 # kb-research-author
@@ -88,7 +88,7 @@ cd scripts/audit-notes
 bun run audit:mdx-triage -- ../../sites/docs/src/content/docs/<area>/<slug>.mdx
 ```
 
-For each finding, **verify before acting** (per AGENTS.md "Audit findings are suggestions"). `kb-mdx-auditor` findings are hypotheses, not commands. Fix only after checking the page and cited primary sources. If you intentionally reject a finding, explain the verification chain in chat; persisted dismissals remain a vault-audit mechanism unless the MDX audit grows its own dismissal flow.
+For each finding, **verify before acting** (per AGENTS.md "Audit findings are suggestions"). `kb-mdx-auditor` findings are hypotheses, not commands. Fix only after checking the page and cited primary sources. If you intentionally reject a finding, explain the verification chain in chat.
 
 Re-run linters after every fix batch.
 
@@ -96,7 +96,7 @@ Re-run linters after every fix batch.
 
 Reader-facing notes are MDX-first.
 
-1. **Re-author** MDX at `sites/docs/src/content/docs/<area>/<slug>.mdx`; do not paste legacy vault text ([`kb-author` S1](../kb-author/audits/S1-publish-bar.md)).
+1. **Re-author** MDX at `sites/docs/src/content/docs/<area>/<slug>.mdx`; do not paste raw markdown ([`kb-author` S1](../kb-author/audits/S1-publish-bar.md)).
 2. Run **S1–S6** and `bun run lint:docs` + `bun run docs:build` ([`kb-author` Workflow 3](../kb-author/SKILL.md)).
 3. Update `sites/docs/astro.config.mjs` sidebar and area MOC CardGrid when the slug is new.
 4. `bun run lint:publish-parity` must stay green (MDX page count health check).

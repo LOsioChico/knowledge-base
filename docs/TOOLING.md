@@ -37,7 +37,6 @@ All LLM judges target `sites/docs/src/content/docs/**/*.mdx` via `mdx-audit-note
 | ------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | MDX em-dash cleanup                         | `bun run autofix:mdx` then `bun run audit:mdx-ci` (Pass 0 rules)                         |
 | Recipe command dumps (no "why" before bash) | `lint:mdx-recipe-context` (CI advisory) + `recipe-command-context` in `audit:mdx-triage` |
-| | Backlinks ignore vault-only links           | (No longer applicable: vault removed)                                                    |
 | MDX page count drift                        | `lint:publish-parity` fails CI (MDX page count health check)                             |
 
 ---
@@ -61,11 +60,10 @@ All LLM judges target `sites/docs/src/content/docs/**/*.mdx` via `mdx-audit-note
 | `lint-mermaid-wikilinks.mjs`       | `bun run lint:mermaid-wikilinks`                                                              | `sites/docs/src/content/docs/**/*.mdx`                                                                                             | Wikilinks inside Mermaid blocks that render as literal bracket text                               |
 | `lint-effect-twoslash.mjs`         | `bun run lint:effect-twoslash`                                                                | `sites/docs/src/content/docs/**/*.mdx`                                                                                             | Effect-importing `ts`/`typescript` blocks must have `twoslash`                                    |
 | `lint-mdx-prerequisite-sequence.mjs` | (part of `lint:ci:tooling`)                                                                 | `sites/docs/src/content/docs/**/*.mdx`                                                                                             | Prerequisite badge ordering matches declared sequence                                             |
-| `vault-check.mjs`                  | `bun run vault:check`                                                                         | Publish parity + diff-scoped MDX Pass 0 + optional `mdx-triage` + `lint:docs` when `sites/docs/` changed                           | Post-edit gate; not a full `lint:ci` replacement (skips Prettier, full-vault Pass 0)              |
+| `vault-check.mjs`                  | `bun run vault:check`                                                                         | Publish parity + diff-scoped MDX Pass 0 + optional `mdx-triage` + `lint:docs` when `sites/docs/` changed                           | Post-edit gate; not a full `lint:ci` replacement (skips Prettier, full Pass 0)              |
 | `vault-check-lib.mjs`              | (library)                                                                                     | —                                                                                                                                  | Diff resolution, report builder                                                                   |
 | `check-source-urls.sh`             | manual                                                                                        | GitHub blob URLs in MDX pages                                                                                                      | HEAD raw URLs (not in CI)                                                                         |
 
-**Removed:** `merge-pages.mjs`, `check-migration-coverage.mjs`, `migration.json`.
 
 ### CI chain (`bun run lint:ci`)
 
@@ -122,7 +120,7 @@ See [`scripts/audit-notes/README.md`](../scripts/audit-notes/README.md).
 | `autofix.ts`                                | Em-dash/`--` → `:` in prose; sync `source:` from inline citations. `bun run autofix:mdx` for Starlight `.mdx`       |
 | `skip-zones.ts`                             | Skip MOC pending lists, etc.                                                                                        |
 
-**Removed:** `audit-notes.ts` (vault orchestrator), `pass0-all.ts` / `deterministic.ts` (vault Pass 0).
+**Removed:** `audit-notes.ts`, `pass0-all.ts`, `deterministic.ts`.
 
 **MDX targets:** `sites/docs/src/content/docs/**/*.mdx`.
 
@@ -145,7 +143,7 @@ See [`scripts/audit-notes/README.md`](../scripts/audit-notes/README.md).
 | Tool          | Config                                                                                                                          | Init / refresh                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | **CodeGraph** | `.codegraph/config.json` (indexes `scripts/**`, `audit-notes/**`, `sites/docs/src/plugins/**`; excludes MDX prose) | `npx @colbymchenry/codegraph init -i` then `npx @colbymchenry/codegraph index` after config changes |
-| **OpenSpec**  | `openspec/config.yaml` (SDD context, lint/test commands, vault read-only policy)                                                | Edit YAML; no build step                                                                            |
+| **OpenSpec**  | `openspec/config.yaml` (SDD context, lint/test commands, content policy)                                                | Edit YAML; no build step                                                                            |
 | **Engram**    | `.cursor/rules/engram.mdc` (project id `knowledge-base`)                                                                        | MCP `mem_*` tools                                                                                   |
 
 MCP `codegraph` in Cursor should invoke the same `@colbymchenry/codegraph` binary as `npx` (see `~/.cursor/mcp.json`).
@@ -156,8 +154,7 @@ MCP `codegraph` in Cursor should invoke the same `@colbymchenry/codegraph` binar
 
 | Old assumption                         | Current status                                                                               |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `migration.json` tracks coverage       | **Removed** — `lint:publish-parity` (now MDX page count health check)                        |
 | Separate `kb-starlight-author` skill   | **Removed** — S1–S6 under `kb-author`                                                        |
 | LLM audit covers MDX                   | **Partial** — `audit:mdx-ci` in CI; `audit:mdx-triage` optional locally                      |
-| `vault:check` = vault only             | **Rejected** — always runs publish parity and runs `lint:docs` when `sites/docs/` is in diff |
-| Research workflow ends at vault commit | **Updated** — add MDX publish phase when note is reader-facing                               |
+| `vault:check` = content only             | **Rejected** — always runs publish parity and runs `lint:docs` when `sites/docs/` is in diff |
+| Research workflow ends at commit | **Updated** — add MDX publish phase when note is reader-facing                               |

@@ -48,7 +48,7 @@ There is no separate Starlight skill. MDX has optional `kb-mdx-auditor` via `bun
 bun run docs:dev
 bun run lint:docs
 bun run docs:build
-bun run lint:ci          # vault + Starlight + tests (CI)
+bun run lint:ci          # wikilinks + Starlight + tests (CI)
 ```
 
 ## CI / deploy

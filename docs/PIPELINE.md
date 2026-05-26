@@ -78,7 +78,6 @@ optional `mdx-triage` when `CURSOR_API_KEY` is set, and skips Prettier. Run `bun
 | `AGENTS.md` | Authoring invariants + publish gates; mirror to copilot-instructions |
 | `.github/skills/kb-author/SKILL.md` | Audits A–P, MDX audits S1–S6 |
 | `.github/instructions/starlight.instructions.md` | Copilot: `sites/docs/**/*.mdx` |
-| `.github/instructions/content.instructions.md` | Deprecated (vault removed) |
 
 ## Related docs
 

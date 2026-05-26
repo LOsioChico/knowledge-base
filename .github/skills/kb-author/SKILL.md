@@ -2,7 +2,7 @@
 name: kb-author
 description: >
   Authoring and publish workflow for this knowledge base. Published site is Starlight MDX under
-  sites/docs/ (canonical). Covers vault discovery
+  sites/docs/ (canonical). Covers discovery
   (A–P), Starlight MDX authoring (S1–S6), sourcing, and audit triage. Use for any note edit, MDX
   publish, or "write a recipe". Triggers: edit a note, author MDX, sites/docs, MDX, /kb-author.
 ---
@@ -64,7 +64,7 @@ Run on every `.mdx` you add or materially change. Playbook: `docs/PUBLISHING.md`
 
 | Audit | One-line summary | Full procedure |
 | --- | --- | --- |
-| **S1** | Re-authored for web readers; not a vault paste | [audits/S1-publish-bar.md](audits/S1-publish-bar.md) |
+| **S1** | Re-authored for web readers; not a raw paste | [audits/S1-publish-bar.md](audits/S1-publish-bar.md) |
 | **S2** | TL;DR, symptom tables, contrast, MOC CardGrids | [audits/S2-reader-clarity.md](audits/S2-reader-clarity.md) |
 | **S3** | Recipes: request + response JSON for behavioral claims | [audits/S3-show-dont-tell-mdx.md](audits/S3-show-dont-tell-mdx.md) |
 | **S4** | Steps/Tabs/Aside/mermaid only when they teach | [audits/S4-enrichment-fit.md](audits/S4-enrichment-fit.md) |
@@ -111,8 +111,8 @@ Only after these five steps may you draft. Then:
 9. **Run the post-edit audits (the index above).**
 10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
     `cp AGENTS.md .github/copilot-instructions.md`.
-11. Run the linter: `bun run lint:wikilinks` after vault-only edits; `bun run lint:ci` before push (includes Starlight `lint:docs` when MDX changed).
-12. **Run the LLM audit on touched vault files** and triage findings. The full step-by-step loop
+11. Run the linter: `bun run lint:wikilinks` after edits; `bun run lint:ci` before push (includes Starlight `lint:docs` when MDX changed).
+12. **Run the LLM audit on touched files** and triage findings. The full step-by-step loop
     (run pipeline → classify each finding into TRUE-and-cited / TRUE-but-uncited-inline /
     WRONG-claim / UNVERIFIABLE → apply or persist to `dismissed.json`) lives in the `kb-audit-triage`
     skill at [`.github/skills/kb-audit-triage/SKILL.md`](../kb-audit-triage/SKILL.md). Load
@@ -163,7 +163,7 @@ reference table, undefined symbol, headline-vs-code mismatch):
 1. STOP further piecemeal fixes.
 2. Propose encoding the rule in `AGENTS.md` (and mirror to `.github/copilot-instructions.md`),
    or as a new audit under `audits/`.
-3. Run a vault-wide audit pass against the new rule.
+3. Run a full audit pass against the new rule.
 4. Fix everything the pass surfaces.
 5. THEN resume normal work.
 

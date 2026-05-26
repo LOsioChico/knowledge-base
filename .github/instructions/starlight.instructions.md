@@ -7,7 +7,7 @@ applyTo: "sites/docs/**/*.mdx"
 
 - Load **kb-author** → Workflow 3 + audits **S1–S6** (`.github/skills/kb-author/SKILL.md`, `audits/S*.md`).
 - Read `docs/PUBLISHING.md` and `docs/TOOLING.md` (skills/scripts inventory).
-- Re-author for readers; vault paste fails audit S1.
+- Re-author for readers; raw paste fails audit S1.
 - Internal links: `[[slug|label]]` in prose; `[label](/knowledge-base/slug/)` in table cells.
 - No `https://losiochico.github.io/knowledge-base/...` in MDX (`lint:mdx-link-hygiene --strict`).
 - Topics without MDX yet: say "planned" in prose — no dead site URLs.

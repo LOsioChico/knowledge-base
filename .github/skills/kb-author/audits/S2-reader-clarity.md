@@ -1,6 +1,6 @@
 # Audit S2 — Reader clarity (MDX)
 
-Goal: a reader can **orient**, **decide**, and **debug** without re-reading the vault graph.
+Goal: a reader can **orient**, **decide**, and **debug** without re-reading the note graph.
 
 ## Required by page kind
 

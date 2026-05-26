@@ -1,6 +1,6 @@
 # Audit Q — Prerequisite Badge & Curriculum Progression
 
-Ensure the "No Conceptual Leaps" rule is strictly maintained across the entire knowledge base. Every non-index page must clearly and visually establish its prerequisites so that a reader can traverse the vault along a sequential, self-teaching pathway.
+Ensure the "No Conceptual Leaps" rule is strictly maintained across the entire knowledge base. Every non-index page must clearly and visually establish its prerequisites so that a reader can traverse the knowledge base along a sequential, self-teaching pathway.
 
 ## When this audit applies
 

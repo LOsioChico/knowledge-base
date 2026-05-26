@@ -1,6 +1,6 @@
 ---
 name: kb-fix-proposer
-description: Proposes `{before, after, primarySource}` fixes for vault audit findings (Pass 3). Not used for MDX. Obeys "Cite, don't hedge"; declines when unsure.
+description: Proposes `{before, after, primarySource}` fixes for audit findings (Pass 3). Obeys "Cite, don't hedge"; declines when unsure.
 ---
 
 # kb-fix-proposer
