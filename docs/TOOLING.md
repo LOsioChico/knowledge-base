@@ -3,8 +3,7 @@
 > **Step 4: Script Automation & Tooling**: Local pre-commit guardian (`pre-commit-autofix.ts`), Cursor Living MOC reviewer (`cursor-reviewer.ts`), wikilink linters, and external development helper tools (CodeGraph, OpenSpec, Engram). Prerequisite: [Step 3: Starlight MDX Features & Capabilities](STARLIGHT-FEATURES.md); next step: [Step 5: CI/CD Quality Gates & Deployments](PIPELINE.md).
 
 **Published site:** Starlight MDX under `sites/docs/src/content/docs/` → GitHub Pages.  
-**Legacy vault:** Pre-migration Obsidian vault `content/` has been completely removed. Parity is 100% complete and all notes are now MDX-only under `sites/docs/`.  
-**Parity:** All legacy notes are covered; MDX-only pages are canonical.
+**Parity:** All notes are MDX-only under `sites/docs/`; MDX pages are canonical.
 
 Pipeline map: [`PIPELINE.md`](PIPELINE.md). Authoring: [`PUBLISHING.md`](PUBLISHING.md).
 
@@ -14,19 +13,15 @@ Pipeline map: [`PIPELINE.md`](PIPELINE.md). Authoring: [`PUBLISHING.md`](PUBLISH
 
 | Skill                                                                           | Kind                | Scope                                                                              | When to load                                         |
 | ------------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| [`kb-author`](../.github/skills/kb-author/SKILL.md)                             | Workflow            | MDX **S1–S6** (plus legacy vault guidelines)                                       | Any note or MDX edit                                 |
+| [`kb-author`](../.github/skills/kb-author/SKILL.md)                             | Workflow            | MDX **S1–S6** audits                                                               | Any note or MDX edit                                 |
 | [`kb-research-author`](../.github/skills/kb-research-author/SKILL.md)           | Workflow            | New topics from external sources → canonical MDX                                   | Research-from-scratch                                |
 | [`kb-algomaster-intake`](../.github/skills/kb-algomaster-intake/SKILL.md)       | Workflow            | Authorized AlgoMaster pages → local Markdown extracts under `tmp/`                 | System-design topic intake                           |
 | [`kb-audit-triage`](../.github/skills/kb-audit-triage/SKILL.md)                 | Workflow            | Post-write loop on **Starlight MDX**                                               | After MDX edits; triage JSON                         |
-| [`kb-auditor`](../.github/skills/kb-auditor/SKILL.md)                           | LLM judge (Pass 1)  | **Starlight MDX** (via `mdx-audit-notes.ts`)                                       | `mdx-audit-notes` profiles `mdx-triage`/`mdx-full`   |
 | [`kb-mdx-auditor`](../.github/skills/kb-mdx-auditor/SKILL.md)                   | LLM judge           | **Starlight `.mdx` only**                                                          | `mdx-audit-notes` profiles `mdx-triage` / `mdx-full` |
 | [`kb-show-dont-tell-judge`](../.github/skills/kb-show-dont-tell-judge/SKILL.md) | LLM judge (Pass 1a) | MDX recipes                                                                        | `mdx-full` profile                                   |
-| [`kb-source-verifier`](../.github/skills/kb-source-verifier/SKILL.md)           | LLM judge (Pass 1b) | MDX `source:` claims                                                               | `mdx-triage` / `mdx-full`                            |
-| [`kb-jargon-judge`](../.github/skills/kb-jargon-judge/SKILL.md)                 | LLM judge (Pass 1e) | MDX prose                                                                          | `mdx-full` profile                                   |
-| [`kb-verifier`](../.github/skills/kb-verifier/SKILL.md)                         | LLM judge (Pass 2)  | Re-check Pass 1                                                                    | `mdx-full` profile                                   |
 | [`kb-fix-proposer`](../.github/skills/kb-fix-proposer/SKILL.md)                 | LLM judge (Pass 3)  | Suggested fixes                                                                    | `mdx-full` profile                                   |
 
-**Removed / do not use:** `kb-starlight-author` (merged into `kb-author` S1–S6). No `migration.json`, no Dual-vault Quartz builds, no `merge-pages`.
+**Removed / do not use:** `kb-starlight-author` (merged into `kb-author` S1–S6).
 
 ### Audit procedures (`kb-author/audits/`)
 
@@ -34,7 +29,7 @@ Pipeline map: [`PIPELINE.md`](PIPELINE.md). Authoring: [`PUBLISHING.md`](PUBLISH
 | ----- | --------------------------------------------- |
 | S1–S6 | Yes — publish bar, enrichment, MDX syntax, CI |
 
-LLM judges reuse audit **procedures** via symlink (`kb-auditor/audits` → `kb-author/audits`). All LLM judges target `sites/docs/src/content/docs/**/*.mdx` via `mdx-audit-notes.ts`.
+All LLM judges target `sites/docs/src/content/docs/**/*.mdx` via `mdx-audit-notes.ts`.
 
 ### Gaps (intentional for now)
 
@@ -43,7 +38,7 @@ LLM judges reuse audit **procedures** via symlink (`kb-auditor/audits` → `kb-a
 | MDX em-dash cleanup                         | `bun run autofix:mdx` then `bun run audit:mdx-ci` (Pass 0 rules)                         |
 | Recipe command dumps (no "why" before bash) | `lint:mdx-recipe-context` (CI advisory) + `recipe-command-context` in `audit:mdx-triage` |
 | | Backlinks ignore vault-only links           | (No longer applicable: vault removed)                                                    |
-| Legacy vault note without MDX               | `lint:publish-parity` fails CI (tracks legacy coverage checks)                           |
+| MDX page count drift                        | `lint:publish-parity` fails CI (MDX page count health check)                             |
 
 ---
 
@@ -55,7 +50,7 @@ LLM judges reuse audit **procedures** via symlink (`kb-auditor/audits` → `kb-a
 | `pre-commit-autofix.ts`            | `bun run scripts/pre-commit-autofix.ts [--all] [--dry-run]`                                    | staged `.mdx` files (or all files)                                                                                                 | Pre-commit guardian: auto-resolves imports, first-mention wikilinks, and symmetric related links |
 | `lint-wikilinks.mjs`               | `bun run lint:wikilinks`                                                                      | `sites/docs/src/content/docs/**/*.mdx` (fallback)                                                                                  | Symmetry, first-mention, discoverability, tagline, agents-mirror                                  |
 | `lint-wikilinks-core.mjs`          | (library)                                                                                     | —                                                                                                                                  | Shared lint engine                                                                                |
-| `check-publish-parity.mjs`         | `bun run lint:publish-parity`                                                                 | legacy parity records + MDX paths                                                                                                 | All legacy vault notes must have matching MDX; MDX-only pages allowed                             |
+| `check-publish-parity.mjs`         | `bun run lint:publish-parity`                                                                 | MDX paths                                                                                                                          | MDX page count health check                                                                       |
 | `lint-aws-profile-consistency.mjs` | `bun run lint:aws-profile-consistency`                                                        | `aws/**` cross-account recipes                                                                                                     | Tables must not use bare `A`/`B` when `account-a`/`account-b` profiles are declared               |
 | `lint-mdx-recipe-context.mjs`      | `bun run lint:mdx-recipe-context` (advisory in CI; `--strict` fails on orphan/thin bash only) | Recipe-shaped MDX (`quickstart`, `recipes/`, cross-account, numbered steps)                                                        | Orphan bash after headings; thin prose before shell fences                                        |
 | `algomaster-intake.mjs`            | `bun run algomaster:intake -- --url <url>` or `--course <lesson-url>`                         | Authorized AlgoMaster/public HTML or local exports                                                                                 | Local Markdown lesson extract under `tmp/`; `--course` fans out via sidebar into per-section dirs |
@@ -78,6 +73,8 @@ LLM judges reuse audit **procedures** via symlink (`kb-auditor/audits` → `kb-a
 lint:ci = lint:ci:tooling && lint:docs
 
 lint:ci:tooling = lint:wikilinks → lint:publish-parity → lint:aws-profile-consistency → lint:ec-titles → lint:mermaid-wikilinks → lint:effect-twoslash → lint:mdx-recipe-context → lint:mdx-content → lint:mdx-prerequisite-sequence
+
+(lint:wikilinks scans `sites/docs/src/content/docs/**/*.mdx`; lint:publish-parity is an MDX page count health check)
 ```
 
 `bun run test:ci` → root `scripts/*.test.mjs` + `scripts/audit-notes` tests.
@@ -147,7 +144,7 @@ See [`scripts/audit-notes/README.md`](../scripts/audit-notes/README.md).
 
 | Tool          | Config                                                                                                                          | Init / refresh                                                                                      |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| **CodeGraph** | `.codegraph/config.json` (indexes `scripts/**`, `audit-notes/**`, `sites/docs/src/plugins/**`; excludes `content/` + MDX prose) | `npx @colbymchenry/codegraph init -i` then `npx @colbymchenry/codegraph index` after config changes |
+| **CodeGraph** | `.codegraph/config.json` (indexes `scripts/**`, `audit-notes/**`, `sites/docs/src/plugins/**`; excludes MDX prose) | `npx @colbymchenry/codegraph init -i` then `npx @colbymchenry/codegraph index` after config changes |
 | **OpenSpec**  | `openspec/config.yaml` (SDD context, lint/test commands, vault read-only policy)                                                | Edit YAML; no build step                                                                            |
 | **Engram**    | `.cursor/rules/engram.mdc` (project id `knowledge-base`)                                                                        | MCP `mem_*` tools                                                                                   |
 
@@ -159,8 +156,7 @@ MCP `codegraph` in Cursor should invoke the same `@colbymchenry/codegraph` binar
 
 | Old assumption                         | Current status                                                                               |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Quartz or dual HTML deploy             | **Rejected** — Starlight only                                                                |
-| `migration.json` tracks coverage       | **Removed** — `lint:publish-parity`                                                          |
+| `migration.json` tracks coverage       | **Removed** — `lint:publish-parity` (now MDX page count health check)                        |
 | Separate `kb-starlight-author` skill   | **Removed** — S1–S6 under `kb-author`                                                        |
 | LLM audit covers MDX                   | **Partial** — `audit:mdx-ci` in CI; `audit:mdx-triage` optional locally                      |
 | `vault:check` = vault only             | **Rejected** — always runs publish parity and runs `lint:docs` when `sites/docs/` is in diff |

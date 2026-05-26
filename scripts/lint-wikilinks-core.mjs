@@ -632,8 +632,14 @@ function linkContainsTargetAt(note, index, targetSlug) {
 function validateFirstMentions(result, notes) {
   const concepts = buildConcepts(notes)
   for (const source of notes) {
+    const sourceArea = source.slug.split("/")[0]
     for (const concept of concepts) {
       if (source.slug === concept.slug) continue
+      // Skip cross-area matches — generic terms like "HTTP", "validation", "state"
+      // create noise when matching concepts in other areas. Cross-area linking
+      // is governed by the cross-area-links check instead.
+      const conceptArea = concept.slug.split("/")[0]
+      if (sourceArea !== conceptArea) continue
       const matches = concept.terms.map((term) => matchTerm(source.proseMask, term)).filter(Boolean)
       if (matches.length === 0) continue
       matches.sort((a, b) => a.index - b.index)
@@ -709,11 +715,15 @@ function validateRelatedSymmetry(result, notesBySlug, notes) {
 function validateRelationshipConsistency(result, notesBySlug, notes) {
   for (const note of notes) {
     if (isIndexNote(note)) continue
+    const noteArea = note.slug.split("/")[0]
     const related = new Set(note.relatedSlugs)
     for (const link of note.bodyLinks) {
       if (!link.target) continue
       const target = notesBySlug.get(link.target)
       if (!target || isIndexNote(target)) continue
+      // Skip cross-area links — governed by cross-area-links check, not related:
+      const targetArea = link.target.split("/")[0]
+      if (noteArea !== targetArea) continue
       if (!related.has(link.target)) {
         addViolation(result, {
           check: "relationship-consistency",

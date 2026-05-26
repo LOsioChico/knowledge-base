@@ -61,7 +61,7 @@ Empty diff exits cleanly (`{ "files": [] }`).
 
 ### Repo-root quality gate
 
-From the repository root, **`bun run vault:check`** runs wikilinks (diff-scoped), **`lint:publish-parity`**, Pass 0 on changed files, triage audit, discoverability hints, split suggestions, and **`lint:docs`** when `sites/docs/` changed. See [`AGENTS.md`](../../AGENTS.md), [`docs/TOOLING.md`](../../docs/TOOLING.md), [`docs/PIPELINE.md`](../../docs/PIPELINE.md), and [`.github/skills/kb-audit-triage/SKILL.md`](../../.github/skills/kb-audit-triage/SKILL.md).
+From the repository root, **`bun run vault:check`** runs wikilinks (diff-scoped), **`lint:publish-parity`** (MDX page count health check), Pass 0 on changed files, triage audit, discoverability hints, split suggestions, and **`lint:docs`** when `sites/docs/` changed. See [`AGENTS.md`](../../AGENTS.md), [`docs/TOOLING.md`](../../docs/TOOLING.md), [`docs/PIPELINE.md`](../../docs/PIPELINE.md), and [`.github/skills/kb-audit-triage/SKILL.md`](../../.github/skills/kb-audit-triage/SKILL.md).
 
 ```bash
 bun run vault:check --base HEAD~1

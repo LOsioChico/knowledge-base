@@ -125,7 +125,7 @@ function scanAllNotes(): Note[] {
 // Staged file parser using Git
 function getStagedFiles(): string[] {
   try {
-    const output = execSync("git diff --name-only --cached", { encoding: "utf-8" });
+    const output = execSync("git diff --name-only --cached --diff-filter=d", { encoding: "utf-8" });
     return output
       .split(/\r?\n/)
       .map(f => f.trim())

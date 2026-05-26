@@ -3,33 +3,31 @@
 > **Step 2: Publishing & MDX Authoring**: Complete guide to authoring high-fidelity Astro Starlight MDX pages, including link syntax protocols and per-page lifecycle checklists. Prerequisite: [Step 1: Welcome & Layout](../README.md); next step: [Step 3: Starlight MDX Features & Capabilities](STARLIGHT-FEATURES.md).
 
 The public site is **Starlight only** (`sites/docs/` → GitHub Pages at `/knowledge-base`).
-GitHub Pages serves **Starlight only** (`sites/docs/dist/`). The vault is not published as HTML.
+GitHub Pages serves **Starlight only** (`sites/docs/dist/`).
 
 ## Layout
 
 | Path                                   | Role                                                                                                                                       |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `sites/docs/src/content/docs/**/*.mdx` | **Canonical published pages**                                                                                                              |
-| `content/**/*.md`                      | **Legacy** (pre-migration; **do not edit**). Parity check only: every legacy vault slug must have an MDX page; MDX-only pages are allowed. |
 | `sites/docs/astro.config.mjs`          | Sidebar                                                                                                                                    |
 
 ## Skills (one workflow)
 
 Load **kb-author** (`.github/skills/kb-author/SKILL.md`):
 
-- Vault edits: audits **A–P**, `bun run lint:wikilinks`, optional LLM audit on `content/`
-- Published MDX: audits **S1–S6**, `bun run lint:docs`, `bun run docs:build`
+- Audits **A–P** + **S1–S6**, `bun run lint:wikilinks`, `bun run lint:docs`, `bun run docs:build`
 
-There is no separate Starlight skill. Vault LLM judges (`kb-auditor`, etc.) run on vault markdown only. MDX has optional `kb-mdx-auditor` via `bun run audit:mdx-triage`; S1-S6 and `lint:docs` remain the required checks.
+There is no separate Starlight skill. MDX has optional `kb-mdx-auditor` via `bun run audit:mdx-triage`; S1-S6 and `lint:docs` remain the required checks.
 
 ## Per-page workflow (MDX)
 
-1. Verify facts against primary sources (do not treat `content/` as authoritative; it is stale).
+1. Verify facts against primary sources.
 2. Author `sites/docs/src/content/docs/<area>/<slug>.mdx` — **re-author**, not paste ([S1](../.github/skills/kb-author/audits/S1-publish-bar.md)).
 3. Run audits **S1–S6** ([index](../.github/skills/kb-author/SKILL.md#starlight-mdx-audits-published-site)).
 4. `bun run lint:docs` and `bun run docs:build`.
 5. Update sidebar and area MOC CardGrid; fix any `[[wikilinks]]` on other MDX pages.
-6. `lint:publish-parity` must still pass. It verifies every legacy `content/` slug has a published MDX page; new MDX-only pages are allowed. **Do not** edit vault body to sync.
+6. `lint:publish-parity` must still pass (MDX page count health check).
 
 **Sign-off:** a reader can answer _where this fits_, _when to use it_, and _what failure looks like_ from the published page alone.
 

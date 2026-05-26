@@ -2,8 +2,7 @@
 name: kb-author
 description: >
   Authoring and publish workflow for this knowledge base. Published site is Starlight MDX under
-  sites/docs/ (canonical). content/ is legacy pre-migration (do not edit; parity check only).
-  Covers vault discovery
+  sites/docs/ (canonical). Covers vault discovery
   (A–P), Starlight MDX authoring (S1–S6), sourcing, and audit triage. Use for any note edit, MDX
   publish, or "write a recipe". Triggers: edit a note, author MDX, sites/docs, MDX, /kb-author.
 ---
@@ -32,9 +31,8 @@ base, Starlight, MDX, MOCs, wikilinks, GitHub Pages publish.
 | Surface | Path | Audits |
 | --- | --- | --- |
 | **Published site** (canonical) | `sites/docs/src/content/docs/**/*.mdx` | **S1–S6** + `bun run lint:docs` + `docs:build` |
-| **Legacy vault** (read-only) | `content/**/*.md` | **Do not edit.** Optional A–P only if a file is touched by mistake |
 
-**Published site only:** GitHub Pages serves `sites/docs/dist/`. The vault (`content/`) is not deployed as HTML and is **stale** relative to MDX.
+**Published site only:** GitHub Pages serves `sites/docs/dist/`.
 
 ## Audit index
 
@@ -90,26 +88,26 @@ Skipping any step is a bug. Run from repo root:
 ```bash
 # 1. Read the operating contract and the area MOC
 bat AGENTS.md
-bat content/<area>/index.md
+bat sites/docs/src/content/docs/<area>/index.mdx
 
 # 2. Inventory the area
-fd . content/<area> -e md
+fd . sites/docs/src/content/docs/<area> -e mdx
 
-# 3. Search the whole vault for the concept and adjacent terms
-rg -n -i '<keyword>|<synonym>|<adjacent-concept>' content
+# 3. Search for the concept and adjacent terms
+rg -n -i '<keyword>|<synonym>|<adjacent-concept>' sites/docs/src/content/docs
 
 # 4. Inspect existing relationship metadata
-rg -n '^(tags|aliases|area|related):' content -A 4
+rg -n '^(tags|aliases|area|related):' sites/docs/src/content/docs -A 4
 
 # 5. Read every candidate note that the searches surfaced
-bat content/<area>/<candidate>.md
+bat sites/docs/src/content/docs/<area>/<candidate>.mdx
 ```
 
 Only after these five steps may you draft. Then:
 
 6. Add the note with the full frontmatter schema (see AGENTS.md).
 7. Update `related:` in EVERY note you linked from.
-8. Update the closest `index.md` MOC and, if a new area, `content/index.md`.
+8. Update the closest `index.mdx` MOC and, if a new area, `sites/docs/src/content/docs/index.mdx`.
 9. **Run the post-edit audits (the index above).**
 10. Mirror `AGENTS.md` → `.github/copilot-instructions.md` if AGENTS.md changed:
     `cp AGENTS.md .github/copilot-instructions.md`.
@@ -129,8 +127,7 @@ Only after these five steps may you draft. Then:
 ### Before writing
 
 1. Read `docs/PUBLISHING.md`.
-2. Do **not** treat `content/.../*.md` as authoritative (stale pre-migration). Verify every claim
-   against primary sources; use MDX siblings or external docs for context only.
+2. Verify every claim against primary sources; use MDX siblings or external docs for context only.
 3. Skim a published sibling (e.g. `nestjs/fundamentals/request-lifecycle.mdx`).
 
 ### While writing
@@ -139,7 +136,7 @@ Only after these five steps may you draft. Then:
 - Re-author; pass [S1](audits/S1-publish-bar.md). Enrichment per [S4](audits/S4-enrichment-fit.md).
 - **Recipes are not command dumps.** Every fenced `bash` block needs prose directly above it:
   what the command does, what field in the output to check, and what to do if it looks wrong.
-  Condensing legacy vault prose by deleting the "why" is a publish failure, not a win.
+  Condensing prose by deleting the "why" is a publish failure, not a win.
 - Links: `[[slug|label]]` in prose and lists. In **markdown tables**, use
   `[label](/knowledge-base/slug/)` only (`lint:mdx-table-wikilinks`). No full-site URLs in MDX for
   slugs that already have `.mdx` (`lint:mdx-link-hygiene`).
@@ -149,7 +146,7 @@ Only after these five steps may you draft. Then:
 
 1. Run audits **S1–S6** (recipes include **S3**).
 2. `bun run lint:docs` and `bun run docs:build` from repo root.
-3. Update `astro.config.mjs` (sidebar) and area MOC CardGrid; confirm `lint:publish-parity` (do **not** edit `content/` to sync).
+3. Update `astro.config.mjs` (sidebar) and area MOC CardGrid; confirm `lint:publish-parity` passes.
 4. Optional LLM pass on touched MDX (needs `CURSOR_API_KEY` in repo-root `.env`):
 
    ```bash

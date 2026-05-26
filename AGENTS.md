@@ -21,7 +21,6 @@ This ensures high precision, clean git branches, and structured planning history
 
 Before editing any note, load **`kb-author`** (`.github/skills/kb-author/SKILL.md`). It covers:
 
-- **Vault (legacy)**: Fully migrated to Starlight MDX under `sites/docs/src/content/docs/`. Pre-flight discovery, audits, and LLM triage now target the MDX files.
 - **Published site** (`sites/docs/`): MDX authoring, audits **S1–S6**, `docs/PUBLISHING.md`.
 
 AGENTS.md remains the source of truth for invariants; the skill is the playbook for Starlight MDX notes.
@@ -32,24 +31,20 @@ All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
 
 **Workflow skills (human/agent-facing, load on demand):**
 
-- [`kb-author`](.github/skills/kb-author/SKILL.md) — vault + MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
+- [`kb-author`](.github/skills/kb-author/SKILL.md) — MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
 - [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
-- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX; legacy vault content is read-only context.
+- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX.
 - [`kb-algomaster-intake`](.github/skills/kb-algomaster-intake/SKILL.md) — safe extraction of authorized AlgoMaster system-design pages into local Markdown before `kb-research-author` verification.
 
 **LLM judges (runtime, invoked by `scripts/audit-notes/` on MDX files under `sites/docs/src/content/docs/`):**
 
-- [`kb-auditor`](.github/skills/kb-auditor/SKILL.md) — Pass 1. Structural rules: code-imports, table-link, express-first, callout vocabulary.
 - [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) — Pass 1a. Binary verdict on behavioral-claim candidates surfaced by the deterministic finder.
-- [`kb-source-verifier`](.github/skills/kb-source-verifier/SKILL.md) — Pass 1b. Claims contradicted by or unsupported by cited `source:` URLs.
-- [`kb-jargon-judge`](.github/skills/kb-jargon-judge/SKILL.md) — Pass 1e. Undefined acronyms / named features used without an inline gloss or wikilink.
-- [`kb-verifier`](.github/skills/kb-verifier/SKILL.md) — Pass 2. Adversarial REJECT-by-default re-check of Pass 1 findings.
 - [`kb-fix-proposer`](.github/skills/kb-fix-proposer/SKILL.md) — Pass 3. Proposes `{before, after, primarySource}` for surviving high-tier findings; declines freely.
 - [`kb-mdx-auditor`](.github/skills/kb-mdx-auditor/SKILL.md) — MDX Pass 1. Starlight pages under `sites/docs/`; invoked by `mdx-audit-notes.ts` (`mdx-triage` / `mdx-full`).
 
 When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md). `kb-starlight-author` was removed; Starlight MDX guidance lives in `kb-author` audits S1–S6.
 
-**LLM judges** (`kb-mdx-auditor`, show-dont-tell, source-verifier, etc.) run directly on **Starlight MDX** under `sites/docs/src/content/docs/**/*.mdx` via the `mdx-audit-notes.ts` orchestrator (using the `mdx-triage` or `mdx-full` profiles). deterministic checks (`lint:docs`, kb-author audits **S1–S6**) run in CI.
+**LLM judges** (`kb-mdx-auditor`, show-dont-tell, fix-proposer) run directly on **Starlight MDX** under `sites/docs/src/content/docs/**/*.mdx` via the `mdx-audit-notes.ts` orchestrator (using the `mdx-triage` or `mdx-full` profiles). Deterministic checks (`lint:docs`, kb-author audits **S1–S6**) run in CI.
 
 ## Third-party course & book intake policy (Copyright & Originality)
 
@@ -66,9 +61,9 @@ To maintain academic integrity and avoid plagiarism, all agentic editor flows **
 
 A personal knowledge base deployed to https://losiochico.github.io/knowledge-base. Single author, multi-agent editors.
 
-**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/`: enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; legacy vault coverage check `bun run lint:publish-parity` resolves parity (fully migrated, 100% MDX-only).
+**Published site (canonical):** Astro Starlight MDX under `sites/docs/src/content/docs/`: enriched pages (Steps, Tabs, Aside, `ts twoslash` where types teach). CI builds `sites/docs/dist/` and deploys to GitHub Pages. Playbook: `docs/PUBLISHING.md`; MDX page count health check `bun run lint:publish-parity` (100% MDX-only).
 
-**Vault (legacy `content/`):** Fully migrated to Astro Starlight and removed from the repository. All notes are maintained under `sites/docs/src/content/docs/**/*.mdx` and new work is strictly **MDX-only**.
+All notes are maintained under `sites/docs/src/content/docs/**/*.mdx` and new work is strictly **MDX-only**.
 
 Edit `.github/workflows/deploy.yml` for deploy changes.
 
@@ -505,8 +500,7 @@ Skip for trivial, mechanical, single-file changes (typo fix, lint fix, adding on
 
 - To preview the **published site**: `bun run docs:dev` (or `cd sites/docs && bun run dev`). Production build: `bun run docs:build`. CI: `bun run lint:ci` (full vault wikilinks + publish parity + Pass 0 + format + `lint:docs`). Pipeline map: `docs/PIPELINE.md`.
 - **MDX links:** `[[slug|label]]` in prose and lists; **never** `[[slug|label]]` inside markdown table rows (the `|` breaks columns). In tables use `[label](/knowledge-base/slug/)`. See `docs/STARLIGHT-FEATURES.md`. Enforced by `bun run lint:mdx-table-wikilinks`.
-- **Vault (removed)**: The legacy `content/` vault has been fully migrated and removed. Only `sites/docs/dist/` ships to GitHub Pages.
-- **Default post-edit quality gate** (from repo root; full publish parity, diff-scoped wikilinks, Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
+- **Default post-edit quality gate** (from repo root; full wikilinks, diff-scoped Pass 0 on changed files, triage audit, discoverability and split suggestions). `vault:check` runs `lint:docs` when `sites/docs/` is in the diff; otherwise run `bun run lint:docs` after MDX edits. The LLM portion needs `CURSOR_API_KEY` in a repo-root `.env` (gitignored):
 
   ```bash
   bun run vault:check --base HEAD~1
@@ -550,7 +544,6 @@ Skip for trivial, mechanical, single-file changes (typo fix, lint fix, adding on
 
 - Commit only when the user explicitly asks; do not push unless they ask.
 - When the user says to verify first, run the full lint and test suite before committing tooling changes.
-- **Legacy Vault Removed:** The legacy `content/` folder has been completely removed from the repository. All notes are strictly Astro Starlight MDX files under `sites/docs/src/content/docs/**/*.mdx`.
 - Published MDX recipes must explain why before each bash fence and what to verify in output; command dumps without teaching prose fail the publish bar (S1/S2).
 - Starlight MDX migrations re-author and enrich page-by-page; do not bulk-copy or over-compress legacy vault prose into published MDX.
 

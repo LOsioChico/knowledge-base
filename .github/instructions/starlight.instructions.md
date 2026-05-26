@@ -12,4 +12,4 @@ applyTo: "sites/docs/**/*.mdx"
 - No `https://losiochico.github.io/knowledge-base/...` in MDX (`lint:mdx-link-hygiene --strict`).
 - Topics without MDX yet: say "planned" in prose — no dead site URLs.
 - After edits: `bun run lint:docs` and `bun run docs:build`.
-- New pages: add matching `content/<slug>.md`, update sidebar and area MOC; `bun run lint:publish-parity`.
+- New pages: update sidebar and area MOC; `bun run lint:publish-parity` (MDX page count health check).

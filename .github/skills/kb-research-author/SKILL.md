@@ -12,7 +12,7 @@ AGENTS.md governs the invariants (frontmatter schema, tag vocabulary, linker rul
 ## Phase 1 — Scope and discovery (before any source reading)
 
 1. **Disambiguate the ask.** "Write S3 notes" can mean one concept note, a recipe set, or a parent + children. Surface the options in one sentence and pick a default (per AGENTS.md "Surface choices, don't pick silently").
-2. **Run published-site discovery first** for reader-facing work: inspect `sites/docs/src/content/docs/<area>/`, the area MOC, `sites/docs/astro.config.mjs`, and nearby MDX siblings. Use `content/` only as stale legacy context when it helps discover old slugs or terminology; do not edit it.
+2. **Run published-site discovery first** for reader-facing work: inspect `sites/docs/src/content/docs/<area>/`, the area MOC, `sites/docs/astro.config.mjs`, and nearby MDX siblings.
 3. **Decide the note shape per file** before sourcing: which is `type/concept`, which is `type/recipe`, which is `type/reference`. The categorization decision changes which audits run later (e.g. the jargon judge skips `type/reference`).
 
 ## Phase 2 — Source selection
@@ -40,7 +40,7 @@ For every claim from Phase 2:
 
 1. WebFetch the relevant official doc page or `curl -s` the raw GitHub source.
 2. Quote the supporting text mentally; if the doc contradicts the claim, the claim is wrong (drop or rewrite).
-3. Note the exact URL with anchor (`#section-id` for docs, `#L<m>-L<n>` for source). For MDX, keep that URL as the reader-facing inline citation next to the claim. There is no MDX `source:` frontmatter to hand-maintain or sync. Only run vault `autofix` source syncing if an explicit separate request touches legacy `content/`.
+3. Note the exact URL with anchor (`#section-id` for docs, `#L<m>-L<n>` for source). For MDX, keep that URL as the reader-facing inline citation next to the claim.
 4. **Comparative claims are double work** (per AGENTS.md): "same as X" requires verifying X too. If you can't verify the comparator in this session, drop the comparison.
 5. **Numeric specifics are high risk**: any "~20× cheaper", "~80% reduction", "12+ hours" — either find the exact number in primary docs or replace with a vague-but-honest phrasing ("over an order of magnitude", "measured in hours"). Never ship an unsourced specific.
 
@@ -59,7 +59,7 @@ Follow the page shape from `docs/PUBLISHING.md` and `kb-author` S1–S6 (tagline
 
 - **TypeScript by default**, NestJS service (`@Injectable`) when illustrating a server-side use case. Python/Go/Java acceptable as one-liners after the canonical TS example, never as the only sample.
 - **Fully runnable snippets**: every import present, every class wrapped in its container, every referenced field declared. AGENTS.md "Code examples (MANDATORY)" governs.
-- **Inline citations next to surprising claims** with the precise anchor. For MDX, inline links are the durable reader-facing source; do not hand-maintain legacy vault frontmatter.
+- **Inline citations next to surprising claims** with the precise anchor. For MDX, inline links are the durable reader-facing source.
 
 ## Phase 6 — Linter pass (BLOCKING, run before audit)
 
@@ -68,7 +68,7 @@ From repo root, run the Starlight checks for MDX work:
 ```bash
 bun run lint:docs
 bun run docs:build
-bun run lint:publish-parity
+bun run lint:publish-parity   # MDX page count health check
 ```
 
 For full CI coverage before commit, run `bun run lint:ci` and `bun run test:ci` when the change touches tooling. Wikilink failures usually mean a missing MDX target, an aliased wikilink inside a table row, or a full-site URL where a wikilink should be used.
@@ -99,9 +99,9 @@ Reader-facing notes are MDX-first.
 1. **Re-author** MDX at `sites/docs/src/content/docs/<area>/<slug>.mdx`; do not paste legacy vault text ([`kb-author` S1](../kb-author/audits/S1-publish-bar.md)).
 2. Run **S1–S6** and `bun run lint:docs` + `bun run docs:build` ([`kb-author` Workflow 3](../kb-author/SKILL.md)).
 3. Update `sites/docs/astro.config.mjs` sidebar and area MOC CardGrid when the slug is new.
-4. `bun run lint:publish-parity` must stay green. It verifies every legacy vault slug is covered by MDX; MDX-only pages are allowed.
+4. `bun run lint:publish-parity` must stay green (MDX page count health check).
 
-Do not edit `content/` to create parity stubs. If legacy vault text disagrees with MDX, trust the freshly sourced MDX and leave vault cleanup to an explicit separate request.
+New notes go directly into MDX.
 
 ## Phase 9 — Commit if asked
 

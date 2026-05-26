@@ -2,7 +2,7 @@
 
 > **Step 3: Starlight MDX Features & Capabilities**: Rich component usage (Aside, Steps, Tabs), Mermaid diagrams, and Twoslash compiler integrations for interactive code previews. Prerequisite: [Step 2: Publishing & MDX Authoring](PUBLISHING.md); next step: [Step 4: Script Automation & Tooling](TOOLING.md).
 
-What the **published site** (`sites/docs/`) supports. Vault markdown under `content/` stays Obsidian-safe (wikilinks, callouts, `related:`); it is **not** deployed as HTML. Authoring: [`PUBLISHING.md`](PUBLISHING.md).
+What the **published site** (`sites/docs/`) supports. Authoring: [`PUBLISHING.md`](PUBLISHING.md).
 
 ## Already in use
 
@@ -142,27 +142,27 @@ Preview any published page: internal wikilinks vs `effect.website` / GitHub link
 
 ## Wikilinks: vault vs Starlight
 
-| Feature | Vault (`content/`) | Starlight MDX (this repo) |
-| --- | --- | --- |
-| `[[path\|alias]]` syntax | Yes | Yes (remark plugin in markdown/MDX prose) |
-| Resolve at build | N/A (not deployed) | Yes + `lint:mdx-wikilinks` |
-| Backlinks panel | Obsidian / local only | **Yes** — `remark-backlinks` appends `## Backlinks` on each page |
-| Graph view | Obsidian / local only | **Not yet** (separate visualization or defer) |
-| First-mention / `related:` / discoverability | `lint:wikilinks` on `content/` | Vault-only until MDX is canonical for a topic |
-| Cross-area link to note without MDX yet | Wikilink in vault | "Planned" in MDX prose; no dead site URLs |
+| Feature | Starlight MDX |
+| --- | --- |
+| `[[path\|alias]]` syntax | Yes (remark plugin in markdown/MDX prose) |
+| Resolve at build | Yes + `lint:mdx-wikilinks` |
+| Backlinks panel | **Yes** — `remark-backlinks` appends `## Backlinks` on each page |
+| Graph view | **Not yet** (separate visualization or defer) |
+| First-mention / `related:` / discoverability | `lint:wikilinks` on `sites/docs/src/content/docs/` |
+| Cross-area link to note without MDX yet | "Planned" in MDX prose; no dead site URLs |
 
 ### Backlinks
 
 At build time, `src/plugins/build-backlinks.mjs` scans all MDX for `[[wikilinks]]` and
 `/knowledge-base/<slug>/` markdown links, then `remark-backlinks.mjs` appends a
-`## Backlinks` section (inbound pages only). Vault `content/` links are not merged yet.
+`## Backlinks` section (inbound pages only).
 
-## What stays on the vault linter
+## Wikilink linter
 
-`bun run lint:wikilinks` still governs `content/`:
+`bun run lint:wikilinks` scans `sites/docs/src/content/docs/**/*.mdx`:
 
 - Symmetric `related:`, first-mention wikilinks, discoverability (TF-IDF), tagline blockquotes, agents-mirror.
-- Does **not** validate MDX under `sites/docs/` — use `bun run lint:docs` instead.
+- `bun run lint:docs` adds Starlight-specific checks (MDX wikilink resolution, table pipes, link hygiene).
 
 ## CI map
 

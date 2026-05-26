@@ -13,5 +13,5 @@ the row's notes/description column.
 Audit procedure:
 
 1. For each table row, identify the entity (e.g., `RolesGuard`, `ParseIntPipe`).
-2. Search the vault: `rg -n '<EntityName>' content/`.
+2. Search the notes: `rg -n '<EntityName>' sites/docs/src/content/docs/`.
 3. If a worked example exists and the row doesn't link to it → add the link.

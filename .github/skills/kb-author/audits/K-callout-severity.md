@@ -36,7 +36,7 @@ Common downgrades:
 
 Audit procedure:
 
-1. List every callout: `grep -rnE '^> \[!' content/`.
+1. List every callout: `grep -rnE '^\> \[!' sites/docs/src/content/docs/`.
 2. For each `[!warning]`, read the body. Apply the "would I be angry?" test.
 3. Downgrade if the answer is no. Aim for **warnings to be rare** — if they're the most common
    callout type, the audit failed.

@@ -19,9 +19,7 @@ Authoring source of truth remains:
 ## Current policy
 
 - Published MDX under `sites/docs/src/content/docs/` is canonical.
-- `content/` is legacy and read-only.
-- MDX-only pages are allowed.
-- `lint:publish-parity` verifies that legacy vault slugs are still covered by MDX.
+- `lint:publish-parity` runs as an MDX page count health check.
 - New pages still need sidebar/MOC updates plus `bun run lint:docs` and `bun run docs:build`.
 
 ## NestJS
@@ -115,14 +113,14 @@ Before drafting any item:
 1. Load `kb-author`; use `kb-research-author` when external docs drive the topic.
 2. Produce a spec first when the topic is broad or source-heavy.
 3. Verify current primary sources during the session.
-4. Write MDX only, not legacy vault content.
+4. Write MDX only.
 5. Update sidebar and nearest MOC.
 6. Run validation:
 
 ```bash
 bun run lint:docs
 bun run docs:build
-bun run lint:publish-parity
+bun run lint:publish-parity   # MDX page count health check
 ```
 
 For substantial content, also run the MDX audit when credentials are available:

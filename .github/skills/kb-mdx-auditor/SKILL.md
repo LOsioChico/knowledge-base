@@ -2,8 +2,7 @@
 name: kb-mdx-auditor
 description: >
   Read-only audit pass for Starlight MDX under sites/docs/src/content/docs/. Emits JSON
-  keyed by rule IDs aligned with kb-author audits S1–S6. Use for published-site quality,
-  not vault content/.md. Invoked by scripts/audit-notes/mdx-audit-notes.ts.
+  keyed by rule IDs aligned with kb-author audits S1–S6. Invoked by scripts/audit-notes/mdx-audit-notes.ts.
 ---
 
 # kb-mdx-auditor
@@ -57,8 +56,8 @@ Apply on all non-index notes under `sites/docs/src/content/docs/**/*.mdx`.
 
 - **Em-dash, `--`, MDX frontmatter, Obsidian callouts in MDX** — `mdx-deterministic.ts` Pass 0.
 - **Broken wikilinks, table pipes, full-site URL hygiene** — `bun run lint:docs`.
-- **Orphan bash after headings, thin context before bash** — `bun run lint:mdx-recipe-context` (advisory in CI; `--strict` blocks structural rules only). Does not compare MDX to `content/` (vault is stale).
-- **Vault sourcing** — `kb-source-verifier` on `content/` only.
+- **Orphan bash after headings, thin context before bash** — `bun run lint:mdx-recipe-context` (advisory in CI; `--strict` blocks structural rules only).
+- **Source verification** — runs on MDX via the audit pipeline.
 
 ## Output schema
 
