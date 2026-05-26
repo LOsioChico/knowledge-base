@@ -3,10 +3,10 @@ title: Caching with @nestjs/cache-manager
 description: "In-memory or Redis caching via cache-manager v6+ and Keyv: CacheInterceptor, TTL in milliseconds, and multi-tier stores."
 ---
 
+> Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for keys you control.
+
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
-
-> Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for keys you control.
 
 <Aside type="tip" title="Prerequisites">
 Before diving into caching, make sure you understand:

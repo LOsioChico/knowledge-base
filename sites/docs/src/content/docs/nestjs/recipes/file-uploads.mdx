@@ -3,10 +3,10 @@ title: "File uploads: Local, Streaming, and Direct Cloud"
 description: Accept multipart form-data uploads, prevent memory exhaustion and ephemeral disk loss gotchas, stream directly to cloud storage, and implement secure direct S3 presigned PUT uploads.
 ---
 
+> Composing secure, high-performance file uploads in NestJS. We contrast traditional local buffering against modern cloud-native streaming and direct-to-cloud presigned uploads to protect API event loops from RAM starvation and Ephemeral Disk loss.
+
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
-
-> Composing secure, high-performance file uploads in NestJS. We contrast traditional local buffering against modern cloud-native streaming and direct-to-cloud presigned uploads to protect API event loops from RAM starvation and Ephemeral Disk loss.
 
 <Aside type="tip" title="Prerequisites">
 Before diving into file uploads, make sure you understand:

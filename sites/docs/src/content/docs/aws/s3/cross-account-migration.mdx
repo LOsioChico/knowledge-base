@@ -3,9 +3,9 @@ title: Cross-account S3 bucket migration
 description: Move an S3 bucket between accounts — inventory config, grant cross-account read, aws s3 sync, verify, cutover.
 ---
 
-import { Aside } from "@astrojs/starlight/components";
-
 > Move a bucket between accounts by recreating config in the target, granting cross-account read on the source, and using `aws s3 sync` for server-side copies.
+
+import { Aside } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:

@@ -3,10 +3,10 @@ title: Retry and Schedule
 description: Effect.retry with Schedule — capped exponential backoff, jitter, and tag-specific while predicates.
 ---
 
+> Retry a failing effect with `Effect.retry` and a `Schedule`: a value that decides whether to recur and how long to wait between attempts.
+
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
-
-> Retry a failing effect with `Effect.retry` and a `Schedule`: a value that decides whether to recur and how long to wait between attempts.
 
 > Prerequisite: [[effect-ts/layers-and-di|Layers & DI]]
 

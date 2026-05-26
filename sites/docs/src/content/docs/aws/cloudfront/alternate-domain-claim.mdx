@@ -3,9 +3,9 @@ title: CloudFront alternate-domain ghost claims
 description: CloudFront CNAME conflicts across accounts — diagnosis, ACM workaround, and when to wait or open a support case.
 ---
 
-import { Aside, Steps } from "@astrojs/starlight/components";
-
 > [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims**: retries stack faster than DNS can chase them.
+
+import { Aside, Steps } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:

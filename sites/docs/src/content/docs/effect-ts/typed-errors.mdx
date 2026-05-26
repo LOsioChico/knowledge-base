@@ -3,10 +3,10 @@ title: Typed errors
 description: Declare failures in the E channel with TaggedError, try/tryPromise, catchTag, mapError, and catchAll.
 ---
 
+> Put failure modes in the type signature, not in `try/catch`. `Effect.fail` declares an error in the `E` channel; `Effect.try` and `Effect.tryPromise` lift fallible code; `Effect.catchTag` discriminates by `_tag` and removes the handled tag from the residual error type.
+
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
-
-> Put failure modes in the type signature, not in `try/catch`. `Effect.fail` declares an error in the `E` channel; `Effect.try` and `Effect.tryPromise` lift fallible code; `Effect.catchTag` discriminates by `_tag` and removes the handled tag from the residual error type.
 
 > Prerequisite: [[effect-ts/composition|Composition]]
 

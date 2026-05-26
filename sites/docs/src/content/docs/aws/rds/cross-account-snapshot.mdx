@@ -3,9 +3,9 @@ title: Cross-account RDS snapshot sharing
 description: Move encrypted RDS between accounts — CMK re-encrypt, share snapshot, copy and restore in target account.
 ---
 
-import { Aside } from "@astrojs/starlight/components";
-
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.
+
+import { Aside } from "@astrojs/starlight/components";
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:

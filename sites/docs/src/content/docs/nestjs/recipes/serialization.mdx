@@ -5,10 +5,10 @@ related:
   - "[[nestjs/recipes/monorepo]]"
 ---
 
+> Strip secrets, rename fields, and expose role-specific views of the same entity. Nest hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classToPlain` on whatever the controller returned ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)).
+
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
-
-> Strip secrets, rename fields, and expose role-specific views of the same entity. Nest hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classToPlain` on whatever the controller returned ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)).
 
 <Aside type="tip" title="Prerequisites">
 Before diving into serialization, make sure you understand:
