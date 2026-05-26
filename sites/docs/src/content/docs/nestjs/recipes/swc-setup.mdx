@@ -8,7 +8,7 @@ source:
   - https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts
 ---
 
-> [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since NestJS 10, the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
+> [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since [[nestjs/releases/v10|NestJS 10]], the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
@@ -24,7 +24,7 @@ Before diving into the SWC builder setup, make sure you understand:
 | --- | --- | --- |
 | [Single Nest app (default here)](#setup) | `swc` | Always `--type-check` or `typeCheck: true` |
 | `@nestjs/swagger` / GraphQL CLI plugins | `swc` | **Required**: plugins need `tsc` metadata; see danger box in [What `--type-check` does](#what---type-check-does) |
-| Nest CLI monorepo | `webpack` + `swc-loader` | Per [monorepo guide](/knowledge-base/nestjs/recipes/monorepo/) |
+| Nest CLI [monorepo](/knowledge-base/nestjs/recipes/monorepo/) | `webpack` + `swc-loader` | Per [monorepo guide](/knowledge-base/nestjs/recipes/monorepo/) |
 | SWC circular-metadata / custom transformer bug | `tsc` fallback | Built-in; [comparison](#pick-a-builder) |
 
 ## Setup
@@ -147,7 +147,7 @@ Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com
 
 ## Monorepo note
 
-The CLI monorepo schematic sets `compilerOptions.webpack: true` ([`sub-app.factory.ts#L358`](https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts#L358)). Standalone `builder: "swc"` is not wired there: use `swc-loader` in webpack per the [official monorepo section](https://docs.nestjs.com/recipes/swc#monorepo).
+The CLI [[nestjs/recipes/monorepo|monorepo]] schematic sets `compilerOptions.webpack: true` ([`sub-app.factory.ts#L358`](https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts#L358)). Standalone `builder: "swc"` is not wired there: use `swc-loader` in webpack per the [official monorepo section](https://docs.nestjs.com/recipes/swc#monorepo).
 
 <Aside type="caution" title="Circular type imports">
 

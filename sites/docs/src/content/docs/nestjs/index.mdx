@@ -9,7 +9,7 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 
 ## TL;DR
 
-- Every HTTP request walks the same **pipeline**: middleware → guards → interceptors → pipes → handler → (filters on error). See [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
+- Every HTTP request walks the same **pipeline**: [[nestjs/fundamentals/middleware|middleware]] → [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → (filters on error). See [[nestjs/fundamentals/request-lifecycle|Request lifecycle]].
 - **[[nestjs/fundamentals/guards|Guards]]** authorize; **[[nestjs/fundamentals/pipes|pipes]]** validate one argument; **[[nestjs/fundamentals/interceptors|interceptors]]** wrap the handler stream; **[[nestjs/fundamentals/exception-filters|filters]]** shape errors.
 - **Globals** register once via `APP_*` (DI) or `useGlobalX()` (manual `new`): [[nestjs/fundamentals/global-providers|Global enhancers]].
 - **Boot/shutdown** is separate from per-request flow: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
@@ -74,7 +74,7 @@ flowchart TD
 
 ## Recipes at a glance
 
-- [[nestjs/recipes/configuration|Configuration]]: env loading, validation, typed factories via `@nestjs/config`.
+- [[nestjs/recipes/configuration|Configuration]]: env loading, [[nestjs/recipes/validation|validation]], typed factories via `@nestjs/config`.
 - [[nestjs/recipes/validation|Validation]]: global `ValidationPipe`, DTOs, whitelist and groups.
 - [[nestjs/recipes/serialization|Serialization]]: `class-transformer` to exclude fields on the way out.
 - [[nestjs/recipes/file-uploads|File uploads]]: Multer, `ParseFilePipeBuilder`, size and mime checks.

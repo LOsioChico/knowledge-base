@@ -526,7 +526,7 @@ Content-Type: application/json
 
 ## Custom asynchronous validation with Dependency Injection
 
-Often, validation requires checking state outside the payload (e.g., verifying database uniqueness before executing an insert, see [[nestjs/data/typeorm/postgresql-setup|TypeORM setup]] for database configuration).
+Often, validation requires checking state outside the payload (e.g., verifying database uniqueness before executing an insert, see [[nestjs/data/typeorm/postgresql-setup|TypeORM setup]] for database [[nestjs/recipes/configuration|configuration]]).
 
 ### 1. Define the custom validator and constraint
 Create a custom constraint class that implements `ValidatorConstraintInterface` and is decorated with `@Injectable()`. This allows the NestJS container to resolve any injected service or DB connection (like Prisma/TypeORM):

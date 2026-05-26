@@ -97,7 +97,7 @@ Run: `npx tsx src/hello.ts`. You should see `Hello, Effect!` (twice) and `1`.
 | Runner       | Returns                 | Reach for                                                                  |
 | ------------ | ----------------------- | -------------------------------------------------------------------------- |
 | `runSync`    | `A` (throws on failure) | Known-synchronous paths only; [worked example](#2-run-it)                  |
-| `runPromise` | `Promise<A>`            | App edge: HTTP handlers, tests, `async/await`; [worked example](#2-run-it) |
+| `runPromise` | `Promise<A>`            | App edge: [HTTP](/knowledge-base/effect-ts/platform/) handlers, tests, `async/await`; [worked example](#2-run-it) |
 | `runFork`    | `Fiber`                 | Background or interruptible work; [worked example](#2-run-it)              |
 
 <Aside type="caution" title="Which runner to use">

@@ -61,7 +61,7 @@ Effect ships three [runners](https://effect.website/docs/getting-started/running
 | ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
 | `Effect.runSync`    | `A` (throws on failure) | Known-synchronous paths only; [example above](#lazy-descriptions-not-running-code)                        |
 | `Effect.runPromise` | `Promise<A>`            | Bridge to `async/await` at the edge; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it) |
-| `Effect.runFork`    | `Fiber<A, E>`           | Background work you may interrupt; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it)   |
+| `Effect.runFork`    | `Fiber<A, E>`           | Background work you may [interrupt](/knowledge-base/effect-ts/concurrency/); [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it)   |
 
 Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; pick a runner only at the **entry point**. [[effect-ts/quickstart|Quickstart]] walks all three with runnable code.
 
@@ -142,7 +142,7 @@ Calling `Effect.runSync(program)` while `R` still includes `UserRepo` fails the 
 | Error type   | `unknown`                | Generic `E`               |
 | Dependencies | Implicit                 | Explicit `R`              |
 | Execution    | Eager                    | Lazy until a runner       |
-| Cancellation | Manual `AbortController` | Structured fibers         |
+| Cancellation | Manual `AbortController` | Structured [fibers](/knowledge-base/effect-ts/concurrency/)         |
 | Resources    | `try/finally`            | `acquireRelease`, `Scope` |
 | Retry        | Hand-rolled loops        | `Schedule`                |
 

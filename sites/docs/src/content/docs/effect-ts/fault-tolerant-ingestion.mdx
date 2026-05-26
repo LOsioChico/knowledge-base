@@ -15,7 +15,7 @@ import { PackageManagers } from 'starlight-package-managers';
 
 ## Architecture and Data Flow
 
-The following workflow diagram illustrates how elements are batched, fetched, parsed, timed out, and retried. Transient exceptions trigger backoffs, while structural schema or HTTP violations fail fast.
+The following workflow diagram illustrates how elements are batched, fetched, parsed, timed out, and retried. Transient exceptions trigger backoffs, while structural [[effect-ts/schema|schema]] or HTTP violations fail fast.
 
 ```text
            [ Array of Inputs (e.g., IDs: 1, 2, 3) ]

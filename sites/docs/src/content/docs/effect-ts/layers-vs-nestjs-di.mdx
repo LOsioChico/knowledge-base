@@ -348,7 +348,7 @@ run();
 
 ### Resource cleanup
 
-Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease`: release on interrupt without extra flags.
+Effect: [[effect-ts/scoped-resources|Layer.scoped]] + `acquireRelease`: release on [[effect-ts/concurrency|interrupt]] without extra flags.
 
 NestJS: `OnModuleDestroy` / `OnApplicationShutdown`: requires `app.close()` or `enableShutdownHooks()` (see [[nestjs/fundamentals/lifecycle-hooks|lifecycle hooks]] for details).
 
@@ -435,7 +435,7 @@ runTest();
 
 | You want | Reach for |
 | --- | --- |
-| Controllers, guards, interceptors, batteries-included HTTP | NestJS |
+| Controllers, guards, interceptors, batteries-included [HTTP](/knowledge-base/effect-ts/platform/) | NestJS |
 | [Compile-time wiring guarantees](#compile-time-r-vs-bootstrap-di) | Effect layers |
 | Per-request DI without manual layers | Nest [Scope.REQUEST](/knowledge-base/nestjs/fundamentals/global-providers/) |
 | [Cleanup on interruption without shutdown hooks](#resource-cleanup) | `Layer.scoped` |

@@ -46,7 +46,7 @@ This page uses exported shell variables so the load path stays explicit. If you 
 
 <Steps>
 
-1. Install the config package plus Joi for startup validation. After the command finishes, verify both packages land in `dependencies`.
+1. Install the config package plus Joi for startup [[nestjs/recipes/validation|validation]]. After the command finishes, verify both packages land in `dependencies`.
 
    <PackageManagers pkg="@nestjs/config joi" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
@@ -398,7 +398,7 @@ export class AppModule {}
 
 <Aside type="caution" title="NestJS 11 changed ConfigService lookup order">
 
-NestJS 11 changed `ConfigService#get()` lookup order. If you are upgrading, check [[nestjs/releases/v11|NestJS 11]] before assuming shell variables win over loaded config.
+[[nestjs/releases/v11|NestJS 11]] changed `ConfigService#get()` lookup order. If you are upgrading, check the release notes before assuming shell variables win over loaded config.
 
 </Aside>
 

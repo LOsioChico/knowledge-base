@@ -29,7 +29,7 @@ Before reading about the NestJS 10 release notes, make sure you understand:
 | [`nest start -b swc`](#swc-in-the-nest-cli) | Feature | ~20× faster dev builds |
 | [`Test#overrideModule().useModule()`](#override-whole-modules-in-tests) | Feature | Mock whole modules in e2e tests |
 | [Redis `wildcards: true`](#redis-wildcard-subscriptions) | Feature | Glob `psubscribe` patterns |
-| `AsyncLocalStorage` in interceptors | Feature | [trace-id recipe](/knowledge-base/nestjs/recipes/trace-id/) |
+| `AsyncLocalStorage` in [interceptors](/knowledge-base/nestjs/fundamentals/interceptors/) | Feature | [trace-id recipe](/knowledge-base/nestjs/recipes/trace-id/) |
 | [`@Search()`](#search-decorator) decorator | Feature | `SEARCH` HTTP method handler |
 | [Middleware once per matched route](#middleware-runs-once-per-matched-route) | Behavior | Stops double-firing on shared paths |
 
@@ -124,7 +124,7 @@ export class DocumentsController {
 
 ### Middleware runs once per matched route
 
-v10 deduplicates [[nestjs/fundamentals/middleware|middleware]] when multiple handlers share a path ([PR #9809](https://github.com/nestjs/nest/pull/9809)). Audit if you relied on duplicate firing.
+v10 deduplicates [[nestjs/fundamentals/middleware|middleware]] execution when multiple handlers share a path ([PR #9809](https://github.com/nestjs/nest/pull/9809)). Audit if you relied on duplicate firing.
 
 ## Upgrade checklist
 

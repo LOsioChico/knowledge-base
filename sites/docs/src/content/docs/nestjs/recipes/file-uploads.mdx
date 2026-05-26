@@ -29,7 +29,7 @@ When developers think of "file upload," they usually think of a browser sending 
 | **RAM Impact** | High (N × File Size) | Extremely Low (Chunked buffer) | **Zero** on NestJS |
 | **Disk Lifetime** | Ephemeral (Lost on restart) | **Cloud-Safe** (Saves directly) | **Cloud-Safe** (Saves directly) |
 | **Bandwidth Cost** | Heavy (Server routes raw bytes) | Heavy (Server routes raw bytes) | **Zero** (Saves directly from client) |
-| **File Validation** | High (Magic-number support) | Harder (Needs inline parsing) | Pre-validated via signed POST policy |
+| **File [Validation](/knowledge-base/nestjs/recipes/validation/)** | High (Magic-number support) | Harder (Needs inline parsing) | Pre-validated via signed POST policy |
 | **Best Used For** | Small files, local admin tools | Dynamic zip creation, virus scans | **Production gold standard** |
 
 ---
@@ -337,7 +337,7 @@ When developers think of "file upload," they usually think of a browser sending 
   </html>
   ```
 
-  You must configure Nginx, AWS ALB, or Cloudflare upload limits to match your NestJS Multer configuration size constraints.
+  You must configure Nginx, AWS ALB, or Cloudflare upload limits to match your NestJS Multer [[nestjs/recipes/configuration|configuration]] size constraints.
 </Aside>
 
 <Aside type="caution" title="Fastify requires `@fastify/multipart`">

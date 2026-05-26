@@ -293,7 +293,7 @@ function buildProseMask(body) {
 
   const walk = (node, ancestors) => {
     const excluded = ancestors.some((ancestor) =>
-      new Set(["definition", "image", "imageReference", "link", "linkReference"]).has(
+      new Set(["definition", "heading", "image", "imageReference", "link", "linkReference"]).has(
         ancestor.type,
       ),
     )

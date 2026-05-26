@@ -213,7 +213,7 @@ const providers = [
 
 <Aside type="note" title="Middleware has no APP_* token">
 
-[[nestjs/fundamentals/middleware|Middleware]] uses `MiddlewareConsumer` or `app.use()`: not this pattern. Only pipes, guards, interceptors, and filters have `APP_PIPE` / `APP_GUARD` / `APP_INTERCEPTOR` / `APP_FILTER`.
+[[nestjs/fundamentals/middleware|Middleware]] uses `MiddlewareConsumer` or `app.use()`: not this pattern. Only [[nestjs/fundamentals/pipes|pipes]], [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], and filters have `APP_PIPE` / `APP_GUARD` / `APP_INTERCEPTOR` / `APP_FILTER`.
 
 </Aside>
 
@@ -222,7 +222,7 @@ const providers = [
 - **Multiple `APP_*` registrations stack**: e.g. logging + timeout interceptors both run.
 - **Mixing `useGlobalPipes` and `APP_PIPE`**: both land in the same global list ([`application-config.ts#L60-L62`](https://github.com/nestjs/nest/blob/master/packages/core/application-config.ts#L60-L62), [`scanner.ts#L693-L695`](https://github.com/nestjs/nest/blob/master/packages/core/scanner.ts#L693-L695)). Pick one style per enhancer kind so order stays predictable.
 - **No `exports` needed**: official binding examples never export the `APP_*` token; Nest scans `providers` from any module.
-- **Testing overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). See [[nestjs/recipes/testing|Testing with @nestjs/testing]] for the full pattern.
+- **[[nestjs/recipes/testing|Testing]] overrides**: `.overrideProvider(APP_GUARD)` alone fails: `APP_GUARD` is a multi-provider slot. Refactor to `{ provide: APP_GUARD, useExisting: JwtAuthGuard }` plus a normal `JwtAuthGuard` provider, then `.overrideProvider(JwtAuthGuard).useClass(MockGuard)` ([testing docs](https://docs.nestjs.com/fundamentals/testing#overriding-globally-registered-enhancers)). See [[nestjs/recipes/testing|Testing with @nestjs/testing]] for the full pattern.
 
 ## See also
 

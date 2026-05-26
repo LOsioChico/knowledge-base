@@ -148,11 +148,13 @@ export class AppModule {}
 
 <Aside type="caution" title="GraphQL">
 
-Interceptors run per field resolver, not per request. `CacheInterceptor` keys by URL and collides across resolvers. Cache in the resolver or service instead.
+[[nestjs/fundamentals/interceptors|Interceptors]] run per field resolver, not per request. `CacheInterceptor` keys by URL and collides across resolvers. Cache in the resolver or service instead.
 
 </Aside>
 
 ## Configuration reference
+
+These options mirror [[nestjs/recipes/configuration|Configuration]] patterns — pass them to `CacheModule.register()` or `.registerAsync()`.
 
 | Option     | Type      | Default     | Notes                                                                            |
 | ---------- | --------- | ----------- | -------------------------------------------------------------------------------- |

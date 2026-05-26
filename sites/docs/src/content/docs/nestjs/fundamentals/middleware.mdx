@@ -44,7 +44,7 @@ export class LoggerMiddleware implements NestMiddleware {
 
 <Aside type="note" title="No ExecutionContext">
 
-Middleware cannot read `@Roles()`, the controller class, or which handler will run. That is why [[nestjs/fundamentals/request-lifecycle|authorization and validation]] live in guards and pipes, not here.
+Middleware cannot read `@Roles()`, the controller class, or which handler will run. That is why authorization and [[nestjs/recipes/validation|validation]] live in [[nestjs/fundamentals/guards|guards]] and [[nestjs/fundamentals/pipes|pipes]], not here.
 
 </Aside>
 

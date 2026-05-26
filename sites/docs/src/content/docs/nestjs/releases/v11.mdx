@@ -29,7 +29,7 @@ Before reading about the NestJS 11 release notes, make sure you understand:
 | `ConfigService#get` order | Breaking | Custom config overrides `process.env` |
 | Termination hook order reversed | Breaking | [Lifecycle hooks](/knowledge-base/nestjs/fundamentals/lifecycle-hooks/) |
 | [Dynamic module dedup by reference](#dynamic-modules-reference-dedup) | Breaking (edge) | Share module variable in tests |
-| Global middleware runs first | Breaking (edge) | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) |
+| Global [middleware](/knowledge-base/nestjs/fundamentals/middleware/) runs first | Breaking (edge) | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) |
 | [`getAllAndOverride` → `T \| undefined`](#reflector-getallandoverride) | Type-only | Handle missing metadata |
 | [`ConsoleLogger`](#consolelogger-json-mode) JSON mode | Feature | Structured logs without Pino |
 | [Microservice `unwrap()`, `on()`, `status`](#microservices-unwrap-on-status) | Feature | Native client access |
@@ -65,7 +65,7 @@ export class UsersController {
 }
 ```
 
-Middleware:
+[[nestjs/fundamentals/middleware|Middleware]]:
 
 ```typescript
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
@@ -128,7 +128,7 @@ v11: **custom config → validated env → `process.env`**. Exporting `FOO=...` 
 
 For modules `A → B → C` (A depends on B depends on C):
 
-| Phase | v10 | v11 |
+| Phase | [v10](/knowledge-base/nestjs/releases/v10/) | v11 |
 | --- | --- | --- |
 | Init | C → B → A | C → B → A (unchanged) |
 | Destroy | C → B → A | **A → B → C** |
@@ -136,6 +136,8 @@ For modules `A → B → C` (A depends on B depends on C):
 Dependents shut down before dependencies. Details: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
 
 ### Dynamic modules: reference dedup
+
+v11 deduplicates [[nestjs/recipes/dynamic-modules|dynamic modules]] by **object reference**, not by deep-equal comparison:
 
 ```typescript
 import { Module } from "@nestjs/common";

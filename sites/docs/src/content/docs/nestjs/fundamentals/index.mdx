@@ -5,12 +5,12 @@ description: Modules, the DI container, and the request pipeline that ties middl
 
 import { Aside, Card, CardGrid, Steps } from "@astrojs/starlight/components";
 
-> The mental model: `@Module()` classes group providers and controllers; the DI container wires them; the [[nestjs/fundamentals/request-lifecycle|request pipeline]] runs middleware → guards → interceptors → pipes → handler → filters on the way out.
+> The mental model: `@Module()` classes group providers and controllers; the DI container wires them; the [[nestjs/fundamentals/request-lifecycle|request pipeline]] runs [[nestjs/fundamentals/middleware|middleware]] → [[nestjs/fundamentals/guards|guards]] → [[nestjs/fundamentals/interceptors|interceptors]] → [[nestjs/fundamentals/pipes|pipes]] → handler → filters on the way out.
 
 ## TL;DR
 
 - **One request** = middleware (Express/Fastify) → enhancers inside Nest's exception zone → handler → response (filters only on throws).
-- **Enhancer order** for guards/pipes/interceptors: global → controller → route. **Exception filters invert**: route → controller → global.
+- **Enhancer order** for guards/pipes/interceptors: global → controller → route. **[[nestjs/fundamentals/exception-filters|Exception filters]] invert**: route → controller → global.
 - **Globals** can be `app.useGlobalX(new …)` (no DI) or `APP_*` providers (DI-aware): [[nestjs/fundamentals/global-providers|Global enhancers]].
 - **Process lifetime** (DB pool open/close) = [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]], not this pipeline.
 

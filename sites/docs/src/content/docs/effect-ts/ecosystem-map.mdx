@@ -19,7 +19,7 @@ import { Aside } from "@astrojs/starlight/components";
 
 ## How packages are laid out
 
-`effect` holds `Effect<A, E, R>`, runners, [[effect-ts/schema|Schema]], `Layer`, `Stream`, `Schedule`, `Fiber`, `Scope`, and combinators ([`packages/effect`](https://github.com/Effect-TS/effect/tree/main/packages/effect)). Everything else adds a runtime adapter, domain (HTTP, SQL, AI), or tooling.
+`effect` holds `Effect<A, E, R>`, runners, [[effect-ts/schema|Schema]], `Layer`, `Stream`, `Schedule`, `Fiber`, `Scope`, and combinators ([`packages/effect`](https://github.com/Effect-TS/effect/tree/main/packages/effect)). Everything else adds a runtime adapter, domain ([[effect-ts/platform|HTTP]], SQL, AI), or tooling.
 
 `@effect/sql`, `@effect/ai`, and `@effect/platform` fan out into driver/provider sub-packages (tables below).
 

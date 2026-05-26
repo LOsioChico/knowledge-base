@@ -83,25 +83,25 @@ The following table maps common production concerns to their precise layer in th
 | Execution Order | Phase / Layer | Scope / Type | Common Production Use Cases | Exception Zone |
 | :--- | :--- | :--- | :--- | :--- |
 | **1** | **HTTP Adapter** | Low-Level Node | Raw HTTP parsing, CORS headers, basic compression. | No (Native Server Error) |
-| **2** | **Middleware** | Express / Fastify | Session parsing, cookie parsing, early correlation/trace IDs, body parsing. | No (Express / Fastify Handler) |
-| **3** | **Guards** | Nest Enhancer | Token authentication (JWT verify), role-based authorization, rate limiting (throttling) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
-| **4** | **Interceptors (Pre)**| Nest Enhancer | Request caching checks, start timer (performance profiling), request logging (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
-| **5** | **Pipes** | Nest Enhancer | Input validation (`class-validator`), data parsing / coercion (`ParseIntPipe`) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
+| **2** | [**Middleware**](/knowledge-base/nestjs/fundamentals/middleware/) | Express / Fastify | Session parsing, cookie parsing, early correlation/trace IDs, body parsing. | No (Express / Fastify Handler) |
+| **3** | [**Guards**](/knowledge-base/nestjs/fundamentals/guards/) | Nest Enhancer | Token authentication (JWT verify), role-based authorization, [rate limiting](/knowledge-base/nestjs/recipes/rate-limiting/) (throttling) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
+| **4** | **Interceptors (Pre)**| Nest Enhancer | Request [caching](/knowledge-base/nestjs/data/caching/) checks, start timer (performance profiling), request logging (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
+| **5** | [**Pipes**](/knowledge-base/nestjs/fundamentals/pipes/) | Nest Enhancer | Input [validation](/knowledge-base/nestjs/recipes/validation/) (`class-validator`), data parsing / coercion (`ParseIntPipe`) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
 | **6** | **Controller** | Business Logic | Executing target database queries, service delegation, mapping response objects (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
 | **7** | **Interceptors (Post)**| Nest Enhancer | Mapping / transforming response objects, profiling duration telemetry, logs formatting (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
-| **8** | **Exception Filters**| Nest Enhancer | Formatting `HttpException` status and payload, catching custom DB errors (such as unique constraint). | Final Safety Net |
+| **8** | [**Exception Filters**](/knowledge-base/nestjs/fundamentals/exception-filters/)| Nest Enhancer | Formatting `HttpException` status and payload, catching custom DB errors (such as unique constraint). | Final Safety Net |
 | **9** | **HTTP Adapter** | Low-Level Node | Serializing JSON payload, writing outbound HTTP headers, terminating TCP socket. | Final Safety Net |
 
 ### Understanding the exception zone boundary
 
-One of the most critical structural gotchas is that **Middleware runs completely outside Nest's exception zone**. 
+One of the most critical structural gotchas is that **[[nestjs/fundamentals/middleware|Middleware]] runs completely outside Nest's exception zone**. 
 
 - **Inside the Exception Zone**: If an error is thrown inside a Guard, Interceptor, Pipe, or Controller handler, the Nest runtime catches it and delegates it directly to the matching [[nestjs/fundamentals/exception-filters|Exception filter]] chain.
-- **Outside the Exception Zone**: If an exception is thrown synchronously or asynchronously inside a Middleware function, the Nest Exception Filters **never** catch it. Instead, the error bypasses Nest entirely and falls back to the underlying platform's default error handler (such as Express's default HTML error page or Fastify's default JSON error formatter). 
+- **Outside the Exception Zone**: If an exception is thrown synchronously or asynchronously inside a Middleware function, the Nest [[nestjs/fundamentals/exception-filters|Exception Filters]] **never** catch it. Instead, the error bypasses Nest entirely and falls back to the underlying platform's default error handler (such as Express's default HTML error page or Fastify's default JSON error formatter). 
 
 <Aside type="caution" title="Middleware exception exclusion">
 
-If you perform token validation inside custom Middleware and throw a `UnauthorizedException`, your custom `HttpExceptionFilter` will **not** handle it. The client will receive the platform's default raw error response. For robust error handling, always perform token validation and credential extraction in a Nest [[nestjs/fundamentals/guards|Guard]].
+If you perform token [[nestjs/recipes/validation|validation]] inside custom Middleware and throw a `UnauthorizedException`, your custom `HttpExceptionFilter` will **not** handle it. The client will receive the platform's default raw error response. For robust error handling, always perform token validation and credential extraction in a Nest [[nestjs/fundamentals/guards|Guard]].
 
 </Aside>
 
@@ -215,7 +215,7 @@ Global `APP_GUARD`, `APP_INTERCEPTOR`, and `APP_PIPE` providers run **before** c
 | --- | --- | --- |
 | Correlation ID on raw `req` before Nest | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) | Runs on Express/Fastify; see [trace IDs](/knowledge-base/nestjs/recipes/trace-id/) |
 | Allow/deny before handler work | [Guards](/knowledge-base/nestjs/fundamentals/guards/) | `false` → `403` without touching the handler (worked example: [AuthGuard](#one-route-all-layers)) |
-| Logging, caching, timing around handler + response | [Interceptors](/knowledge-base/nestjs/fundamentals/interceptors/) | Wraps `next.handle()` and the returned stream (worked example: [LoggingInterceptor](#one-route-all-layers)) |
+| Logging, [caching](/knowledge-base/nestjs/data/caching/), timing around handler + response | [Interceptors](/knowledge-base/nestjs/fundamentals/interceptors/) | Wraps `next.handle()` and the returned stream (worked example: [LoggingInterceptor](#one-route-all-layers)) |
 | DTO validation, param coercion | [Pipes](/knowledge-base/nestjs/fundamentals/pipes/) | Last chance to shape input before the method body (worked example: [ParseIntPipe](#one-route-all-layers)) |
 | Map `NotFoundException` → JSON body | [Exception filters](/knowledge-base/nestjs/fundamentals/exception-filters/) | Only runs when something threw inside the exception zone |
 

@@ -226,7 +226,7 @@ Effect.runPromise(resilient).then(console.log);
   </TabItem>
 </Tabs>
 
-**Workhorse policy** for HTTP/ingestion: `Schedule.intersect(Schedule.jittered(Schedule.exponential("200 millis")), Schedule.recurs(3))`. Chain with [[effect-ts/composition|pipe]] after `timeout` and before `forEach` in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
+**Workhorse policy** for [[effect-ts/platform|HTTP]]/ingestion: `Schedule.intersect(Schedule.jittered(Schedule.exponential("200 millis")), Schedule.recurs(3))`. Chain with [[effect-ts/composition|pipe]] after `timeout` and before `forEach` in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
 
 <Aside type="caution" title="Do not retry non-idempotent effects">
 

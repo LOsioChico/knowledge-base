@@ -59,7 +59,7 @@ Write a custom filter when you need a stable JSON shape, domain-error mapping, o
 
 <Aside type="caution" title="Filters do not catch middleware errors">
 
-[[nestjs/fundamentals/middleware|Middleware]] runs before Nest's exception zone. If middleware throws or calls `next(err)`, the platform handler deals with it: not your `@Catch()` filters. Keep route authorization, DTO validation, and handler response shaping inside Nest layers when you want filter behavior.
+[[nestjs/fundamentals/middleware|Middleware]] runs before Nest's exception zone. If middleware throws or calls `next(err)`, the platform handler deals with it: not your `@Catch()` filters. Keep route authorization, DTO [[nestjs/recipes/validation|validation]], and handler response shaping inside Nest layers when you want filter behavior.
 
 </Aside>
 
