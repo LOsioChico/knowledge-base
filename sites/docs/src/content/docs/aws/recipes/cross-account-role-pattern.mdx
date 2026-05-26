@@ -1,6 +1,8 @@
 ---
 title: Cross-account IAM assume-role pattern
 description: STS AssumeRole with ExternalId for partial account migrations when a service stays in the old account.
+source:
+  - https://github.com/aws/aws-sdk-js-v3/blob/main/packages/credential-providers/src/fromTemporaryCredentials.ts
 ---
 
 > Pattern for partial [[aws/account-migrations|account migrations]]: leave a service in the old account and let new-account compute reach it via STS `AssumeRole` with ExternalId and a tightly scoped permission policy.

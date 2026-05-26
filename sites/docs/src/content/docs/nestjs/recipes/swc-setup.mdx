@@ -1,6 +1,11 @@
 ---
 title: SWC builder
 description: Fast Nest builds with nest start -b swc, type-check pairing, and Jest/Vitest test runners.
+source:
+  - https://docs.nestjs.com/recipes/swc
+  - https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts
+  - https://github.com/nestjs/nest-cli/blob/master/lib/compiler/swc/swc-compiler.ts
+  - https://github.com/nestjs/schematics/blob/master/src/lib/sub-app/sub-app.factory.ts
 ---
 
 > [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since NestJS 10, the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.

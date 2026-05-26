@@ -4,6 +4,8 @@ description: Wrap the handler before and after; RxJS streams, response mapping, 
 related:
   - "[[nestjs/fundamentals/guards]]"
   - "[[nestjs/fundamentals/pipes]]"
+source:
+  - https://docs.nestjs.com/interceptors
 ---
 
 > The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, caching, and timeouts: not for raw `req` mutation or per-argument [[nestjs/recipes/validation|validation]].

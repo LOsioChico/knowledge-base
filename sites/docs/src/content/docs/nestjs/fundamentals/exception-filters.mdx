@@ -4,6 +4,9 @@ description: Map thrown errors to HTTP responses; route-first resolution, opposi
 related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/global-providers]]"
+source:
+  - https://docs.nestjs.com/exception-filters
+  - https://docs.nestjs.com/faq/http-adapter
 ---
 
 > Last-chance handlers when something throws in [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the controller, or service code reached from that request path. Filters run **only on failure inside Nest's exception zone**.

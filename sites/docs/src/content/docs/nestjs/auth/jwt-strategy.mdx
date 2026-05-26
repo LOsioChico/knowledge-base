@@ -4,6 +4,9 @@ description: Sign JWTs on login, verify with passport-jwt, protect routes with J
 related:
   - "[[nestjs/recipes/configuration]]"
   - "[[nestjs/fundamentals/guards]]"
+source:
+  - https://docs.nestjs.com/recipes/passport
+  - https://github.com/nestjs/nest/blob/master/packages/core/services/reflector.service.ts
 ---
 
 > Issue a JWT on login, protect routes by validating the token, and let specific routes opt out via `@Public()`. The canonical NestJS auth setup.

@@ -1,6 +1,10 @@
 ---
 title: Handle database errors
 description: Map TypeORM QueryFailedError and Postgres SQLSTATE codes to HTTP responses with a global exception filter or service-level catches.
+source:
+  - https://github.com/nestjs/nest/blob/master/packages/core/exceptions/base-exception-filter.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/entity-manager/EntityManager.ts
+  - https://github.com/typeorm/typeorm/blob/master/src/error/QueryFailedError.ts
 ---
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.

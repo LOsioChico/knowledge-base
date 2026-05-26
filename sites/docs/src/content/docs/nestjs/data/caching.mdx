@@ -1,6 +1,10 @@
 ---
 title: Caching with @nestjs/cache-manager
 description: "In-memory or Redis caching via cache-manager v6+ and Keyv: CacheInterceptor, TTL in milliseconds, and multi-tier stores."
+source:
+  - https://docs.nestjs.com/techniques/caching
+  - https://github.com/nestjs/cache-manager/blob/master/lib/interceptors/cache.interceptor.ts
+  - https://github.com/nestjs/cache-manager/blob/master/package.json
 ---
 
 > Cache responses or arbitrary values with `@nestjs/cache-manager`. In-memory by default, swappable to Redis (or any [Keyv](https://keyv.org/docs/) store) without changing call sites. Two surfaces: `CacheInterceptor` for "cache GET responses by URL" and the injectable `Cache` for keys you control.

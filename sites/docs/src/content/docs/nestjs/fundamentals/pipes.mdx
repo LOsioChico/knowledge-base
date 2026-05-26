@@ -4,6 +4,10 @@ description: Transform or validate a single handler argument before the route me
 related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/recipes/validation]]"
+source:
+  - https://docs.nestjs.com/pipes
+  - https://docs.nestjs.com/techniques/validation
+  - https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts
 ---
 
 > Run on **one** argument at a time (`@Body()`, `@Param()`, `@Query()`): coerce types, apply defaults, or reject with `400` before the handler executes.

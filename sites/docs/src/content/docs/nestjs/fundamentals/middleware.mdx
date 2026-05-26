@@ -4,6 +4,16 @@ description: Express-style functions that run before guards; raw req/res, no Exe
 related:
   - "[[nestjs/fundamentals/request-lifecycle]]"
   - "[[nestjs/fundamentals/guards]]"
+source:
+  - https://docs.nestjs.com/faq/hybrid-application
+  - https://docs.nestjs.com/faq/raw-body
+  - https://docs.nestjs.com/middleware
+  - https://docs.nestjs.com/security/cors
+  - https://docs.nestjs.com/security/helmet
+  - https://docs.nestjs.com/techniques/compression
+  - https://docs.nestjs.com/techniques/cookies
+  - https://docs.nestjs.com/techniques/session
+  - https://github.com/nestjs/docs.nestjs.com/blob/master/content/migration.md
 ---
 
 > Functions that run **before** [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], and the handler. They see raw `req`/`res` and call `next()` or end the response.
