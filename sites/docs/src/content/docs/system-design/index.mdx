@@ -16,13 +16,16 @@ In a single-computer system, building software is straightforward: there is a si
 *   **No instant updates**: If a user updates their profile picture, how does every other server learn about it without slowing down the site?
 *   **No single truth of time**: Computers have physical clocks that drift. How do we know which event happened first if servers disagree on what time it is?
 
-[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/message-queues|Asynchronous Message Queues]], [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]], [[system-design/consistency-models|Consistency Models]], [[system-design/logical-clocks|Logical Clocks]], [[system-design/consistent-hashing|Consistent Hashing]], and [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] are the core foundational pillars of distributed software architecture.
+[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/message-queues|Asynchronous Message Queues]], [[system-design/messaging-patterns|Messaging Patterns]], [[system-design/delivery-semantics|Delivery Semantics]], [[system-design/dead-letter-queues|Dead Letter Queues]], [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]], [[system-design/consistency-models|Consistency Models]], [[system-design/logical-clocks|Logical Clocks]], [[system-design/consistent-hashing|Consistent Hashing]], and [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] are the core foundational pillars of distributed software architecture.
 
 ## TL;DR
 
 *   **Estimation Primitives**: Frames system capacities and constraints using powers of two, network latencies, and SLA uptime compounding formulas. See [[system-design/back-of-the-envelope-estimation|Estimation Primitives]].
 *   **Distributed Caching**: Analyzes read/write synchronization patterns, LRU eviction models, and high-load database stampede mitigations. See [[system-design/distributed-caching|Distributed Caching]].
 *   **Asynchronous Message Queues**: Decouples compute, routes pub/sub event fanout, clarifies delivery semantics, and establishes dead-letter recovery pipelines. See [[system-design/message-queues|Asynchronous Message Queues]].
+*   **Messaging Patterns**: Competing consumers, fan-out, consumer groups, and shared subscriptions — the distribution models that determine how messages flow from queues to consumer pools. See [[system-design/messaging-patterns|Messaging Patterns]].
+*   **Delivery Semantics**: At-most-once, at-least-once, exactly-once guarantees and idempotency engineering strategies for safe duplicate handling. See [[system-design/delivery-semantics|Delivery Semantics]].
+*   **Dead Letter Queues**: Poison pill detection, retry strategies with exponential backoff, DLQ metadata envelopes, and recovery workflows. See [[system-design/dead-letter-queues|Dead Letter Queues]].
 *   **Rate Limiting & Traffic Shaping**: Regulates API requests and protects downstream compute from spikes using Token Bucket, Leaky Bucket, and Sliding Window algorithms. See [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]].
 *   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
 *   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
@@ -122,7 +125,10 @@ flowchart TD
 | --- | --- | --- |
 | Estimation Primitives | [Estimation Primitives](/knowledge-base/system-design/back-of-the-envelope-estimation/) | Powers of two, Latency numbers, SLA nines, QPS math |
 | Distributed Caching | [Distributed Caching](/knowledge-base/system-design/distributed-caching/) | Read/Write patterns, Eviction LRU/LFU, Cache Stampede |
-| Asynchronous Message Queues | [Asynchronous Message Queues](/knowledge-base/system-design/message-queues/) | P2P vs Pub/Sub, Brokers vs Logs, Delivery Semantics, Idempotency, DLQs |
+| Asynchronous Message Queues | [Asynchronous Message Queues](/knowledge-base/system-design/message-queues/) | P2P vs Pub/Sub, Brokers vs Logs, Push vs Pull delivery |
+| Messaging Patterns | [Messaging Patterns](/knowledge-base/system-design/messaging-patterns/) | Competing Consumers, Fan-Out, Consumer Groups, Shared Subscriptions |
+| Delivery Semantics | [Delivery Semantics](/knowledge-base/system-design/delivery-semantics/) | At-most-once, At-least-once, Exactly-once, Idempotency strategies |
+| Dead Letter Queues | [Dead Letter Queues](/knowledge-base/system-design/dead-letter-queues/) | Poison pills, Retry strategies, DLQ metadata, Recovery workflows |
 | Rate Limiting & Traffic Shaping | [Rate Limiting & Traffic Shaping](/knowledge-base/system-design/rate-limiting/) | Token Bucket, Leaky Bucket, Sliding Window, Horizontal Lua scripts |
 | Consistency Models | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | Logical Clocks | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |

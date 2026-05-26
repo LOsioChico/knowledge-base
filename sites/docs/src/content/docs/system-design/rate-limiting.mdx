@@ -13,6 +13,7 @@ related:
   - "[[system-design/consistent-hashing]]"
   - "[[system-design/logical-clocks]]"
   - "[[system-design/distributed-transactions]]"
+  - "[[system-design/delivery-semantics]]"
 source:
   - https://redis.io/commands/eval/
 ---
@@ -20,11 +21,14 @@ source:
 > Foundational conceptual framework and mathematical algorithms for regulating API requests, defending downstream services, and shaping network traffic spikes.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 <Aside type="tip" title="Prerequisites">
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before diving into rate limiting and traffic shaping, make sure you understand:
-- [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, Pub/Sub channels, delivery semantics, and dead-letter recovery queues.
+- [[system-design/message-queues|Asynchronous Message Queues]]: Master decoupled compute architectures, Pub/Sub channels, [[system-design/delivery-semantics|delivery semantics]], and dead-letter recovery queues.
 - [[system-design/back-of-the-envelope-estimation|Back-of-the-Envelope Estimation]]: Master performance limits, capacity planning constants, and throughput scaling math.
 - [[system-design/distributed-caching|Distributed Caching]]: Master read/write caching strategies, Redis cluster topologies, and operational gotchas.
 
@@ -119,11 +123,65 @@ The Sliding Window Counter is a hybrid algorithm that combines the memory effici
 
 *Note: For detail on how standard clients use these concepts, check the [[nestjs/recipes/rate-limiting|NestJS Rate Limiting Recipe]].*
 
+<ParameterPlayground
+  title="Rate limiter calculator"
+  params={[
+    { name: "windowSec", label: "Window size", type: "range", min: 1, max: 120, step: 1, default: 60, suffix: "s" },
+    { name: "maxRequests", label: "Max requests per window", type: "range", min: 1, max: 1000, step: 1, default: 100 },
+    { name: "burstFactor", label: "Burst factor (token bucket)", type: "range", min: 1, max: 10, step: 0.5, default: 2, suffix: "×" },
+  ]}
+  outputs={[
+    { name: "rps", label: "Sustained RPS", format: "decimal" },
+    { name: "burstCapacity", label: "Max burst", format: "number" },
+    { name: "refillRate", label: "Token refill rate", format: "text" },
+  ]}
+  compute={`
+    var rps = params.maxRequests / params.windowSec;
+    var burst = Math.round(params.maxRequests * params.burstFactor);
+    var refill = rps.toFixed(1) + ' tokens/sec';
+    return { rps: rps, burstCapacity: burst, refillRate: refill };
+  `}
+/>
+
+<DecisionGuide
+  title="Pick the right rate limiting algorithm"
+  steps={[
+    { id: "start", question: "Is burst traffic acceptable?", options: [
+      { label: "Yes, allow short bursts", next: "burst" },
+      { label: "No, enforce smooth constant flow", next: "r-leaky" },
+    ]},
+    { id: "burst", question: "How important is boundary accuracy?", options: [
+      { label: "Must be exact (no double-limit at boundaries)", next: "exact" },
+      { label: "Approximate is fine", next: "approx" },
+    ]},
+    { id: "exact", question: "Is memory usage a concern?", options: [
+      { label: "No, I can store per-request timestamps", next: "r-sliding-log" },
+      { label: "Yes, needs to be compact", next: "r-sliding-counter" },
+    ]},
+    { id: "approx", result: "Token Bucket", explanation: "Token Bucket allows full bursts up to capacity, then enforces a steady refill rate. Low memory, simple to implement, the standard for API gateways." },
+    { id: "r-leaky", result: "Leaky Bucket", explanation: "Leaky Bucket enforces perfectly smooth output. Requests queue up and drain at a fixed rate. Best for worker queues and background job processing." },
+    { id: "r-sliding-log", result: "Sliding Window Log", explanation: "Stores every request timestamp for exact counting. Perfect accuracy but high memory cost — O(n) per user. Good for low-volume high-value APIs." },
+    { id: "r-sliding-counter", result: "Sliding Window Counter", explanation: "Approximates the sliding window using weighted fixed-window counts. Near-exact accuracy with O(1) memory. The production sweet spot for most gateways." },
+  ]}
+/>
+
 ---
 
 ## TypeScript Sliding Window Log Limiter
 
-Below is a self-contained, fully typed implementation of the Sliding Window Log algorithm. It illustrates how to perform precise log pruning and limit assertion using Unix millisecond timestamps.
+Below is a self-contained, fully typed implementation of the Sliding Window Log algorithm. Click through each step to trace how the algorithm prunes, evaluates, and manages memory.
+
+<CodeWalkthrough
+  title="Sliding Window Log algorithm"
+  steps={[
+    { lines: "1-2", title: "State storage", body: "A Map keyed by client ID stores an array of Unix-ms timestamps — one entry per allowed request. This is the 'log' in Sliding Window Log." },
+    { lines: "12-14", title: "Snapshot the window", body: "Each call captures the current time and computes a boundary. Any request timestamp older than `now - windowMs` is outside the active window." },
+    { lines: "16-18", title: "Fetch and evict stale entries", body: "Pull the client's existing timestamps from the Map, then filter out everything older than the boundary. The window 'slides' forward with every request." },
+    { lines: "20-24", title: "Allow if under limit", body: "If the pruned log has fewer entries than the limit, this request is allowed: push the current timestamp and return true." },
+    { lines: "26-27", title: "Reject but still clean", body: "Over the limit — return false. The pruned array is still saved so stale entries don't accumulate on future checks." },
+    { lines: "35-47", title: "Background pruning", body: "For long-running servers, call pruneExpired() on an interval (e.g., every 60 seconds). It walks every client's log, removes expired timestamps, and deletes map entries that are now empty." },
+  ]}
+>
 
 ```ts
 export class SlidingWindowLimiter {
@@ -136,26 +194,21 @@ export class SlidingWindowLimiter {
    * @param clientId Unique identifier for the client session or IP
    * @param limit Maximum number of requests allowed in the window
    * @param windowMs Timeframe window in milliseconds
-   * @returns boolean True if allowed, False if rate limited
    */
   public isAllowed(clientId: string, limit: number, windowMs: number): boolean {
     const now = Date.now();
     const boundary = now - windowMs;
 
-    // Fetch existing request timestamps for the client
     const clientLogs = this.logs.get(clientId) || [];
 
-    // Evict all timestamps that fall outside the current sliding window
     const activeLogs = clientLogs.filter(timestamp => timestamp >= boundary);
 
-    // Evaluate against the configured limit
     if (activeLogs.length < limit) {
       activeLogs.push(now);
       this.logs.set(clientId, activeLogs);
       return true;
     }
 
-    // Update the cleaned log even if request is blocked to save memory
     this.logs.set(clientId, activeLogs);
     return false;
   }
@@ -180,6 +233,8 @@ export class SlidingWindowLimiter {
   }
 }
 ```
+
+</CodeWalkthrough>
 
 ---
 

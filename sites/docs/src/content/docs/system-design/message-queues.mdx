@@ -1,6 +1,10 @@
 ---
 title: Asynchronous Message Queues
 description: "Decoupling systems: Point-to-Point vs Pub/Sub paradigms, traditional brokers vs log-based event streams, delivery semantics, idempotency, and DLQ recovery pipelines."
+aliases: [message queues, message broker, event streaming, async messaging]
+tags: [type/concept]
+area: system-design
+status: evergreen
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -9,11 +13,16 @@ related:
   - "[[system-design/logical-clocks]]"
   - "[[system-design/rate-limiting]]"
   - "[[system-design/distributed-transactions]]"
+  - "[[system-design/messaging-patterns]]"
+  - "[[system-design/delivery-semantics]]"
+  - "[[system-design/dead-letter-queues]]"
 ---
 
-> Decoupling system computations using asynchronous messaging primitives, contrasting transient message brokers with log-based event streaming, and securing at-least-once delivery with idempotent consumer architectures.
+> Decoupling system computations using asynchronous messaging primitives, contrasting transient message brokers with log-based event streaming, and securing [[system-design/delivery-semantics|at-least-once]] delivery with idempotent consumer architectures.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -33,7 +42,7 @@ Asynchronous message queues solve this bottleneck. By introducing an intermediar
 
 Distributed messaging generally falls into two primary communication patterns, each optimized for different consumption models:
 
-### 1. Point-to-Point (P2P / Competing Consumers)
+### 1. Point-to-Point (P2P / [[system-design/messaging-patterns|Competing Consumers]])
 
 In a Point-to-Point model, messages are sent from a producer to a single named queue. One or more consumer instances listen to the queue, but **each individual message is delivered to exactly one consumer instance**.
 
@@ -57,7 +66,7 @@ flowchart LR
 *   **How it works**: The broker acts as a workload distributor. If Consumer Instance 1 pulls Message A, Message A is locked and hidden from Consumer Instance 2.
 *   **Primary Use Case**: Task processing systems (like rendering video slices, customizing uploaded images, or running heavy SQL reports) where work must be shared among competing workers to prevent duplicate processing.
 
-### 2. Publish-Subscribe (Pub/Sub Event Fanout)
+### 2. Publish-Subscribe (Pub/Sub Event [[system-design/messaging-patterns|Fan-Out]])
 
 In a Publish-Subscribe model, publishers broadcast messages to a logical named channel called a **Topic**. Multiple independent downstream services register interest by creating distinct subscriptions to that topic. **Every subscription receives its own copy of the message**.
 
@@ -82,6 +91,32 @@ flowchart TD
 
 *   **How it works**: The topic acts as a broadcasting hub. When an event (like `OrderPlaced`) arrives, the topic clones and routes it to every registered subscription. Within each subscription, a competing consumer group can process that subscription's copy.
 *   **Primary Use Case**: Event-driven architectures where multiple decoupled domains need to react to a single business event simultaneously.
+
+<FlowSimulator
+  title="Messaging paradigms"
+  nodes={[
+    { id: "producer", label: "Producer", col: 0 },
+    { id: "queue", label: "Queue / Topic", col: 1 },
+    { id: "consumer1", label: "Consumer 1", col: 2 },
+    { id: "consumer2", label: "Consumer 2", col: 2 },
+    { id: "consumer3", label: "Consumer 3", col: 2 },
+  ]}
+  flows={[
+    { label: "Point-to-Point", steps: [
+      { from: "producer", to: "queue", message: "Push Message A", description: "Producer sends Message A into the queue. The queue stores it and waits until a consumer is free to pick it up." },
+      { from: "queue", to: "consumer1", message: "Deliver A (locked)", description: "Queue delivers Message A to Consumer 1 and locks it — no other consumer can see or process this message. This guarantees exactly-once delivery." },
+      { from: "producer", to: "queue", message: "Push Message B", description: "Producer sends a second message. The queue picks the next available consumer (rotating through them one by one, called round-robin) so work is spread evenly." },
+      { from: "queue", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2 because Consumer 1 is still busy. Each message is handled by exactly one consumer — multiple consumers share the load but never duplicate work." },
+    ]},
+    { label: "Pub/Sub Fanout", steps: [
+      { from: "producer", to: "queue", message: "Publish OrderPlaced", description: "Publisher broadcasts an OrderPlaced event to the Topic. The topic will clone it to every subscription." },
+      { from: "queue", to: "consumer1", message: "Copy → Inventory", description: "Inventory subscription receives its own copy of the event. It will reserve stock independently." },
+      { from: "queue", to: "consumer2", message: "Copy → Billing", description: "Billing subscription receives the same event. It will process payment independently and in parallel." },
+      { from: "queue", to: "consumer3", message: "Copy → Email", description: "Email subscription receives the event too. All three services react to the same event without knowing about each other." },
+    ]},
+  ]}
+  speed={1400}
+/>
 
 ---
 
@@ -117,6 +152,26 @@ The following matrix contrasts these two paradigms across primary operational di
 | [**Routing Power**](#traditional-message-brokers-eg-rabbitmq-amazon-sqs) | High (exchange routing, wildcards) | Low (routing is determined by Partition keys) |
 | [**Parallelism Scale**](#log-based-event-streamers-eg-apache-kafka-apache-pulsar) | Limited by single-queue locking overhead | Massive (horizontal partitions scale out) |
 | **Typical Tech** | RabbitMQ, [SQS](/knowledge-base/aws/sqs/), ActiveMQ | Apache Kafka, Apache Pulsar, Kinesis |
+
+<DecisionGuide
+  title="Which messaging architecture?"
+  steps={[
+    { id: "start", question: "Do you need to replay past messages?", options: [
+      { label: "Yes, replay and audit trail are essential", next: "r-stream" },
+      { label: "No, consume once and delete", next: "routing" },
+    ]},
+    { id: "routing", question: "Do you need complex message routing (headers, wildcards, exchanges)?", options: [
+      { label: "Yes, rich routing logic", next: "r-broker" },
+      { label: "No, simple partition-based routing", next: "scale" },
+    ]},
+    { id: "scale", question: "What throughput scale do you need?", options: [
+      { label: "Millions of events/sec, massive parallelism", next: "r-stream" },
+      { label: "Moderate (thousands/sec), simpler ops", next: "r-broker" },
+    ]},
+    { id: "r-stream", result: "Log-Based Event Stream (Kafka, Pulsar, Kinesis)", explanation: "Durable append-only log. Consumers track their own offset and can replay history. Scales via partitions. Best for event sourcing, analytics pipelines, and audit trails." },
+    { id: "r-broker", result: "Traditional Message Broker (RabbitMQ, SQS)", explanation: "Transient delivery with smart broker. Messages deleted on ACK. Rich routing via exchanges. Best for task queues, work distribution, and moderate-scale workflows." },
+  ]}
+/>
  
 ---
 
@@ -142,152 +197,27 @@ Consumers actively poll the broker for batches of messages when they have availa
 
 ## Delivery Semantics and the Two Generals Limit
 
-In a perfect world, a message is sent once and processed once. However, because distributed systems run across unreliable network networks, we must navigate the **Two Generals' Problem** (the impossibility of coordinating state perfectly over an unstable channel). 
+Distributed messaging must navigate the **Two Generals' Problem** — the impossibility of coordinating state perfectly over an unreliable channel. Messaging platforms offer three tiers of delivery guarantees, each trading off reliability, performance, and complexity:
 
-Messaging platforms offer three levels of delivery guarantees:
+| Semantic | Guarantee | Key trade-off |
+| :--- | :--- | :--- |
+| **At-most-once** | Delivered 0 or 1 times | Fast, no duplicates, but messages may be lost |
+| **At-least-once** | Delivered 1+ times | No data loss, but consumers must handle duplicates |
+| **Exactly-once** | Processed exactly 1 time | Zero loss and zero duplicates, but highest complexity |
 
-### 1. At-Most-Once Delivery
+Most business-critical systems use **at-least-once delivery** paired with **idempotent consumers** to prevent data loss while safely handling duplicates.
 
-Messages are delivered zero or one times. The sender makes a single attempt to deliver the message but never retries.
-
-*   **Implementation**: The broker dispatches the message and immediately deletes it or updates its offset before waiting for the consumer to finish. If the consumer crashes during processing, the message is lost forever.
-*   **Use Case**: Ephemeral metrics, telemetry, or sensor logs where speed is critical and minor data loss is acceptable.
-
-### 2. At-Least-Once Delivery
-
-Messages are guaranteed to be delivered one or more times. The broker keeps retrying until it receives a successful acknowledgment from the consumer.
-
-*   **The Broker's Dilemma**: If a consumer successfully processes a message but the network fails before the acknowledgment reaches the broker, the broker cannot distinguish between a consumer crash and a network disconnect. To guarantee no data loss, the broker must retry, leading to duplicate delivery.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant B as Message Broker
-    participant C as Consumer
-    participant DB as Persistent Store
-
-    B->>C: Deliver Message A (ID: 101)
-    C->>DB: Process & Save Message A
-    DB-->>C: Success
-    C-->>B: Send Acknowledgment (ACK)
-    Note over B,C: ⚠ Network Link Fails: ACK Lost!
-    Note over B: Visibility Timeout Expires
-    B->>C: Redeliver Message A (ID: 101) - DUPLICATE!
-    C->>DB: Process duplicate without idempotency logic!
-```
-
-*   **Use Case**: Most business-critical workflows (like order processing, billing, or shipping) where data loss is unacceptable. **This requires consumers to be Idempotent**.
-
-<Aside type="caution" title="At-Least-Once Duplicate Hazard">
-Because network retries can redeliver previously processed messages, you must design every consumer to be strictly idempotent. Failing to do so exposes system domains to critical duplicate charge, double shipping, or data corruption bugs.
+<Aside type="tip" title="Deep dive">
+For the full treatment — the Broker's Dilemma, Kafka's transactional exactly-once, and three idempotency engineering patterns — see [[system-design/delivery-semantics|Delivery Semantics]].
 </Aside>
 
-### 3. Exactly-Once Delivery
-
-Messages are guaranteed to be processed exactly once, with zero data loss and zero duplicate effects.
-
-*   **How it is achieved**: True exactly-once delivery across external systems is impossible without absolute consensus. However, within controlled ecosystems like Apache Kafka, it is achieved through:
-    1.  **Idempotent Producers**: Producers attach unique transactional IDs and sequential numbers to every message. If a retry occurs, the broker detects the duplicate sequence number and drops it.
-    2.  **Transactional Coordination**: The consumer writes its processing outputs and commits its read offsets inside a unified atomic transaction. If any step fails, the entire transaction rolls back.
-
 ---
 
-## Designing Idempotent Consumers
+## Poison Pills & Dead Letter Queues
 
-Because most distributed systems rely on **At-Least-Once** delivery to prevent data loss, the downstream consumer must be designed to handle duplicate messages safely. An operation is idempotent if executing it multiple times yields the same system state as executing it once.
+When a message repeatedly fails to process, it cannot remain at the head of the queue — doing so blocks all subsequent messages, a problem called **head-of-line blocking**. These unprocessable messages are called **poison pills**.
 
-Here are three concrete engineering blueprints for achieving idempotency:
-
-### 1. Natural Idempotency (State-Setting)
-
-Design write operations to be naturally idempotent by setting absolute states rather than running relative updates.
-
-*   **Non-Idempotent**: `UPDATE accounts SET balance = balance + 100 WHERE id = 5`. If delivered twice, the balance increases by 200.
-*   **Idempotent**: `UPDATE accounts SET balance = 500 WHERE id = 5` or `UPDATE orders SET status = 'SHIPPED' WHERE id = 12`. No matter how many times this query runs, the final status remains `SHIPPED`.
-
-### 2. Unique Database Constraints
-
-Leverage the relational database's transaction engine to reject duplicate insertions.
-
-```sql
--- Ensure the order_id has a UNIQUE constraint
-ALTER TABLE payments ADD CONSTRAINT unique_order_payment UNIQUE (order_id);
-
--- Insert payment record. If a duplicate arrives, do nothing
-INSERT INTO payments (payment_id, order_id, amount, status)
-VALUES ('pay_883', 'order_492', 150.00, 'COMPLETED')
-ON CONFLICT (order_id) DO NOTHING;
-```
-
-This completely prevents duplicate entries at the storage layer without requiring complex distributed locks.
-
-### 3. Distributed Deduplication Store (Idempotency Key Pattern)
-
-For operations that trigger external side effects (like sending an email or charging a credit card via a third-party API), the consumer must check an external deduplication store (like a Redis cluster) before executing business logic.
-
-```typescript
-interface Message {
-  id: string; // Globally unique message identifier
-  payload: any;
-}
-
-interface RedisClient {
-  set(key: string, value: string, ...args: (string | number)[]): Promise<string | null>;
-  del(key: string): Promise<number>;
-}
-
-export class IdempotentConsumer {
-  private readonly redisClient: RedisClient; // Redis client wrapper
-  private readonly dedupeTTL = 86400; // 24-hour key expiration
-
-  constructor(redisClient: RedisClient) {
-    this.redisClient = redisClient;
-  }
-
-  public async process(message: Message): Promise<void> {
-    const lockKey = `dedupe:lock:${message.id}`;
-
-    // Attempt to acquire an atomic lock in Redis using SETNX (SET if Not Exists)
-    const acquired = await this.redisClient.set(lockKey, "PROCESSING", "NX", "EX", this.dedupeTTL);
-
-    if (!acquired) {
-      console.warn(`Duplicate message detected and skipped: ${message.id}`);
-      return;
-    }
-
-    try {
-      // 1. Execute business logic (e.g., charge credit card)
-      await this.executePayment(message.payload);
-
-      // 2. Update status in the deduplication store
-      await this.redisClient.set(lockKey, "PROCESSED", "KEEPTTL");
-    } catch (error) {
-      // Release lock on transient failure so the message can be retried safely
-      await this.redisClient.del(lockKey);
-      throw error;
-    }
-  }
-
-  private async executePayment(payload: any): Promise<void> {
-    // Payment provider integration logic
-  }
-}
-```
-
----
-
-## Poison Pills & Dead Letter Queue (DLQ) Pipelines
-
-When a message repeatedly fails to process, it cannot remain at the head of the queue. If it does, it blocks all subsequent messages, causing massive consumer lag. These unprocessable messages are called **Poison Pills**.
-
-Common causes of poison pills include:
-*   **Malformed payloads**: The message payload has syntax errors or violates the expected JSON schema.
-*   **Business validation failures**: The message contains references to missing resources (like a deleted user).
-*   **Software bugs**: The consumer code crashes on specific edge cases in the payload.
-
-### The Dead Letter Queue (DLQ) Pipeline
-
-To maintain high throughput and reliability, systems use a **Dead Letter Queue (DLQ)**. This is a secondary, dedicated holding queue for failed messages:
+To maintain throughput, systems route poison pills to a **[[system-design/dead-letter-queues|Dead Letter Queue (DLQ)]]** — a dedicated holding queue for failed messages. The broker counts delivery attempts and, once a configured `maxReceiveCount` is exceeded, automatically moves the message to the DLQ.
 
 ```mermaid
 flowchart TD
@@ -303,54 +233,17 @@ flowchart TD
     classDef red fill:#ff8787,stroke:#000,color:#000
 ```
 
-1.  **Consume**: The consumer pulls a message from the main queue.
-2.  **Fail & Retry**: Processing fails. The consumer rejects the message, and the broker puts it back in the main queue.
-3.  **Backoff**: To prevent overloading the consumer, the system applies **Exponential Backoff** (compounding the wait time between retries, e.g. 1s ➔ 2s ➔ 4s ➔ 8s).
-4.  **Dead-Lettering**: If the retry count exceeds the maximum limit (typically 3 to 5 attempts), the broker redirects the message to the Dead Letter Queue.
-5.  **Notify**: An alarm triggers (such as a Datadog alert on SQS `ApproximateNumberOfMessagesVisible`) to notify the engineering team.
-
-### DLQ Metadata Envelope
-
-A premium DLQ implementation wraps the original message in an envelope containing diagnostic metadata. This is essential for troubleshooting:
-
-```json
-{
-  "original_queue": "order-processing-queue",
-  "first_received": "2026-05-23T13:00:00Z",
-  "dead_lettered": "2026-05-23T13:05:00Z",
-  "retry_attempts": 5,
-  "failed_consumer_id": "pod-worker-x93",
-  "exception_class": "ValidationError",
-  "exception_message": "Missing property 'shipping_address'",
-  "original_payload": {
-    "order_id": "ord_8829",
-    "customer_id": "usr_99",
-    "amount": 99.99
-  }
-}
-```
-
-### Operational Workflows for DLQ Recovery
-
-Once a poison pill lands in the DLQ, engineers must choose one of three recovery actions:
-
-1.  **Manual Inspection & Repair**:
-    *   *Scenario*: The message failed because of a transient external API bug or missing database record.
-    *   *Action*: Fix the underlying issue (e.g. restore the database record), then use a replay tool to move the message back to the main queue for reprocessing.
-2.  **Code Correction & Replay**:
-    *   *Scenario*: The message is valid, but a bug in the consumer caused the crash.
-    *   *Action*: Hot-fix the consumer code, deploy the update, and then trigger a batch replay of all accumulated DLQ messages.
-3.  **Audit & Drop**:
-    *   *Scenario*: The message is completely malformed and has no business value.
-    *   *Action*: Log the message to long-term audit storage (like S3 or Glacier) for compliance, and delete it from the DLQ to keep the queue clean.
-
-<Aside type="caution" title="DLQ Replay Side-Effect Risks">
-Before triggering a batch replay of Dead Letter Queue messages, you must guarantee that downstream consumers are 100% idempotent. If a consumer executed part of the transaction before failing and does not support idempotency, replaying the DLQ message will duplicate those side-effects.
+<Aside type="tip" title="Deep dive">
+For the full treatment — retry strategies (exponential backoff with jitter), DLQ metadata envelopes, per-queue vs shared DLQs, recovery workflows, and monitoring best practices — see [[system-design/dead-letter-queues|Dead Letter Queues]].
 </Aside>
 
 ---
 
 ## See Also
+*   [[system-design/messaging-patterns|Messaging Patterns]] — Competing consumers, fan-out, consumer groups, and shared subscription models.
+*   [[system-design/delivery-semantics|Delivery Semantics]] — At-most-once, at-least-once, exactly-once guarantees and idempotency strategies.
+*   [[system-design/dead-letter-queues|Dead Letter Queues]] — DLQ architecture, retry strategies, and recovery workflows.
+*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] — Coordinating multi-service state changes.
 *   [[system-design/back-of-the-envelope-estimation|Back-of-the-Envelope Estimation Primitives]]
 *   [[system-design/distributed-caching|Distributed Caching & Invalidation]]
 *   [[system-design/consistency-models|CAP Theorem & Consistency Models]]
