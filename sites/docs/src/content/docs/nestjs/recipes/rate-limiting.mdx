@@ -3,6 +3,11 @@ title: Rate Limiting with @nestjs/throttler
 description: Global ThrottlerGuard, per-route @Throttle and @SkipThrottle, named buckets, proxy trackers, and Redis storage in NestJS.
 source:
   - https://docs.nestjs.com/security/rate-limiting
+related:
+  - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/recipes/configuration]]"
+  - "[[nestjs/data/caching]]"
 ---
 
 > Cap how many requests a single client can fire at your API in a time window. `@nestjs/throttler` ships a [[nestjs/fundamentals/guards|guard]] you bind globally: per-route overrides come from two decorators. In-memory store by default, Redis when you scale past one instance.

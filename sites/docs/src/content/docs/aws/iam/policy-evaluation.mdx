@@ -1,6 +1,9 @@
 ---
 title: IAM policy evaluation
 description: Default deny, explicit deny, policy layers, simulator diagnostics, and AccessDenied triage.
+related:
+  - "[[aws/iam/cli]]"
+  - "[[aws/recipes/cross-account-role-pattern]]"
 ---
 
 > IAM policy evaluation is the authorization pass behind every AWS API call: start at deny, find every applicable allow, then let explicit denies and guardrail policies decide what survives.

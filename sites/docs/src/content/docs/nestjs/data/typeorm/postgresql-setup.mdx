@@ -5,6 +5,10 @@ source:
   - https://docs.nestjs.com/techniques/database
   - https://github.com/nestjs/config/blob/master/lib/config.service.ts
   - https://github.com/nestjs/typeorm/blob/master/lib/interfaces/typeorm-options.interface.ts
+related:
+  - "[[nestjs/data/typeorm/handle-database-errors]]"
+  - "[[nestjs/recipes/configuration]]"
+  - "[[nestjs/recipes/validation]]"
 ---
 
 > Wire `@nestjs/typeorm` to Postgres via `forRootAsync` + `ConfigService`, register entities per feature, inject repositories, and run migrations from a standalone `DataSource`. One `forRoot` per process; `forFeature` per module.

@@ -4,6 +4,15 @@ description: Context.Tag, Layer, and Effect.provide — the R channel as a typed
 source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts
+related:
+  - "[[effect-ts/composition]]"
+  - "[[effect-ts/ecosystem-map]]"
+  - "[[effect-ts/layers-vs-nestjs-di]]"
+  - "[[effect-ts/schema]]"
+  - "[[effect-ts/scoped-resources]]"
+  - "[[effect-ts/typed-errors]]"
+  - "[[effect-ts/what-is-effect]]"
+  - "[[effect-ts/retry-and-schedule]]"
 ---
 
 > The `R` channel of `Effect<A, E, R>` is the typed dependency graph. Declare a service with a `Tag`, build an implementation as a `Layer`, and `Effect.provide` it. The compiler refuses to run an effect whose `R` is not `never`.

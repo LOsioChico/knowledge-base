@@ -1,6 +1,12 @@
 ---
 title: Cross-account RDS snapshot sharing
 description: Move encrypted RDS between accounts — CMK re-encrypt, share snapshot, copy and restore in target account.
+related:
+  - "[[aws/account-migrations]]"
+  - "[[aws/cli/profiles-and-credentials]]"
+  - "[[aws/rds/cli]]"
+  - "[[aws/kms/cli]]"
+  - "[[aws/s3/cross-account-migration]]"
 ---
 
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.

@@ -3,6 +3,13 @@ title: Trace IDs with AsyncLocalStorage
 description: Propagate x-request-id through middleware, logs, exception filters, interceptors, and outbound HTTP with AsyncLocalStorage.
 source:
   - https://docs.nestjs.com/recipes/async-local-storage
+related:
+  - "[[nestjs/fundamentals/exception-filters]]"
+  - "[[nestjs/fundamentals/guards]]"
+  - "[[nestjs/fundamentals/interceptors]]"
+  - "[[nestjs/fundamentals/middleware]]"
+  - "[[nestjs/fundamentals/pipes]]"
+  - "[[nestjs/fundamentals/request-lifecycle]]"
 ---
 
 > Stamp every request with a unique ID at the edge, propagate it through [[nestjs/fundamentals/guards|guards]], [[nestjs/fundamentals/interceptors|interceptors]], [[nestjs/fundamentals/pipes|pipes]], the handler, error responses, log lines, and outbound HTTP calls. Turns "an error happened" into "request `8f2a` failed at this exact step in this exact service". The propagation layer relies only on Node's built-in `node:async_hooks` (`AsyncLocalStorage`) plus `randomUUID` from `node:crypto`.
