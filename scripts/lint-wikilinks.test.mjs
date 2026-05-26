@@ -10,6 +10,8 @@ import test from "node:test"
 const execFileAsync = promisify(execFile)
 const scriptPath = fileURLToPath(new URL("./lint-wikilinks.mjs", import.meta.url))
 
+const DOCS = "sites/docs/src/content/docs"
+
 async function createFixture(files) {
   const repoRoot = await mkdtemp(join(tmpdir(), "wikilink-linter-"))
   const allFiles = {
@@ -67,7 +69,7 @@ ${body}
 
 function cleanVault(overrides = {}) {
   return {
-    "content/index.md": `---
+    [`${DOCS}/index.mdx`]: `---
 title: Home
 aliases: []
 tags: [type/moc]
@@ -77,9 +79,9 @@ related:
 
 # Home
 
-- [[nestjs/index]]
+- [[nestjs]]
 `,
-    "content/nestjs/index.md": `---
+    [`${DOCS}/nestjs/index.mdx`]: `---
 title: NestJS
 aliases: []
 tags: [type/moc]
@@ -92,7 +94,7 @@ related:
 
 - [[nestjs/recipes/alpha]]
 `,
-    "content/nestjs/recipes/index.md": `---
+    [`${DOCS}/nestjs/recipes/index.mdx`]: `---
 title: Recipes
 aliases: []
 tags: [type/moc]
@@ -105,7 +107,7 @@ related:
 
 - [[nestjs/recipes/alpha]]
 `,
-    "content/nestjs/recipes/alpha.md": note({ title: "Alpha Recipe" }),
+    [`${DOCS}/nestjs/recipes/alpha.mdx`]: note({ title: "Alpha Recipe" }),
     ...overrides,
   }
 }
@@ -116,7 +118,7 @@ function recipeVault(recipes) {
     .join("\n")
 
   return {
-    "content/index.md": `---
+    [`${DOCS}/index.mdx`]: `---
 title: Home
 aliases: []
 tags: [type/moc]
@@ -126,9 +128,9 @@ related:
 
 # Home
 
-- [[nestjs/index]]
+- [[nestjs]]
 `,
-    "content/nestjs/index.md": `---
+    [`${DOCS}/nestjs/index.mdx`]: `---
 title: NestJS
 aliases: []
 tags: [type/moc]
@@ -141,7 +143,7 @@ related:
 
 ${recipeLinks}
 `,
-    "content/nestjs/recipes/index.md": `---
+    [`${DOCS}/nestjs/recipes/index.mdx`]: `---
 title: Recipes
 aliases: []
 tags: [type/moc]
@@ -156,7 +158,7 @@ ${recipeLinks}
 `,
     ...Object.fromEntries(
       Object.entries(recipes).map(([slug, content]) => [
-        `content/nestjs/recipes/${slug}.md`,
+        `${DOCS}/nestjs/recipes/${slug}.mdx`,
         content,
       ]),
     ),
@@ -182,7 +184,7 @@ test("passes on a clean fixture vault", async () => {
 test("fails when related frontmatter is asymmetric", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/index.md": `---
+      [`${DOCS}/nestjs/index.mdx`]: `---
 title: NestJS
 aliases: []
 tags: [type/moc]
@@ -196,7 +198,7 @@ related:
 - [[nestjs/recipes/alpha]]
 - [[nestjs/recipes/beta]]
 `,
-      "content/nestjs/recipes/index.md": `---
+      [`${DOCS}/nestjs/recipes/index.mdx`]: `---
 title: Recipes
 aliases: []
 tags: [type/moc]
@@ -210,11 +212,11 @@ related:
 - [[nestjs/recipes/alpha]]
 - [[nestjs/recipes/beta]]
 `,
-      "content/nestjs/recipes/alpha.md": note({
+      [`${DOCS}/nestjs/recipes/alpha.mdx`]: note({
         title: "Alpha Recipe",
         related: '  - "[[nestjs/recipes/beta]]"\n',
       }),
-      "content/nestjs/recipes/beta.md": note({ title: "Beta Recipe" }),
+      [`${DOCS}/nestjs/recipes/beta.mdx`]: note({ title: "Beta Recipe" }),
     }),
   )
   const result = await runLinter(repoRoot)
@@ -228,7 +230,7 @@ related:
 test("fails when an indexed recipe is missing from surfaced lists", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/index.md": `---
+      [`${DOCS}/nestjs/index.mdx`]: `---
 title: NestJS
 aliases: []
 tags: [type/moc]
@@ -245,7 +247,7 @@ related:
 
   assert.equal(result.code, 1)
   assert.match(result.stderr, /listing-completeness: 1 missing entry/)
-  assert.match(result.stderr, /content\/nestjs\/index\.md/)
+  assert.match(result.stderr, /nestjs\/index\.mdx/)
 })
 
 test("fails when AGENTS.md and Copilot instructions drift", async () => {
@@ -379,7 +381,7 @@ test("emits structured JSON output", async () => {
 test("fails when required frontmatter fields are invalid", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/recipes/alpha.md": `---
+      [`${DOCS}/nestjs/recipes/alpha.mdx`]: `---
 title: Alpha Recipe
 aliases: []
 tags: [type/unknown]
@@ -438,7 +440,7 @@ A focused example.
 test("fails when related links to the current note", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/recipes/alpha.md": note({
+      [`${DOCS}/nestjs/recipes/alpha.mdx`]: note({
         title: "Alpha Recipe",
         related: '  - "[[nestjs/recipes/alpha]]"\n',
       }),
@@ -453,7 +455,7 @@ test("fails when related links to the current note", async () => {
 test("fails when a body wikilink targets a missing note", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/recipes/alpha.md": note({
+      [`${DOCS}/nestjs/recipes/alpha.mdx`]: note({
         title: "Alpha Recipe",
         body: "See [[nestjs/recipes/missing-note]].",
       }),
@@ -469,7 +471,7 @@ test("fails when a body wikilink targets a missing note", async () => {
 test("fails when a body wikilink contains a backtick", async () => {
   const repoRoot = await createFixture(
     cleanVault({
-      "content/nestjs/recipes/alpha.md": note({
+      [`${DOCS}/nestjs/recipes/alpha.mdx`]: note({
         title: "Alpha Recipe",
         body: "See [[nestjs/recipes/alpha|`AlphaThing`]] for details.",
       }),
@@ -484,7 +486,7 @@ test("fails when a body wikilink contains a backtick", async () => {
 
 test("fails when a partial wikilink is ambiguous", async () => {
   const repoRoot = await createFixture({
-    "content/index.md": `---
+    [`${DOCS}/index.mdx`]: `---
 title: Home
 aliases: []
 tags: [type/moc]
@@ -494,9 +496,9 @@ related:
 
 # Home
 
-- [[nestjs/index]]
+- [[nestjs]]
 `,
-    "content/nestjs/index.md": `---
+    [`${DOCS}/nestjs/index.mdx`]: `---
 title: NestJS
 aliases: []
 tags: [type/moc]
@@ -507,12 +509,12 @@ related:
 
 # NestJS
 
-- [[nestjs/fundamentals/index]]
+- [[nestjs/fundamentals]]
 - [[nestjs/fundamentals/target]]
 - [[nestjs/recipes/origin]]
 - [[nestjs/recipes/target]]
 `,
-    "content/nestjs/fundamentals/index.md": `---
+    [`${DOCS}/nestjs/fundamentals/index.mdx`]: `---
 title: Fundamentals
 aliases: []
 tags: [type/moc]
@@ -525,11 +527,11 @@ related:
 
 - [[nestjs/fundamentals/target]]
 `,
-    "content/nestjs/fundamentals/target.md": note({
+    [`${DOCS}/nestjs/fundamentals/target.mdx`]: note({
       title: "Fundamental Target",
       body: "A unique fundamental note.",
     }),
-    "content/nestjs/recipes/index.md": `---
+    [`${DOCS}/nestjs/recipes/index.mdx`]: `---
 title: Recipes
 aliases: []
 tags: [type/moc]
@@ -543,11 +545,11 @@ related:
 - [[nestjs/recipes/origin]]
 - [[nestjs/recipes/target]]
 `,
-    "content/nestjs/recipes/origin.md": note({
+    [`${DOCS}/nestjs/recipes/origin.mdx`]: note({
       title: "Origin Note",
       body: "See [[target]].",
     }),
-    "content/nestjs/recipes/target.md": note({
+    [`${DOCS}/nestjs/recipes/target.mdx`]: note({
       title: "Recipe Target",
       body: "A unique recipe note.",
     }),
@@ -564,7 +566,7 @@ related:
 test("fails when a non-index note is orphaned", async () => {
   const repoRoot = await createFixture({
     ...cleanVault(),
-    "content/nestjs/fundamentals/index.md": `---
+    [`${DOCS}/nestjs/fundamentals/index.mdx`]: `---
 title: Fundamentals
 aliases: []
 tags: [type/moc]
@@ -575,7 +577,7 @@ related:
 
 # Fundamentals
 `,
-    "content/nestjs/fundamentals/orphan.md": note({
+    [`${DOCS}/nestjs/fundamentals/orphan.mdx`]: note({
       title: "Orphan Concept",
       body: "A lonely concept with no incoming references.",
     }),
@@ -584,13 +586,13 @@ related:
 
   assert.equal(result.code, 1)
   assert.match(result.stderr, /orphans/)
-  assert.match(result.stderr, /content\/nestjs\/fundamentals\/orphan\.md/)
+  assert.match(result.stderr, /nestjs\/fundamentals\/orphan\.mdx/)
 })
 
 test("fails when a content folder has no index note", async () => {
   const repoRoot = await createFixture({
     ...cleanVault(),
-    "content/nestjs/missing-index/topic.md": note({
+    [`${DOCS}/nestjs/missing-index/topic.mdx`]: note({
       title: "Indexed Topic",
       body: "A topic in a folder with no index.",
     }),
@@ -599,7 +601,7 @@ test("fails when a content folder has no index note", async () => {
 
   assert.equal(result.code, 1)
   assert.match(result.stderr, /folder-indexes/)
-  assert.match(result.stderr, /content\/nestjs\/missing-index/)
+  assert.match(result.stderr, /nestjs\/missing-index/)
 })
 
 test("keeps a synthetic 250 note vault under the PR budget", async () => {

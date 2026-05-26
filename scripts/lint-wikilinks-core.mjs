@@ -57,6 +57,7 @@ const VALID_TAGS = new Set([
   "tech/sns",
   "tech/vpc",
   "tech/ecs",
+  "tech/eventbridge",
   "tech/effect-ts",
   "lifecycle",
   "events",
@@ -353,7 +354,7 @@ function normalizeTarget(raw) {
     .replace(/^content\//, "")
     .replace(/^\.\/?/, "")
     .replace(/^\.\.\//, "")
-    .replace(/\.md$/, "")
+    .replace(/\.mdx?$/, "")
     .replace(/\/$/, "")
   return target
 }
@@ -405,11 +406,11 @@ function frontmatterWikilinks(note, key, notesBySlug) {
 }
 
 function isIndexNote(note) {
-  return note.baseName === "index"
+  return note.isIndex
 }
 
 function isRootIndex(note) {
-  return note.rel === "index"
+  return note.isIndex && note.rel === "index"
 }
 
 function addViolation(result, violation) {
@@ -453,7 +454,9 @@ function validateSchema(result, notes) {
         message: "missing required string field `title`",
       })
     }
-    if (!Array.isArray(data.aliases)) {
+    // Optional fields: validate when present, but don't require them.
+    // Starlight MDX files may only have title + description.
+    if ("aliases" in data && !Array.isArray(data.aliases)) {
       addViolation(result, {
         check: "frontmatter-schema",
         file: note.file,
@@ -461,34 +464,36 @@ function validateSchema(result, notes) {
         message: "`aliases` must be an array",
       })
     }
-    if (!Array.isArray(data.tags) || data.tags.length === 0) {
-      addViolation(result, {
-        check: "frontmatter-schema",
-        file: note.file,
-        line: 1,
-        message: "`tags` must be a non-empty array",
-      })
-    } else {
-      for (const tag of data.tags) {
-        if (!VALID_TAGS.has(tag)) {
-          addViolation(result, {
-            check: "frontmatter-schema",
-            file: note.file,
-            line: 1,
-            message: `unknown tag \`${tag}\``,
-          })
-        }
-      }
-      if (!data.tags.some((tag) => String(tag).startsWith("type/"))) {
+    if ("tags" in data) {
+      if (!Array.isArray(data.tags) || data.tags.length === 0) {
         addViolation(result, {
           check: "frontmatter-schema",
           file: note.file,
           line: 1,
-          message: "`tags` must include one `type/*` tag",
+          message: "`tags` must be a non-empty array",
         })
+      } else {
+        for (const tag of data.tags) {
+          if (!VALID_TAGS.has(tag)) {
+            addViolation(result, {
+              check: "frontmatter-schema",
+              file: note.file,
+              line: 1,
+              message: `unknown tag \`${tag}\``,
+            })
+          }
+        }
+        if (!data.tags.some((tag) => String(tag).startsWith("type/"))) {
+          addViolation(result, {
+            check: "frontmatter-schema",
+            file: note.file,
+            line: 1,
+            message: "`tags` must include one `type/*` tag",
+          })
+        }
       }
     }
-    if (!VALID_STATUSES.has(data.status)) {
+    if ("status" in data && !VALID_STATUSES.has(data.status)) {
       addViolation(result, {
         check: "frontmatter-schema",
         file: note.file,
@@ -496,14 +501,7 @@ function validateSchema(result, notes) {
         message: "`status` must be one of seed, draft, evergreen, archived",
       })
     }
-    if (!("related" in data)) {
-      addViolation(result, {
-        check: "frontmatter-schema",
-        file: note.file,
-        line: 1,
-        message: "missing required field `related`",
-      })
-    } else if (data.related !== null && !Array.isArray(data.related)) {
+    if ("related" in data && data.related !== null && !Array.isArray(data.related)) {
       addViolation(result, {
         check: "frontmatter-schema",
         file: note.file,
@@ -511,7 +509,7 @@ function validateSchema(result, notes) {
         message: "`related` must be an array or an empty field",
       })
     }
-    if (!isRootIndex(note)) {
+    if ("area" in data && !isRootIndex(note)) {
       const area = note.rel.split("/")[0]
       if (data.area !== area) {
         addViolation(result, {
@@ -657,13 +655,13 @@ function validateFirstMentions(result, notes) {
 
 function validateFolderIndexes(result, contentRoot, dirs, fileSet, repoRoot) {
   for (const dir of dirs) {
-    const indexPath = join(dir, "index.md")
-    if (!fileSet.has(indexPath)) {
+    const indexPath = join(dir, "index.mdx")
+    if (!fileSet.has(indexPath) && !existsSync(join(dir, "index.md"))) {
       addViolation(result, {
         check: "folder-indexes",
         file: relative(repoRoot, dir).split(sep).join("/"),
         line: 1,
-        message: "folder under content/ is missing index.md",
+        message: "folder is missing index.mdx",
       })
     }
   }
@@ -671,8 +669,8 @@ function validateFolderIndexes(result, contentRoot, dirs, fileSet, repoRoot) {
 
 async function validateListingCompleteness(result, notes, repoRoot, indexedFolders) {
   for (const { area, folder } of indexedFolders) {
-    const areaIndex = notes.find((note) => note.rel === `${area}/index`)
-    const folderIndex = `${area}/${folder}/index`
+    const areaIndex = notes.find((note) => note.isIndex && note.rel === area)
+    const folderIndex = `${area}/${folder}`
     const folderNotes = notes.filter(
       (note) => note.rel.startsWith(`${area}/${folder}/`) && note.rel !== folderIndex,
     )
@@ -1185,7 +1183,7 @@ export function formatHuman(result) {
   }
 
   const folderIndexes = groupByCheck(errors, "folder-indexes")
-  if (folderIndexes.length === 0) stdout.push("✓ folder-indexes: every content folder has index.md")
+  if (folderIndexes.length === 0) stdout.push("✓ folder-indexes: every content folder has index.mdx")
   else
     printGeneric(
       stderr,
@@ -1336,7 +1334,11 @@ export async function lintVault({
   for (const path of files) {
     const src = await readFile(path, "utf8")
     const parsed = parseFrontmatter(src)
-    const rel = relative(contentRoot, path).split(sep).join("/").replace(/\.mdx?$/, "")
+    let rel = relative(contentRoot, path).split(sep).join("/").replace(/\.mdx?$/, "")
+    // Track index notes before slug transformation
+    const isIndex = rel === "index" || rel.endsWith("/index")
+    // Starlight treats index.mdx as the folder slug (aws/s3/index → aws/s3)
+    if (rel.endsWith("/index")) rel = rel.replace(/\/index$/, "")
     const baseName = rel.split("/").pop()
     const data = parsed.data
     notes.push({
@@ -1347,6 +1349,7 @@ export async function lintVault({
       data,
       file: relative(repoRoot, path).split(sep).join("/"),
       hasFrontmatter: parsed.hasFrontmatter,
+      isIndex,
       parseError: parsed.parseError,
       path,
       proseMask: buildProseMask(parsed.body),

@@ -11,7 +11,7 @@ const repoRoot = process.env.WIKILINK_LINTER_REPO_ROOT
   : DEFAULT_REPO
 const contentRoot = process.env.WIKILINK_LINTER_CONTENT_ROOT
   ? resolve(process.env.WIKILINK_LINTER_CONTENT_ROOT)
-  : join(repoRoot, "content")
+  : join(repoRoot, "sites/docs/src/content/docs")
 const json = process.argv.includes("--json")
 
 const result = await lintVault({ contentRoot, repoRoot })
