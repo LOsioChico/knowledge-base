@@ -1,0 +1,32 @@
+---
+/**
+ * Custom PageTitle override that composes:
+ * 1. starlight-view-modes (zen-mode toggle)
+ * 2. starlight-llm-actions (page actions dropdown)
+ *
+ * Both plugins try to override PageTitle. We give it to neither and compose both manually.
+ */
+import Default from "@astrojs/starlight/components/PageTitle.astro";
+import StarlightViewModesPageTitle from "starlight-view-modes/components/PageTitle.astro";
+import PageActions from "starlight-llm-actions/components/PageActions.astro";
+---
+
+<div class="starlight-llm-actions-row">
+  <Default {...Astro.props}><slot /></Default>
+  <PageActions />
+</div>
+<StarlightViewModesPageTitle />
+
+<style>
+  .starlight-llm-actions-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .starlight-llm-actions-row :global(h1) {
+    flex: 1;
+    min-width: 0;
+  }
+</style>

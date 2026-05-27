@@ -1,0 +1,385 @@
+---
+/**
+ * CodeWalkthrough.astro
+ * ────────────────────
+ * Step-by-step annotated code walkthrough. The reader clicks through
+ * regions of a code block; the current region is highlighted and a
+ * step card appears below the code. The code scrolls to keep
+ * highlighted lines in view within a constrained container.
+ */
+
+interface Step {
+  /** Line range to highlight, e.g. "1-5" or "12" for a single line */
+  lines: string;
+  /** Short title for this step */
+  title: string;
+  /** Explanation body (plain text or inline markdown) */
+  body: string;
+}
+
+interface Props {
+  /** Ordered walkthrough steps */
+  steps: Step[];
+  /** Optional header title */
+  title?: string;
+}
+
+const { steps, title } = Astro.props;
+
+const parsedSteps = steps.map((s) => {
+  const parts = s.lines.split("-").map(Number);
+  return {
+    ...s,
+    start: parts[0],
+    end: parts.length > 1 ? parts[1] : parts[0],
+  };
+});
+---
+
+<div
+  class="code-walkthrough not-content"
+  data-steps={JSON.stringify(parsedSteps.map((s) => ({ start: s.start, end: s.end })))}
+>
+  {title && <div class="cw-header">{title}</div>}
+
+  {/* ── CODE (scrollable container) ── */}
+  <div class="cw-code">
+    <slot />
+  </div>
+
+  {/* ── STEP CARD (below code, never overlaps) ── */}
+  <div class="cw-card">
+    <div class="cw-nav">
+      <button class="cw-prev" aria-label="Previous step" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+        Prev
+      </button>
+
+      <div class="cw-progress">
+        {parsedSteps.map((_, i) => (
+          <button
+            class={`cw-pip ${i === 0 ? "is-active" : ""}`}
+            data-step={i}
+            aria-label={`Step ${i + 1}`}
+          />
+        ))}
+      </div>
+
+      <button class="cw-next" aria-label="Next step">
+        Next
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+      </button>
+    </div>
+
+    <div class="cw-steps">
+      {parsedSteps.map((step, i) => (
+        <div class={`cw-step ${i === 0 ? "is-active" : ""}`} data-step-index={i}>
+          <div class="cw-step-meta">
+            <span class="cw-step-num">{i + 1}/{parsedSteps.length}</span>
+          </div>
+          <div class="cw-step-title">{step.title}</div>
+          <div class="cw-step-body">{step.body}</div>
+        </div>
+      ))}
+    </div>
+
+    <div class="cw-hint">Use ← → arrow keys to navigate</div>
+  </div>
+</div>
+
+<style>
+  .code-walkthrough {
+    --cw-text:       var(--sl-color-text);
+    --cw-text-faint: var(--sl-color-gray-3);
+    --cw-text-ghost: var(--sl-color-gray-4);
+    --cw-rule:       var(--sl-color-hairline-shade);
+    --cw-accent:     var(--sl-color-accent-high);
+    --cw-accent-low: var(--sl-color-accent-low);
+    --cw-panel:      var(--sl-color-bg-nav);
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    margin: 1.5rem 0;
+    background: var(--cw-panel);
+    border: 1px solid var(--cw-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .cw-header {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--cw-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--cw-rule);
+  }
+
+  /* ═══ CODE (constrained, scrollable) ═══ */
+  .cw-code {
+    position: relative;
+    max-height: 420px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    border-bottom: 1px solid var(--cw-rule);
+  }
+
+  .cw-code :global(.expressive-code) {
+    margin: 0 !important;
+  }
+
+  .cw-code :global(.expressive-code .frame) {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Line dimming when active */
+  .code-walkthrough[data-cw-active] .cw-code :global(.ec-line) {
+    opacity: 0.25;
+    transition: opacity 250ms var(--ease-out);
+  }
+
+  .code-walkthrough[data-cw-active] .cw-code :global(.ec-line[data-cw-highlight]) {
+    opacity: 1;
+    background: var(--cw-accent-low);
+  }
+
+  /* ═══ CARD (static, below code) ═══ */
+  .cw-card {
+    background: var(--cw-panel);
+  }
+
+  /* ═══ NAV BAR ═══ */
+  .cw-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--cw-rule);
+    gap: 10px;
+  }
+
+  .cw-prev,
+  .cw-next {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--sl-text-xs);
+    font-weight: 500;
+    color: var(--cw-text-faint);
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+    transition: color 160ms var(--ease-out), background 160ms var(--ease-out), transform 160ms var(--ease-out);
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .cw-prev:active:not(:disabled),
+  .cw-next:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  .cw-prev:hover:not(:disabled),
+  .cw-next:hover:not(:disabled) {
+    color: var(--cw-accent);
+    background: var(--cw-accent-low);
+  }
+
+  .cw-prev:disabled,
+  .cw-next:disabled {
+    opacity: 0.25;
+    cursor: default;
+  }
+
+  .cw-prev svg,
+  .cw-next svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Progress pips */
+  .cw-progress {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .cw-pip {
+    all: unset;
+    width: 18px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--cw-text-ghost);
+    cursor: pointer;
+    transition: background 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
+
+  .cw-pip:hover {
+    background: var(--cw-text-faint);
+    transform: scaleY(1.8);
+  }
+
+  .cw-pip.is-active {
+    background: var(--cw-accent);
+    transform: scaleY(1.8);
+  }
+
+  /* ═══ STEP CONTENT ═══ */
+  .cw-steps {
+    padding: 12px 16px 14px;
+  }
+
+  .cw-step {
+    display: none;
+  }
+
+  .cw-step.is-active {
+    display: block;
+    animation: cw-fade-in 200ms var(--ease-out);
+  }
+
+  @keyframes cw-fade-in {
+    from { opacity: 0; transform: translateY(3px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .cw-step-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: var(--sl-text-sm);
+  }
+
+  .cw-step-num {
+    color: var(--cw-accent);
+    font-weight: 600;
+  }
+
+  .cw-step-title {
+    font-size: var(--sl-text-lg);
+    font-weight: 600;
+    color: var(--cw-text);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+
+  .cw-step-body {
+    font-size: var(--sl-text-sm);
+    line-height: 1.7;
+    color: var(--cw-text-faint);
+    margin: 0;
+  }
+
+  /* ═══ HINT ═══ */
+  .cw-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--cw-text-ghost);
+    padding: 6px 0 8px;
+    border-top: 1px solid var(--cw-rule);
+    opacity: 0.6;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    .cw-code { max-height: none; overflow: visible; }
+    .cw-nav { display: none; }
+    .cw-hint { display: none; }
+    .cw-step { display: block !important; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
+    .code-walkthrough[data-cw-active] .cw-code :global(.ec-line) { opacity: 1 !important; background: none !important; }
+  }
+</style>
+
+<script>
+  function initCodeWalkthrough() {
+    document.querySelectorAll<HTMLElement>(".code-walkthrough:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const stepsData: { start: number; end: number }[] = JSON.parse(comp.dataset.steps || "[]");
+      if (stepsData.length === 0) return;
+
+      const stepEls = comp.querySelectorAll<HTMLElement>(".cw-step");
+      const pipEls = comp.querySelectorAll<HTMLElement>(".cw-pip");
+      const prevBtn = comp.querySelector<HTMLButtonElement>(".cw-prev");
+      const nextBtn = comp.querySelector<HTMLButtonElement>(".cw-next");
+      const codePanel = comp.querySelector<HTMLElement>(".cw-code");
+
+      if (!prevBtn || !nextBtn || !codePanel) return;
+
+      const lineEls = Array.from(codePanel.querySelectorAll<HTMLElement>(":scope .ec-line"));
+      let current = 0;
+
+      function goTo(index: number) {
+        if (index < 0 || index >= stepsData.length) return;
+        current = index;
+
+        const { start, end } = stepsData[index];
+
+        // Update highlights
+        comp.setAttribute("data-cw-active", "");
+        lineEls.forEach((el, i) => {
+          const lineNum = i + 1;
+          if (lineNum >= start && lineNum <= end) {
+            el.setAttribute("data-cw-highlight", "");
+          } else {
+            el.removeAttribute("data-cw-highlight");
+          }
+        });
+
+        // Update step card + pips
+        stepEls.forEach((el, i) => el.classList.toggle("is-active", i === index));
+        pipEls.forEach((el, i) => el.classList.toggle("is-active", i === index));
+        prevBtn!.disabled = index === 0;
+        nextBtn!.disabled = index === stepsData.length - 1;
+
+        // Scroll code container to show highlighted lines
+        const firstLine = lineEls[start - 1];
+        const lastLine = lineEls[Math.min(end - 1, lineEls.length - 1)];
+        if (firstLine && codePanel) {
+          const containerTop = codePanel.scrollTop;
+          const containerH = codePanel.clientHeight;
+          const lineTop = firstLine.offsetTop;
+          const lineBottom = lastLine ? lastLine.offsetTop + lastLine.offsetHeight : lineTop + 20;
+          const blockH = lineBottom - lineTop;
+
+          // Center the highlighted block in the scroll container
+          const targetScroll = lineTop - (containerH - blockH) / 2;
+          codePanel.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
+        }
+      }
+
+      // Controls
+      prevBtn.addEventListener("click", () => goTo(current - 1));
+      nextBtn.addEventListener("click", () => goTo(current + 1));
+
+      pipEls.forEach((pip) => {
+        pip.addEventListener("click", () => {
+          const idx = parseInt(pip.dataset.step || "0", 10);
+          goTo(idx);
+        });
+      });
+
+      // Keyboard
+      comp.setAttribute("tabindex", "0");
+      comp.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          goTo(current + 1);
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          goTo(current - 1);
+        }
+      });
+
+      goTo(0);
+    });
+  }
+
+  initCodeWalkthrough();
+  document.addEventListener("astro:page-load", initCodeWalkthrough);
+</script>

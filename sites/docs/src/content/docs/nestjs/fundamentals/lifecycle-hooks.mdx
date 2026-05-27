@@ -15,6 +15,7 @@ related:
 > Hooks for **application** lifetime: when modules wake up and when the process is asked to leave. Distinct from the per-request [[nestjs/fundamentals/request-lifecycle|request lifecycle]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into lifecycle hooks, make sure you understand:
@@ -32,22 +33,20 @@ Before diving into lifecycle hooks, make sure you understand:
 
 ## Three phases
 
-```mermaid
-flowchart LR
-    subgraph INIT [Initializing]
-        direction TB
-        I1[onModuleInit] --> I2[onApplicationBootstrap]
-    end
-    subgraph RUN [Running]
-        direction TB
-        R1[serves connections]
-    end
-    subgraph TERM [Terminating]
-        direction TB
-        T1[onModuleDestroy] --> T2[beforeApplicationShutdown] --> T3[connections close] --> T4[onApplicationShutdown]
-    end
-    INIT --> RUN --> TERM
-```
+<PipelineStrip
+  title="Lifecycle hook execution order"
+  zones={[
+    { start: 0, end: 1, label: "Initialization", color: "#34d399", icon: "🟢" },
+    { start: 2, end: 4, label: "Termination", color: "#f87171", icon: "🔴" },
+  ]}
+  stages={[
+    { label: "onModuleInit", color: "#34d399", tip: "Called once the host module's dependencies are resolved. Runs before the app starts listening." },
+    { label: "onApplicationBootstrap", color: "#34d399", tip: "Called after all modules initialized. App is ready to listen but not yet listening." },
+    { label: "onModuleDestroy", color: "#f87171", tip: "Called when app.close() is invoked or the process receives a termination signal (if enabled)." },
+    { label: "beforeApplicationShutdown", color: "#f87171", tip: "Called after onModuleDestroy. Receives the signal (SIGTERM, SIGINT). Connections still open — flush buffers here." },
+    { label: "onApplicationShutdown", color: "#f87171", tip: "Called after all connections are closed. Final cleanup — log, notify, exit." },
+  ]}
+/>
 
 Init runs when you call `app.init()` or `app.listen()`. Terminate runs on `app.close()` **or** on a process signal **after** `enableShutdownHooks()`. No init call → no init hooks. No `enableShutdownHooks()` → no signal-driven shutdown hooks.
 

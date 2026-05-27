@@ -1,12 +1,17 @@
 import { fileURLToPath } from "node:url";
 
 import { defineConfig } from "astro/config";
+import d2 from "astro-d2";
 import mermaid from "astro-mermaid";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import starlight from "@astrojs/starlight";
 import starlightSiteGraph from "starlight-site-graph";
 import starlightImageZoom from "starlight-image-zoom";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightHeadingBadges from "starlight-heading-badges";
+import starlightViewModes from "starlight-view-modes";
+import starlightLlmActions from "starlight-llm-actions";
 
 import { remarkBacklinks } from "./src/plugins/remark-backlinks.mjs";
 import { remarkInternalBaseLinks } from "./src/plugins/remark-internal-base-links.mjs";
@@ -269,14 +274,19 @@ export default defineConfig({
   prefetch: true,
   markdown: {
     remarkPlugins: [
+      remarkMath,
       remarkWikilinks({ docsRoot, base: BASE }),
       remarkInternalBaseLinks({ base: BASE }),
       remarkBacklinks({ docsRoot, base: BASE }),
     ],
-    rehypePlugins: [rehypeKbLinkClasses({ siteOrigin: SITE, basePath: BASE })],
+    rehypePlugins: [
+      rehypeKatex,
+      rehypeKbLinkClasses({ siteOrigin: SITE, basePath: BASE }),
+    ],
   },
   integrations: [
-    // Must run before Starlight so ```mermaid fences become diagrams.
+    // Must run before Starlight so diagram fences become SVGs.
+    d2({ experimental: { useD2js: true } }),
     mermaid({ autoTheme: true }),
     starlight({
       title: "Knowledge Base",
@@ -289,15 +299,24 @@ export default defineConfig({
           errorOnRelativeLinks: false,
           errorOnInvalidHashes: true,
         }),
+        starlightViewModes(),
         starlightHeadingBadges(),
+        starlightLlmActions(),
       ],
-      customCss: ["./src/styles/twoslash.css", "./src/styles/links.css"],
+      customCss: [
+        "katex/dist/katex.min.css",
+        "./src/styles/katex-fixes.css",
+        "./src/styles/twoslash.css",
+        "./src/styles/links.css",
+      ],
       editLink: {
         baseUrl: "https://github.com/LOsioChico/knowledge-base/edit/main/sites/docs/",
       },
       components: {
         Head: "./src/components/Head.astro",
         Header: "./src/components/Header.astro",
+        PageTitle: "./src/components/PageTitle.astro",
+        TableOfContents: "./src/components/TableOfContents.astro",
       },
       sidebar: [
         { label: "Home", link: "/" },

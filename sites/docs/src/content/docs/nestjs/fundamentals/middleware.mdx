@@ -28,6 +28,8 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+
 <Aside type="tip" title="Prerequisites">
 
 This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Middleware, make sure you understand:
@@ -117,6 +119,27 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
 | Validate `@Body()` / `@Param()` | [Pipe](/knowledge-base/nestjs/fundamentals/pipes/) | Argument metadata |
 | Wrap handler + response stream | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) | `next.handle()` |
 | Map thrown errors to HTTP | [Exception filter](/knowledge-base/nestjs/fundamentals/exception-filters/) | Inside Nest's exception zone |
+
+<DecisionGuide
+  title="Which NestJS layer should handle this?"
+  steps={[
+    { id: "start", question: "Do you need to read handler metadata (@Roles, @Public, custom decorators)?", options: [
+      { label: "Yes — I need to know which handler or controller will run", next: "nest-layer" },
+      { label: "No — I just need raw req/res (headers, body parsing, logging)", next: "r-middleware" },
+    ]},
+    { id: "nest-layer", question: "What do you need to do?", options: [
+      { label: "Allow or deny the entire request (authorization)", next: "r-guard" },
+      { label: "Validate or transform a single argument (@Body, @Param)", next: "r-pipe" },
+      { label: "Wrap the handler with before + after logic", next: "r-interceptor" },
+      { label: "Catch errors and format the HTTP response", next: "r-filter" },
+    ]},
+    { id: "r-middleware", result: "Middleware", explanation: "Raw Express/Fastify layer. Runs before Nest's DI and exception zone. Use for request IDs, CORS, compression, body parsing, and access logging.", link: "#signature" },
+    { id: "r-guard", result: "Guard", explanation: "Returns true/false to allow or deny. Has access to ExecutionContext and Reflector for reading @Roles() and custom metadata. First false → 403.", link: "/knowledge-base/nestjs/fundamentals/guards/" },
+    { id: "r-pipe", result: "Pipe", explanation: "Runs per-parameter. Coerces types (ParseIntPipe), applies defaults, or validates DTOs (ValidationPipe). Throws 400 on failure.", link: "/knowledge-base/nestjs/fundamentals/pipes/" },
+    { id: "r-interceptor", result: "Interceptor", explanation: "Wraps the handler with before/after logic via next.handle(). Use for logging, caching, response mapping, and timeouts. FILO execution order.", link: "/knowledge-base/nestjs/fundamentals/interceptors/" },
+    { id: "r-filter", result: "Exception Filter", explanation: "Catches thrown exceptions inside the exception zone and maps them to HTTP responses. Resolution order is inverted: route → controller → global.", link: "/knowledge-base/nestjs/fundamentals/exception-filters/" },
+  ]}
+/>
 
 ## Common stack (main.ts)
 

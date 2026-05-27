@@ -19,6 +19,8 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 > Prerequisite: [[effect-ts/composition|Composition]]
 
@@ -360,6 +362,17 @@ Effect.runPromise(getDisplayName("missing")).then(console.log);
 
 `Effect.catchTags` is the multi-tag form: one object keyed by tag literals, same narrowing semantics as chaining several `catchTag` calls.
 
+<TypeChannelTracer
+  title="Error channel narrowing in getDisplayName"
+  steps={[
+    { op: "fetchUser(id)", a: "{ id: string; name: string }", e: "NotFoundError | NetworkError | ParseError" },
+    { op: "Effect.map(user => user.name)", a: "string", e: "NotFoundError | NetworkError | ParseError", aChanged: true, note: "Success type narrows from User object to string" },
+    { op: "catchTag('NotFoundError', ...)", a: "string", e: "NetworkError | ParseError", removed: ["NotFoundError"] },
+    { op: "catchTags({ NetworkError, ParseError })", a: "string", e: "never", removed: ["NetworkError", "ParseError"] },
+    { op: "Effect.runPromise", a: "string", e: "never", note: "E is never — safe to run without unhandled errors" },
+  ]}
+/>
+
 <Tabs>
   <TabItem label="catchTag vs mapError">
     | Combinator | Effect on failure | Residual `E` |
@@ -406,6 +419,34 @@ Fix the annotation or narrow with `catchTag` / `mapError` until `E` matches what
 `catchTag("Error", ...)` matches every error with `_tag === "Error"`. Namespace tags (`User.NotFound`, `Db.Timeout`) once the taxonomy grows.
 
 </Aside>
+
+## Which recovery combinator?
+
+<DecisionGuide
+  title="Pick the right error handler"
+  steps={[
+    { id: "start", question: "Do you need to handle a specific error tag?", note: "A single _tag value like 'NotFoundError'", options: [
+      { label: "Yes, one specific tag", next: "specific" },
+      { label: "Multiple tags at once", next: "multi" },
+      { label: "All errors, regardless of tag", next: "all" },
+      { label: "I want to transform, not recover", next: "transform" },
+    ]},
+    { id: "specific", question: "Should the recovery succeed or fail with a new error?", options: [
+      { label: "Recover to a success value", next: "r-catchTag" },
+      { label: "Fail with a different error type", next: "r-mapError" },
+    ]},
+    { id: "multi", question: "Do you want to handle each tag differently?", options: [
+      { label: "Yes, different handler per tag", next: "r-catchTags" },
+      { label: "Same handler for all of them", next: "r-catchAll" },
+    ]},
+    { id: "all", result: "catchAll", explanation: "Effect.catchAll handles every expected error in E. Use it at the app edge when you want to guarantee E becomes never before calling runPromise." },
+    { id: "transform", result: "mapError", explanation: "Effect.mapError transforms the error without recovering — the effect still fails, just with a new error type. Useful for re-tagging or wrapping errors at layer boundaries." },
+    { id: "r-catchTag", result: "catchTag", explanation: "Effect.catchTag('TagName', handler) matches a single _tag literal and removes it from E. The handler returns a new Effect that replaces the failure path for that tag." },
+    { id: "r-mapError", result: "mapError", explanation: "Effect.mapError transforms the error type. The effect still fails, but with a different E. Use this at service boundaries to translate internal errors into API-level errors." },
+    { id: "r-catchTags", result: "catchTags", explanation: "Effect.catchTags({ TagA: handler, TagB: handler }) handles multiple tags in one call. Each handler runs only for its matching tag. All matched tags are removed from E." },
+    { id: "r-catchAll", result: "catchAll", explanation: "Effect.catchAll handles every expected error. If you want to handle them all the same way (e.g., log and return a default), this is simpler than matching individual tags." },
+  ]}
+/>
 
 ## See also
 

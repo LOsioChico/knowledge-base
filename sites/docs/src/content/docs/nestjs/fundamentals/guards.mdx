@@ -25,6 +25,8 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+
 <Aside type="tip" title="Prerequisites">
 
 This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Guards, make sure you understand:
@@ -116,9 +118,14 @@ export class AuthGuard implements CanActivate {
   <TabItem label="Order">
     Per request ([`guards-context-creator.ts`](https://github.com/nestjs/nest/blob/master/packages/core/guards/guards-context-creator.ts)):
 
-    1. Global guards (registration order)
-    2. Controller guards (left-to-right in `@UseGuards()`)
-    3. Route guards (left-to-right)
+    <PipelineStrip
+      title="Guard execution chain (first false → 403)"
+      stages={[
+        { label: "Global Guards", color: "#f59e0b", tip: "APP_GUARD providers — run on every route, registration order." },
+        { label: "Controller Guards", color: "#f59e0b", tip: "@UseGuards() on the class — left to right in the decorator." },
+        { label: "Route Guards", color: "#f59e0b", tip: "@UseGuards() on the method — left to right. All passed → handler runs." },
+      ]}
+    />
 
     **First** `false`, throw, or rejected `Promise` stops the chain: later guards never run.
   </TabItem>

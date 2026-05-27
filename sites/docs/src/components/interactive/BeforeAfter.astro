@@ -1,0 +1,394 @@
+---
+/**
+ * BeforeAfter.astro
+ * ─────────────────
+ * Draggable split-pane comparison between two pieces of content.
+ *
+ * Accepts named slots (`before` and `after`) so MDX authors can put
+ * any content on each side — code blocks, tables, diagrams, or prose.
+ *
+ * The reader drags a divider to compare both sides simultaneously,
+ * which is better than Tabs when the reader needs to see both at once.
+ *
+ * Usage in MDX:
+ *   <BeforeAfter beforeLabel="mod-N hashing" afterLabel="consistent hashing">
+ *     <Fragment slot="before">
+ *       <!-- any MDX content -->
+ *     </Fragment>
+ *     <Fragment slot="after">
+ *       <!-- any MDX content -->
+ *     </Fragment>
+ *   </BeforeAfter>
+ */
+
+interface Props {
+  /** Label for the left (before) side */
+  beforeLabel?: string;
+  /** Label for the right (after) side */
+  afterLabel?: string;
+  /** Header title */
+  title?: string;
+  /** Initial split position (0-100) */
+  split?: number;
+}
+
+const {
+  beforeLabel = "before",
+  afterLabel  = "after",
+  title,
+  split = 50,
+} = Astro.props;
+---
+
+<div class="before-after" data-split={split}>
+  {/* ═══════════════ HEADER ═══════════════ */}
+  {title && (
+    <div class="ba-head">
+      <span class="ba-title">{title}</span>
+      <span class="ba-hint">drag to compare</span>
+    </div>
+  )}
+
+  {/* ═══════════════ LABELS BAR ═══════════════ */}
+  <div class="ba-labels">
+    <span class="ba-label ba-label-before">{beforeLabel}</span>
+    <span class="ba-label ba-label-after">{afterLabel}</span>
+  </div>
+
+  {/* ═══════════════ COMPARISON AREA ═══════════════ */}
+  <div class="ba-viewport">
+    {/* ── BEFORE side ── */}
+    <div class="ba-side ba-before">
+      <div class="ba-side-inner">
+        <slot name="before" />
+      </div>
+    </div>
+
+    {/* ── AFTER side ── */}
+    <div class="ba-side ba-after">
+      <div class="ba-side-inner">
+        <slot name="after" />
+      </div>
+    </div>
+
+    {/* ── DIVIDER ── */}
+    <div class="ba-divider" role="separator" aria-label="Drag to compare before and after" tabindex="0">
+      <div class="ba-divider-line"></div>
+      <div class="ba-divider-handle">
+        <svg viewBox="0 0 16 24" fill="none" aria-hidden="true">
+          <rect x="4" y="4" width="2" height="16" rx="1" fill="currentColor" />
+          <rect x="10" y="4" width="2" height="16" rx="1" fill="currentColor" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ═══ TOKENS ═══ */
+  .before-after {
+    --ba-bg:         var(--sl-color-bg);
+    --ba-text:       var(--sl-color-text);
+    --ba-text-faint: var(--sl-color-gray-3);
+    --ba-text-ghost: var(--sl-color-gray-4);
+    --ba-rule:       var(--sl-color-hairline-shade);
+    --ba-accent:     var(--sl-color-accent-high);
+    --ba-panel:      var(--sl-color-bg-nav);
+    --ba-font:       var(--sl-font-system-mono, ui-monospace, 'Segoe UI Mono', monospace);
+  }
+
+  /* ═══ LAYOUT ═══ */
+  .before-after {
+    border: 1px solid var(--ba-rule);
+    background: var(--ba-bg);
+    font-family: var(--ba-font);
+    overflow: hidden;
+    container-type: inline-size;
+    user-select: none;
+  }
+
+  /* ═══ HEADER ═══ */
+  .ba-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--ba-rule);
+    font-size: 11px;
+    color: var(--ba-text-faint);
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+  }
+
+  .ba-title {
+    color: var(--ba-text);
+    font-weight: 500;
+  }
+
+  .ba-hint {
+    color: var(--ba-text-ghost);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* ═══ LABELS ═══ */
+  .ba-labels {
+    display: flex;
+    border-bottom: 1px solid var(--ba-rule);
+  }
+
+  .ba-label {
+    flex: 1;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .ba-label-before {
+    color: var(--ba-text-faint);
+    border-right: 1px solid var(--ba-rule);
+  }
+
+  .ba-label-after {
+    color: var(--ba-accent);
+  }
+
+  /* ═══ VIEWPORT ═══ */
+  .ba-viewport {
+    position: relative;
+    min-height: 200px;
+    overflow: hidden;
+    cursor: col-resize;
+  }
+
+  /* ═══ SIDES ═══ */
+  .ba-side {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .ba-side-inner {
+    padding: 16px 20px;
+    font-family: var(--sl-font, system-ui, sans-serif);
+    font-size: var(--sl-text-sm, 0.875rem);
+    line-height: var(--sl-line-height, 1.8);
+    color: var(--ba-text);
+    /* Ensure content doesn't wrap based on clip-path width */
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .ba-before {
+    z-index: 1;
+    clip-path: inset(0 50% 0 0);
+    background: var(--ba-bg);
+    border-right: 1px solid var(--ba-rule);
+  }
+
+  .ba-after {
+    z-index: 0;
+    background: var(--ba-bg);
+  }
+
+  /* ═══ CONTENT STYLING ═══ */
+  /* Reset Starlight prose styles inside the component */
+  .ba-side-inner :global(table) {
+    width: 100%;
+    font-size: 12px;
+  }
+
+  .ba-side-inner :global(pre) {
+    margin: 0;
+    font-size: 12px;
+  }
+
+  .ba-side-inner :global(p:first-child) {
+    margin-top: 0;
+  }
+
+  .ba-side-inner :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  /* ═══ DIVIDER ═══ */
+  .ba-divider {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    z-index: 10;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: col-resize;
+    outline: none;
+  }
+
+  .ba-divider-line {
+    width: 2px;
+    flex: 1;
+    background: var(--ba-text);
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+
+  .ba-divider:hover .ba-divider-line,
+  .ba-divider:focus-visible .ba-divider-line {
+    opacity: 1;
+    background: var(--ba-accent);
+  }
+
+  .ba-divider-handle {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 40px;
+    background: var(--ba-bg);
+    border: 1px solid var(--ba-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ba-text-faint);
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+
+  .ba-divider:hover .ba-divider-handle,
+  .ba-divider:focus-visible .ba-divider-handle {
+    border-color: var(--ba-accent);
+    color: var(--ba-accent);
+  }
+
+  .ba-divider.is-dragging .ba-divider-handle {
+    background: var(--ba-accent);
+    border-color: var(--ba-accent);
+    color: var(--ba-bg);
+  }
+
+  .ba-divider.is-dragging .ba-divider-line {
+    background: var(--ba-accent);
+    opacity: 1;
+  }
+
+  .ba-divider-handle svg {
+    width: 16px;
+    height: 24px;
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    .ba-before { clip-path: none !important; position: relative; }
+    .ba-after  { position: relative; border-top: 1px solid #ccc; }
+    .ba-divider { display: none; }
+    .ba-hint { display: none; }
+    .ba-viewport { display: flex; flex-direction: column; }
+    .ba-side { position: relative; }
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @container (max-width: 480px) {
+    .ba-head { padding: 8px 12px; }
+    .ba-hint { display: none; }
+    .ba-divider-handle { width: 24px; height: 32px; }
+    .ba-side-inner { padding: 12px 14px; }
+  }
+</style>
+
+<script>
+  function initBeforeAfter() {
+    document.querySelectorAll<HTMLElement>(".before-after:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const viewport = comp.querySelector<HTMLElement>(".ba-viewport");
+      const divider  = comp.querySelector<HTMLElement>(".ba-divider");
+      const before   = comp.querySelector<HTMLElement>(".ba-before");
+      if (!viewport || !divider || !before) return;
+
+      /* Set initial split from data attribute */
+      const initialSplit = parseFloat(comp.dataset.split || "50");
+      before.style.clipPath = `inset(0 ${100 - initialSplit}% 0 0)`;
+      divider.style.left = `${initialSplit}%`;
+
+      let isDragging = false;
+
+      function setPosition(clientX: number) {
+        const rect = viewport!.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const pct = Math.max(5, Math.min(95, (x / rect.width) * 100));
+
+        before!.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+        divider!.style.left = `${pct}%`;
+      }
+
+      /* Mouse events */
+      divider.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        isDragging = true;
+        divider.classList.add("is-dragging");
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        setPosition(e.clientX);
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        divider.classList.remove("is-dragging");
+      });
+
+      /* Touch events */
+      divider.addEventListener("touchstart", (e) => {
+        isDragging = true;
+        divider.classList.add("is-dragging");
+        if (e.touches[0]) setPosition(e.touches[0].clientX);
+      }, { passive: true });
+
+      viewport.addEventListener("touchmove", (e) => {
+        if (!isDragging) return;
+        if (e.touches[0]) setPosition(e.touches[0].clientX);
+      }, { passive: true });
+
+      window.addEventListener("touchend", () => {
+        if (!isDragging) return;
+        isDragging = false;
+        divider.classList.remove("is-dragging");
+      });
+
+      /* Keyboard: arrow keys move the divider */
+      divider.addEventListener("keydown", (e) => {
+        const currentLeft = parseFloat(divider.style.left || "50");
+        const step = 2;
+
+        if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const newPct = Math.max(5, currentLeft - step);
+          before!.style.clipPath = `inset(0 ${100 - newPct}% 0 0)`;
+          divider.style.left = `${newPct}%`;
+        } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const newPct = Math.min(95, currentLeft + step);
+          before!.style.clipPath = `inset(0 ${100 - newPct}% 0 0)`;
+          divider.style.left = `${newPct}%`;
+        }
+      });
+
+      /* Click anywhere in viewport to move divider */
+      viewport.addEventListener("click", (e) => {
+        if ((e.target as Element)?.closest(".ba-divider")) return;
+        setPosition(e.clientX);
+      });
+    });
+  }
+
+  initBeforeAfter();
+  document.addEventListener("astro:page-load", initBeforeAfter);
+</script>

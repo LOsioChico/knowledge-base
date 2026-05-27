@@ -1,0 +1,399 @@
+---
+/**
+ * TypeChannelTracer.astro
+ *
+ * Visualizes how Effect-TS type channels evolve across a pipeline.
+ * All steps render as a vertical timeline. Hover any step to preview
+ * that type state; click to lock. The type signature crossfades between
+ * pre-rendered states — no inline removal animation, no layout shift.
+ *
+ * Props:
+ *   steps – ordered pipeline steps, each with { op, a, e, removed?, note? }
+ *   title – optional heading above the component
+ */
+
+interface Step {
+  /** The combinator or operation applied at this step */
+  op: string;
+  /** Current A (success) channel type after this step */
+  a: string;
+  /** Current E (error) channel type after this step — "never" for empty */
+  e: string;
+  /** Whether A changed compared to the previous step */
+  aChanged?: boolean;
+  /** Error tag names removed at this step */
+  removed?: string[];
+  /** Error tag names added at this step */
+  added?: string[];
+  /** Short annotation shown below this step in the timeline */
+  note?: string;
+}
+
+interface Props {
+  steps: Step[];
+  title?: string;
+}
+
+const { steps, title } = Astro.props;
+
+/**
+ * Parse individual error tags from the E channel string.
+ * "NetworkError | ParseError" → ["NetworkError", "ParseError"]
+ * "never" → []
+ */
+function parseErrors(e: string): string[] {
+  if (e === "never") return [];
+  return e.split("|").map((s) => s.trim()).filter(Boolean);
+}
+---
+
+<div class="tt" data-steps={JSON.stringify(steps)}>
+  {/* Type display: crossfade between pre-rendered states */}
+  <div class="tt-display">
+    {steps.map((step, i) => {
+      const remaining = parseErrors(step.e);
+      const removed = step.removed || [];
+      const allTags = [...removed.map(t => ({ name: t, struck: true })),
+                       ...remaining.map(t => ({ name: t, struck: false }))];
+      const showNever = step.e === "never" && removed.length === 0;
+      const showNeverAfterRemoval = step.e === "never" && removed.length > 0;
+      return (
+        <div class={`tt-state ${i === 0 ? "is-active" : ""}`} data-state={i}>
+          <div class="tt-channels">
+            <div class="tt-line">
+              <span class="tt-label">A</span>
+              <span class="tt-a">{step.a}</span>
+            </div>
+            <div class="tt-line">
+              <span class="tt-label">E</span>
+              {showNever ? (
+                <span class="tt-never">never</span>
+              ) : allTags.length > 0 ? (
+                <span class="tt-errors">
+                  {allTags.map((tag, j) => (
+                    <span>
+                      {j > 0 && <span class="tt-pipe"> | </span>}
+                      <span class={`tt-error ${tag.struck ? "is-struck" : ""}`}>{tag.name}</span>
+                    </span>
+                  ))}
+                  {showNeverAfterRemoval && <span class="tt-arrow"> → </span>}
+                  {showNeverAfterRemoval && <span class="tt-never">never</span>}
+                </span>
+              ) : (
+                <span class="tt-never">never</span>
+              )}
+            </div>
+          </div>
+          <div class="tt-full-sig">Effect&lt;{step.a}, {step.e}&gt;</div>
+        </div>
+      );
+    })}
+  </div>
+
+  {/* Step timeline */}
+  <div class="tt-timeline">
+    {steps.map((step, i) => (
+      <button class={`tt-step ${i === 0 ? "is-active" : ""}`} data-step={i}>
+        <div class="tt-dot-col">
+          <span class="tt-dot" />
+          {i < steps.length - 1 && <span class="tt-connector" />}
+        </div>
+        <div class="tt-step-body">
+          <span class="tt-step-op">{step.op}</span>
+          {step.removed && step.removed.length > 0 && (
+            <div class="tt-step-badges">
+              {step.removed.map((tag) => (
+                <span class="tt-badge-rm">{tag}</span>
+              ))}
+            </div>
+          )}
+          {step.note && <span class="tt-step-note">{step.note}</span>}
+        </div>
+      </button>
+    ))}
+  </div>
+</div>
+
+<style>
+  .tt {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --tt-text:       var(--sl-color-text);
+    --tt-text-faint: var(--sl-color-gray-3);
+    --tt-text-ghost: var(--sl-color-gray-4);
+    --tt-rule:       var(--sl-color-hairline-shade);
+    --tt-accent:     var(--sl-color-accent-high);
+    --tt-accent-low: var(--sl-color-accent-low);
+    --tt-panel:      var(--sl-color-bg-nav);
+    --tt-green:      #4ade80;
+    --tt-red:        #f87171;
+    --tt-red-dim:    rgba(248, 113, 113, 0.08);
+    margin: 1.5rem 0;
+    background: var(--tt-panel);
+    border: 1px solid var(--tt-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  /* ═══ TYPE DISPLAY ═══
+     Grid stacks all states in the same cell.
+     Two-line layout: A channel, then E channel. */
+  .tt-display {
+    display: grid;
+    place-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--tt-rule);
+  }
+
+  .tt-state {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    pointer-events: none;
+  }
+
+  .tt-state.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .tt-channels {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tt-full-sig {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    color: var(--tt-text-faint);
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.5;
+  }
+
+  .tt-line {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: clamp(0.85rem, 2.2vw, 1.05rem);
+    line-height: 1.6;
+  }
+
+  .tt-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tt-text-ghost);
+    background: rgba(255,255,255, 0.04);
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .tt-a      { color: var(--tt-green); }
+  .tt-never  { color: var(--tt-green); font-weight: 600; }
+  .tt-error  { color: var(--tt-red); }
+  .tt-pipe   { color: var(--tt-text-ghost); }
+  .tt-arrow  { color: var(--tt-text-ghost); }
+
+  .tt-error.is-struck {
+    text-decoration: line-through;
+    opacity: 0.4;
+  }
+
+  /* ═══ STEP TIMELINE ═══
+     Dot column on the left with explicit connector spans.
+     Content on the right. Active = left border accent. */
+  .tt-timeline {
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+  }
+
+  .tt-step {
+    all: unset;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background 160ms var(--ease-out);
+    border-left: 3px solid transparent;
+  }
+
+  .tt-step:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .tt-step.is-active {
+    border-left-color: var(--tt-accent);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Dot column: holds dot + connector line */
+  .tt-dot-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 28px;
+    flex-shrink: 0;
+    padding-top: 14px;
+    margin-left: 8px;
+  }
+
+  .tt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--tt-text-ghost);
+    flex-shrink: 0;
+    transition: background 200ms var(--ease-out),
+                transform 200ms var(--ease-out),
+                box-shadow 200ms var(--ease-out);
+  }
+
+  .tt-step.is-active .tt-dot {
+    background: var(--tt-accent);
+    transform: scale(1.25);
+    box-shadow: 0 0 0 3px var(--tt-accent-low);
+  }
+
+  .tt-step:hover .tt-dot {
+    background: var(--tt-accent);
+  }
+
+  /* Connector line between dots — fills remaining vertical space */
+  .tt-connector {
+    flex: 1;
+    width: 1.5px;
+    background: var(--tt-rule);
+    margin-top: 4px;
+    min-height: 8px;
+  }
+
+  /* Step content */
+  .tt-step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 16px 10px 0;
+    min-width: 0;
+  }
+
+  .tt-step-op {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: var(--sl-text-sm);
+    color: var(--tt-text-faint);
+    transition: color 160ms var(--ease-out);
+    word-break: break-word;
+  }
+
+  .tt-step.is-active .tt-step-op {
+    color: var(--tt-text);
+  }
+
+  .tt-step:hover .tt-step-op {
+    color: var(--tt-text);
+  }
+
+  /* Removed-error badges — below the op name */
+  .tt-step-badges {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .tt-badge-rm {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 10px;
+    color: var(--tt-red);
+    background: var(--tt-red-dim);
+    padding: 1px 6px;
+    border-radius: 3px;
+    line-height: 1.6;
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  /* Note annotation */
+  .tt-step-note {
+    font-size: var(--sl-text-xs);
+    color: var(--tt-text-faint);
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  /* ═══ REDUCED MOTION & PRINT ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .tt-state, .tt-dot, .tt-step, .tt-step-op {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media print {
+    .tt-step { background: none !important; border-left-color: transparent !important; }
+    .tt-state { opacity: 1 !important; transform: none !important; position: relative; }
+    .tt-state:not(:first-child) { display: none; }
+  }
+</style>
+
+<script>
+  function initTypeTracer() {
+    document.querySelectorAll<HTMLElement>(".tt:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const steps = JSON.parse(comp.dataset.steps || "[]");
+      if (steps.length === 0) return;
+
+      const stateEls = comp.querySelectorAll<HTMLElement>(".tt-state");
+      const stepBtns = comp.querySelectorAll<HTMLElement>(".tt-step");
+
+      let current = 0;
+
+      function showState(index: number) {
+        if (index < 0 || index >= steps.length) return;
+        stateEls.forEach((el, i) => el.classList.toggle("is-active", i === index));
+        stepBtns.forEach((btn, i) => btn.classList.toggle("is-active", i === index));
+      }
+
+      stepBtns.forEach((btn, i) => {
+        btn.addEventListener("click", () => { current = i; showState(i); });
+        btn.addEventListener("mouseenter", () => showState(i));
+      });
+
+      const timeline = comp.querySelector<HTMLElement>(".tt-timeline");
+      if (timeline) {
+        timeline.addEventListener("mouseleave", () => showState(current));
+      }
+
+      comp.setAttribute("tabindex", "0");
+      comp.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          current = Math.min(current + 1, steps.length - 1);
+          showState(current);
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          current = Math.max(current - 1, 0);
+          showState(current);
+        }
+      });
+
+      showState(0);
+    });
+  }
+
+  initTypeTracer();
+  document.addEventListener("astro:page-load", initTypeTracer);
+</script>

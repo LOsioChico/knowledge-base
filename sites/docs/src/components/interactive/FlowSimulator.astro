@@ -1,0 +1,759 @@
+---
+/**
+ * FlowSimulator.astro
+ *
+ * Animated sequence diagram with column-based node layout.
+ * All edges for the current flow are drawn permanently; hovering
+ * a step in the timeline highlights that specific edge.
+ *
+ * Nodes are placed into columns via the optional `col` property.
+ * Nodes in the same column stack vertically. If no `col` is given,
+ * each node gets its own column (linear layout).
+ *
+ * Props:
+ *   nodes  – participants with optional column grouping
+ *   flows  – named sequences of hops with descriptions
+ *   speed  – unused (kept for API compat)
+ *   title  – optional heading
+ */
+
+interface Node {
+  id: string;
+  label: string;
+  col?: number;
+}
+
+interface FlowStep {
+  from: string;
+  to: string;
+  message: string;
+  description?: string;
+}
+
+interface Flow {
+  label: string;
+  steps: FlowStep[];
+}
+
+interface Props {
+  nodes: Node[];
+  flows: Flow[];
+  speed?: number;
+  title?: string;
+}
+
+const { nodes, flows, title } = Astro.props;
+
+/* ── Build column groups server-side ── */
+const colMap = new Map<number, Node[]>();
+nodes.forEach((node, i) => {
+  const c = node.col ?? i;
+  if (!colMap.has(c)) colMap.set(c, []);
+  colMap.get(c)!.push(node);
+});
+const columns = [...colMap.entries()].sort((a, b) => a[0] - b[0]).map(([, ns]) => ns);
+
+/* ── Compute short initials for each node ── */
+function initials(label: string): string {
+  const words = label.replace(/[/]/g, ' ').split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return words.map(w => w[0]).join('').toUpperCase().slice(0, 3);
+}
+---
+
+<div
+  class="fs"
+  data-nodes={JSON.stringify(nodes)}
+  data-flows={JSON.stringify(flows)}
+>
+  {title && <div class="fs-header">
+    <div class="fs-title">{title}</div>
+    <span class="fs-subtitle">Hover a step to highlight its path</span>
+  </div>}
+
+  {/* Flow tabs */}
+  {flows.length > 1 && (
+    <div class="fs-tabs">
+      {flows.map((flow, i) => (
+        <button class={`fs-tab ${i === 0 ? "is-active" : ""}`} data-flow={i}>
+          {flow.label}
+        </button>
+      ))}
+    </div>
+  )}
+
+  {/* ── Stage: column-based node grid + SVG edges ── */}
+  <div class="fs-stage">
+    <div class="fs-columns" style={`--fs-col-count: ${columns.length}`}>
+      {columns.map((colNodes) => (
+        <div class="fs-col">
+          {colNodes.map((node) => (
+            <div class="fs-node" data-node-id={node.id}>
+              <div class="fs-node-icon"><span class="fs-node-initial">{initials(node.label)}</span></div>
+              <span class="fs-node-label">{node.label}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+    <svg class="fs-svg" preserveAspectRatio="none" />
+  </div>
+
+  {/* ── Step timeline with step numbers ── */}
+  <div class="fs-timelines">
+    {flows.map((flow, fi) => (
+      <div class={`fs-timeline ${fi === 0 ? "is-active" : ""}`} data-timeline={fi}>
+        {flow.steps.map((step, si) => (
+          <button class={`fs-step ${si === 0 && fi === 0 ? "is-active" : ""}`} data-step={si}>
+            <div class="fs-dot-col">
+              <span class="fs-num">{si + 1}</span>
+              {si < flow.steps.length - 1 && <span class="fs-connector" />}
+            </div>
+            <div class="fs-step-body">
+              <span class="fs-step-route">
+                <span class="fs-step-from">{nodes.find(n => n.id === step.from)?.label || step.from}</span>
+                <span class="fs-step-arrow">→</span>
+                <span class="fs-step-to">{nodes.find(n => n.id === step.to)?.label || step.to}</span>
+                <span class="fs-step-msg">{step.message}</span>
+              </span>
+              {step.description && <span class="fs-step-desc">{step.description}</span>}
+            </div>
+          </button>
+        ))}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .fs {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --fs-text:       var(--sl-color-text);
+    --fs-text-faint: var(--sl-color-gray-3);
+    --fs-text-ghost: var(--sl-color-gray-4);
+    --fs-rule:       var(--sl-color-hairline-shade);
+    --fs-accent:     var(--sl-color-accent-high);
+    --fs-accent-low: var(--sl-color-accent-low);
+    --fs-panel:      var(--sl-color-bg-nav);
+    --fs-green:      #4ade80;
+    --fs-green-dim:  rgba(74, 222, 128, 0.12);
+    margin: 1.5rem 0;
+    background: var(--fs-panel);
+    border: 1px solid var(--fs-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .fs-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--fs-rule);
+    flex-wrap: wrap;
+  }
+
+  .fs-title {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--fs-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .fs-subtitle {
+    font-size: var(--sl-text-xs);
+    color: var(--fs-text-ghost);
+    font-style: italic;
+  }
+
+  /* ═══ TABS ═══ */
+  .fs-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--fs-rule);
+  }
+
+  .fs-tab {
+    all: unset;
+    flex: 1;
+    text-align: center;
+    font-size: var(--sl-text-xs);
+    font-weight: 500;
+    color: var(--fs-text-ghost);
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+    user-select: none;
+  }
+
+  .fs-tab:hover { color: var(--fs-text-faint); }
+  .fs-tab.is-active { color: var(--fs-accent); border-bottom-color: var(--fs-accent); }
+
+  /* ═══ STAGE ═══ */
+  .fs-stage {
+    position: relative;
+    padding: 48px 24px 24px;
+    min-height: 100px;
+    border-bottom: 1px solid var(--fs-rule);
+    overflow: visible;
+  }
+
+  /* Column grid: evenly spaced columns, nodes centered vertically */
+  .fs-columns {
+    display: grid;
+    grid-template-columns: repeat(var(--fs-col-count, 4), 1fr);
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .fs-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .fs-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    transition: opacity 300ms var(--ease-out);
+  }
+
+  .fs-node.is-faded { opacity: 0.3; }
+
+  .fs-node-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid var(--fs-rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 300ms var(--ease-out),
+                background 300ms var(--ease-out),
+                box-shadow 300ms var(--ease-out);
+  }
+
+  .fs-node-initial {
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    color: var(--fs-text-faint);
+    letter-spacing: -0.02em;
+    transition: color 300ms var(--ease-out);
+  }
+
+  .fs-node.is-source .fs-node-initial { color: var(--fs-accent); }
+  .fs-node.is-target .fs-node-initial { color: var(--fs-green); }
+
+  .fs-node.is-source .fs-node-icon {
+    border-color: var(--fs-accent);
+    background: var(--fs-accent-low);
+  }
+
+  .fs-node.is-target .fs-node-icon {
+    border-color: var(--fs-green);
+    background: var(--fs-green-dim);
+    box-shadow: 0 0 0 3px var(--fs-green-dim);
+  }
+
+  .fs-node-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--fs-text-faint);
+    text-align: center;
+    line-height: 1.3;
+    max-width: 80px;
+    word-break: break-word;
+    transition: color 300ms var(--ease-out);
+  }
+
+  .fs-node.is-source .fs-node-label { color: var(--fs-accent); }
+  .fs-node.is-target .fs-node-label { color: var(--fs-green); }
+
+  /* SVG */
+  .fs-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* ═══ STEP TIMELINE ═══ */
+  .fs-timelines {
+    display: grid;
+  }
+
+  .fs-timeline {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease-out);
+  }
+
+  .fs-timeline.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .fs-step {
+    all: unset;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    cursor: pointer;
+    position: relative;
+    transition: background 160ms var(--ease-out);
+    border-left: 3px solid transparent;
+  }
+
+  .fs-step:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .fs-step.is-active {
+    border-left-color: var(--fs-accent);
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  /* Step number badge */
+  .fs-dot-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 32px;
+    flex-shrink: 0;
+    padding-top: 10px;
+    margin-left: 8px;
+  }
+
+  .fs-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid var(--fs-rule);
+    color: var(--fs-text-ghost);
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 200ms var(--ease-out),
+                border-color 200ms var(--ease-out),
+                color 200ms var(--ease-out);
+  }
+
+  .fs-step.is-active .fs-num {
+    background: var(--fs-accent-low);
+    border-color: var(--fs-accent);
+    color: var(--fs-accent);
+  }
+
+  .fs-step:hover .fs-num {
+    border-color: var(--fs-accent);
+    color: var(--fs-accent);
+  }
+
+  .fs-connector {
+    flex: 1;
+    width: 1.5px;
+    background: var(--fs-rule);
+    margin-top: 4px;
+    min-height: 8px;
+  }
+
+  /* Step content */
+  .fs-step-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 16px 8px 0;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .fs-step-route {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    flex-wrap: wrap;
+    font-size: var(--sl-text-xs);
+  }
+
+  .fs-step-from {
+    color: var(--fs-text-ghost);
+    font-weight: 500;
+    transition: color 160ms var(--ease-out);
+  }
+  .fs-step.is-active .fs-step-from,
+  .fs-step:hover .fs-step-from { color: var(--fs-accent); }
+
+  .fs-step-arrow {
+    color: var(--fs-text-ghost);
+    font-size: 0.7rem;
+  }
+
+  .fs-step-to {
+    color: var(--fs-text-ghost);
+    font-weight: 500;
+    transition: color 160ms var(--ease-out);
+  }
+  .fs-step.is-active .fs-step-to,
+  .fs-step:hover .fs-step-to { color: var(--fs-green); }
+
+  .fs-step-msg {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: var(--sl-text-sm);
+    color: var(--fs-text-faint);
+    transition: color 160ms var(--ease-out);
+    word-break: break-word;
+    margin-left: auto;
+  }
+
+  .fs-step.is-active .fs-step-msg { color: var(--fs-text); }
+  .fs-step:hover .fs-step-msg { color: var(--fs-text); }
+
+  .fs-step-desc {
+    font-size: var(--sl-text-xs);
+    color: var(--fs-text-ghost);
+    font-style: italic;
+    line-height: 1.4;
+    max-width: 520px;
+    transition: color 160ms var(--ease-out);
+  }
+
+  .fs-step.is-active .fs-step-desc { color: var(--fs-text-faint); }
+
+  /* ═══ REDUCED MOTION & PRINT ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .fs-node, .fs-node-icon, .fs-num,
+    .fs-step, .fs-step-msg, .fs-step-from, .fs-step-to {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media print {
+    .fs-node { opacity: 1 !important; }
+    .fs-step { background: none !important; border-left-color: transparent !important; }
+  }
+</style>
+
+<script>
+  function initFlowSim() {
+    document.querySelectorAll<HTMLElement>(".fs:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const nodes: { id: string; label: string; col?: number }[] = JSON.parse(comp.dataset.nodes || "[]");
+      const flows: { label: string; steps: { from: string; to: string; message: string; description?: string }[] }[] =
+        JSON.parse(comp.dataset.flows || "[]");
+
+      if (nodes.length === 0 || flows.length === 0) return;
+
+      const nodeEls = comp.querySelectorAll<HTMLElement>(".fs-node");
+      const tabBtns = comp.querySelectorAll<HTMLElement>(".fs-tab");
+      const svg = comp.querySelector<SVGSVGElement>(".fs-svg")!;
+      const timelineEls = comp.querySelectorAll<HTMLElement>(".fs-timeline");
+      const NS = "http://www.w3.org/2000/svg";
+
+      let currentFlow = 0;
+      let current = 0;
+
+      /* ── Node center lookup ── */
+      function getNodeCenter(id: string): { x: number; y: number } | null {
+        const idx = nodes.findIndex(n => n.id === id);
+        if (idx < 0) return null;
+        const icon = nodeEls[idx]?.querySelector(".fs-node-icon");
+        if (!icon) return null;
+        const svgRect = svg.getBoundingClientRect();
+        const iconRect = icon.getBoundingClientRect();
+        return {
+          x: iconRect.left + iconRect.width / 2 - svgRect.left,
+          y: iconRect.top + iconRect.height / 2 - svgRect.top,
+        };
+      }
+
+      /**
+       * Group steps by unique from→to pair. Each edge gets one arrow
+       * with all step numbers listed. Bidirectional pairs (A→B, B→A)
+       * are treated as separate edges.
+       */
+      interface Edge {
+        from: string;
+        to: string;
+        stepIndices: number[];
+      }
+
+      function buildEdges(flow: typeof flows[0]): Edge[] {
+        const map = new Map<string, Edge>();
+        flow.steps.forEach((step, i) => {
+          const key = `${step.from}→${step.to}`;
+          if (!map.has(key)) {
+            map.set(key, { from: step.from, to: step.to, stepIndices: [] });
+          }
+          map.get(key)!.stepIndices.push(i);
+        });
+        return [...map.values()];
+      }
+
+      /* ── Draw all edges ── */
+      function drawAllEdges() {
+        svg.innerHTML = "";
+        const flow = flows[currentFlow];
+        const edges = buildEdges(flow);
+
+        /* Count backward edges so we can stagger their curve depths */
+        let backwardIdx = 0;
+
+        edges.forEach((edge) => {
+          const from = getNodeCenter(edge.from);
+          const to = getNodeCenter(edge.to);
+          if (!from || !to) return;
+
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          const len = Math.sqrt(dx * dx + dy * dy);
+          if (len < 1) return;
+
+          const pad = 26;
+          const ux = dx / len;
+          const uy = dy / len;
+          const x1 = from.x + ux * pad;
+          const y1 = from.y + uy * pad;
+          const x2 = to.x - ux * pad;
+          const y2 = to.y - uy * pad;
+
+          const g = document.createElementNS(NS, "g");
+          g.setAttribute("data-steps", edge.stepIndices.join(","));
+          g.style.transition = "opacity 250ms cubic-bezier(0.23, 1, 0.32, 1)";
+          g.style.opacity = "0.18";
+
+          const isBackward = to.x < from.x;
+          const isVertical = Math.abs(dx) < 20; /* same column */
+
+          if (isVertical) {
+            /* Same-column edge: straight vertical line */
+            const line = document.createElementNS(NS, "line");
+            line.setAttribute("x1", String(from.x));
+            line.setAttribute("y1", String(y1));
+            line.setAttribute("x2", String(to.x));
+            line.setAttribute("y2", String(y2));
+            line.setAttribute("stroke", "var(--fs-accent)");
+            line.setAttribute("stroke-width", "1.5");
+            line.setAttribute("stroke-dasharray", "5 3");
+            g.appendChild(line);
+
+            /* Vertical arrowhead */
+            const dir = dy > 0 ? 1 : -1;
+            const as = 7;
+            const arrow = document.createElementNS(NS, "polygon");
+            arrow.setAttribute("points",
+              `${to.x},${y2} ${to.x - as / 2},${y2 - dir * as} ${to.x + as / 2},${y2 - dir * as}`);
+            arrow.setAttribute("fill", "var(--fs-accent)");
+            g.appendChild(arrow);
+
+          } else if (!isBackward) {
+            /* Check if this forward edge skips over intermediate nodes */
+            const hasNodesInBetween = nodes.some(n => {
+              const nc = getNodeCenter(n.id);
+              if (!nc || n.id === edge.from || n.id === edge.to) return false;
+              return nc.x > Math.min(from.x, to.x) + 30 && nc.x < Math.max(from.x, to.x) - 30;
+            });
+
+            if (!hasNodesInBetween) {
+              /* Short forward edge: straight dashed line */
+              const line = document.createElementNS(NS, "line");
+              line.setAttribute("x1", String(x1));
+              line.setAttribute("y1", String(y1));
+              line.setAttribute("x2", String(x2));
+              line.setAttribute("y2", String(y2));
+              line.setAttribute("stroke", "var(--fs-accent)");
+              line.setAttribute("stroke-width", "1.5");
+              line.setAttribute("stroke-dasharray", "5 3");
+              g.appendChild(line);
+
+              /* Arrowhead */
+              const as = 7;
+              const ax = x2 - ux * as - uy * as / 2;
+              const ay = y2 - uy * as + ux * as / 2;
+              const bx = x2 - ux * as + uy * as / 2;
+              const by = y2 - uy * as - ux * as / 2;
+              const arrow = document.createElementNS(NS, "polygon");
+              arrow.setAttribute("points", `${x2},${y2} ${ax},${ay} ${bx},${by}`);
+              arrow.setAttribute("fill", "var(--fs-accent)");
+              g.appendChild(arrow);
+            } else {
+              /* Long forward edge: gentle curve below to skip intermediate nodes */
+              const midX = (x1 + x2) / 2;
+              const curveDepth = Math.min(Math.abs(dx) * 0.15, 40) + 18;
+              const ctrlY = Math.max(from.y, to.y) + curveDepth;
+
+              const path = document.createElementNS(NS, "path");
+              const d = `M ${x1},${y1} Q ${midX},${ctrlY} ${x2},${y2}`;
+              path.setAttribute("d", d);
+              path.setAttribute("stroke", "var(--fs-accent)");
+              path.setAttribute("stroke-width", "1.5");
+              path.setAttribute("stroke-dasharray", "5 3");
+              path.setAttribute("fill", "none");
+              g.appendChild(path);
+
+              /* Arrowhead along tangent */
+              const tdx = x2 - midX;
+              const tdy = y2 - ctrlY;
+              const tLen = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+              const tux = tdx / tLen;
+              const tuy = tdy / tLen;
+              const as = 7;
+              const ax = x2 - tux * as - tuy * as / 2;
+              const ay = y2 - tuy * as + tux * as / 2;
+              const bx = x2 - tux * as + tuy * as / 2;
+              const by = y2 - tuy * as - tux * as / 2;
+              const arrow = document.createElementNS(NS, "polygon");
+              arrow.setAttribute("points", `${x2},${y2} ${ax},${ay} ${bx},${by}`);
+              arrow.setAttribute("fill", "var(--fs-accent)");
+              g.appendChild(arrow);
+            }
+
+          } else {
+            /* Backward edge: smooth arc ABOVE the nodes, staggered */
+            const midX = (x1 + x2) / 2;
+            const baseOffset = Math.min(Math.abs(dx) * 0.25, 50) + 20;
+            const stagger = backwardIdx * 20;
+            const ctrlY = Math.min(from.y, to.y) - baseOffset - stagger;
+            backwardIdx++;
+
+            const path = document.createElementNS(NS, "path");
+            const d = `M ${x1},${y1} Q ${midX},${ctrlY} ${x2},${y2}`;
+            path.setAttribute("d", d);
+            path.setAttribute("stroke", "var(--fs-accent)");
+            path.setAttribute("stroke-width", "1.5");
+            path.setAttribute("stroke-dasharray", "5 3");
+            path.setAttribute("fill", "none");
+            g.appendChild(path);
+
+            /* Arrowhead along curve tangent at t=1 */
+            const tdx = x2 - midX;
+            const tdy = y2 - ctrlY;
+            const tLen = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+            const tux = tdx / tLen;
+            const tuy = tdy / tLen;
+            const as = 7;
+            const ax = x2 - tux * as - tuy * as / 2;
+            const ay = y2 - tuy * as + tux * as / 2;
+            const bx = x2 - tux * as + tuy * as / 2;
+            const by = y2 - tuy * as - tux * as / 2;
+            const arrow = document.createElementNS(NS, "polygon");
+            arrow.setAttribute("points", `${x2},${y2} ${ax},${ay} ${bx},${by}`);
+            arrow.setAttribute("fill", "var(--fs-accent)");
+            g.appendChild(arrow);
+          }
+
+          svg.appendChild(g);
+        });
+      }
+
+      /* ── Highlight a step ── */
+      function highlightStep(idx: number) {
+        const flow = flows[currentFlow];
+        const tl = timelineEls[currentFlow];
+        if (!tl) return;
+        const stepBtns = tl.querySelectorAll<HTMLElement>(".fs-step");
+
+        stepBtns.forEach((b, i) => b.classList.toggle("is-active", i === idx));
+
+        /* Edges: bright if they contain this step index, dim otherwise */
+        const edgeGroups = svg.querySelectorAll<SVGGElement>("g[data-steps]");
+        edgeGroups.forEach((g) => {
+          const indices = g.dataset.steps!.split(",").map(Number);
+          g.style.opacity = indices.includes(idx) ? "0.9" : "0.12";
+        });
+
+        if (idx >= 0 && idx < flow.steps.length) {
+          const step = flow.steps[idx];
+          nodeEls.forEach(el => {
+            const nid = el.dataset.nodeId!;
+            el.classList.remove("is-source", "is-target", "is-faded");
+            if (nid === step.from) el.classList.add("is-source");
+            else if (nid === step.to) el.classList.add("is-target");
+            else el.classList.add("is-faded");
+          });
+        }
+      }
+
+      function resetHighlight() {
+        highlightStep(current);
+      }
+
+      /* ── Flow switching ── */
+      function selectFlow(idx: number) {
+        currentFlow = idx;
+        current = 0;
+        tabBtns.forEach((t, i) => t.classList.toggle("is-active", i === idx));
+        timelineEls.forEach((t, i) => t.classList.toggle("is-active", i === idx));
+        drawAllEdges();
+        highlightStep(0);
+      }
+
+      /* ── Event binding ── */
+      timelineEls.forEach((tl, fi) => {
+        const stepBtns = tl.querySelectorAll<HTMLElement>(".fs-step");
+        stepBtns.forEach((btn, si) => {
+          btn.addEventListener("click", () => {
+            if (fi !== currentFlow) return;
+            current = si;
+            highlightStep(si);
+          });
+          btn.addEventListener("mouseenter", () => {
+            if (fi !== currentFlow) return;
+            highlightStep(si);
+          });
+        });
+        tl.addEventListener("mouseleave", () => {
+          if (fi !== currentFlow) return;
+          resetHighlight();
+        });
+      });
+
+      tabBtns.forEach((t, i) => t.addEventListener("click", () => selectFlow(i)));
+
+      comp.setAttribute("tabindex", "0");
+      comp.addEventListener("keydown", (e) => {
+        const flow = flows[currentFlow];
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          current = Math.min(current + 1, flow.steps.length - 1);
+          highlightStep(current);
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          current = Math.max(current - 1, 0);
+          highlightStep(current);
+        }
+      });
+
+      const ro = new ResizeObserver(() => { drawAllEdges(); highlightStep(current); });
+      ro.observe(comp);
+
+      drawAllEdges();
+      highlightStep(0);
+    });
+  }
+
+  initFlowSim();
+  document.addEventListener("astro:page-load", initFlowSim);
+</script>

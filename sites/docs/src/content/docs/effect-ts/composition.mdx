@@ -19,6 +19,8 @@ related:
 > Prerequisite: [[effect-ts/what-is-effect|What is Effect]]
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
 
 ## The three idioms in one minute
 
@@ -212,6 +214,39 @@ Same problem, three shapes. The sections below explain when each is the right sh
 | Anonymous helper used once | [`pipe`](#pipe-linear-transformations) or inline [`Effect.gen`](#effectgen-control-flow) |
 
 These are not exclusive. A typical service method is `Effect.fn("createOrder")(function* (input) { ... pipe(...) ... })`: `fn` for the outer name and span, `gen` for branching, `pipe` for inline transforms on a single intermediate effect.
+
+<DecisionGuide
+  title="Which composition style?"
+  steps={[
+    { id: "start", question: "What does your code need to do?", options: [
+      { label: "Linear chain of transforms on one effect", next: "r-pipe" },
+      { label: "Branching, looping, or early return", next: "r-gen" },
+      { label: "Define a reusable named function", next: "traced" },
+    ]},
+    { id: "traced", question: "Do you need this function to appear as a span in traces?", options: [
+      { label: "Yes, I want auto-tracing", next: "r-fn" },
+      { label: "No, tracing is too noisy here", next: "r-fnUntraced" },
+    ]},
+    { id: "r-pipe", result: "pipe", explanation: "Use .pipe() or pipe() for linear operator chains: map, flatMap, tap, catchTag, timeout, retry. The reader scans top-to-bottom and sees one chain applied to one initial effect." },
+    { id: "r-gen", result: "Effect.gen", explanation: "Use Effect.gen(function* () { ... }) when you need if/else, for/while, early return, or sharing named intermediates between steps. The first failed yield* short-circuits the generator." },
+    { id: "r-fn", result: "Effect.fn", explanation: "Use Effect.fn('name')(function* (args) { ... }) for named callables that auto-create tracing spans. The body can use gen or pipe internally. Adds richer stack traces on failure." },
+    { id: "r-fnUntraced", result: "Effect.fnUntraced", explanation: "Same API as Effect.fn but without the auto-span. Use in hot paths or library internals where tracing overhead matters but you still want callable ergonomics." },
+  ]}
+/>
+
+The following tracer shows how the **error channel** `E` changes across a realistic pipeline that combines all three styles. `fn` wraps the outer function (adding a tracing span), `gen` branches on an intermediate value (unioning errors from each `yield*`), and `pipe` chains linear transforms on the result.
+
+<TypeChannelTracer
+  title="How E evolves through a combined pipeline"
+  steps={[
+    { op: "Effect.fn('createOrder')(function* (input) { ... })", a: "—", e: "—", note: "fn wraps the generator. It doesn't change A or E — it adds a tracing span named 'createOrder'." },
+    { op: "yield* validateInput(input)", a: "ValidOrder", e: "ValidationError", note: "First yield* inside gen. E starts with ValidationError from this step." },
+    { op: "yield* chargeCard(order.total)", a: "Receipt", e: "ValidationError | PaymentError", note: "Second yield* adds PaymentError. gen automatically unions all yielded errors into E." },
+    { op: ".pipe(Effect.map(r => r.id))", a: "string", e: "ValidationError | PaymentError", note: "pipe inside gen: map only transforms A (Receipt → string). E stays unchanged." },
+    { op: "yield* sendConfirmation(user)", a: "void", e: "ValidationError | PaymentError", note: "sendConfirmation can't fail (E = never), so it adds nothing to the union." },
+    { op: ".pipe(Effect.catchTag('ValidationError', ...))", a: "void", e: "PaymentError", removed: ["ValidationError"], note: "catchTag handles one error variant. E narrows — ValidationError is gone." },
+  ]}
+/>
 
 ## What `Effect.fn` is not
 

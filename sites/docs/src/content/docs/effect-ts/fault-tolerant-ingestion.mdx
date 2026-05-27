@@ -18,6 +18,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
 
 ---
 
@@ -52,6 +53,17 @@ The following workflow diagram illustrates how elements are batched, fetched, pa
                               ▲                                      │
                               └───────(Success on retry)─────────────┴──► FAIL (after 3)
 ```
+
+<TypeChannelTracer
+  title="Error channel through the ingestion pipeline"
+  steps={[
+    { op: "fetchRaw(url)", a: "Response", e: "FetchError | HttpError", note: "tryPromise wraps the native fetch; flatMap adds HttpError for non-ok status codes" },
+    { op: "parseTodo(response)", a: "Todo", e: "FetchError | HttpError | ParseFailure", note: "Schema.decodeUnknown adds ParseFailure — flatMap composes it into E alongside the existing errors" },
+    { op: "Effect.timeout('5 seconds')", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Timeout adds TimeoutException — E widens again" },
+    { op: "Effect.retry({ while: ... })", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Retry doesn't change E — it re-runs on FetchError | TimeoutException but fails fast on HttpError | ParseFailure" },
+    { op: "Effect.forEach(ids, fn, { concurrency: 3 })", a: "Todo[]", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "forEach collects results; short-circuits on first unrecoverable failure" },
+  ]}
+/>
 
 ---
 

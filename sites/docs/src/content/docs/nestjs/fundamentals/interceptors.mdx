@@ -21,6 +21,7 @@ source:
 > The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, [[nestjs/data/caching|caching]], and timeouts: not for raw `req` mutation or per-argument [[nestjs/recipes/validation|validation]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import StackDiagram from '/src/components/interactive/StackDiagram.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -89,11 +90,15 @@ intercept(ctx, next) {
 
 Inbound **pre**: global → controller → route. Outbound **post**: route → controller → global (first registered, last out).
 
-```mermaid
-flowchart LR
-    GP[Global pre] --> CP[Controller pre] --> RP[Route pre] --> H[Handler]
-    H --> RPo[Route post] --> CPo[Controller post] --> GPo[Global post]
-```
+<StackDiagram
+  title="FILO interceptor execution order"
+  layers={[
+    { label: "Global Interceptor", color: "#60a5fa", pre: "Start timer, log inbound request", post: "Log elapsed time, see final transformed response" },
+    { label: "Controller Interceptor", color: "#818cf8", pre: "Controller-scoped logic (e.g., rate limiting)", post: "Transform response after route-level changes" },
+    { label: "Route Interceptor", color: "#a78bfa", pre: "Route-specific cache check or validation", post: "map() to add route metadata, tap() to write cache" },
+  ]}
+  core={{ label: "Handler", color: "#f472b6", tip: "Your @Get()/@Post() method — next.handle() returns this as an Observable" }}
+/>
 
 A global logging interceptor sees the **final** response after route-level `map()` transforms.
 

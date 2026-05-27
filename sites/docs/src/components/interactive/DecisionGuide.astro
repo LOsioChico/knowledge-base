@@ -1,0 +1,465 @@
+---
+/**
+ * DecisionGuide.astro
+ *
+ * Interactive decision tree. The reader answers questions step by step
+ * and follows a guided path to a recommendation. Shows a breadcrumb
+ * trail of choices made, and a final result card with explanation.
+ *
+ * NOT a quiz — it's a guided recommendation tool.
+ *
+ * Props:
+ *   steps  – decision nodes (questions with options) and result nodes
+ *   title  – optional heading
+ */
+
+interface DecisionStep {
+  id: string;
+  question: string;
+  note?: string;
+  options: { label: string; next: string }[];
+}
+
+interface ResultStep {
+  id: string;
+  result: string;
+  explanation: string;
+  link?: string;
+}
+
+type Step = DecisionStep | ResultStep;
+
+interface Props {
+  steps: Step[];
+  title?: string;
+}
+
+const { steps, title } = Astro.props;
+const firstId = steps[0]?.id || "";
+const questionCount = steps.filter(s => "question" in s).length;
+---
+
+<div class="dg" data-steps={JSON.stringify(steps)} data-first={firstId}>
+  <div class="dg-header">
+    {title && <div class="dg-title">🧭 {title}</div>}
+    <span class="dg-intro">Answer the questions below to get a recommendation — not a quiz, just a shortcut to the right tool.</span>
+  </div>
+
+  {/* Breadcrumb trail */}
+  <div class="dg-trail"></div>
+
+  {/* Question / result cards — all pre-rendered, shown by JS */}
+  <div class="dg-cards">
+    {steps.map((step) => {
+      const isResult = "result" in step;
+      return (
+        <div
+          class={`dg-card ${step.id === firstId ? "is-active" : ""} ${isResult ? "is-result" : ""}`}
+          data-card={step.id}
+        >
+          {isResult ? (
+            <div class="dg-result">
+              <div class="dg-result-badge">
+                <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              </div>
+              <div class="dg-result-title">{(step as ResultStep).result}</div>
+              <div class="dg-result-body">{(step as ResultStep).explanation}</div>
+              {(step as ResultStep).link && (
+                <a class="dg-result-link" href={(step as ResultStep).link}>
+                  Learn more →
+                </a>
+              )}
+            </div>
+          ) : (
+            <div class="dg-question">
+              <div class="dg-q-badge">Q</div>
+              <div class="dg-question-text">{(step as DecisionStep).question}</div>
+              {(step as DecisionStep).note && (
+                <div class="dg-question-note">{(step as DecisionStep).note}</div>
+              )}
+              <div class="dg-options">
+                {(step as DecisionStep).options.map((opt) => (
+                  <button class="dg-option" data-next={opt.next}>
+                    <span class="dg-option-arrow">→</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  {/* Reset button */}
+  <div class="dg-footer">
+    <button class="dg-reset">↩ Start over</button>
+  </div>
+</div>
+
+<style>
+  .dg {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --dg-text:       var(--sl-color-text);
+    --dg-text-mid:   var(--sl-color-gray-2);
+    --dg-text-faint: var(--sl-color-gray-3);
+    --dg-text-ghost: var(--sl-color-gray-4);
+    --dg-rule:       var(--sl-color-hairline-shade);
+    --dg-accent:     var(--sl-color-accent-high);
+    --dg-accent-low: var(--sl-color-accent-low);
+    --dg-panel:      var(--sl-color-bg-nav);
+    --dg-green:      #4ade80;
+    --dg-green-dim:  rgba(74, 222, 128, 0.12);
+    --dg-green-glow: rgba(74, 222, 128, 0.06);
+    margin: 1.5rem 0;
+    background: var(--dg-panel);
+    border: 1px solid var(--dg-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .dg-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--dg-rule);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .dg-title {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--dg-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .dg-intro {
+    font-size: 0.72rem;
+    color: var(--dg-text-faint);
+    line-height: 1.4;
+  }
+
+  /* ═══ BREADCRUMB TRAIL ═══ */
+  .dg-trail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 20px;
+    min-height: 20px;
+    border-bottom: 1px solid var(--dg-rule);
+  }
+
+  .dg-trail:empty {
+    display: none;
+  }
+
+  .dg-crumb {
+    font-size: var(--sl-text-xs);
+    font-weight: 500;
+    color: var(--dg-accent);
+    background: var(--dg-accent-low);
+    padding: 3px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: none;
+    transition: opacity 160ms var(--ease-out), background 160ms var(--ease-out);
+  }
+
+  .dg-crumb:hover {
+    opacity: 0.8;
+    background: var(--dg-accent);
+    color: var(--dg-panel);
+  }
+
+  .dg-crumb-sep {
+    color: var(--dg-text-ghost);
+    font-size: var(--sl-text-xs);
+    align-self: center;
+  }
+
+  /* ═══ CARDS ═══ */
+  .dg-cards {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 160px;
+    padding: 24px 20px;
+  }
+
+  .dg-card {
+    grid-area: 1 / 1;
+    width: 100%;
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    pointer-events: none;
+  }
+
+  .dg-card.is-active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* ═══ QUESTION ═══ */
+  .dg-question {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .dg-q-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--dg-accent-low);
+    color: var(--dg-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  }
+
+  .dg-question-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--dg-text);
+    line-height: 1.5;
+    max-width: 520px;
+  }
+
+  .dg-question-note {
+    font-size: var(--sl-text-sm);
+    color: var(--dg-text-faint);
+    line-height: 1.5;
+    max-width: 480px;
+  }
+
+  .dg-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 4px;
+  }
+
+  .dg-option {
+    all: unset;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: var(--sl-text-sm);
+    font-weight: 500;
+    color: var(--dg-text-mid);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--dg-rule);
+    padding: 10px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: color 160ms var(--ease-out),
+                background 160ms var(--ease-out),
+                border-color 160ms var(--ease-out),
+                transform 160ms var(--ease-out);
+    user-select: none;
+  }
+
+  .dg-option-arrow {
+    color: var(--dg-text-ghost);
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
+  }
+
+  .dg-option:hover {
+    color: var(--dg-text);
+    border-color: var(--dg-accent);
+    background: var(--dg-accent-low);
+  }
+
+  .dg-option:hover .dg-option-arrow {
+    color: var(--dg-accent);
+    transform: translateX(2px);
+  }
+
+  .dg-option:active {
+    transform: scale(0.98);
+  }
+
+  /* ═══ RESULT ═══ */
+  .dg-result {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    padding: 12px 0;
+    animation: dg-result-in 400ms var(--ease-out);
+  }
+
+  @keyframes dg-result-in {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .dg-result-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--dg-green-dim);
+    color: var(--dg-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 0 6px var(--dg-green-glow);
+  }
+
+  .dg-result-badge svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .dg-result-title {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--dg-green);
+    letter-spacing: -0.01em;
+  }
+
+  .dg-result-body {
+    font-size: var(--sl-text-sm);
+    color: var(--dg-text-mid);
+    line-height: 1.6;
+    max-width: 480px;
+  }
+
+  .dg-result-link {
+    font-size: var(--sl-text-sm);
+    color: var(--dg-accent);
+    text-decoration: none;
+    font-weight: 500;
+    margin-top: 2px;
+    transition: opacity 160ms var(--ease-out);
+  }
+
+  .dg-result-link:hover { opacity: 0.7; }
+
+  /* ═══ FOOTER ═══ */
+  .dg-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--dg-rule);
+    display: flex;
+    justify-content: center;
+  }
+
+  .dg-reset {
+    all: unset;
+    font-size: var(--sl-text-xs);
+    color: var(--dg-text-ghost);
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 5px;
+    transition: color 160ms var(--ease-out), background 160ms var(--ease-out);
+    user-select: none;
+  }
+
+  .dg-reset:hover {
+    color: var(--dg-text-faint);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* ═══ REDUCED MOTION & PRINT ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .dg-card { transition-duration: 0.01ms !important; }
+    .dg-result { animation-duration: 0.01ms !important; }
+  }
+
+  @media print {
+    .dg-card { opacity: 1 !important; transform: none !important; position: relative; }
+    .dg-footer { display: none; }
+  }
+</style>
+
+<script>
+  function initDecisionGuide() {
+    document.querySelectorAll<HTMLElement>(".dg:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const steps: (
+        | { id: string; question: string; note?: string; options: { label: string; next: string }[] }
+        | { id: string; result: string; explanation: string; link?: string }
+      )[] = JSON.parse(comp.dataset.steps || "[]");
+
+      const firstId = comp.dataset.first || "";
+      if (steps.length === 0) return;
+
+      const cards = comp.querySelectorAll<HTMLElement>(".dg-card");
+      const trail = comp.querySelector<HTMLElement>(".dg-trail")!;
+      const resetBtn = comp.querySelector<HTMLElement>(".dg-reset")!;
+
+      type HistoryEntry = { fromStepId: string; choiceLabel: string; toStepId: string };
+      let history: HistoryEntry[] = [];
+
+      function showCard(id: string) {
+        cards.forEach((c) => c.classList.toggle("is-active", c.dataset.card === id));
+      }
+
+      function renderTrail() {
+        trail.innerHTML = "";
+        history.forEach((entry, i) => {
+          if (i > 0) {
+            const sep = document.createElement("span");
+            sep.className = "dg-crumb-sep";
+            sep.textContent = "→";
+            trail.appendChild(sep);
+          }
+          const crumb = document.createElement("button");
+          crumb.className = "dg-crumb";
+          crumb.textContent = entry.choiceLabel;
+          crumb.addEventListener("click", () => {
+            /* Go back: truncate history to before this choice */
+            history = history.slice(0, i);
+            showCard(entry.fromStepId);
+            renderTrail();
+          });
+          trail.appendChild(crumb);
+        });
+      }
+
+      function reset() {
+        history = [];
+        showCard(firstId);
+        renderTrail();
+      }
+
+      /* Bind option clicks */
+      comp.querySelectorAll<HTMLElement>(".dg-option").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const nextId = btn.dataset.next!;
+          const choiceLabel = btn.textContent!.trim().replace(/^→\s*/, "");
+          const currentCard = comp.querySelector<HTMLElement>(".dg-card.is-active");
+          const currentId = currentCard?.dataset.card || "";
+
+          history.push({ fromStepId: currentId, choiceLabel, toStepId: nextId });
+          showCard(nextId);
+          renderTrail();
+        });
+      });
+
+      resetBtn.addEventListener("click", reset);
+      showCard(firstId);
+    });
+  }
+
+  initDecisionGuide();
+  document.addEventListener("astro:page-load", initDecisionGuide);
+</script>

@@ -1,0 +1,16 @@
+---
+/**
+ * Custom TableOfContents override that composes:
+ * 1. starlight-heading-badges (badge rendering in TOC entries)
+ * 2. starlight-view-modes (zen-mode TOC visibility toggle)
+ *
+ * Both plugins try to override TableOfContents. We compose them manually.
+ * heading-badges replaces the default TOC list rendering with badge-aware version.
+ * view-modes adds a wrapper that controls TOC visibility in zen mode.
+ */
+import HeadingBadgesTableOfContents from "starlight-heading-badges/components/HeadingBadgesTableOfContents.astro";
+import StarlightViewModesTableOfContents from "starlight-view-modes/components/TableOfContents.astro";
+---
+
+<HeadingBadgesTableOfContents />
+<StarlightViewModesTableOfContents />

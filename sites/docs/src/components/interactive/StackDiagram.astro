@@ -1,0 +1,247 @@
+---
+/**
+ * StackDiagram.astro
+ * ──────────────────
+ * Concentric nested layers showing wrapping behavior (onion/FILO).
+ * Each layer wraps the inner layers with pre/post code on each side.
+ * Step numbers show execution order. Pure CSS, no JS.
+ */
+
+interface Layer {
+  /** Layer name (e.g. "Global Interceptor") */
+  label: string;
+  /** CSS color for border and label */
+  color: string;
+  /** What runs on the way IN (before inner layers) */
+  pre: string;
+  /** What runs on the way OUT (after inner layers) */
+  post: string;
+}
+
+interface Props {
+  title?: string;
+  /** Layers in outside-in order. First = outermost wrapper. */
+  layers: Layer[];
+  /** Innermost element (the handler / core) */
+  core: {
+    label: string;
+    color: string;
+    tip?: string;
+  };
+}
+
+const { title, layers, core } = Astro.props;
+
+// Compute step numbers: pre runs outside-in, post runs inside-out
+// Layer 0 pre = 1, Layer 1 pre = 2, ..., Core = N+1, ..., Layer 1 post = 2N, Layer 0 post = 2N+1
+const totalSteps = layers.length * 2 + 1;
+const preStepNumbers = layers.map((_, i) => i + 1);
+const coreStepNumber = layers.length + 1;
+const postStepNumbers = layers.map((_, i) => totalSteps - i);
+---
+
+<div class="sd not-content">
+  {title && <div class="sd-title">{title}</div>}
+
+  <div class="sd-body">
+    {layers.reduceRight((inner, layer, idx) => {
+      const preNum = preStepNumbers[idx];
+      const postNum = postStepNumbers[idx];
+      return (
+        <div class="sd-layer" style={`--lc: ${layer.color}`}>
+          <div class="sd-layer-header">
+            <span class="sd-layer-label">{layer.label}</span>
+          </div>
+          <div class="sd-pre">
+            <span class="sd-step-num">{preNum}</span>
+            <span class="sd-phase-tag">pre →</span>
+            <span class="sd-phase-text">{layer.pre}</span>
+          </div>
+          <div class="sd-layer-inner">
+            {inner}
+          </div>
+          <div class="sd-post">
+            <span class="sd-step-num">{postNum}</span>
+            <span class="sd-phase-tag">← post</span>
+            <span class="sd-phase-text">{layer.post}</span>
+          </div>
+        </div>
+      );
+    },
+      <div class="sd-core" style={`--lc: ${core.color}`}>
+        <span class="sd-core-num">{coreStepNumber}</span>
+        <span class="sd-core-label">{core.label}</span>
+        {core.tip && <span class="sd-core-tip">{core.tip}</span>}
+      </div>
+    )}
+  </div>
+</div>
+
+<style>
+  .sd {
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --sd-rule:    var(--sl-color-hairline-shade);
+    --sd-ghost:   var(--sl-color-gray-4);
+    --sd-faint:   var(--sl-color-gray-3);
+    --sd-panel:   var(--sl-color-bg-nav);
+    --sd-surface: var(--sl-color-bg-sidebar);
+    margin: 1.5rem 0;
+    background: var(--sd-panel);
+    border: 1px solid var(--sd-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .sd-title {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    color: var(--sd-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--sd-rule);
+  }
+
+  .sd-body {
+    padding: 16px;
+  }
+
+  /* ── Layer (nesting wrapper) ── */
+  .sd-layer {
+    --lc: var(--sl-color-accent-high);
+    border: 1px solid color-mix(in srgb, var(--lc) 22%, transparent);
+    border-left: 3px solid color-mix(in srgb, var(--lc) 40%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--lc) 2%, transparent);
+    padding: 0;
+    transition: background 200ms var(--ease), border-color 200ms var(--ease);
+  }
+
+  /* Only highlight the directly-hovered layer, not ancestors */
+  .sd-layer:hover:not(:has(.sd-layer:hover, .sd-core:hover)) {
+    background: color-mix(in srgb, var(--lc) 6%, transparent);
+    border-color: color-mix(in srgb, var(--lc) 35%, transparent);
+  }
+
+  .sd-layer-header {
+    padding: 8px 12px 0;
+  }
+
+  .sd-layer-label {
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    color: var(--lc);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── Step number badge ── */
+  .sd-step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--lc);
+    background: color-mix(in srgb, var(--lc) 10%, transparent);
+    flex-shrink: 0;
+  }
+
+  /* ── Pre / Post phase lines ── */
+  .sd-pre,
+  .sd-post {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+  }
+
+  .sd-phase-tag {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    color: color-mix(in srgb, var(--lc) 80%, white);
+    background: color-mix(in srgb, var(--lc) 10%, transparent);
+  }
+
+  .sd-phase-text {
+    font-size: var(--sl-text-xs);
+    color: var(--sd-ghost);
+    line-height: 1.4;
+  }
+
+  /* ── Inner content (next layer or core) ── */
+  .sd-layer-inner {
+    padding: 8px 12px;
+  }
+
+  /* ── Core (innermost) ── */
+  .sd-core {
+    --lc: #f472b6;
+    border: 2px solid color-mix(in srgb, var(--lc) 35%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--lc) 5%, var(--sd-surface));
+    padding: 12px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: background 200ms var(--ease), border-color 200ms var(--ease);
+  }
+
+  .sd-core:hover {
+    background: color-mix(in srgb, var(--lc) 10%, var(--sd-surface));
+    border-color: color-mix(in srgb, var(--lc) 50%, transparent);
+  }
+
+  .sd-core-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--lc);
+    background: color-mix(in srgb, var(--lc) 12%, transparent);
+  }
+
+  .sd-core-label {
+    font-size: var(--sl-text-sm);
+    font-weight: 700;
+    color: var(--lc);
+  }
+
+  .sd-core-tip {
+    font-size: var(--sl-text-xs);
+    color: var(--sd-ghost);
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 480px) {
+    .sd-body { padding: 10px; }
+    .sd-layer-inner { padding: 6px 8px; }
+    .sd-pre, .sd-post { padding: 4px 8px; gap: 6px; }
+    .sd-phase-text { font-size: 11px; }
+  }
+
+  /* ═══ REDUCED MOTION ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .sd-layer, .sd-core { transition-duration: 0.01ms !important; }
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    .sd-layer { background: transparent !important; }
+    .sd-core { background: transparent !important; }
+  }
+</style>
