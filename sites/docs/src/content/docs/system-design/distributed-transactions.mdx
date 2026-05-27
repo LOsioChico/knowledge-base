@@ -248,7 +248,7 @@ Because local transactions in intermediate steps are committed immediately witho
 
 ### 1. The Dual Write Bug (Resolved by Transactional Outbox)
 
-In a typical Saga step, a service updates its local database and publishes an event to a message broker.
+In a typical Saga step, a service updates its local database and publishes an event to a [[system-design/message-queues|message broker]].
 *   **The Bug**: If the database write succeeds but the server crashes before sending the event to Kafka, the downstream services never learn about the transaction. If you swap the order (publish first, then write), the broker sends the event but the database write fails, causing the exact same desynchronization.
 *   **The Solution: The Transactional Outbox Pattern**: Instead of publishing directly to the message broker, the application inserts the event into a dedicated `Outbox` table within the **same local database transaction**. Because it is one transaction, both the business write and the outbox event write are guaranteed to succeed or fail together. A separate event publisher process reads the Outbox table (using polling or log based Change Data Capture like Debezium) and forwards the events to the message broker.
 
@@ -273,7 +273,7 @@ Local transactions in a Saga commit immediately. This means intermediate states 
 ### 3. Idempotency Invariants
 Due to network retries, a service can receive the same Saga command or compensating event multiple times.
 *   **The Gotcha**: If a payment service receives `RefundPayment` twice due to a broker retry, it could issue two refunds to the customer.
-*   **The Mitigation**: Every command must carry a unique Saga ID and Step ID. Before processing, services must verify if the specific Step ID has already run, rejecting duplicate invocations. (See [[system-design/message-queues|Asynchronous Message Queues]] for details on distributed idempotency locks).
+*   **The Mitigation**: Every command must carry a unique Saga ID and Step ID. Before processing, services must verify if the specific Step ID has already run, rejecting duplicate invocations. (See [[system-design/message-queues|Asynchronous Message Queues]] for details on distributed [[system-design/delivery-semantics|idempotency]] locks).
 
 ---
 

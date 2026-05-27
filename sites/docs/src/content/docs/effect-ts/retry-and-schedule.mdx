@@ -17,6 +17,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 > Prerequisite: [[effect-ts/layers-and-di|Layers & DI]]
 
@@ -246,6 +247,28 @@ Effect.runPromise(resilient).then(console.log);
 Use `intersect` to cap backoff (`exponential ∩ recurs(5)`). `Schedule.compose` feeds outputs into inputs: different semantics ([combinators](https://effect.website/docs/scheduling/schedule-combinators/)).
 
 </Aside>
+
+<DecisionGuide
+  title="Which retry / repeat combinator?"
+  steps={[
+    { id: "start", question: "Does the effect fail or succeed?", options: [
+      { label: "It fails — I want to retry on failure", next: "q-fallback" },
+      { label: "It succeeds — I want to repeat on success", next: "r-repeat" },
+    ]},
+    { id: "q-fallback", question: "What should happen when the retry policy is exhausted?", options: [
+      { label: "Let the error propagate", next: "q-filter" },
+      { label: "Fall back to a different effect", next: "r-retryOrElse" },
+    ]},
+    { id: "q-filter", question: "Should all errors trigger a retry, or only specific ones?", options: [
+      { label: "All errors", next: "r-retry" },
+      { label: "Only specific error tags", next: "r-retryWhile" },
+    ]},
+    { id: "r-retry", result: "Effect.retry(effect, policy)", explanation: "Retries on any failure. Use { times: n } for simple count, or a Schedule for backoff, jitter, and caps." },
+    { id: "r-retryWhile", result: "Effect.retry(effect, { while })", explanation: "The while predicate receives the error and returns true to retry. Use err._tag === 'TransientError' to skip fatal errors." },
+    { id: "r-retryOrElse", result: "Effect.retryOrElse", explanation: "Retries with a Schedule, then calls a fallback handler when the policy is exhausted. Use for cached-data fallback or circuit-breaker patterns." },
+    { id: "r-repeat", result: "Effect.repeat", explanation: "Same Schedule machinery, but triggers on success instead of failure. Use for polling loops, health checks, and periodic tasks." },
+  ]}
+/>
 
 ## See also
 

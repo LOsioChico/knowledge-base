@@ -85,10 +85,10 @@ The following table maps common production concerns to their precise layer in th
 | **1** | **HTTP Adapter** | Low-Level Node | Raw HTTP parsing, CORS headers, basic compression. | No (Native Server Error) |
 | **2** | [**Middleware**](/knowledge-base/nestjs/fundamentals/middleware/) | Express / Fastify | Session parsing, cookie parsing, early correlation/trace IDs, body parsing. | No (Express / Fastify Handler) |
 | **3** | [**Guards**](/knowledge-base/nestjs/fundamentals/guards/) | Nest Enhancer | Token authentication (JWT verify), role-based authorization, [rate limiting](/knowledge-base/nestjs/recipes/rate-limiting/) (throttling) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
-| **4** | **Interceptors (Pre)**| Nest Enhancer | Request [caching](/knowledge-base/nestjs/data/caching/) checks, start timer (performance profiling), request logging (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
+| **4** | [**Interceptors (Pre)**](/knowledge-base/nestjs/fundamentals/interceptors/) | Nest Enhancer | Request [caching](/knowledge-base/nestjs/data/caching/) checks, start timer (performance profiling), request logging (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
 | **5** | [**Pipes**](/knowledge-base/nestjs/fundamentals/pipes/) | Nest Enhancer | Input [validation](/knowledge-base/nestjs/recipes/validation/) (`class-validator`), data parsing / coercion (`ParseIntPipe`) (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
 | **6** | **Controller** | Business Logic | Executing target database queries, service delegation, mapping response objects (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
-| **7** | **Interceptors (Post)**| Nest Enhancer | Mapping / transforming response objects, profiling duration telemetry, logs formatting (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
+| **7** | [**Interceptors (Post)**](/knowledge-base/nestjs/fundamentals/interceptors/) | Nest Enhancer | Mapping / transforming response objects, profiling duration telemetry, logs formatting (see [One route, all layers](#one-route-all-layers)). | Yes (Nest Exception Filter) |
 | **8** | [**Exception Filters**](/knowledge-base/nestjs/fundamentals/exception-filters/)| Nest Enhancer | Formatting `HttpException` status and payload, catching custom DB errors (such as unique constraint). | Final Safety Net |
 | **9** | **HTTP Adapter** | Low-Level Node | Serializing JSON payload, writing outbound HTTP headers, terminating TCP socket. | Final Safety Net |
 
@@ -229,7 +229,7 @@ Global `APP_GUARD`, `APP_INTERCEPTOR`, and `APP_PIPE` providers run **before** c
 | Correlation ID on raw `req` before Nest | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) | Runs on Express/Fastify; see [trace IDs](/knowledge-base/nestjs/recipes/trace-id/) |
 | Allow/deny before handler work | [Guards](/knowledge-base/nestjs/fundamentals/guards/) | `false` → `403` without touching the handler (worked example: [AuthGuard](#one-route-all-layers)) |
 | Logging, [caching](/knowledge-base/nestjs/data/caching/), timing around handler + response | [Interceptors](/knowledge-base/nestjs/fundamentals/interceptors/) | Wraps `next.handle()` and the returned stream (worked example: [LoggingInterceptor](#one-route-all-layers)) |
-| DTO validation, param coercion | [Pipes](/knowledge-base/nestjs/fundamentals/pipes/) | Last chance to shape input before the method body (worked example: [ParseIntPipe](#one-route-all-layers)) |
+| DTO [validation](/knowledge-base/nestjs/recipes/validation/), param coercion | [Pipes](/knowledge-base/nestjs/fundamentals/pipes/) | Last chance to shape input before the method body (worked example: [ParseIntPipe](#one-route-all-layers)) |
 | Map `NotFoundException` → JSON body | [Exception filters](/knowledge-base/nestjs/fundamentals/exception-filters/) | Only runs when something threw inside the exception zone |
 
 ## See also

@@ -102,6 +102,7 @@ function segId(seg: { lane: string; start: number }) {
           class={`ft-seg ft-seg--${seg.state}${seg.tip ? ' ft-seg--has-tip' : ''}`}
           style={`grid-row: ${laneIndex + 1}; grid-column: ${seg.start + 2} / ${seg.end + 3}`}
           data-seg={seg.tip ? segId(seg) : undefined}
+          data-step={String(seg.start)}
         >
           <span class="ft-slbl">{seg.label}</span>
         </div>
@@ -112,7 +113,7 @@ function segId(seg: { lane: string; start: number }) {
   {callouts.length > 0 && (
     <div class="ft-callouts">
       {callouts.map((seg) => (
-        <div class={`ft-co ft-co--${seg.state}`} data-seg={segId(seg)}>
+        <div class={`ft-co ft-co--${seg.state}`} data-seg={segId(seg)} data-step={String(seg.start)}>
           <span class={`ft-co-dot ft-co-dot--${seg.state}`} />
           <span class="ft-co-text">
             <strong>{seg.label}</strong>
@@ -427,9 +428,12 @@ function segId(seg: { lane: string; start: number }) {
       });
 
       function highlight(id: string) {
-        // Dim ALL chart segments, then un-dim the matched one
+        // Find the time step of the hovered segment
+        const hoveredEl = [...linkedEls].find(el => el.dataset.seg === id);
+        const step = hoveredEl?.dataset.step;
+        // Highlight ALL segments at the same time step
         allChartSegs.forEach(el => {
-          if (el.dataset.seg === id) {
+          if (el.dataset.step === step) {
             el.classList.add('ft-seg--highlight');
             el.classList.remove('ft-seg--dim');
           } else {
@@ -437,9 +441,9 @@ function segId(seg: { lane: string; start: number }) {
             el.classList.remove('ft-seg--highlight');
           }
         });
-        // Highlight/dim callout items
+        // Highlight/dim callout items at the same step
         root.querySelectorAll<HTMLElement>('.ft-co').forEach(el => {
-          if (el.dataset.seg === id) {
+          if (el.dataset.step === step) {
             el.classList.add('ft-co--highlight');
             el.classList.remove('ft-co--dim');
           } else {

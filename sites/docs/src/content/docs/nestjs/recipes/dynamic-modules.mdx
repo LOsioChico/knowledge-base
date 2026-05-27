@@ -15,6 +15,7 @@ source:
 > Dynamic modules allow you to configure modules dynamically at registration time. Primitives like `register`, `forRoot`, and `registerAsync` map custom options (like S3 bucket names, regions, and credentials) into the dependency injection (DI) container so services can consume them asynchronously.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -286,6 +287,35 @@ export class StorageModule {
   }
 }
 ```
+
+## Choosing the right approach
+
+<DecisionGuide
+  title="Which dynamic module pattern?"
+  steps={[
+    { id: "start", question: "Are you on NestJS 9+ and building a standard configurable module?", options: [
+      { label: "Yes — standard options-in, service-out", next: "q-async" },
+      { label: "No — I need custom provider generation or multiple option objects", next: "r-manual" },
+    ]},
+    { id: "q-async", question: "Are the configuration values available at build time, or do they come from env/config/external services?", options: [
+      { label: "Available at build time (hardcoded values)", next: "r-register" },
+      { label: "Need to read from ConfigService, env, or external source", next: "q-factory" },
+    ]},
+    { id: "q-factory", question: "Do you want to use a factory function, or delegate to a dedicated config class?", options: [
+      { label: "Factory function (inline logic)", next: "r-useFactory" },
+      { label: "Dedicated config class (implements an interface)", next: "q-existing" },
+    ]},
+    { id: "q-existing", question: "Is the config class already registered in another module?", options: [
+      { label: "No — create a new private instance", next: "r-useClass" },
+      { label: "Yes — reuse the existing provider", next: "r-useExisting" },
+    ]},
+    { id: "r-register", result: "register() (static)", explanation: "Pass options directly. No async, no DI. Best for known values like hardcoded bucket names or feature flags." },
+    { id: "r-useFactory", result: "registerAsync({ useFactory })", explanation: "Inject ConfigService or other providers into a factory function. Most common async pattern — keeps config logic inline." },
+    { id: "r-useClass", result: "registerAsync({ useClass })", explanation: "NestJS creates a private instance of your config class and calls its factory method. Use when config logic is complex enough to warrant its own class." },
+    { id: "r-useExisting", result: "registerAsync({ useExisting })", explanation: "Reuses an already-registered provider from another module. Avoids creating a duplicate instance." },
+    { id: "r-manual", result: "Manual DynamicModule", explanation: "Write register() and registerAsync() by hand. Required for custom provider generation, multiple token registrations, or pre-v9 codebases." },
+  ]}
+/>
 
 ---
 

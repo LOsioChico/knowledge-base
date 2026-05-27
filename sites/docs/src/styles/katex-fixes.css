@@ -1,0 +1,4 @@
+/* KaTeX rendering fix for Starlight's default SVG styles */
+.katex-html svg {
+  height: inherit;
+}

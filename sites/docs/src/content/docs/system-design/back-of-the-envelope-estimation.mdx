@@ -14,6 +14,7 @@ related:
 > The quantitative calculus of software architecture: estimating QPS, storage, bandwidth, and availability before writing a single line of code.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -213,6 +214,43 @@ Assume our site handles 300 Million reads per day (equal to the number of daily 
 
 To build this [[system-design/distributed-caching|caching]] layer, we must distribute the 90 TB of RAM across multiple Redis servers. If we select powerful server instances with 256 GB of RAM, the number of nodes required is:
 *   Number of Redis Nodes = 90,000 GB / 256 GB ≈ 352 servers
+
+### Tune the parameters yourself
+
+<ParameterPlayground
+  title="Photo Platform Capacity Calculator"
+  params={[
+    { name: "dau", label: "Daily Active Users (millions)", type: "range", min: 10, max: 500, step: 10, default: 150, suffix: "M" },
+    { name: "uploads", label: "Photos per user per day", type: "range", min: 1, max: 10, step: 1, default: 2 },
+    { name: "photoSize", label: "Average photo size (MB)", type: "range", min: 0.5, max: 5, step: 0.5, default: 1.5, suffix: "MB" },
+    { name: "retentionYears", label: "Data retention (years)", type: "range", min: 1, max: 10, step: 1, default: 3, suffix: "yr" },
+  ]}
+  outputs={[
+    { name: "writeQPS", label: "Average Write QPS", format: "number" },
+    { name: "peakQPS", label: "Peak Write QPS (2×)", format: "number" },
+    { name: "dailyStorage", label: "Daily Storage (TB)", format: "number" },
+    { name: "totalStorage", label: "Total Storage (PB)", format: "decimal" },
+    { name: "ingress", label: "Avg Ingress (Gbps)", format: "decimal" },
+    { name: "cacheNodes", label: "Redis Nodes (256 GB)", format: "number" },
+  ]}
+  compute={`
+    var dailyPhotos = params.dau * 1000000 * params.uploads;
+    var writeQPS = Math.round(dailyPhotos / 86400);
+    var peakQPS = writeQPS * 2;
+    var dailyStorage = Math.round(dailyPhotos * params.photoSize / 1000000);
+    var totalStorage = dailyStorage * 365 * params.retentionYears / 1000;
+    var ingress = dailyStorage * 1000 * 8 / 86400;
+    var cacheNodes = Math.ceil(dailyPhotos * 0.2 * params.photoSize / 1000 / 256);
+    return {
+      writeQPS: writeQPS,
+      peakQPS: peakQPS,
+      dailyStorage: dailyStorage,
+      totalStorage: totalStorage,
+      ingress: ingress,
+      cacheNodes: cacheNodes
+    };
+  `}
+/>
 
 ---
 

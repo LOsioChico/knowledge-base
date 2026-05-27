@@ -20,6 +20,7 @@ source:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -300,7 +301,7 @@ Use the same pattern when a module's options depend on env or other app settings
 
 ## Dynamic module configuration integration
 
-In modern modular NestJS applications, dynamic modules (like the `StorageModule` we designed in the [[nestjs/recipes/dynamic-modules|Dynamic Modules recipe]]) must accept configurations driven by our environment. Rather than passing raw static parameters, bind the dynamic module asynchronously using `registerAsync` and inject `ConfigService`:
+In modern modular NestJS applications, [[nestjs/recipes/dynamic-modules|dynamic modules]] (like the `StorageModule` we designed in the [[nestjs/recipes/dynamic-modules|Dynamic Modules recipe]]) must accept configurations driven by our environment. Rather than passing raw static parameters, bind the dynamic module asynchronously using `registerAsync` and inject `ConfigService`:
 
 ```typescript title="storage.config.ts"
 import { registerAs } from "@nestjs/config";
@@ -401,6 +402,40 @@ import { databaseSecretsLoader } from "./database-secrets.loader";
 })
 export class AppModule {}
 ```
+
+### Which pattern fits?
+
+<DecisionGuide
+  title="How should you manage configuration?"
+  steps={[
+    { id: "start", question: "Where does your code run?", options: [
+      { label: "Local development or simple scripts", next: "q-scope" },
+      { label: "Production containers (ECS, Kubernetes, Docker)", next: "q-secrets" },
+    ]},
+    { id: "q-scope", question: "How many places need the config value?", options: [
+      { label: "Just one bootstrap/utility script", next: "r-env" },
+      { label: "Multiple Nest providers or modules", next: "q-validation" },
+    ]},
+    { id: "q-validation", question: "Should the app refuse to start on bad or missing env?", options: [
+      { label: "Yes — fail fast at boot", next: "r-schema" },
+      { label: "No — just inject values", next: "q-reuse" },
+    ]},
+    { id: "q-reuse", question: "Are you reading the same parsed config in multiple places?", options: [
+      { label: "Yes — same DB/Redis/S3 config reused", next: "r-registerAs" },
+      { label: "No — just a few keys", next: "r-configService" },
+    ]},
+    { id: "q-secrets", question: "How are secrets provided to the container?", options: [
+      { label: "Orchestrator injects env vars at runtime (ECS task def, K8s Secret)", next: "r-envInjection" },
+      { label: "App fetches secrets from a vault at startup", next: "r-dynamicFetch" },
+    ]},
+    { id: "r-env", result: "process.env directly", explanation: "Read the env var where you need it. No NestJS wiring needed for one-off scripts or bootstrap code." },
+    { id: "r-configService", result: "ConfigService.get()", explanation: "Register ConfigModule.forRoot({ isGlobal: true }) once. Inject ConfigService in any provider." },
+    { id: "r-registerAs", result: "registerAs() + inject token", explanation: "Define a typed config factory with registerAs('database', ...). Inject via @Inject('database') for type-safe, reusable config objects." },
+    { id: "r-schema", result: "validationSchema (Joi)", explanation: "Pass a Joi schema to ConfigModule.forRoot({ validationSchema }). The app throws on startup if required vars are missing or malformed." },
+    { id: "r-envInjection", result: "Runtime env injection", explanation: "Zero code changes. ConfigModule reads injected env vars from process.env transparently. Secure the container to prevent env dumps." },
+    { id: "r-dynamicFetch", result: "Dynamic fetch (Secrets Manager)", explanation: "Write an async config loader that fetches from AWS Secrets Manager (or Vault/GCP) at startup. Register it via ConfigModule.forRoot({ load: [loader] })." },
+  ]}
+/>
 
 ## Gotchas
 

@@ -19,6 +19,7 @@ related:
 > Prerequisite: [[effect-ts/schema|Schema]]
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Steps>
 
@@ -174,6 +175,7 @@ A `Layer<ROut, E, RIn>` constructs services `ROut`, may fail with `E`, and may n
 | [`Layer.effect`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L289) | Construction is an effect (I/O, other services); [example below](#building-a-layer) | From the builder effect's `R` |
 | [`Layer.scoped`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts#L727) | Service owns a resource with cleanup; [cleanup example](#scoped-layers-and-cleanup) | Inferred; `Scope` excluded |
 
+
 ```ts twoslash title="build-layer.ts"
 import { Context, Effect, Layer } from "effect";
 
@@ -242,6 +244,23 @@ Effect.runSync(
 ```
 
 Release runs at program end, including on interruption.
+
+<DecisionGuide
+  title="Which Layer constructor?"
+  steps={[
+    { id: "start", question: "Does building the service involve any side-effects (I/O, other services, async)?", options: [
+      { label: "No — it's a pure value I can build synchronously", next: "r-succeed" },
+      { label: "Yes — construction is effectful", next: "q-resource" },
+    ]},
+    { id: "q-resource", question: "Does the service own a resource that needs cleanup (pool, socket, handle)?", options: [
+      { label: "Yes — it needs acquire/release", next: "r-scoped" },
+      { label: "No — just needs other services or runs I/O at build time", next: "r-effect" },
+    ]},
+    { id: "r-succeed", result: "Layer.succeed", explanation: "Simplest constructor. Wraps a static value with no effects or dependencies. R is never, E is never. Use for config objects, constants, and simple implementations." },
+    { id: "r-effect", result: "Layer.effect", explanation: "Construction is an Effect: can read other Tags (adds to RIn), can fail (adds to E). Use when the service depends on Config, Logger, or other layers." },
+    { id: "r-scoped", result: "Layer.scoped", explanation: "Like Layer.effect but with acquireRelease. The runtime calls release when the scope closes (app shutdown, test teardown). Use for DB pools, HTTP clients, file handles." },
+  ]}
+/>
 
 ## Providing a layer
 

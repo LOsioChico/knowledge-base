@@ -25,6 +25,8 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into this recipe, make sure you understand:
@@ -143,6 +145,19 @@ Invalid input:
 ```
 
 ## `whitelist` + `forbidNonWhitelisted`
+
+### How the ValidationPipe processes a request
+
+<PipelineStrip
+  title="ValidationPipe processing pipeline"
+  stages={[
+    { label: "Raw body", tip: "Express/Fastify parses the JSON body into a plain JavaScript object. No class metadata exists yet." },
+    { label: "plainToInstance", tip: "class-transformer converts the plain object into a class instance (when transform: true). Decorators like @Type() and @Transform() run here." },
+    { label: "validate()", tip: "class-validator reads decorator metadata (@IsEmail, @MinLength, @ValidateNested) and checks each field. Collects all violations." },
+    { label: "exceptionFactory", tip: "If validation errors exist, the factory builds a BadRequestException (default 400 response). Custom factories reshape the error payload." },
+    { label: "Handler", tip: "If validation passes, the class instance (with methods and metadata) reaches the route handler as the @Body() parameter." },
+  ]}
+/>
 
 <Tabs>
   <TabItem label="Strip unknown fields">
@@ -757,6 +772,24 @@ Standard NestJS validation pipes execute **synchronously** when parsing and tran
 - **Fast validation schemas**: For performance-critical bulk operations, bypass `class-validator` completely and use highly optimized schema libraries like **TypeBox** or **Zod** within custom validation pipes to execute validation up to 10x faster.
 
 ---
+
+## Choosing the right validation strategy
+
+<DecisionGuide
+  title="Which validation approach?"
+  steps={[
+    { id: "start", question: "What kind of validation do you need?", options: [
+      { label: "Validate field types and formats (email, string length, ranges)", next: "r-decorators" },
+      { label: "Create vs Update need different rules on the same DTO", next: "r-groups" },
+      { label: "Check uniqueness or other database state", next: "r-async" },
+      { label: "Validate 1000+ items or deeply nested structures", next: "r-perf" },
+    ]},
+    { id: "r-decorators", result: "Standard class-validator decorators", explanation: "Use @IsEmail(), @IsString(), @MinLength(), etc. with a global ValidationPipe. Covers 90% of validation needs with zero boilerplate." },
+    { id: "r-groups", result: "Validation groups", explanation: "Tag decorators with { groups: ['create'] } or { groups: ['update'] } and override per-route with @UsePipes(new ValidationPipe({ groups: [...] })). Same DTO, different rules." },
+    { id: "r-async", result: "Custom async validator + useContainer", explanation: "Implement ValidatorConstraintInterface with @Injectable(). Register in module providers. Call useContainer() in main.ts to wire DI. Always back with a DB unique index for atomicity." },
+    { id: "r-perf", result: "Chunked validation or schema library", explanation: "For bulk operations, chunk arrays with setImmediate breaks, offload to worker threads, or replace class-validator with TypeBox/Zod for 10x faster schema validation." },
+  ]}
+/>
 
 ## See also
 

@@ -4,112 +4,15 @@ Custom Astro components for patterns where static enrichment (`<Steps>`, `<Tabs>
 
 **Rule of thumb:** if `<Steps>` or `<Tabs>` would be equally clear, use the lighter static component. Interactive components carry JS weight. Follow the [S4 enrichment decision tree](/.github/skills/kb-author/audits/S4-enrichment-fit.md).
 
-## Component selection framework (MANDATORY)
+## Component selection framework
 
-Before adding ANY interactive component, follow this decision sequence **mechanically**. Do NOT skip steps or pattern-match by label.
+**Before adding any interactive component, load the [`kb-enrichment` skill](/.github/skills/kb-enrichment/SKILL.md).**
 
-### Step 1 — Identify the concept shape
+It contains the mandatory decision tree (Q1–Q10), validation checks, anti-patterns,
+placement rules, and content guidelines. Do NOT add components without following that framework.
 
-Ask these questions **in order**. Stop at the first YES.
+This README covers only **API reference**: props, slots, examples, and technical details.
 
-```
-Q1: Does the SAME entity execute code BOTH BEFORE and AFTER a core operation?
-    (e.g., interceptors run pre-handler AND post-handler; the same middleware wraps request AND response)
-    → YES: StackDiagram (wrapping/onion/FILO)
-
-Q2: Is it a sequence where items are tried IN ORDER and the FIRST MATCH stops the search?
-    (e.g., exception filter resolution: route→controller→global, first @Catch() wins)
-    → YES: PipelineStrip (fallback/priority chain)
-
-Q3: Is it a sequence where ALL items execute, one after another?
-    (e.g., guards run global→controller→route, ALL must pass)
-    → YES: PipelineStrip (linear pipeline)
-
-Q3.5: Do MULTIPLE ENTITIES execute IN PARALLEL, with some BLOCKING/WAITING for others?
-     (e.g., parent fiber runs while child fiber works, parent blocks on join)
-     → YES: FiberTimeline (parallel swimlanes with active/blocked/idle states)
-
-Q4: Is it a flow of MESSAGES between SEPARATE ACTORS over time?
-    (e.g., producer→broker→consumer, saga choreography steps)
-    → YES: FlowSimulator
-
-Q5: Is the reader choosing between MULTIPLE OPTIONS based on their situation?
-    (e.g., "which rate limiting algorithm?", "which NestJS layer?")
-    → YES: DecisionGuide
-
-Q6: Does tuning NUMERIC PARAMETERS reveal tradeoffs?
-    (e.g., virtual nodes vs load balance, window size vs memory)
-    → YES: ParameterPlayground
-
-Q7: Is there a CODE BLOCK of 20+ lines with DISTINCT SECTIONS the reader must parse?
-    → YES: CodeWalkthrough
-
-Q8: Do TYPE SIGNATURES EVOLVE through a pipeline? (Effect-TS specific)
-    → YES: TypeChannelTracer
-
-Q9: Is it a LAYERED ARCHITECTURE where each layer has sub-components to explore?
-    → YES: ArchitectureExplorer
-
-Q10: None of the above fit cleanly?
-     → Build a NEW component. Purpose-built > forced fit.
-```
-
-### Step 2 — Validate the selection (MANDATORY)
-
-After choosing a component, verify ALL of these:
-
-| Check | If it fails... |
-|-------|----------------|
-| **Mental model match**: Does the visual structure mirror the concept structure? | Wrong component — re-run Step 1. |
-| **Beginner test**: Would someone new understand faster with this visual? | Skip the component — prose + Starlight `<Steps>` may be enough. |
-| **Accuracy**: Is every label, tip, and description factually correct? | Fix the data — never invent behavior. |
-| **No assumptions**: Does the component make sense without reading surrounding prose? | Add context to tips/descriptions. |
-| **Interaction**: Does hover/click behavior match expectations? (no bubbling, clear affordances) | Fix CSS or pick a different component. |
-
-### Step 3 — Anti-patterns (NEVER DO THESE)
-
-| ❌ Wrong | ✅ Right | Why |
-|----------|----------|-----|
-| StackDiagram for a **fallback chain** (exception filters) | PipelineStrip | Filters are a priority search, not wrapping. The exception doesn't "pass through" layers — Nest checks each scope until one matches. |
-| StackDiagram for a **linear sequence** (guards, pipe scopes) | PipelineStrip | Guards don't wrap — they execute and pass/fail. No "post" phase. |
-| PipelineStrip for **before/after wrapping** (interceptors) | StackDiagram | Interceptors run pre AND post — the nesting IS the explanation. A flat pipeline hides FILO order. |
-| FlowSimulator for **single-actor pipelines** | PipelineStrip | FlowSimulator needs separate actors (producer, broker, consumer). Same-actor stages use PipelineStrip. |
-| FlowSimulator for **parallel execution with blocking** (fiber fork/join, backpressure) | FiberTimeline | FlowSimulator shows sequential hops. Concurrency is about things happening AT THE SAME TIME. FiberTimeline shows parallel lanes with active/blocked states. |
-| DecisionGuide for **binary choices** | Prose or `<Tabs>` | Two options don't need a tree — a sentence or Tabs component is lighter. |
-| CodeWalkthrough for **short code** (<15 lines) | Inline code block | The component overhead isn't worth it for code that fits on one screen. |
-
-### The key distinction: StackDiagram vs PipelineStrip
-
-This is the most common mistake. Use this test:
-
-> **Does the same entity have a "before" phase AND an "after" phase that wraps a core?**
-> - YES → StackDiagram (onion/FILO)
-> - NO → PipelineStrip (linear/chain)
-
-Examples:
-- **Interceptors**: Same interceptor runs `pre` code, then `handler`, then `post` code → **StackDiagram** ✅
-- **Exception filters**: Nest searches route→controller→global, first match wins → **PipelineStrip** ✅
-- **Guards**: Execute global→controller→route, first false stops → **PipelineStrip** ✅
-- **Middleware**: Each middleware calls next() and can run code after `res.on('finish')` → **StackDiagram** ✅ (if showing the wrap) or **PipelineStrip** (if showing the chain)
-
-### Step 4 — If no component fits, build one
-
-When Step 1 reaches Q10, don't force an existing component. Instead:
-
-1. **Name the concept shape** you're trying to visualize
-2. **Describe the interaction** the reader needs (hover? click? drag? animate?)
-3. **Check existing components** — can you extend one with a new prop?
-4. **If not**: create a new `.astro` file following the patterns in this directory
-5. **Add it to this README** with When to use / When NOT to use / Props / Anti-patterns
-
-### Questions to ask before every component usage
-
-1. Does this component match the **mental model** of the concept?
-2. Would a beginner understand this concept **faster** with this visual?
-3. Is anything **assumed** that should be explained?
-4. Should we **reference other notes** from this visual?
-5. Is the data **accurate** (not editorial narration disguised as protocol)?
-6. Does hovering and interaction feel right (no bubbling, proper indicators)?
 
 ## Import pattern
 
@@ -685,7 +588,34 @@ Only segments with `tip` appear in the legend. Use tips for **key moments only**
 
 #### Interaction
 
-Cross-highlighting: hover a callout → its segment glows, all others dim. Hover a linked segment → its callout highlights. No play controls, no stepping — the reader sees everything at a glance.
+Cross-highlighting works **by time step**: hover any segment or callout → ALL segments at the same time step highlight, everything else dims. This visually groups concurrent actions (e.g., hovering "read" on Fiber A also highlights the runtime and Fiber B at the same step). The `data-step` attribute controls grouping.
+
+#### Design patterns (MANDATORY)
+
+These patterns were established through iteration and must be followed for every new FiberTimeline:
+
+1. **Group segments by time step.** Organize the `segments` array as t0/t1/t2 groups with `// t0 — description` comments. Never organize by lane.
+2. **Fewer steps = wider cells.** 4–6 steps is the sweet spot. Beyond 6, labels truncate. Combine logically-atomic actions into one step.
+3. **Short labels, detailed tips.** Cell labels ≤ 10 chars (`debit $30`, `commit $70`, `emit 3`). Full explanation goes in `tip`.
+4. **Concrete values, not abstractions.** Use real numbers (`$100`, `[1, 2] full`) not vague descriptions (`"processes data"`). Makes the flow tangible.
+5. **Arrows show data flow.** Use `events` for actual data movement between lanes (`"$100"` flowing from runtime to fiber, `"1"` flowing from buffer to consumer). Don't add arrows for actions already clear from segment labels.
+6. **Mediator in the middle.** If there's a coordinator (Runtime, Buffer, Broker), put its lane between the actors it mediates. Arrows naturally go up and down.
+7. **Same-time = same step.** Concurrent actions MUST share a time step. Never split concurrent reads into separate steps.
+8. **One action = one step.** Don't split "read + debit" into two steps if they're one logical transaction block.
+9. **No overlapping arrows.** Events between the same lanes at the same time overlap visually. Offset to adjacent steps if needed.
+10. **Continuous mediator state.** If a lane represents persistent state (buffer, queue, store), show its contents at EVERY time step — not just when it changes. The reader should be able to scan the middle lane and see the state evolve: `[1]` → `[1,2] full` → `[2]` → `[2,3] full`.
+
+#### Anti-patterns
+
+| ❌ Don't | ✅ Do instead |
+|----------|--------------|
+| 10 steps (cells too narrow, labels truncate) | 4–6 steps max |
+| Long lane labels: `"Fiber A (transfer $30)"` | Short: `"Fiber A ($30)"` or `"Producer"` |
+| Put commit/reject on a fiber's lane if the runtime decides | Put it on the runtime/mediator lane |
+| Abstract labels: `"processing"`, `"working"` | Concrete: `"debit $30"`, `"emit 3"`, `"pull 2"` |
+| Skip mediator state at some steps | Show mediator state at every step |
+| Emit into a full buffer without showing suspension | Always show the suspend → pull → resume cycle |
+| Organize segments by lane | Organize by time step with comments |
 
 #### Accuracy review checklist (MANDATORY)
 
@@ -697,6 +627,7 @@ Before committing any FiberTimeline, walk through this checklist:
 4. **Equal-width principle.** Each time unit should represent roughly the same granularity. Don't combine "emit 1, 2" into one wide segment when other operations get one column each — split them.
 5. **Verify events.** Each arrow (`events`) must connect the correct lanes at the correct time. The label must match what actually flows between the fibers.
 6. **Read the callout tips.** Each tip must accurately describe what the code does at that point. Don't paraphrase — reference the actual API calls (e.g., "Fiber.join(fiber)" not just "waits").
+7. **Check state consistency.** If a mediator lane shows capacity (e.g., buffer), verify every step: a 2-cap buffer at `[1, 2]` must be `blocked`, not `active`. A producer cannot emit into a full buffer without first being suspended.
 
 #### Target notes
 
@@ -704,6 +635,7 @@ Before committing any FiberTimeline, walk through this checklist:
 |------|---------------|
 | `effect-ts/concurrency` | Fork → parallel work → blocked join → resume |
 | `effect-ts/streams` | Producer/Consumer backpressure — bounded buffer suspend/resume cycle |
+| `effect-ts/state` | STM optimistic retry — concurrent transactions, runtime verdict, retry |
 
 ---
 
@@ -801,21 +733,10 @@ Hover on a diagram node → code highlights; hover on code → diagram node high
 
 ## Deployment rules
 
-When deploying an interactive component to an MDX page, follow these rules:
+When deploying an interactive component to an MDX page:
 
-### Placement
-
-| Component | Where to place | Why |
-|-----------|---------------|-----|
-| **PipelineStrip** | After the prose summary of the pipeline | The reader gets the text-first overview, then the visual diagram reinforces it |
-| **StackDiagram** | After the prose mentions wrapping or FILO order | The reader needs to know the layers exist before seeing them nested |
-| **CodeWalkthrough** | Wrap the existing code block in-place | Same — the code block stays put |
-| **TypeChannelTracer** | **After** the section that explains the concepts it references | The reader must already understand the operations (pipe, gen, catchTag) before seeing how they affect the type channels |
-| **DecisionGuide** | After the reference table or comparison section | The reader needs the raw facts before they're ready for a decision tree |
-| **FlowSimulator** | After the first prose explanation of the flow | The prose sets the context; the simulator lets the reader replay it |
-| **FiberTimeline** | After the code example showing the concurrent pattern | The reader must see the code first, then the timeline reveals what's happening in parallel |
-| **ArchitectureExplorer** | After the pipeline/architecture section header | Layer-by-layer exploration replaces or supplements a static diagram |
-| **ParameterPlayground** | After the algorithm explanation, before or after the code | The reader must understand what the parameters mean before tuning them |
+1. **Load the [`kb-enrichment` skill](/.github/skills/kb-enrichment/SKILL.md)** for placement rules and content text guidelines.
+2. Follow the component-specific technical rules below.
 
 ### CodeWalkthrough line numbers
 
@@ -842,13 +763,6 @@ The `note` text on each step must match the actual code. Common mistake: saying 
 1. Read the actual code block the tracer describes
 2. Verify which composition style each step uses
 3. Match the vocabulary to the code (flatMap ≠ gen ≠ pipe)
-
-### Content text guidelines
-
-All `body`, `label`, `note`, `explanation`, and `description` text in component props must:
-- **Not assume prior knowledge** — if a step mentions "FILO" or "catchTag", explain what it means in the same sentence
-- **Reference the page content** — use the same terminology and examples as the surrounding prose
-- **Be self-contained** — a reader who only reads the interactive component (ignoring the rest of the page) should still learn something
 
 ## Technical details
 

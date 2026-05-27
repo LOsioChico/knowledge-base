@@ -2,7 +2,7 @@
 
 Components must **reduce cognitive load**, not decorate.
 
-## Decision tree
+## Decision tree (Starlight-native components)
 
 ```
 Is the reader following a sequence they will execute?
@@ -16,13 +16,22 @@ Is this a footgun that would interrupt the main flow?
   no ↓
 Does order/spatial structure teach (pipeline, FILO, decision flow)?
   yes → mermaid (keep ≤10 nodes)
-  no ↓
-Are two approaches compared and seeing both simultaneously matters?
-  yes → <BeforeAfter> (slot-based split pane)
   no → plain heading + prose/table
 ```
 
-## Component rules
+## Interactive components
+
+When the concept shape goes beyond what Starlight-native components can teach (type evolution,
+parallel timelines, architecture layers, decision trees with branching), load the
+[**`kb-enrichment` skill**](../kb-enrichment/SKILL.md) for the mandatory selection framework
+(Q1–Q10), validation checks, anti-patterns, and placement rules.
+
+**Do NOT add interactive components without loading that skill first.**
+
+API reference (props, slots, examples) lives in the component
+[README.md](../../../sites/docs/src/components/interactive/README.md).
+
+## Component rules (Starlight-native)
 
 | Component | Use | Don't use |
 | --- | --- | --- |
@@ -31,7 +40,6 @@ Are two approaches compared and seeing both simultaneously matters?
 | `<Aside>` | One footgun per Aside; titled | Walls of five Asides in a row |
 | `<CardGrid>` | Area MOC, fundamentals MOC, recipes MOC | Individual concept pages |
 | `mermaid` | Request pipeline, interceptor FILO, global-provider decision | Sequence diagrams for 2-box flows |
-| `BeforeAfter` | Architectural or code before/after comparison | Simple "here's the new code" with diff markers |
 
 ## Aside types (Starlight)
 

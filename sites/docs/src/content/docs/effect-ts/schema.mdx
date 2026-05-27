@@ -16,6 +16,8 @@ related:
 > Schema is the runtime boundary layer for `Effect<A, E, R>` programs: it checks unknown input, derives TypeScript types from the same declaration, and encapsulates parse failures inside the typed `E` error channel.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 > Prerequisite: [[effect-ts/typed-errors|Typed Errors]]
 
@@ -231,7 +233,41 @@ const result = Effect.runSyncExit(parseTodo(badInput));
 
 ---
 
-## Gotchas and Best Practices
+## How the error channel evolves
+
+<TypeChannelTracer
+  title="E through a Schema validation pipeline"
+  steps={[
+    { op: "Schema.decodeUnknown(Todo)(input)", a: "Todo", e: "ParseError", note: "Parses unknown input; if the shape is wrong, E is ParseError" },
+    { op: ".pipe(Effect.mapError(toParseFailure))", a: "Todo", e: "ParseFailure", note: "mapError replaces ParseError with your domain error — E narrows" },
+    { op: "Effect.flatMap(todo, validateBiz)", a: "ValidTodo", e: "ParseFailure | BizError", note: "flatMap adds BizError from a business rule check — E widens" },
+    { op: "Effect.catchTag('BizError', recover)", a: "ValidTodo | Fallback", e: "ParseFailure", note: "catchTag removes BizError — E narrows back to ParseFailure only" },
+  ]}
+/>
+
+## Pick the right Schema primitive
+
+<DecisionGuide
+  title="Which Schema combinator?"
+  steps={[
+    { id: "start", question: "What kind of data are you parsing?", options: [
+      { label: "A structured object with known fields", next: "q-transform" },
+      { label: "A union of different shapes (tagged)", next: "r-union" },
+      { label: "An array or set of items", next: "r-array" },
+      { label: "A single primitive value", next: "r-primitive" },
+    ]},
+    { id: "q-transform", question: "Does the wire format differ from your domain type?", options: [
+      { label: "Yes — fields need parsing (e.g., string → number)", next: "r-transform" },
+      { label: "No — the shape matches exactly", next: "r-struct" },
+    ]},
+    { id: "r-struct", result: "Schema.Struct", explanation: "Use Schema.Struct({ field: Schema.Type }) for objects whose wire and domain shapes match. Combine with Schema.optional for nullable fields." },
+    { id: "r-transform", result: "Schema.Struct + transform fields", explanation: "Use built-in transforms like Schema.NumberFromString for individual fields, or Schema.transform() for custom bidirectional mappings. The Encoded type preserves the wire shape." },
+    { id: "r-union", result: "Schema.Union", explanation: "Use Schema.Union(SchemaA, SchemaB) for tagged unions. Each variant should have a discriminator field (_tag or type). The decoder tries each branch in order." },
+    { id: "r-array", result: "Schema.Array", explanation: "Use Schema.Array(ItemSchema) for homogeneous arrays. Compose with Schema.NonEmptyArray for at-least-one guarantees." },
+    { id: "r-primitive", result: "Schema.String / Number / Boolean", explanation: "Use the PascalCase primitive schemas directly. Compose with Schema.Literal for exact value checks or Schema.TemplateLiteral for pattern matching." },
+  ]}
+/>
+
 
 <Aside type="caution" title="Do not runSync on untrusted boundaries directly">
 

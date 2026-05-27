@@ -17,32 +17,46 @@ For substantial new features, deep refactors, or brand new architectural guides 
 This ensures high precision, clean git branches, and structured planning history.
 
 
-## Companion skill
+## Skills directory (MANDATORY routing)
 
-Before editing any note, load **`kb-author`** (`.github/skills/kb-author/SKILL.md`). It covers:
+All agent skills live under `.github/skills/<name>/SKILL.md`. **Before starting any task, scan this table and load EVERY skill whose trigger matches your task.** Loading the wrong skill wastes tokens; skipping the right skill produces broken output.
 
-- **Published site** (`sites/docs/`): MDX authoring, audits **S1–S6**, `docs/PUBLISHING.md`.
+### Authoring (load when editing notes)
 
-AGENTS.md remains the source of truth for invariants; the skill is the playbook for Starlight MDX notes.
+| Skill | Trigger | What it covers |
+|-------|---------|----------------|
+| [`kb-author`](.github/skills/kb-author/SKILL.md) | Any note edit, MDX authoring, `sites/docs/` work, `/kb-author` | Discovery ritual, audits A–P and S1–S6, publish workflow. **Load on every note edit.** |
+| [`kb-enrichment`](.github/skills/kb-enrichment/SKILL.md) | Adding/auditing interactive components, `import ... from '/src/components/interactive/'`, S4 audit, `/kb-enrichment` | Component selection framework (Q1–Q10), validation, anti-patterns, placement rules. **Load when adding ANY interactive component.** API reference (props, slots) lives in [`README.md`](sites/docs/src/components/interactive/README.md). |
+| [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) | Researching unfamiliar topics from external sources, writing new notes from scratch | Research → verify against primary docs → prepare audit-clean MDX. |
 
-## Skills directory
+### Intake (load when importing external content)
 
-All agent skills live under `.github/skills/<name>/SKILL.md`. Two kinds:
+| Skill | Trigger | What it covers |
+|-------|---------|----------------|
+| [`kb-algomaster-intake`](.github/skills/kb-algomaster-intake/SKILL.md) | Extracting AlgoMaster system-design pages | Safe extraction into local Markdown before `kb-research-author` verification. |
 
-**Workflow skills (human/agent-facing, load on demand):**
+### Auditing (load when triaging audit findings)
 
-- [`kb-author`](.github/skills/kb-author/SKILL.md) — MDX authoring; audits A–P and S1–S6 in [`audits/`](.github/skills/kb-author/audits/).
-- [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) — end-to-end loop: run the audit pipeline, classify each finding into TRUE-and-cited / TRUE-but-uncited-inline / WRONG-claim / UNVERIFIABLE, apply or persist to `dismissed.json`.
-- [`kb-research-author`](.github/skills/kb-research-author/SKILL.md) — workflow for researching an unfamiliar topic from external sources, verifying against primary docs, and preparing audit-clean canonical MDX.
-- [`kb-algomaster-intake`](.github/skills/kb-algomaster-intake/SKILL.md) — safe extraction of authorized AlgoMaster system-design pages into local Markdown before `kb-research-author` verification.
+| Skill | Trigger | What it covers |
+|-------|---------|----------------|
+| [`kb-audit-triage`](.github/skills/kb-audit-triage/SKILL.md) | Running audit pipeline, triaging findings, `/kb-audit-triage` | End-to-end loop: run pipeline → classify findings → apply or persist to `dismissed.json`. |
 
-**LLM judges (runtime, invoked by `scripts/audit-notes/` on MDX files under `sites/docs/src/content/docs/`):**
+### LLM judges (runtime — invoked by `scripts/audit-notes/`, not loaded manually)
 
-- [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) — Pass 1a. Binary verdict on behavioral-claim candidates surfaced by the deterministic finder.
-- [`kb-fix-proposer`](.github/skills/kb-fix-proposer/SKILL.md) — Pass 3. Proposes `{before, after, primarySource}` for surviving high-tier findings; declines freely.
-- [`kb-mdx-auditor`](.github/skills/kb-mdx-auditor/SKILL.md) — MDX Pass 1. Starlight pages under `sites/docs/`; invoked by `mdx-audit-notes.ts` (`mdx-triage` / `mdx-full`).
+| Skill | Pass | What it does |
+|-------|------|--------------|
+| [`kb-show-dont-tell-judge`](.github/skills/kb-show-dont-tell-judge/SKILL.md) | 1a | Binary verdict on behavioral-claim candidates. |
+| [`kb-fix-proposer`](.github/skills/kb-fix-proposer/SKILL.md) | 3 | Proposes `{before, after, primarySource}` for high-tier findings. |
+| [`kb-mdx-auditor`](.github/skills/kb-mdx-auditor/SKILL.md) | MDX 1 | Starlight pages under `sites/docs/`; invoked by `mdx-audit-notes.ts`. |
 
-When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with a YAML frontmatter `name`/`description`; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/` using the `` Use the `<name>` skill. `` delegation pattern (see the other Pass implementations); add a row above. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md). `kb-starlight-author` was removed; Starlight MDX guidance lives in `kb-author` audits S1–S6.
+### Skill loading rules
+
+1. **Match by trigger, not by name.** Read the trigger column. If your current task matches ANY trigger, load that skill before starting work.
+2. **Multiple skills can apply.** Adding an interactive component to an existing note? Load BOTH `kb-author` (note editing) AND `kb-enrichment` (component selection).
+3. **Skills are progressive.** Load the skill file, read only the sections relevant to your task. Skills use progressive disclosure — the index is short, full procedures are in sub-files.
+4. **AGENTS.md wins on conflict.** Skills are playbooks; this file owns the invariants.
+
+When adding a new skill: place it under `.github/skills/<name>/SKILL.md` with YAML frontmatter `name`/`description`; add a row to the matching category above; if it's an LLM judge, wire it from the corresponding pass in `scripts/audit-notes/`. Full inventory: [`docs/TOOLING.md`](docs/TOOLING.md).
 
 **LLM judges** (`kb-mdx-auditor`, show-dont-tell, fix-proposer) run directly on **Starlight MDX** under `sites/docs/src/content/docs/**/*.mdx` via the `mdx-audit-notes.ts` orchestrator (using the `mdx-triage` or `mdx-full` profiles). Deterministic checks (`lint:docs`, kb-author audits **S1–S6**) run in CI.
 

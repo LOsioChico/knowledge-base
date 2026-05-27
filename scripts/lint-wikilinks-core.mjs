@@ -304,6 +304,41 @@ function buildProseMask(body) {
   }
 
   walk(tree, [])
+
+  // Blank out JSX/HTML component regions — component prop strings like
+  // label="Guards" or tip="...caching..." are not prose text and should
+  // not trigger first-mention violations.
+  const lines = body.split("\n")
+  let offset = 0
+  let inJsx = false
+  for (const line of lines) {
+    const trimmed = line.trimStart()
+    // Detect JSX open tags (PascalCase or lowercase HTML that isn't standard markdown block HTML)
+    if (trimmed.startsWith("<") && !trimmed.startsWith("<!--") && !trimmed.startsWith("</")) {
+      const tagMatch = trimmed.match(/^<([A-Z]\w*|[a-z][\w.-]+)/)
+      if (tagMatch) {
+        inJsx = true
+      }
+    }
+    if (inJsx) {
+      // Blank the entire line in the mask
+      for (let i = offset; i < offset + line.length && i < mask.length; i++) {
+        mask[i] = " "
+      }
+    }
+    // Detect self-closing or closing tags
+    if (inJsx) {
+      if (trimmed.endsWith("/>") || trimmed.match(/^<\/[A-Z]\w*\s*>/)) {
+        inJsx = false
+      }
+      // Also handle closing tags on their own line like </PipelineStrip>
+      if (trimmed.startsWith("</")) {
+        inJsx = false
+      }
+    }
+    offset += line.length + 1 // +1 for the \n
+  }
+
   return mask.join("")
 }
 

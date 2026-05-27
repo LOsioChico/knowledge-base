@@ -18,6 +18,7 @@ source:
 > Prerequisite: [[effect-ts/retry-and-schedule|Retry & Schedule]]
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Steps>
 
@@ -163,6 +164,30 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   </TabItem>
 </Tabs>
 
+## Choosing the right primitive
+
+<DecisionGuide
+  title="Pick the right resource primitive"
+  steps={[
+    { id: "start", question: "Do you have a resource value that needs cleanup (handle, connection, file)?", options: [
+      { label: "Yes — I acquire something and must release it", next: "q-lifetime" },
+      { label: "No — I just need a side-effect to run on close", next: "q-exit" },
+    ]},
+    { id: "q-lifetime", question: "Is the resource used in one expression, or shared across multiple steps?", options: [
+      { label: "One expression — acquire, use, done", next: "r-aur" },
+      { label: "Multiple steps — need the resource across a gen block", next: "r-ar" },
+    ]},
+    { id: "q-exit", question: "Does your cleanup need to know whether the scope succeeded or failed?", options: [
+      { label: "Yes — different behavior on success vs failure", next: "r-finalizer" },
+      { label: "No — always run the same cleanup", next: "r-ensuring" },
+    ]},
+    { id: "r-aur", result: "acquireUseRelease", explanation: "Acquire → use → release in a single expression. R stays never (no Scope needed). Best for one-shot resources like a page scrape or a temporary file." },
+    { id: "r-ar", result: "acquireRelease + Effect.scoped", explanation: "Resource lives until Scope closes. Use yield* to get the value in a gen block. Pair with Layer.scoped for app-lifetime resources like DB pools." },
+    { id: "r-finalizer", result: "addFinalizer", explanation: "Register cleanup that sees the Exit value — committed on success, rolled back on failure. Requires Scope in R." },
+    { id: "r-ensuring", result: "ensuring", explanation: "Always-run cleanup with no Scope requirement. Like try/finally but interruption-safe. No resource value — just a side-effect." },
+  ]}
+/>
+
 ## Deep-dive: Intuition-first resource lifecycle
 
 To understand how scopes operate in production, consider a multi-step database transaction. If any step fails or is timed out by an orchestrator, we must guarantee that the database connection is cleanly returned to the pool, preventing connection leaks.
@@ -275,7 +300,7 @@ Effect.runPromise(Effect.scoped(program));
 
 ## Retry, timeout, and interrupt
 
-When `Effect.timeout` or a parent interrupt cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try: the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
+When `Effect.timeout` or a parent [[effect-ts/concurrency|interrupt]] cancels work, nested scopes run finalizers before propagating failure. Wrapping `acquireUseRelease` in `Effect.retry` gives each attempt a fresh resource; the previous one is released before the next try: the pattern used in [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]].
 
 ```ts twoslash title="retry-timeout-interrupt.ts"
 import { Effect, Console } from "effect";

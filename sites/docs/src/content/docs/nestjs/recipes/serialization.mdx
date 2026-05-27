@@ -15,6 +15,8 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into serialization, make sure you understand:
@@ -301,6 +303,58 @@ export class DynamicSerializerInterceptor
 }
 ```
 
+<CodeWalkthrough
+  title="How DynamicSerializerInterceptor works"
+  steps={[
+    { lines: "1-9", title: "Imports", body: "Pull in the base ClassSerializerInterceptor we'll extend, plus Reflector (needed by the base constructor) and ClassTransformOptions for the return type." },
+    { lines: "11-18", title: "Class scaffolding", body: "@Injectable() makes this class DI-friendly. We extend ClassSerializerInterceptor so all the heavy lifting (classToPlain, response mapping) is inherited. The constructor just passes Reflector up to super." },
+    { lines: "20-24", title: "Override the hook + extract user", body: "getSerializationOptions is the one method we override. We pull the HTTP request from ExecutionContext and read the user object that your auth guard attached." },
+    { lines: "26", title: "Read default static options", body: "Call super to get any @SerializeOptions() metadata from the handler. This preserves static groups if the route also declared them." },
+    { lines: "28-30", title: "Guard: no user → default behavior", body: "If no authenticated user or no roles array, fall back to the static options unchanged. Unauthenticated endpoints still serialize normally." },
+    { lines: "32-35", title: "Inject roles as groups", body: "Merge the user's roles array into the serialization groups. class-transformer will now only @Expose() fields whose groups include one of these roles." },
+  ]}
+>
+```typescript
+import {
+  CallHandler,
+  ClassSerializerInterceptor,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { ClassTransformOptions } from "class-transformer";
+
+@Injectable()
+export class DynamicSerializerInterceptor
+  extends ClassSerializerInterceptor
+  implements NestInterceptor
+{
+  constructor(reflector: Reflector) {
+    super(reflector);
+  }
+
+  override getSerializationOptions(
+    context: ExecutionContext,
+  ): ClassTransformOptions | undefined {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    const defaultOptions = super.getSerializationOptions(context);
+
+    if (!user || !user.roles) {
+      return defaultOptions;
+    }
+
+    return {
+      ...defaultOptions,
+      groups: user.roles,
+    };
+  }
+}
+```
+</CodeWalkthrough>
+
 ### Implementing dynamic serialization
 
 Annotate your entity to associate specific fields with role groups, then apply the dynamic interceptor at the controller level:
@@ -422,6 +476,28 @@ Group metadata is only read by `ClassSerializerInterceptor`. No global or per-ro
 `@Exclude()` on a TypeORM/Prisma entity couples DB renames to your API contract. Map to dedicated response DTOs in non-trivial APIs; entity examples here are for brevity.
 
 </Aside>
+
+## Choosing the right decorator
+
+<DecisionGuide
+  title="Which serialization approach?"
+  steps={[
+    { id: "start", question: "What is your goal?", options: [
+      { label: "Hide specific sensitive fields (password, tokens)", next: "q-count" },
+      { label: "Allow only a curated set of fields through", next: "r-expose" },
+      { label: "Reshape or format field values (dates, masks)", next: "r-transform" },
+      { label: "Show different fields per user role", next: "r-groups" },
+    ]},
+    { id: "q-count", question: "How many fields do you want to hide?", options: [
+      { label: "A few specific fields", next: "r-exclude" },
+      { label: "Most fields — only a small set should be visible", next: "r-expose" },
+    ]},
+    { id: "r-exclude", result: "@Exclude() on fields", explanation: "Mark individual fields to hide. Good when most fields are safe and you only need to remove a few secrets." },
+    { id: "r-expose", result: "@Exclude() on class + @Expose() on fields", explanation: "Hide everything by default and opt in to each exposed field. Safest approach — new database columns stay hidden until explicitly exposed." },
+    { id: "r-transform", result: "@Transform()", explanation: "Reshape values during serialization — format dates, mask API keys, compute derived fields. Combines with @Exclude/@Expose." },
+    { id: "r-groups", result: "@Expose({ groups }) + DynamicSerializerInterceptor", explanation: "Tag fields with role groups. Extend ClassSerializerInterceptor to inject the authenticated user's roles as dynamic groups at runtime." },
+  ]}
+/>
 
 ## See also
 

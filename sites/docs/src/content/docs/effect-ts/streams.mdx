@@ -105,24 +105,41 @@ Effect.runPromise(program);
 <FiberTimeline
   title="Buffered backpressure lifecycle"
   lanes={[
-    { id: "producer", label: "Producer Fiber", color: "#60a5fa" },
-    { id: "consumer", label: "Consumer Fiber", color: "#a78bfa" },
+    { id: "prod", label: "Producer", color: "#60a5fa" },
+    { id: "buf", label: "Buffer (cap: 2)", color: "#a78bfa" },
+    { id: "cons", label: "Consumer", color: "#34d399" },
   ]}
   segments={[
-    { lane: "producer", start: 0, end: 0, state: "active", label: "emit 1", tip: "Producer pushes element 1 into the bounded buffer (capacity: 2). Buffer: [1]" },
-    { lane: "producer", start: 1, end: 1, state: "active", label: "emit 2", tip: "Producer pushes element 2 — buffer is now full (2/2). Buffer: [1, 2]" },
-    { lane: "producer", start: 2, end: 2, state: "blocked", label: "buffer full", tip: "Buffer is at capacity — producer suspends. Consumer's pull (same tick) frees a slot." },
-    { lane: "consumer", start: 2, end: 2, state: "active", label: "pull 1" },
-    { lane: "producer", start: 3, end: 3, state: "active", label: "emit 3", tip: "Slot freed → producer resumes immediately and pushes element 3" },
-    { lane: "consumer", start: 3, end: 3, state: "active", label: "process" },
-    { lane: "producer", start: 4, end: 4, state: "blocked", label: "full again" },
-    { lane: "consumer", start: 4, end: 4, state: "active", label: "pull 2" },
-    { lane: "producer", start: 5, end: 5, state: "active", label: "emit 4" },
-    { lane: "consumer", start: 5, end: 5, state: "active", label: "process" },
+    // t0 — producer emits 1
+    { lane: "prod", start: 0, end: 0, state: "active", label: "emit 1", tip: "Producer pushes element 1 into the bounded buffer." },
+    { lane: "buf", start: 0, end: 0, state: "active", label: "[1]", tip: "Buffer holds 1 element. 1 slot remaining." },
+    // t1 — producer emits 2, buffer full
+    { lane: "prod", start: 1, end: 1, state: "active", label: "emit 2", tip: "Producer pushes element 2 — buffer is now at capacity (2/2)." },
+    { lane: "buf", start: 1, end: 1, state: "blocked", label: "[1, 2] full", tip: "Buffer at capacity. Next emit will suspend the producer." },
+    // t2 — producer blocked, consumer pulls
+    { lane: "prod", start: 2, end: 2, state: "blocked", label: "suspended", tip: "No slots available — producer fiber suspends until consumer pulls." },
+    { lane: "buf", start: 2, end: 2, state: "active", label: "[2]", tip: "Consumer pulled element 1. One slot freed — producer can resume." },
+    { lane: "cons", start: 2, end: 2, state: "active", label: "pull 1", tip: "Consumer pulls element 1 from the buffer." },
+    // t3 — producer resumes, consumer processes
+    { lane: "prod", start: 3, end: 3, state: "active", label: "emit 3", tip: "Slot freed → producer resumes and pushes element 3." },
+    { lane: "buf", start: 3, end: 3, state: "blocked", label: "[2, 3] full", tip: "Buffer full again. Producer will suspend on next emit." },
+    { lane: "cons", start: 3, end: 3, state: "active", label: "process 1", tip: "Consumer processes element 1 (slow: 100ms simulated work)." },
+    // t4 — producer suspended again, consumer pulls (cycle repeats)
+    { lane: "prod", start: 4, end: 4, state: "blocked", label: "suspended", tip: "Buffer full again — producer suspends until consumer pulls." },
+    { lane: "buf", start: 4, end: 4, state: "active", label: "[3]", tip: "Consumer pulled element 2. One slot freed — producer can resume." },
+    { lane: "cons", start: 4, end: 4, state: "active", label: "pull 2", tip: "Consumer pulls element 2 from the buffer." },
+    // t5 — producer resumes
+    { lane: "prod", start: 5, end: 5, state: "active", label: "emit 4", tip: "Slot freed → producer resumes and pushes element 4." },
+    { lane: "buf", start: 5, end: 5, state: "blocked", label: "[3, 4] full", tip: "Buffer at capacity again. The cycle continues indefinitely." },
+    { lane: "cons", start: 5, end: 5, state: "active", label: "process 2", tip: "Consumer processes element 2." },
   ]}
   events={[
-    { time: 2, from: "consumer", to: "producer", label: "frees slot" },
-    { time: 4, from: "consumer", to: "producer", label: "frees slot" },
+    { time: 0, from: "prod", to: "buf", label: "1" },
+    { time: 1, from: "prod", to: "buf", label: "2" },
+    { time: 2, from: "buf", to: "cons", label: "1" },
+    { time: 3, from: "prod", to: "buf", label: "3" },
+    { time: 4, from: "buf", to: "cons", label: "2" },
+    { time: 5, from: "prod", to: "buf", label: "4" },
   ]}
   steps={6}
 />

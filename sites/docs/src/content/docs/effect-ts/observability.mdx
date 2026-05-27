@@ -21,6 +21,7 @@ source:
 > **Step 13: Observability & Telemetry**: Native structured logging, contextual tracking spans, and full OpenTelemetry integrations out of the box in the Effect runtime. Prerequisite: [[effect-ts/async-result|Step 12: AsyncResult]]; next step: [[effect-ts/platform|Step 14: Platform layers]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import StackDiagram from '/src/components/interactive/StackDiagram.astro';
 
 <Steps>
 
@@ -110,6 +111,15 @@ Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (li
 ---
 
 ## 3. OpenTelemetry Integration
+
+<StackDiagram
+  title="Nested span wrapping"
+  layers={[
+    { label: "request-handler", color: "#60a5fa", pre: "logInfo('Request received')", post: "logInfo('Request completed') + duration" },
+    { label: "cc-authorization", color: "#a78bfa", pre: "logInfo('Authorizing...')", post: "logInfo('Authorized') + duration" },
+  ]}
+  core={{ label: "charge API call", color: "#f472b6", tip: "The actual HTTP request to the payment gateway" }}
+/>
 
 Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel)** standard. Under the hood, log spans are actual OpenTelemetry Tracer Spans.
 
