@@ -19,6 +19,7 @@ related:
 > Testing in NestJS is mostly choosing how much of the DI container and web request pipeline to boot.
 
 import { Aside } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into testing recipes, make sure you understand:
@@ -43,6 +44,41 @@ Before diving into testing recipes, make sure you understand:
 `Test.createTestingModule()` gives you a Nest testing container. `compile()` builds the module graph and lets you retrieve providers with `get()` or `resolve()` ([testing docs](https://docs.nestjs.com/fundamentals/testing)). Once the behavior lives in the HTTP pipeline, Nest's own docs switch to `createNestApplication()` and require `await app.init()` before requests ([testing docs](https://docs.nestjs.com/fundamentals/testing#end-to-end-testing)).
 
 **Rule of thumb:** if the failure would show up in Postman, write an HTTP test. If it would only show up inside one method body, stop at a unit test.
+
+<DecisionGuide
+  title="Which NestJS test shape do I need?"
+  steps={[
+    {
+      id: "start",
+      question: "What are you testing?",
+      options: [
+        { label: "Business logic inside one service or provider", next: "pure-logic" },
+        { label: "A route with pipes, guards, or interceptors", next: "http-behavior" },
+        { label: "Cross-module behavior or production-like HTTP", next: "r-e2e" },
+      ],
+    },
+    {
+      id: "pure-logic",
+      question: "Does the behavior depend on the HTTP pipeline (guards, pipes, interceptors)?",
+      note: "If the failure would only show up inside one method body, a unit test is enough.",
+      options: [
+        { label: "No — it's pure method logic", next: "r-unit" },
+        { label: "Yes — route metadata or global enhancers affect the result", next: "http-behavior" },
+      ],
+    },
+    {
+      id: "http-behavior",
+      question: "Do you need the full production module graph?",
+      options: [
+        { label: "No — one feature module is enough", next: "r-integration" },
+        { label: "Yes — cross-module interactions matter", next: "r-e2e" },
+      ],
+    },
+    { id: "r-unit", result: "Unit test (compile only)", explanation: "Use Test.createTestingModule().compile(). Mock collaborators, retrieve the provider with get(), test method return values and thrown errors. No HTTP server needed." },
+    { id: "r-integration", result: "Integration slice (HTTP)", explanation: "Boot a small feature module with createNestApplication() + app.init(). Use supertest to hit real routes with real pipes, guards, and interceptors. Mock only expensive edges (DB, external APIs)." },
+    { id: "r-e2e", result: "E2E test (full app)", explanation: "Boot AppModule or close to it. Use the transactional rollback pattern for database isolation. Mock only external boundaries (payment providers, email). Always close the app in afterAll()." },
+  ]}
+/>
 
 ## Example 1: unit-test one provider with mocked collaborators
 

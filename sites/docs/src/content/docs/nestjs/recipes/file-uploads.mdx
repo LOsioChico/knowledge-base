@@ -14,6 +14,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into file uploads, make sure you understand:
@@ -38,6 +39,42 @@ When developers think of "file upload," they usually think of a browser sending 
 | **Bandwidth Cost** | Heavy (Server routes raw bytes) | Heavy (Server routes raw bytes) | **Zero** (Saves directly from client) |
 | **File [Validation](/knowledge-base/nestjs/recipes/validation/)** | High (Magic-number support) | Harder (Needs inline parsing) | Pre-validated via signed POST policy |
 | **Best Used For** | Small files, local admin tools | Dynamic zip creation, virus scans | **Production gold standard** |
+
+<DecisionGuide
+  title="Which upload architecture do I need?"
+  steps={[
+    {
+      id: "start",
+      question: "Does your NestJS server need to inspect or transform the file bytes?",
+      note: "Server-side virus scanning, image resizing, or zip creation require the server to touch the bytes.",
+      options: [
+        { label: "No — just store the file in the cloud", next: "r-tier3" },
+        { label: "Yes — server must inspect or transform the file", next: "scan-type" },
+      ],
+    },
+    {
+      id: "scan-type",
+      question: "Do you need magic-number validation (checking actual binary headers, not just Content-Type)?",
+      note: "Magic-number validation requires the full file buffer in memory — it cannot run on a stream.",
+      options: [
+        { label: "Yes — must verify file is truly a JPEG/PNG/PDF", next: "file-size" },
+        { label: "No — streaming chunk access is sufficient", next: "r-tier2" },
+      ],
+    },
+    {
+      id: "file-size",
+      question: "Are the files small enough to buffer in RAM (< 10 MB)?",
+      options: [
+        { label: "Yes — small files, limited concurrency", next: "r-tier1" },
+        { label: "No — large files or high concurrency", next: "r-tier2-note" },
+      ],
+    },
+    { id: "r-tier3", result: "Tier 3: Direct S3 Presigned PUT", explanation: "The production gold standard. NestJS generates a signed URL; the client uploads directly to S3. Zero RAM, zero bandwidth on your server. Use class-validator on the metadata DTO for content-type restrictions." },
+    { id: "r-tier2", result: "Tier 2: Stream-to-Cloud Middleware", explanation: "Use multer-s3 to pipe chunks directly to S3 as they arrive. NestJS never buffers the full file — only small chunks in memory. Good for virus scans, zip creation, or on-the-fly transforms." },
+    { id: "r-tier1", result: "Tier 1: Local Multer + ParseFilePipe", explanation: "Buffer the file in memory for magic-number validation with ParseFilePipeBuilder. Only use for small files (< 10 MB) with low concurrency. Good for admin tools and local development." },
+    { id: "r-tier2-note", result: "Tier 2 + custom validator", explanation: "Stream-to-Cloud avoids RAM exhaustion, but magic-number validation needs buffer access. Consider streaming to a temp S3 key, then running validation asynchronously via Lambda, or accept the Content-Type header with reduced security." },
+  ]}
+/>
 
 ---
 
