@@ -8,6 +8,7 @@ related:
 > [[aws/lambda|Lambda]], [[aws/ec2|EC2]], and [[aws/ecs|Fargate]] solve different workload shapes. Picking Lambda for a long-lived backend trades cold starts, connection-pool overhead, and per-request pricing that crosses always-on compute well before "high traffic".
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -108,6 +109,59 @@ Lambda cost is linear in requests × memory × duration; EC2 is flat per hour. U
     6. "Don't want to manage instances"? → Fargate, not Lambda-by-default.
   </TabItem>
 </Tabs>
+
+<DecisionGuide
+  title="Which AWS compute should I use?"
+  steps={[
+    {
+      id: "start",
+      question: "Is your workload triggered by discrete events (S3 upload, SQS message, cron schedule)?",
+      options: [
+        { label: "Yes — event-driven bursts", next: "duration" },
+        { label: "No — sustained HTTP API or long-running process", next: "sustained" },
+      ],
+    },
+    {
+      id: "duration",
+      question: "Does a single invocation finish within 15 minutes?",
+      note: "Lambda has a hard 900-second timeout.",
+      options: [
+        { label: "Yes — under 15 minutes", next: "traffic" },
+        { label: "No — needs hours or indefinite runtime", next: "r-fargate-long" },
+      ],
+    },
+    {
+      id: "traffic",
+      question: "At sustained load, are you above ~5-10 req/s?",
+      note: "Above this threshold, Lambda pricing often exceeds always-on compute.",
+      options: [
+        { label: "Low or spiky (< 5 req/s average)", next: "r-lambda" },
+        { label: "Sustained (> 10 req/s)", next: "r-pricecheck" },
+      ],
+    },
+    {
+      id: "sustained",
+      question: "Do you need WebSockets, persistent DB connections, or > 6 MB responses?",
+      options: [
+        { label: "Yes — long-lived connections required", next: "ops" },
+        { label: "No — standard request/response", next: "traffic" },
+      ],
+    },
+    {
+      id: "ops",
+      question: "Do you want to manage EC2 instances directly?",
+      options: [
+        { label: "No — just give me containers", next: "r-fargate" },
+        { label: "Yes — I need GPUs, custom kernels, or max cost control", next: "r-ec2" },
+      ],
+    },
+    { id: "r-lambda", result: "Lambda", explanation: "Scale-to-zero, pay-per-request. Ideal for event glue, webhooks, low-duty cron, and per-tenant isolation." },
+    { id: "r-fargate", result: "Fargate", explanation: "Managed containers with persistent connections, WebSocket support, and Docker local/prod parity. ~$15/mo for 0.5 vCPU / 1 GB." },
+    { id: "r-fargate-long", result: "Fargate (or Step Functions)", explanation: "No timeout limit. Use Fargate for long-running containers or Step Functions to orchestrate multi-step workflows across Lambda functions." },
+    { id: "r-ec2", result: "EC2", explanation: "Full control: GPUs, custom kernels, Reserved Instances for sustained discounts. Best for lift-and-shift or high-throughput backends." },
+    { id: "r-pricecheck", result: "Run the pricing math!", explanation: "At 50 req/s × 200ms × 512 MB, Lambda costs ~8× more than m7g.medium. Use the AWS Pricing Calculator to compare your specific workload shape.", link: "https://calculator.aws/" },
+  ]}
+/>
 
 ## Common gotchas shoehorning a backend into Lambda
 

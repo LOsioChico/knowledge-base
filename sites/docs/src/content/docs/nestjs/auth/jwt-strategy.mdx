@@ -17,6 +17,7 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -36,6 +37,49 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into the JWT
 | Your code    | `JwtStrategy` + `JwtAuthGuard` | Subclass strategy; subclass `AuthGuard('jwt')` (see [JwtStrategy](#jwt-strategy) and [JwtAuthGuard](#protected-route)) |
 
 `AuthGuard('jwt')` runs whatever strategy is registered as `'jwt'`. `@nestjs/jwt` signs at login; `passport-jwt` verifies on later requests. **Same secret in both places.**
+
+<FlowSimulator
+  title="JWT authentication flows"
+  nodes={[
+    { id: "client", label: "Client" },
+    { id: "guard", label: "JwtAuthGuard" },
+    { id: "strategy", label: "JwtStrategy" },
+    { id: "auth", label: "AuthService" },
+    { id: "jwt", label: "JwtService" },
+  ]}
+  flows={[
+    {
+      label: "Login flow",
+      steps: [
+        { from: "client", to: "auth", message: "POST /auth/login { username, password }" },
+        { from: "auth", to: "auth", message: "Validate credentials against UsersService" },
+        { from: "auth", to: "jwt", message: "signAsync({ sub: userId, username })" },
+        { from: "jwt", to: "auth", message: "eyJhbGciOiJIUzI1NiI… (signed token)" },
+        { from: "auth", to: "client", message: '{ access_token: "eyJ…" }' },
+      ],
+    },
+    {
+      label: "Protected request",
+      steps: [
+        { from: "client", to: "guard", message: "GET /profile — Authorization: Bearer eyJ…" },
+        { from: "guard", to: "strategy", message: "Delegate to passport-jwt strategy" },
+        { from: "strategy", to: "strategy", message: "Verify signature + expiration with secret" },
+        { from: "strategy", to: "guard", message: "validate() → { userId: 1, username: 'john' }" },
+        { from: "guard", to: "client", message: "200 — req.user attached to request" },
+      ],
+    },
+    {
+      label: "Token rejected",
+      steps: [
+        { from: "client", to: "guard", message: "GET /profile — Authorization: Bearer expired…" },
+        { from: "guard", to: "strategy", message: "Delegate to passport-jwt strategy" },
+        { from: "strategy", to: "strategy", message: "Signature valid but token EXPIRED" },
+        { from: "strategy", to: "guard", message: "UnauthorizedException thrown" },
+        { from: "guard", to: "client", message: "401 — { statusCode: 401, message: 'Unauthorized' }" },
+      ],
+    },
+  ]}
+/>
 
 ## Setup
 
