@@ -1,0 +1,1117 @@
+---
+/**
+ * HashRingVisualizer.astro
+ * ───────────────────────
+ * Interactive consistent hashing ring visualization.
+ *
+ * Renders an SVG circle with server nodes and keys plotted at their
+ * hash positions. Interactive: add/remove servers to see which keys
+ * migrate. Toggle virtual nodes to see uniform distribution.
+ *
+ * Props:
+ *   nodes      – server nodes on the ring
+ *   keys       – data keys to route
+ *   ringSize   – max position on the ring (default 360)
+ *   vnodes     – number of virtual nodes per server (0 = disabled)
+ *   title      – optional heading
+ */
+
+interface RingNode {
+  id: string;
+  label: string;
+  position: number;
+  color?: string;
+}
+
+interface RingKey {
+  id: string;
+  label: string;
+  position: number;
+}
+
+interface Props {
+  nodes: RingNode[];
+  keys: RingKey[];
+  ringSize?: number;
+  vnodes?: number;
+  title?: string;
+}
+
+const { nodes, keys, ringSize = 360, vnodes = 0, title } = Astro.props;
+
+const DEFAULTS_COLORS = ['#60a5fa', '#a78bfa', '#34d399', '#f59e0b', '#f87171', '#ec4899'];
+const nodesWithColors = nodes.map((n, i) => ({
+  ...n,
+  color: n.color || DEFAULTS_COLORS[i % DEFAULTS_COLORS.length]
+}));
+---
+
+<div class="hr"
+  data-nodes={JSON.stringify(nodesWithColors)}
+  data-keys={JSON.stringify(keys)}
+  data-ring-size={ringSize}
+  data-vnodes={vnodes}
+>
+  <div class="hr-header">
+    {title && <div class="hr-title">⊙ {title}</div>}
+    <span class="hr-subtitle">Add or remove servers — watch which keys migrate clockwise</span>
+  </div>
+
+  <div class="hr-toolbar">
+    <div class="hr-btn-group">
+      <button class="hr-btn hr-btn--add" title="Add a server node">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Add server
+      </button>
+      <button class="hr-btn hr-btn--remove" title="Remove last server node">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1 6h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Remove
+      </button>
+      <button class="hr-btn hr-btn--reset" title="Reset to initial state">
+        <svg width="12" height="12" viewBox="0 0 12 12"><path d="M1.5 4.5A4.5 4.5 0 1 1 1 7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" fill="none"/><path d="M1 2v3h3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+        Reset
+      </button>
+    </div>
+    {vnodes > 0 && (
+      <label class="hr-toggle">
+        <span class="hr-toggle-track">
+          <input type="checkbox" class="hr-vnode-toggle" />
+          <span class="hr-toggle-thumb"></span>
+        </span>
+        <span class="hr-toggle-label">Virtual nodes ({vnodes}×)</span>
+      </label>
+    )}
+    <div class="hr-stats">
+      <span class="hr-stat"><span class="hr-stat-n" data-stat="servers">0</span> servers</span>
+      <span class="hr-stat-sep">·</span>
+      <span class="hr-stat"><span class="hr-stat-n" data-stat="keys">0</span> keys</span>
+    </div>
+    <button class="hr-btn hr-btn--expand" title="Expand to fullscreen">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="hr-body">
+    <div class="hr-ring-wrap">
+      <svg class="hr-svg" viewBox="0 0 560 560" xmlns="http://www.w3.org/2000/svg">
+        {/* Rendered dynamically by JS */}
+      </svg>
+    </div>
+    <div class="hr-panel">
+      <div class="hr-panel-head">
+        <span class="hr-panel-title">Routing table</span>
+        <span class="hr-panel-hint">Hover a row to trace its route</span>
+      </div>
+      <div class="hr-table"></div>
+    </div>
+  </div>
+
+  <div class="hr-banner" style="display:none">
+    <div class="hr-banner-icon">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l7 13H1L8 1z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M8 6v3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="11.5" r=".8" fill="currentColor"/></svg>
+    </div>
+    <span class="hr-banner-text"></span>
+  </div>
+</div>
+
+<style>
+  /* ═══ ROOT ═══ */
+  .hr {
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --t:       var(--sl-color-text);
+    --t2:      var(--sl-color-gray-1);
+    --t3:      var(--sl-color-gray-2);
+    --t4:      var(--sl-color-gray-3);
+    --rule:    var(--sl-color-hairline-shade);
+    --accent:  var(--sl-color-accent-high);
+    --acc-low: var(--sl-color-accent-low);
+    --bg:      var(--sl-color-bg-nav);
+    --green:   #4ade80;
+    --amber:   #fbbf24;
+    margin: 1.5rem 0;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  /* ═══ HEADER ═══ */
+  .hr-header {
+    padding: 16px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .hr-title {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--t);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .hr-subtitle {
+    font-size: 0.72rem;
+    color: var(--t4);
+    line-height: 1.4;
+  }
+
+  /* ═══ TOOLBAR ═══ */
+  .hr-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--rule);
+    flex-wrap: wrap;
+  }
+  .hr-btn-group {
+    display: flex;
+    gap: 1px;
+    background: var(--rule);
+    border-radius: 7px;
+    overflow: hidden;
+  }
+  .hr-btn {
+    all: unset;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--t3);
+    background: rgba(255,255,255,0.03);
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: color 140ms var(--ease), background 140ms var(--ease);
+    user-select: none;
+  }
+  .hr-btn:hover { color: var(--t); background: rgba(255,255,255,0.07); }
+  .hr-btn:active { transform: scale(0.97); }
+  .hr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .hr-btn svg { flex-shrink: 0; }
+
+  /* Toggle switch */
+  .hr-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    margin-left: auto;
+  }
+  .hr-toggle-track {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 9px;
+    transition: background 200ms var(--ease);
+    display: flex;
+    align-items: center;
+  }
+  .hr-toggle-track:has(input:checked) {
+    background: var(--accent);
+  }
+  .hr-toggle-track input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    margin: 0;
+  }
+  .hr-toggle-thumb {
+    position: absolute;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    transition: left 200ms var(--ease);
+    pointer-events: none;
+  }
+  .hr-toggle-track:has(input:checked) .hr-toggle-thumb {
+    left: 16px;
+  }
+  .hr-toggle-label {
+    font-size: 0.72rem;
+    color: var(--t4);
+    font-weight: 500;
+  }
+
+  /* Stats */
+  .hr-stats {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--t4);
+  }
+  .hr-stat-n {
+    font-weight: 700;
+    color: var(--t3);
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  }
+  .hr-stat-sep { opacity: 0.4; }
+
+  /* ═══ BODY ═══ */
+  .hr-body {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    min-height: 380px;
+  }
+  @media (max-width: 700px) {
+    .hr-body { grid-template-columns: 1fr; }
+  }
+
+  /* Ring */
+  .hr-ring-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .hr-svg {
+    width: 100%;
+    max-width: 380px;
+    aspect-ratio: 1;
+  }
+
+  /* ═══ MODAL OVERLAY ═══ */
+  .hr-btn--expand {
+    all: unset;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--t4);
+    cursor: pointer;
+    transition: color 140ms var(--ease), background 140ms var(--ease);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+  .hr-btn--expand:hover {
+    color: var(--t);
+    background: rgba(255,255,255,0.06);
+  }
+
+  /* Panel */
+  .hr-panel {
+    border-left: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  @media (max-width: 700px) {
+    .hr-panel {
+      border-left: none;
+      border-top: 1px solid var(--rule);
+    }
+  }
+  .hr-panel-head {
+    padding: 14px 16px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .hr-panel-title {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .hr-panel-hint {
+    font-size: 0.65rem;
+    color: var(--t4);
+    font-style: italic;
+  }
+
+  /* Table */
+  .hr-table {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 12px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .hr-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 7px;
+    font-size: 0.75rem;
+    color: var(--t2);
+    background: transparent;
+    transition: background 120ms var(--ease);
+    cursor: default;
+  }
+  .hr-row:hover { background: rgba(255,255,255,0.04); }
+  .hr-row--moved { background: rgba(251,191,36,0.06); }
+  .hr-row--moved:hover { background: rgba(251,191,36,0.1); }
+
+  .hr-row-key {
+    font-weight: 600;
+    color: var(--t);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hr-row-arrow {
+    color: var(--t3);
+    font-size: 0.7rem;
+  }
+  .hr-row-server {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 600;
+    color: var(--t2);
+    white-space: nowrap;
+  }
+  .hr-row-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(0,0,0,0.3), 0 0 2px currentColor;
+  }
+  .hr-row-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .hr-row-badge--moved {
+    background: rgba(251,191,36,0.12);
+    color: var(--amber);
+  }
+  .hr-row-badge--stays {
+    background: rgba(74,222,128,0.1);
+    color: var(--green);
+  }
+
+  /* ═══ BANNER ═══ */
+  .hr-banner {
+    padding: 10px 20px;
+    border-top: 1px solid rgba(251,191,36,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: var(--amber);
+    background: rgba(251,191,36,0.04);
+    animation: hr-slide 260ms var(--ease);
+  }
+  @keyframes hr-slide {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .hr-banner-icon { flex-shrink: 0; display: flex; }
+
+  /* ═══ REDUCED MOTION & PRINT ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .hr-banner { animation-duration: 0.01ms !important; }
+  }
+  @media print {
+    .hr-toolbar { display: none; }
+    .hr-banner { display: none !important; }
+  }
+</style>
+
+<style is:global>
+  /* Modal overlay — lives on document.body, needs global styles */
+  .hr-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: hr-fade-in 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hr-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+  }
+
+  .hr-modal-container {
+    position: relative;
+    z-index: 1;
+    width: 92vw;
+    max-width: 1100px;
+    max-height: 90vh;
+    overflow: auto;
+    border-radius: 14px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    animation: hr-scale-in 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hr-modal-close {
+    all: unset;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: var(--sl-color-gray-2, #aaa);
+    background: rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+    transition: color 150ms, background 150ms, transform 150ms;
+  }
+  .hr-modal-close:hover {
+    color: var(--sl-color-text, #fff);
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.1);
+  }
+  .hr-modal-close:active {
+    transform: scale(0.95);
+  }
+
+  .hr-modal-container .hr {
+    margin: 0;
+    border: none;
+    border-radius: 14px;
+  }
+
+  .hr-modal-container .hr-body {
+    grid-template-columns: 1.4fr 1fr;
+    min-height: 420px;
+  }
+
+  .hr-modal-container .hr-ring-wrap {
+    padding: 32px;
+  }
+
+  .hr-modal-container .hr-svg {
+    max-width: 560px;
+  }
+
+  .hr-modal-container .hr-table {
+    max-height: 60vh;
+  }
+
+  @keyframes hr-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes hr-scale-in {
+    from { opacity: 0; transform: scale(0.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @media (max-width: 700px) {
+    .hr-modal-container {
+      width: 96vw;
+      max-height: 94vh;
+    }
+    .hr-modal-container .hr-body {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  function initHashRing() {
+    document.querySelectorAll<HTMLElement>('.hr:not([data-init])').forEach((comp) => {
+      comp.setAttribute('data-init', '');
+
+      type Node = { id: string; label: string; position: number; color: string };
+      type Key  = { id: string; label: string; position: number };
+      type NP   = Node & { isVirtual: boolean; physicalId: string };
+
+      const initialNodes: Node[] = JSON.parse(comp.dataset.nodes || '[]');
+      const allKeys: Key[] = JSON.parse(comp.dataset.keys || '[]');
+      const ringSize = Number(comp.dataset.ringSize) || 360;
+      const vnodeCount = Number(comp.dataset.vnodes) || 0;
+
+      const svg = comp.querySelector<SVGSVGElement>('.hr-svg')!;
+      const table = comp.querySelector<HTMLElement>('.hr-table')!;
+      const banner = comp.querySelector<HTMLElement>('.hr-banner')!;
+      const bannerText = comp.querySelector<HTMLElement>('.hr-banner-text')!;
+      const addBtn = comp.querySelector<HTMLButtonElement>('.hr-btn--add')!;
+      const removeBtn = comp.querySelector<HTMLButtonElement>('.hr-btn--remove')!;
+      const vnodeToggle = comp.querySelector<HTMLInputElement>('.hr-vnode-toggle');
+      const resetBtn = comp.querySelector<HTMLButtonElement>('.hr-btn--reset')!;
+      const expandBtn = comp.querySelector<HTMLButtonElement>('.hr-btn--expand')!;
+      const statServers = comp.querySelector<HTMLElement>('[data-stat="servers"]')!;
+      const statKeys = comp.querySelector<HTMLElement>('[data-stat="keys"]')!;
+
+      const CX = 280, CY = 280, R = 170;
+      const EXTRA_COLORS = ['#06b6d4', '#8b5cf6', '#d946ef', '#84cc16', '#14b8a6', '#fb923c'];
+
+      let activeNodes = [...initialNodes];
+      let showVnodes = false;
+      let prevRouting = new Map<string, string>();
+      let addCounter = 0;
+      let highlightedKey: string | null = null;
+      let isFullscreen = false;
+
+      const NS = 'http://www.w3.org/2000/svg';
+
+      function el<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string> = {}): SVGElementTagNameMap[K] {
+        const e = document.createElementNS(NS, tag);
+        for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+        return e;
+      }
+
+      function posToAngle(pos: number): number {
+        return (pos / ringSize) * 2 * Math.PI - Math.PI / 2;
+      }
+
+      function posToXY(pos: number, r = R): { x: number; y: number } {
+        const a = posToAngle(pos);
+        return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+      }
+
+      /** SVG arc path from angle a1 to a2 (clockwise, radians) */
+      function arcPath(a1: number, a2: number, r: number): string {
+        // Normalize so a2 > a1 (clockwise)
+        if (a2 <= a1) a2 += 2 * Math.PI;
+        const large = (a2 - a1) > Math.PI ? 1 : 0;
+        const x1 = CX + r * Math.cos(a1), y1 = CY + r * Math.sin(a1);
+        const x2 = CX + r * Math.cos(a2), y2 = CY + r * Math.sin(a2);
+        return `M ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`;
+      }
+
+      function getAllNodePositions(): NP[] {
+        const positions: NP[] = [];
+        for (const node of activeNodes) {
+          positions.push({ ...node, isVirtual: false, physicalId: node.id });
+          if (showVnodes && vnodeCount > 0) {
+            for (let v = 1; v <= vnodeCount; v++) {
+              const vpos = (node.position + Math.floor((ringSize / (vnodeCount + 1)) * v)) % ringSize;
+              positions.push({
+                id: `${node.id}-v${v}`, label: `${node.label[0]}${v}`,
+                position: vpos, color: node.color,
+                isVirtual: true, physicalId: node.id,
+              });
+            }
+          }
+        }
+        return positions.sort((a, b) => a.position - b.position);
+      }
+
+      function routeKey(keyPos: number, nps: NP[]): string {
+        if (nps.length === 0) return 'none';
+        for (const np of nps) { if (np.position >= keyPos) return np.physicalId; }
+        return nps[0].physicalId;
+      }
+
+      /* ── RENDER ── */
+      function render() {
+        svg.innerHTML = '';
+        const nps = getAllNodePositions();
+
+        // --- Defs: glow filter ---
+        const defs = el('defs');
+        const filter = el('filter', { id: 'glow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+        const blur = el('feGaussianBlur', { stdDeviation: '3', result: 'blur' });
+        const merge = el('feMerge');
+        const mn1 = el('feMergeNode', { in: 'blur' });
+        const mn2 = el('feMergeNode', { in: 'SourceGraphic' });
+        merge.append(mn1, mn2);
+        filter.append(blur, merge);
+        defs.append(filter);
+        svg.append(defs);
+
+        // --- Subtle inner glow ring ---
+        svg.append(el('circle', {
+          cx: String(CX), cy: String(CY), r: String(R),
+          fill: 'none', stroke: 'var(--rule)', 'stroke-width': '1.5',
+          opacity: '0.2',
+        }));
+        // Outer dashed ring
+        svg.append(el('circle', {
+          cx: String(CX), cy: String(CY), r: String(R),
+          fill: 'none', stroke: 'var(--rule)', 'stroke-width': '2.5', 'stroke-dasharray': '1.5 8',
+          opacity: '0.5',
+        }));
+
+        // --- Center ring info ---
+        const centerLine1 = el('text', {
+          x: String(CX), y: String(CY - 12),
+          'font-size': '11', 'font-weight': '600', fill: 'var(--t3)',
+          'text-anchor': 'middle', opacity: '0.7',
+        });
+        centerLine1.textContent = `${activeNodes.length} server${activeNodes.length !== 1 ? 's' : ''}`;
+        const centerLine2 = el('text', {
+          x: String(CX), y: String(CY + 6),
+          'font-size': '9', fill: 'var(--t4)',
+          'text-anchor': 'middle', opacity: '0.5',
+        });
+        centerLine2.textContent = `${ringSize}-slot ring`;
+        const centerLine3 = el('text', {
+          x: String(CX), y: String(CY + 20),
+          'font-size': '8', fill: 'var(--t4)',
+          'text-anchor': 'middle', opacity: '0.35',
+        });
+        centerLine3.textContent = showVnodes ? `${activeNodes.length * (vnodeCount + 1)} positions` : '↻ clockwise routing';
+        svg.append(centerLine1, centerLine2, centerLine3);
+
+        // --- Cardinal position labels (0, 90, 180, 270) ---
+        const cardinals = [
+          { pos: 0, anchor: 'middle', dx: 0, dy: -10 },
+          { pos: ringSize / 4, anchor: 'start', dx: 10, dy: 4 },
+          { pos: ringSize / 2, anchor: 'middle', dx: 0, dy: 14 },
+          { pos: (ringSize * 3) / 4, anchor: 'end', dx: -10, dy: 4 },
+        ];
+        for (const c of cardinals) {
+          const { x, y } = posToXY(c.pos, R + 8);
+          const lbl = el('text', {
+            x: String(x + c.dx), y: String(y + c.dy),
+            'font-size': '7.5', fill: 'var(--t4)', 'text-anchor': c.anchor,
+            'font-weight': '500', opacity: '0.4',
+          });
+          lbl.textContent = String(Math.round(c.pos));
+          svg.append(lbl);
+        }
+
+        // --- Position ticks (subtle) ---
+        const tickCount = 36;
+        for (let i = 0; i < tickCount; i++) {
+          const pos = (i / tickCount) * ringSize;
+          const isMajor = i % 9 === 0;
+          const { x: x1, y: y1 } = posToXY(pos, R - (isMajor ? 6 : 3));
+          const { x: x2, y: y2 } = posToXY(pos, R + (isMajor ? 6 : 3));
+          svg.append(el('line', {
+            x1: String(x1), y1: String(y1), x2: String(x2), y2: String(y2),
+            stroke: 'var(--rule)', 'stroke-width': isMajor ? '1.5' : '0.8', opacity: isMajor ? '0.5' : '0.25',
+          }));
+        }
+
+        // --- Route arcs (drawn along the ring) ---
+        const curRouting = new Map<string, string>();
+        for (const key of allKeys) {
+          const serverId = routeKey(key.position, nps);
+          curRouting.set(key.id, serverId);
+          const serverNode = activeNodes.find(n => n.id === serverId);
+          if (!serverNode) continue;
+
+          const targetNp = nps.find(np => np.physicalId === serverId && np.position >= key.position)
+            || nps.find(np => np.physicalId === serverId);
+          if (!targetNp) continue;
+
+          const a1 = posToAngle(key.position);
+          const a2 = posToAngle(targetNp.position);
+          const path = el('path', {
+            d: arcPath(a1, a2, R - 12),
+            stroke: serverNode.color, fill: 'none',
+            'stroke-width': '2', 'stroke-dasharray': '4 4',
+            opacity: '0.25', 'data-route-key': key.id,
+          });
+          path.classList.add('hr-arc');
+          svg.append(path);
+
+          // Arrow head at end of arc
+          const arrA = posToAngle(targetNp.position) - 0.03;
+          const { x: hx, y: hy } = posToXY(targetNp.position, R - 12);
+          const head = el('polygon', {
+            points: `${hx},${hy} ${hx - 5},${hy - 4} ${hx - 5},${hy + 4}`,
+            fill: serverNode.color, opacity: '0.3',
+            transform: `rotate(${(arrA + Math.PI / 2) * (180 / Math.PI)}, ${hx}, ${hy})`,
+            'data-route-key': key.id,
+          });
+          head.classList.add('hr-arc-head');
+          svg.append(head);
+        }
+
+        // --- Virtual node dots ---
+        for (const np of nps) {
+          if (!np.isVirtual) continue;
+          const { x, y } = posToXY(np.position);
+          const dot = el('circle', {
+            cx: String(x), cy: String(y), r: '4',
+            fill: np.color, opacity: '0.25',
+          });
+          dot.classList.add('hr-vdot');
+
+          // Tiny label
+          const { x: lx, y: ly } = posToXY(np.position, R + 16);
+          const lbl = el('text', {
+            x: String(lx), y: String(ly), dy: '0.35em',
+            'font-size': '7', fill: np.color, 'text-anchor': 'middle',
+            'font-weight': '600', opacity: '0.4',
+          });
+          lbl.textContent = np.label;
+          svg.append(dot, lbl);
+        }
+
+        // --- Server node dots (on ring) ---
+        for (const np of nps) {
+          if (np.isVirtual) continue;
+          const { x, y } = posToXY(np.position);
+          const g = el('g');
+          g.style.cursor = 'pointer';
+
+          // SVG tooltip
+          const tt = el('title');
+          tt.textContent = `${np.label} — position ${np.position} on the ring`;
+          g.append(tt);
+
+          // Pulsing outer ring
+          g.append(el('circle', {
+            cx: String(x), cy: String(y), r: '16',
+            fill: 'none', stroke: np.color, 'stroke-width': '1',
+            opacity: '0.15',
+          }));
+          // Outer glow
+          g.append(el('circle', {
+            cx: String(x), cy: String(y), r: '14',
+            fill: np.color, opacity: '0.06',
+          }));
+
+          // Main dot
+          const dot = el('circle', {
+            cx: String(x), cy: String(y), r: '10',
+            fill: np.color, stroke: 'var(--bg)', 'stroke-width': '2.5',
+            filter: 'url(#glow)',
+          });
+          g.append(dot);
+
+          // Server letter inside dot
+          const letter = np.label.replace('Server ', '');
+          const icon = el('text', {
+            x: String(x), y: String(y), dy: '0.38em',
+            'font-size': '9', 'font-weight': '800', fill: 'white',
+            'text-anchor': 'middle', 'pointer-events': 'none',
+            'font-family': 'var(--sl-font-system-mono, ui-monospace, monospace)',
+          });
+          icon.textContent = letter;
+          g.append(icon);
+
+          // Label pill (outside ring)
+          const { x: lx, y: ly } = posToXY(np.position, R + 30);
+          const pillW = np.label.length * 6.5 + 18;
+          const pill = el('rect', {
+            x: String(lx - pillW / 2), y: String(ly - 11),
+            width: String(pillW), height: '22', rx: '11',
+            fill: np.color, opacity: '0.1',
+            stroke: np.color, 'stroke-width': '0.5', 'stroke-opacity': '0.2',
+          });
+          const label = el('text', {
+            x: String(lx), y: String(ly), dy: '0.35em',
+            'font-size': '10', 'font-weight': '600', fill: np.color,
+            'text-anchor': 'middle', 'pointer-events': 'none',
+          });
+          label.textContent = np.label;
+          g.append(pill, label);
+
+          svg.append(g);
+        }
+
+        // --- Key dots (inside ring) ---
+        // Sort keys by position for collision avoidance
+        const sortedKeys = [...allKeys].sort((a, b) => a.position - b.position);
+        const labelRadii: number[] = [];
+        const BASE_KEY_R = R - 28;
+        const LABEL_BASE_R = R - 50;
+        const LABEL_STAGGER = 22;
+
+        // Compute staggered label radii to avoid overlaps
+        for (let i = 0; i < sortedKeys.length; i++) {
+          let depth = 0;
+          for (let j = 0; j < i; j++) {
+            let diff = Math.abs(sortedKeys[i].position - sortedKeys[j].position);
+            if (diff > ringSize / 2) diff = ringSize - diff;
+            if (diff < 45 && labelRadii[j] === LABEL_BASE_R - depth * LABEL_STAGGER) {
+              depth++;
+            }
+          }
+          labelRadii.push(LABEL_BASE_R - depth * LABEL_STAGGER);
+        }
+
+        for (let ki = 0; ki < sortedKeys.length; ki++) {
+          const key = sortedKeys[ki];
+          const { x, y } = posToXY(key.position, BASE_KEY_R);
+          const serverId = curRouting.get(key.id);
+          const serverNode = activeNodes.find(n => n.id === serverId);
+          const color = serverNode?.color || 'var(--t4)';
+
+          const g = el('g');
+          g.dataset.keyId = key.id;
+          g.classList.add('hr-key-g');
+          g.style.cursor = 'pointer';
+
+          // SVG tooltip
+          const tt = el('title');
+          tt.textContent = `${key.label} (pos ${key.position}) → ${serverNode?.label || 'none'}`;
+          g.append(tt);
+
+          // Key dot with glow
+          g.append(el('circle', {
+            cx: String(x), cy: String(y), r: '7',
+            fill: color, opacity: '0.1',
+          }));
+          g.append(el('circle', {
+            cx: String(x), cy: String(y), r: '4.5',
+            fill: color, opacity: '0.85',
+            stroke: 'var(--bg)', 'stroke-width': '1.5',
+          }));
+
+          // Connector line from dot to label (when staggered)
+          const lblR = labelRadii[ki];
+          if (lblR < LABEL_BASE_R) {
+            const { x: lx, y: ly } = posToXY(key.position, lblR + 8);
+            g.append(el('line', {
+              x1: String(x), y1: String(y),
+              x2: String(lx), y2: String(ly),
+              stroke: 'var(--t4)', 'stroke-width': '0.5', opacity: '0.3',
+              'stroke-dasharray': '2 2',
+            }));
+          }
+
+          // Key label (auto-adjust text-anchor based on position on ring)
+          const { x: lx, y: ly } = posToXY(key.position, lblR);
+          const angle = posToAngle(key.position);
+          const anchor = Math.abs(Math.cos(angle)) < 0.3 ? 'middle' : (Math.cos(angle) < 0 ? 'end' : 'start');
+          const lbl = el('text', {
+            x: String(lx), y: String(ly), dy: '0.35em',
+            'font-size': '9', 'font-weight': '600', fill: 'var(--t2)',
+            'text-anchor': anchor, 'pointer-events': 'none',
+            'font-family': 'var(--sl-font-system-mono, ui-monospace, monospace)',
+          });
+          lbl.textContent = key.label;
+          g.append(lbl);
+
+          // Hover handlers
+          g.addEventListener('mouseenter', () => highlight(key.id));
+          g.addEventListener('mouseleave', () => highlight(null));
+
+          svg.append(g);
+        }
+
+        // --- Stats ---
+        statServers.textContent = String(activeNodes.length);
+        statKeys.textContent = String(allKeys.length);
+
+        // --- Build table ---
+        table.innerHTML = '';
+        let movedCount = 0;
+
+        for (const key of allKeys) {
+          const serverId = curRouting.get(key.id) || 'none';
+          const prev = prevRouting.get(key.id);
+          const moved = prev !== undefined && prev !== serverId;
+          if (moved) movedCount++;
+          const serverNode = activeNodes.find(n => n.id === serverId);
+
+          const row = document.createElement('div');
+          row.className = `hr-row${moved ? ' hr-row--moved' : ''}`;
+          row.dataset.keyId = key.id;
+          row.innerHTML = `
+            <span class="hr-row-key">${key.label}</span>
+            <span class="hr-row-arrow">→</span>
+            <span class="hr-row-server">
+              <span class="hr-row-dot" style="background:${serverNode?.color || '#666'}"></span>
+              ${serverNode?.label || '—'}
+            </span>
+            ${prev !== undefined
+              ? `<span class="hr-row-badge ${moved ? 'hr-row-badge--moved' : 'hr-row-badge--stays'}">${moved ? 'moved' : 'stays'}</span>`
+              : '<span></span>'
+            }
+          `;
+          row.addEventListener('mouseenter', () => highlight(key.id));
+          row.addEventListener('mouseleave', () => highlight(null));
+          table.appendChild(row);
+        }
+
+        // Banner
+        if (prevRouting.size > 0 && movedCount > 0) {
+          const pct = Math.round((movedCount / allKeys.length) * 100);
+          bannerText.textContent = `${movedCount} of ${allKeys.length} keys migrated (${pct}%). Consistent hashing keeps migration minimal — modulo-N would move ~${100 - Math.round(100 / (activeNodes.length + 1))}%.`;
+          banner.style.display = 'flex';
+        } else if (prevRouting.size > 0 && movedCount === 0) {
+          bannerText.textContent = `0 keys migrated — all stayed on their current server.`;
+          banner.style.display = 'flex';
+          banner.style.color = 'var(--green)';
+          banner.style.background = 'rgba(74,222,128,0.04)';
+          banner.style.borderTopColor = 'rgba(74,222,128,0.15)';
+        } else {
+          banner.style.display = 'none';
+        }
+
+        prevRouting = curRouting;
+        removeBtn.disabled = activeNodes.length <= 1;
+      }
+
+      /* ── HIGHLIGHT ── */
+      function highlight(keyId: string | null) {
+        highlightedKey = keyId;
+        // Arcs
+        svg.querySelectorAll<SVGElement>('.hr-arc, .hr-arc-head').forEach(el => {
+          if (!keyId) { el.style.opacity = ''; return; }
+          el.style.opacity = el.getAttribute('data-route-key') === keyId ? '0.8' : '0.06';
+          if (el.getAttribute('data-route-key') === keyId && el.tagName === 'path') {
+            el.setAttribute('stroke-dasharray', 'none');
+            el.setAttribute('stroke-width', '3');
+          } else if (el.tagName === 'path') {
+            el.setAttribute('stroke-dasharray', '4 4');
+            el.setAttribute('stroke-width', '2');
+          }
+        });
+        // Key groups
+        svg.querySelectorAll<SVGElement>('.hr-key-g').forEach(g => {
+          if (!keyId) { g.style.opacity = ''; return; }
+          g.style.opacity = g.dataset.keyId === keyId ? '1' : '0.2';
+        });
+        // Table rows
+        table.querySelectorAll<HTMLElement>('.hr-row').forEach(r => {
+          if (!keyId) { r.style.background = ''; return; }
+          if (r.dataset.keyId === keyId) {
+            r.style.background = 'rgba(255,255,255,0.06)';
+          } else {
+            r.style.background = '';
+          }
+        });
+      }
+
+      /* ── BUTTONS ── */
+      addBtn.addEventListener('click', () => {
+        addCounter++;
+        const color = EXTRA_COLORS[(addCounter - 1) % EXTRA_COLORS.length];
+        // Place new node in the largest gap
+        const sorted = [...activeNodes].sort((a, b) => a.position - b.position);
+        let bestGap = 0, bestPos = Math.floor(Math.random() * ringSize);
+        for (let i = 0; i < sorted.length; i++) {
+          const next = sorted[(i + 1) % sorted.length];
+          let gap = next.position - sorted[i].position;
+          if (gap <= 0) gap += ringSize;
+          if (gap > bestGap) {
+            bestGap = gap;
+            bestPos = (sorted[i].position + Math.floor(gap / 2)) % ringSize;
+          }
+        }
+        activeNodes.push({
+          id: `added-${addCounter}`,
+          label: `Server ${String.fromCharCode(64 + activeNodes.length + 1)}`,
+          position: bestPos, color,
+        });
+        render();
+      });
+
+      removeBtn.addEventListener('click', () => {
+        if (activeNodes.length <= 1) return;
+        activeNodes.pop();
+        render();
+      });
+
+      resetBtn.addEventListener('click', () => {
+        activeNodes = [...initialNodes];
+        addCounter = 0;
+        showVnodes = false;
+        prevRouting = new Map();
+        if (vnodeToggle) vnodeToggle.checked = false;
+        banner.style.display = 'none';
+        banner.style.color = '';
+        banner.style.background = '';
+        banner.style.borderTopColor = '';
+        render();
+      });
+
+      // Fullscreen modal
+      let placeholder: Comment | null = null;
+      let modal: HTMLElement | null = null;
+
+      function openModal() {
+        if (isFullscreen) return;
+        isFullscreen = true;
+
+        // Leave a placeholder so we know where to put it back
+        placeholder = document.createComment('hr-placeholder');
+        comp.parentNode!.insertBefore(placeholder, comp);
+
+        // Create modal shell on document.body
+        modal = document.createElement('div');
+        modal.className = 'hr-modal-overlay';
+        modal.innerHTML = `
+          <div class="hr-modal-backdrop"></div>
+          <div class="hr-modal-container">
+            <button class="hr-modal-close" title="Close (Esc)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        `;
+        const container = modal.querySelector('.hr-modal-container')!;
+
+        // Move the component into the modal
+        container.appendChild(comp);
+        document.body.appendChild(modal);
+        comp.classList.add('is-fullscreen');
+
+        // Close on backdrop click or close button
+        modal.querySelector('.hr-modal-backdrop')!.addEventListener('click', closeModal);
+        modal.querySelector('.hr-modal-close')!.addEventListener('click', closeModal);
+
+        // Update toolbar icon
+        expandBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 5L1 1M9 5l4-4M9 9l4 4M5 9L1 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+        expandBtn.title = 'Close';
+        document.body.style.overflow = 'hidden';
+        render();
+      }
+
+      function closeModal() {
+        if (!isFullscreen) return;
+        isFullscreen = false;
+
+        // Move component back to its original position
+        comp.classList.remove('is-fullscreen');
+        if (placeholder && placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(comp, placeholder);
+          placeholder.remove();
+          placeholder = null;
+        }
+
+        // Remove modal overlay
+        if (modal) { modal.remove(); modal = null; }
+
+        expandBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        expandBtn.title = 'Expand to fullscreen';
+        document.body.style.overflow = '';
+        render();
+      }
+
+      expandBtn.addEventListener('click', () => {
+        isFullscreen ? closeModal() : openModal();
+      });
+
+      // ESC key to close modal
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isFullscreen) closeModal();
+      });
+
+      if (vnodeToggle) {
+        vnodeToggle.addEventListener('change', () => {
+          showVnodes = vnodeToggle.checked;
+          render();
+        });
+      }
+
+      render();
+    });
+  }
+
+  initHashRing();
+  document.addEventListener('astro:page-load', initHashRing);
+</script>

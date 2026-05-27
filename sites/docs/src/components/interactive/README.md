@@ -639,6 +639,53 @@ Before committing any FiberTimeline, walk through this checklist:
 
 ---
 
+### HashRingVisualizer
+
+Interactive SVG consistent hashing ring. Server nodes and data keys are plotted on a circle; dashed lines show clockwise key→server routing. Add/remove servers to see which keys migrate in real-time. Toggle virtual nodes to see uniform distribution.
+
+**When to use:** Consistent hashing, load balancing, sharding, and dynamic partitioning concepts where the circular topology and key migration behavior are the core insight.
+
+**When NOT to use:** Simple key-value lookups, static architectures without dynamic scaling.
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `nodes` | `RingNode[]` | yes | — | Server nodes on the ring |
+| `keys` | `RingKey[]` | yes | — | Data keys to route |
+| `ringSize` | `number` | no | `360` | Total positions on the ring |
+| `vnodes` | `number` | no | `0` | Virtual nodes per server (0 = disabled) |
+| `title` | `string` | no | — | Optional heading |
+
+```typescript
+interface RingNode {
+  id: string;
+  label: string;
+  position: number;  // 0-based position on the ring
+  color?: string;    // Accent color for the node
+}
+
+interface RingKey {
+  id: string;
+  label: string;
+  position: number;  // 0-based position on the ring
+}
+```
+
+#### Interaction
+
+- **Hover a key row** in the routing table → its route arc highlights on the ring, all other keys dim.
+- **Add/Remove server** → routing recalculates, migration badges (MOVED / stays) appear, migration banner shows percentage.
+- **VNodes toggle** → scatter virtual copies of each server across the ring for uniform distribution.
+
+#### Target notes
+
+| Note | What it shows |
+|------|---------------|
+| `system-design/consistent-hashing` | Hash ring with 3 servers, 5 keys, VNodes toggle |
+
+---
+
 ### FlowSimulator
 
 Animated message/data flow between nodes. Dots move along edges between labeled nodes. Multiple flows (e.g., happy path vs compensation) selectable via tabs.
