@@ -109,6 +109,19 @@ Bash/sh/zsh blocks auto-render as terminal windows (no `title=` needed):
 
 Both components render the Starlight default first, then append their enhancement. Guard: `Head.astro` skips JSON-LD on pages without `entry.data` (e.g. 404).
 
+## Interactive components
+
+Custom Astro components under `src/components/interactive/` for teaching patterns where static enrichment (`<Steps>`, `<Tabs>`, `<Aside>`, mermaid) falls short. All are vanilla JS, SSR-rendered, with progressive enhancement.
+
+| Component | Purpose | When to use |
+| --- | --- | --- |
+| `BeforeAfter` | Draggable split-pane comparison with named slots | Architectural or code comparisons where seeing both sides simultaneously matters |
+
+Import from `src/components/interactive/<Name>.astro` in MDX. Full API reference: [`src/components/interactive/README.md`](../sites/docs/src/components/interactive/README.md).
+
+**Rule of thumb:** interactive components carry JS weight. If `<Steps>` or `<Tabs>` would be equally clear, use the lighter static component. Follow the [S4 enrichment decision tree](../.github/skills/kb-author/audits/S4-enrichment-fit.md).
+
+
 ## Starlight ecosystem (optional next)
 
 | Plugin / theme | Adds | When to adopt |

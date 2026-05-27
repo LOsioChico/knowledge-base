@@ -214,6 +214,9 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
 - **Writing dry, academic mathematical formulas for Systems Design concepts** → first-time readers cannot easily parse formal math. Always replace math with welcoming, intuition-first real-world analogies and step-by-step numeric transition tables (see AGENTS.md "Zero-Assumptions for Systems Design").
 - **Trusting schematic `schema.json` for `nest g` defaults** → the CLI action layer overrides
   them. Always run `--dry-run` first and trust terminal output.
+- **Using interactive components when `<Steps>` or `<Tabs>` would suffice** → interactive
+  components (`BeforeAfter`) carry JS weight. Follow the S4 decision tree: interactive is
+  the last branch, not the first.
 
 ## Boundaries
 

@@ -16,6 +16,9 @@ Is this a footgun that would interrupt the main flow?
   no ↓
 Does order/spatial structure teach (pipeline, FILO, decision flow)?
   yes → mermaid (keep ≤10 nodes)
+  no ↓
+Are two approaches compared and seeing both simultaneously matters?
+  yes → <BeforeAfter> (slot-based split pane)
   no → plain heading + prose/table
 ```
 
@@ -28,6 +31,7 @@ Does order/spatial structure teach (pipeline, FILO, decision flow)?
 | `<Aside>` | One footgun per Aside; titled | Walls of five Asides in a row |
 | `<CardGrid>` | Area MOC, fundamentals MOC, recipes MOC | Individual concept pages |
 | `mermaid` | Request pipeline, interceptor FILO, global-provider decision | Sequence diagrams for 2-box flows |
+| `BeforeAfter` | Architectural or code before/after comparison | Simple "here's the new code" with diff markers |
 
 ## Aside types (Starlight)
 
@@ -42,6 +46,8 @@ No `[!tip]`, `[!success]`, etc. (only the four canonical callout types).
 ## Decoration test
 
 Remove a component mentally. If the page is **equally clear**, remove it.
+
+**Interactive components carry JS weight.** If `<Steps>` or `<Tabs>` would be equally clear, use the lighter static component. Interactive is the last branch of the decision tree, not the first.
 
 ## Minimum bar
 

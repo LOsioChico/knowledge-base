@@ -78,6 +78,7 @@ sites/docs/src/content/docs/     # Active Starlight MDX notes (100% of content)
       index.mdx                  # Sub-area MOC if the subarea has 3+ notes
       <note>.mdx                 # Atomic note, one concept per file
 sites/docs/                      # Starlight configuration and plugins
+sites/docs/src/components/interactive/ # Custom interactive Astro components (README.md has full API)
 docs/                            # PUBLISHING.md, STARLIGHT-FEATURES.md, PIPELINE.md
 scripts/                         # MDX linters, audit tooling
 .github/workflows/deploy.yml     # lint → starlight build → Pages
