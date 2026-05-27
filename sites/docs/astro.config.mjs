@@ -308,6 +308,7 @@ export default defineConfig({
         "./src/styles/katex-fixes.css",
         "./src/styles/twoslash.css",
         "./src/styles/links.css",
+        "./src/styles/premium.css",
       ],
       editLink: {
         baseUrl: "https://github.com/LOsioChico/knowledge-base/edit/main/sites/docs/",

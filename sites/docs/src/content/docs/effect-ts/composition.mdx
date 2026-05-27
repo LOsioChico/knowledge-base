@@ -239,7 +239,7 @@ The following tracer shows how the **error channel** `E` changes across a realis
 <TypeChannelTracer
   title="How E evolves through a combined pipeline"
   steps={[
-    { op: "Effect.fn('createOrder')(function* (input) { ... })", a: "—", e: "—", note: "fn wraps the generator. It doesn't change A or E — it adds a tracing span named 'createOrder'." },
+    { op: "Effect.fn('createOrder')(function* (input) { ... })", a: "void", e: "never", note: "fn wraps the generator with a tracing span. Before any yield*, the inferred type is Effect<void, never>." },
     { op: "yield* validateInput(input)", a: "ValidOrder", e: "ValidationError", note: "First yield* inside gen. E starts with ValidationError from this step." },
     { op: "yield* chargeCard(order.total)", a: "Receipt", e: "ValidationError | PaymentError", note: "Second yield* adds PaymentError. gen automatically unions all yielded errors into E." },
     { op: ".pipe(Effect.map(r => r.id))", a: "string", e: "ValidationError | PaymentError", note: "pipe inside gen: map only transforms A (Receipt → string). E stays unchanged." },
