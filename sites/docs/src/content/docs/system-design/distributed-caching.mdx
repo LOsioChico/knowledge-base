@@ -14,6 +14,7 @@ related:
 > Designing low-latency data access layers using read/write caching patterns, optimal memory eviction algorithms, and thundering herd defenses.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -72,10 +73,40 @@ The application handles both the cache and the database directly. The cache acts
     1.  The application writes the updated value to the database.
     2.  The application **invalidates (deletes)** the corresponding key from the cache to prevent stale reads.
 
-```
-Read Miss: Client -> App -> Cache (Miss) -> App -> DB -> App -> Cache (Set) -> Client
-Write:     Client -> App -> DB (Write) -> App -> Cache (Delete)
-```
+<FlowSimulator
+  title="Cache-Aside read & write flows"
+  nodes={[
+    { id: "app", label: "App" },
+    { id: "cache", label: "Cache" },
+    { id: "db", label: "Database" },
+  ]}
+  flows={[
+    {
+      label: "Cache Hit",
+      steps: [
+        { from: "app", to: "cache", message: "GET key" },
+        { from: "cache", to: "app", message: "Value found → return to client" },
+      ],
+    },
+    {
+      label: "Cache Miss",
+      steps: [
+        { from: "app", to: "cache", message: "GET key" },
+        { from: "cache", to: "app", message: "MISS — key not found" },
+        { from: "app", to: "db", message: "SELECT … WHERE key = ?" },
+        { from: "db", to: "app", message: "Result row returned" },
+        { from: "app", to: "cache", message: "SET key → warm the cache" },
+      ],
+    },
+    {
+      label: "Write (Invalidate)",
+      steps: [
+        { from: "app", to: "db", message: "INSERT / UPDATE row" },
+        { from: "app", to: "cache", message: "DELETE key → invalidate stale entry" },
+      ],
+    },
+  ]}
+/>
 
 *   **Pros**: Simple, highly robust. If the caching tier crashes, the application falls back to querying the database directly. Caching memory is only consumed by keys that are actively requested (lazy loading).
 *   **Cons**: High read latency on cache misses. If a key is updated, the subsequent read must fetch from the database to re-warm the cache.

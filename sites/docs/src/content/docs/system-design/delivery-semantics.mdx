@@ -261,8 +261,7 @@ The key insight is the **lock lifecycle**: a transient failure releases the lock
   flows={[
     { label: "At-Most-Once (message lost)", steps: [
       { from: "broker", to: "consumer", message: "Deliver Msg A", description: "Broker sends Message A to the consumer and immediately deletes it from the queue. There is no retry mechanism." },
-      { from: "consumer", to: "db", message: "Process...", description: "Consumer begins processing but crashes mid-way. Because the broker already deleted the message, it cannot be redelivered." },
-      { from: "broker", to: "consumer", message: "Msg A is gone", description: "Message A is lost forever. At-most-once accepts this trade-off for simplicity and speed." },
+      { from: "consumer", to: "db", message: "Process...", description: "Consumer begins processing but crashes mid-way. Because the broker already deleted the message, it cannot be redelivered. Message A is lost forever — at-most-once accepts this trade-off for simplicity and speed." },
     ]},
     { label: "At-Least-Once (duplicate delivered)", steps: [
       { from: "broker", to: "consumer", message: "Deliver Msg A", description: "Broker delivers Message A and starts a visibility timeout. The message is hidden from other consumers but not deleted." },
@@ -285,9 +284,9 @@ The key insight is the **lock lifecycle**: a transient failure releases the lock
       { label: "Yes — we can design for idempotency", next: "r-at-least-once" },
       { label: "No — duplicates are catastrophic and we control the full pipeline", next: "r-exactly-once" },
     ]},
-    { id: "r-at-most-once", result: "At-Most-Once", explanation: "Fire and forget. Simplest, fastest, no duplicates — but messages may be lost. Use for telemetry, metrics, live streaming, and sensor data where the next reading replaces the current one." },
-    { id: "r-at-least-once", result: "At-Least-Once + Idempotent Consumers", explanation: "The practical default for most business systems. No data loss, but consumers must handle duplicates via natural idempotency, unique constraints, or deduplication stores. Use for orders, billing, webhooks, and notifications." },
-    { id: "r-exactly-once", result: "Exactly-Once Processing", explanation: "Highest complexity and cost. Requires transactional coordination across the full pipeline (e.g., Kafka transactions). Use for financial ledgers, inventory systems, and regulatory audit trails where duplicates are catastrophic." },
+    { id: "r-at-most-once", result: "At-Most-Once", explanation: "Fire and forget. Simplest, fastest, no duplicates — but messages may be lost. Use for telemetry, metrics, live streaming, and sensor data where the next reading replaces the current one.", link: "#at-most-once-delivery" },
+    { id: "r-at-least-once", result: "At-Least-Once + Idempotent Consumers", explanation: "The practical default for most business systems. No data loss, but consumers must handle duplicates via natural idempotency, unique constraints, or deduplication stores.", link: "#idempotency-strategies" },
+    { id: "r-exactly-once", result: "Exactly-Once Processing", explanation: "Highest complexity and cost. Requires transactional coordination across the full pipeline (e.g., Kafka transactions). Use for financial ledgers, inventory systems, and regulatory audit trails.", link: "#exactly-once-processing" },
   ]}
 />
 

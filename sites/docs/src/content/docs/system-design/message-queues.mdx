@@ -168,8 +168,8 @@ The following matrix contrasts these two paradigms across primary operational di
       { label: "Millions of events/sec, massive parallelism", next: "r-stream" },
       { label: "Moderate (thousands/sec), simpler ops", next: "r-broker" },
     ]},
-    { id: "r-stream", result: "Log-Based Event Stream (Kafka, Pulsar, Kinesis)", explanation: "Durable append-only log. Consumers track their own offset and can replay history. Scales via partitions. Best for event sourcing, analytics pipelines, and audit trails." },
-    { id: "r-broker", result: "Traditional Message Broker (RabbitMQ, SQS)", explanation: "Transient delivery with smart broker. Messages deleted on ACK. Rich routing via exchanges. Best for task queues, work distribution, and moderate-scale workflows." },
+    { id: "r-stream", result: "Log-Based Event Stream (Kafka, Pulsar, Kinesis)", explanation: "Durable append-only log. Consumers track their own offset and can replay history. Scales via partitions. Best for event sourcing, analytics pipelines, and audit trails.", link: "#log-based-event-streamers-eg-apache-kafka-apache-pulsar" },
+    { id: "r-broker", result: "Traditional Message Broker (RabbitMQ, SQS)", explanation: "Transient delivery with smart broker. Messages deleted on ACK. Rich routing via exchanges. Best for task queues, work distribution, and moderate-scale workflows.", link: "#traditional-message-brokers-eg-rabbitmq-amazon-sqs" },
   ]}
 />
  

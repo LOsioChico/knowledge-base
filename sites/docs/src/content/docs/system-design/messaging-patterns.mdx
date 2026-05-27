@@ -287,10 +287,10 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
       { label: "Yes — messages with the same key must be processed in order", next: "r-consumer-group" },
       { label: "No — ordering doesn't matter, just distribute work evenly", next: "r-shared-sub" },
     ]},
-    { id: "r-competing", result: "Competing Consumers", explanation: "Use a simple queue with multiple workers pulling messages. Each message is delivered to exactly one consumer. Best for task queues, background jobs, and load leveling. Examples: SQS, RabbitMQ queue." },
-    { id: "r-fanout", result: "Fan-Out (Pub/Sub)", explanation: "Use a topic with one subscription per service. Each subscription receives the full stream. Best for event-driven architectures where multiple decoupled services react to a single business event. Examples: SNS → SQS, RabbitMQ fanout exchange." },
-    { id: "r-consumer-group", result: "Consumer Groups", explanation: "Use a partitioned topic with consumer groups. Each group gets the full stream; within a group, each partition is assigned to one consumer for ordered processing. Best for Kafka-style event streaming at scale. Examples: Kafka consumer groups, Pulsar shared subscriptions with key ordering." },
-    { id: "r-shared-sub", result: "Shared Subscriptions", explanation: "Use a topic with subscription-level load balancing. Each subscription receives the full stream and distributes messages across its connected instances. Best for managed pub/sub platforms. Examples: Google Cloud Pub/Sub subscriptions, MQTT 5.0 shared subscriptions." },
+    { id: "r-competing", result: "Competing Consumers", explanation: "Use a simple queue with multiple workers pulling messages. Each message is delivered to exactly one consumer. Best for task queues, background jobs, and load leveling.", link: "#competing-consumers" },
+    { id: "r-fanout", result: "Fan-Out (Pub/Sub)", explanation: "Use a topic with one subscription per service. Each subscription receives the full stream. Best for event-driven architectures where multiple decoupled services react to a single business event.", link: "#fan-out" },
+    { id: "r-consumer-group", result: "Consumer Groups", explanation: "Use a partitioned topic with consumer groups. Each group gets the full stream; within a group, each partition is assigned to one consumer for ordered processing. Best for Kafka-style event streaming at scale.", link: "#consumer-groups" },
+    { id: "r-shared-sub", result: "Shared Subscriptions", explanation: "Use a topic with subscription-level load balancing. Each subscription receives the full stream and distributes messages across its connected instances. Best for managed pub/sub platforms.", link: "#shared-subscriptions" },
   ]}
 />
 

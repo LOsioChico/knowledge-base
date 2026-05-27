@@ -9,6 +9,8 @@ related:
 > IAM policy evaluation is the authorization pass behind every AWS API call: start at deny, find every applicable allow, then let explicit denies and guardrail policies decide what survives.
 
 import { Aside } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -25,19 +27,17 @@ Before diving in, make sure you understand:
 
 ## Evaluation flow
 
-```mermaid
-flowchart TD
-  A["Request: principal, action, resource, context"] --> B["Authenticate caller"]
-  B --> C["Collect applicable policies"]
-  C --> D{"Any explicit Deny?"}
-  D -->|Yes| Z["Deny"]
-  D -->|No| E{"Any applicable Allow?"}
-  E -->|No| Y["Implicit deny"]
-  E -->|Yes| F["Apply ceilings: boundary, session policy, SCP, RCP"]
-  F --> G{"Still allowed by every required ceiling?"}
-  G -->|Yes| H["Allow"]
-  G -->|No| Y
-```
+<PipelineStrip
+  title="IAM evaluation gates (top → bottom)"
+  stages={[
+    { label: "Authenticate caller", color: "#60a5fa", tip: "AWS resolves the principal from the request's signing credentials (IAM user, role session, federated identity)." },
+    { label: "Collect all applicable policies", color: "#60a5fa", tip: "Gather identity-based, resource-based, permissions boundary, session, SCP, and RCP policies that apply to this principal + resource pair." },
+    { label: "Check explicit denies", color: "#ef4444", tip: "Scan every collected policy for a matching Deny statement. One explicit Deny stops evaluation immediately — the request is denied." },
+    { label: "Check for an Allow", color: "#f59e0b", tip: "If no explicit deny was found, look for at least one matching Allow. No Allow means implicit deny (request fails silently)." },
+    { label: "Apply ceilings (boundaries, SCPs, RCPs)", color: "#a78bfa", tip: "Permissions boundaries, session policies, SCPs, and RCPs are ceilings — they cannot grant access, only restrict what identity/resource policies allowed." },
+    { label: "Final decision: Allow or Deny", color: "#34d399", tip: "If the Allow survived every ceiling check, the request proceeds. Otherwise, implicit deny." },
+  ]}
+/>
 
 AWS describes the authorization input as a request context, then evaluates identity policies, resource policies, permissions boundaries, AWS Organizations controls, and session policies to reach the final decision ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The diagram is a debugging model, not a replacement for service-specific rules.
 
@@ -49,15 +49,18 @@ The union/intersection rules are the starting point, but resource policies have 
 
 ## Policy layers
 
-| Layer                 | Where it lives                                                                         | Can allow?                     | Can limit?                | Inspect first when                                                                                                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------- | ------------------------------ | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Identity-based policy](#1-identity-allow-loses-to-an-s3-bucket-explicit-deny) | Attached to a user, group, or role                                                     | Yes                            | Yes, with explicit `Deny` | The error says no identity-based policy allows the action (see [Example 1](#1-identity-allow-loses-to-an-s3-bucket-explicit-deny) and [Example 3](#3-permissions-boundary-blocks-an-identity-allow)). |
-| [Resource-based policy](#1-identity-allow-loses-to-an-s3-bucket-explicit-deny) | Attached to a resource, such as an S3 bucket, SQS queue, KMS key, or role trust policy | Yes                            | Yes, with explicit `Deny` | The resource owner controls access, especially cross-account access (see [Example 1](#1-identity-allow-loses-to-an-s3-bucket-explicit-deny)).                                           |
-| [Permissions boundary](#3-permissions-boundary-blocks-an-identity-allow)  | Managed policy attached as a maximum-permissions boundary on an IAM user or role       | No                             | Yes                       | Identity policies allow the action, but the principal still cannot perform it (see [Example 3](#3-permissions-boundary-blocks-an-identity-allow)).                                       |
-| Session policy        | Inline or managed policy passed when creating temporary credentials                    | No                             | Yes                       | The caller is an assumed role session, and the app passed `Policy` or `PolicyArns` to STS ([source](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRole.html)).           |
-| SCP                   | AWS Organizations service control policy on an account or organizational unit          | No                             | Yes                       | Every principal in the account is blocked, or the error mentions a service control policy ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)).             |
-| RCP                   | AWS Organizations resource control policy                                              | No                             | Yes                       | The denial is tied to an Organizations resource guardrail rather than one principal's identity policy ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html)). |
-| [Trust policy](#2-cross-account-role-assumption-needs-caller-permission-and-target-trust)          | Resource-based policy on an IAM role                                                   | Yes, for `sts:AssumeRole` only | Yes                       | `AssumeRole` fails before the target service call happens (see [Example 2](#2-cross-account-role-assumption-needs-caller-permission-and-target-trust)).                                 |
+<ArchitectureExplorer
+  title="IAM policy layers"
+  layers={[
+    { id: "identity", label: "Identity-based policy", color: "#60a5fa", description: "Attached to a user, group, or role. Can allow and can explicitly deny. Inspect first when the error says no identity-based policy allows the action.", items: ["Managed policies (AWS or customer)", "Inline policies embedded in the principal", "Explicit Deny overrides any Allow"] },
+    { id: "resource", label: "Resource-based policy", color: "#34d399", description: "Attached to a resource such as an S3 bucket, SQS queue, KMS key, or role trust policy. Can allow and can explicitly deny. The resource owner controls access, especially cross-account.", items: ["S3 bucket policies", "KMS key policies", "SQS/SNS access policies", "Same-account: union with identity policies", "Cross-account: both sides must Allow"] },
+    { id: "boundary", label: "Permissions boundary", color: "#f59e0b", description: "A managed policy attached as a maximum-permissions ceiling on an IAM user or role. Cannot grant permissions — only limits what identity policies can grant. Effective permissions = intersection of identity policy and boundary.", items: ["Ceiling, not a grant", "Effective = identity ∩ boundary", "Check when identity allows but principal still cannot act"] },
+    { id: "session", label: "Session policy", color: "#a78bfa", description: "Inline or managed policy passed when creating temporary credentials via STS AssumeRole, GetFederationToken, etc. Cannot grant permissions — only restricts what the role's identity policies allow for this session.", items: ["Passed as Policy or PolicyArns to STS", "Scopes a single session, not the role itself"] },
+    { id: "scp", label: "Service control policy (SCP)", color: "#f87171", description: "AWS Organizations guardrail on an account or organizational unit. Cannot grant permissions — sets the maximum available permissions for every principal in the account.", items: ["Applies to entire accounts/OUs", "Ceiling only — does not grant", "Check when all principals in an account are blocked"] },
+    { id: "rcp", label: "Resource control policy (RCP)", color: "#fb923c", description: "AWS Organizations resource guardrail. Cannot grant permissions — limits what resource-based policies can grant. Check when the denial is tied to an Organizations resource guardrail.", items: ["Applies to resources, not principals", "Ceiling only — does not grant"] },
+    { id: "trust", label: "Trust policy", color: "#818cf8", description: "A resource-based policy on an IAM role that defines who can assume it. Can allow sts:AssumeRole only. If AssumeRole fails, the caller never reaches the target service.", items: ["Attached to the role itself", "Names trusted principals and conditions", "Cross-account: both caller permission + trust policy required"] },
+  ]}
+/>
 
 ## Worked examples
 

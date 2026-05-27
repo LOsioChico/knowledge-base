@@ -24,7 +24,6 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
-import SteppedDiagram from '/src/components/interactive/SteppedDiagram.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -116,10 +115,10 @@ If the payment step fails:
 <FlowSimulator
   title="Choreography saga flow"
   nodes={[
-    { id: "order", label: "Order Service" },
-    { id: "inventory", label: "Inventory Service" },
-    { id: "payment", label: "Payment Service" },
-    { id: "result", label: "Result" },
+    { id: "order", label: "Order Service", col: 0 },
+    { id: "inventory", label: "Inventory Service", col: 1 },
+    { id: "payment", label: "Payment Service", col: 2 },
+    { id: "result", label: "Result", col: 3 },
   ]}
   flows={[
     { label: "Happy path", steps: [
@@ -142,28 +141,33 @@ If the payment step fails:
 
 In Orchestration, a dedicated coordinator service (the Orchestrator) directs all workflow decisions. The Orchestrator sends command messages to services, receives responses, and decides which step or compensation to trigger next.
 
-<SteppedDiagram
-  title="Orchestration saga steps"
-  steps={[
-    { highlight: ["Orch"], label: "Orchestrator starts the saga — it owns the workflow state machine and decides what to do next." },
-    { highlight: ["Orch", "Inv"], label: "Step 1: Orchestrator sends a Reserve Stock command to the Inventory Service." },
-    { highlight: ["Inv", "Orch"], label: "Step 2: Inventory Service reserves stock and responds with Stock Reserved." },
-    { highlight: ["Orch", "Pay"], label: "Step 3: Orchestrator sends a Charge Card command to the Payment Service." },
-    { highlight: ["Pay", "Orch"], label: "Step 4: Payment Service charges the card and responds with Card Charged." },
-    { highlight: ["Orch", "Order"], label: "Step 5: Orchestrator approves the order — all three services committed independently, coordinated by the central state machine." },
+<FlowSimulator
+  title="Orchestration saga flow"
+  nodes={[
+    { id: "orch", label: "Saga Orchestrator", col: 1 },
+    { id: "inv", label: "Inventory Service", col: 0 },
+    { id: "pay", label: "Payment Service", col: 1 },
+    { id: "order", label: "Order Service", col: 2 },
   ]}
->
-
-```mermaid
-flowchart TD
-    Orch[Saga Orchestrator] -->|1. Reserve Stock Command| Inv[Inventory Service]
-    Inv -->|2. Stock Reserved Response| Orch
-    Orch -->|3. Charge Card Command| Pay[Payment Service]
-    Pay -->|4. Card Charged Response| Orch
-    Orch -->|5. Approve Order Command| Order[Order Service]
-```
-
-</SteppedDiagram>
+  flows={[
+    { label: "Happy path", steps: [
+      { from: "orch", to: "inv", message: "Reserve Stock", description: "Orchestrator starts the saga. It sends a Reserve Stock command to the Inventory Service." },
+      { from: "inv", to: "orch", message: "Stock Reserved", description: "Inventory Service reserves stock and responds with Stock Reserved." },
+      { from: "orch", to: "pay", message: "Charge Card", description: "Orchestrator sends a Charge Card command to the Payment Service." },
+      { from: "pay", to: "orch", message: "Card Charged", description: "Payment Service charges the card successfully and responds." },
+      { from: "orch", to: "order", message: "Approve Order", description: "All services committed. Orchestrator approves the order — saga completes." },
+    ]},
+    { label: "Compensation (payment fails)", steps: [
+      { from: "orch", to: "inv", message: "Reserve Stock", description: "Same start: Orchestrator sends Reserve Stock command." },
+      { from: "inv", to: "orch", message: "Stock Reserved", description: "Inventory Service reserves stock successfully." },
+      { from: "orch", to: "pay", message: "Charge Card", description: "Orchestrator sends Charge Card command to Payment Service." },
+      { from: "pay", to: "orch", message: "PaymentFailed", description: "Payment fails. Payment Service returns PaymentFailed — Orchestrator catches the error and starts compensation." },
+      { from: "orch", to: "inv", message: "Release Stock", description: "Orchestrator sends Release Stock compensation command to Inventory Service." },
+      { from: "orch", to: "order", message: "Cancel Order", description: "Orchestrator cancels the order. All services are consistent again." },
+    ]},
+  ]}
+  speed={1400}
+/>
 
 #### Compensating Flow in Orchestration
 If charging the card fails:

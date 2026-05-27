@@ -17,6 +17,8 @@ related:
 > Navigating the trade-offs of the CAP theorem, linearizability, sequential consistency, causal consistency, and client-centric guarantees.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -62,11 +64,39 @@ At this exact moment, a customer walks into the New York branch and wants to wit
 2.  **Prioritize Availability (AP)**: New York says, "We cannot talk to London, but we want to be helpful. Here is your $100." The system remains **Available**, but we have sacrificed **Consistency**: if the customer had already withdrawn their entire balance in London five minutes ago, the databases are now out of sync, and the account is overdrawn.
 
 Because physical network cuts (partitions) are an inevitable fact of life, **Partition Tolerance (P)** is mandatory. We can never choose "CA" (Consistency + Availability without Partition Tolerance) because we cannot prevent network failures. When a partition occurs, we must choose either **CP** or **AP**.
+
+<DecisionGuide
+  title="CAP trade-off navigator"
+  steps={[
+    { id: "start", question: "Is a network partition currently happening?", note: "Partitions are unavoidable in real networks — the question is what to sacrifice when one occurs.", options: [
+      { label: "No — the network is healthy", next: "r-both" },
+      { label: "Yes — nodes cannot communicate", next: "q-sacrifice" },
+    ]},
+    { id: "q-sacrifice", question: "Which guarantee do you sacrifice during the partition?", note: "You cannot have both Consistency and Availability while the partition lasts.", options: [
+      { label: "Sacrifice Availability (refuse requests until partition heals)", next: "r-cp" },
+      { label: "Sacrifice Consistency (serve possibly stale data)", next: "r-ap" },
+    ]},
+    { id: "r-both", result: "No trade-off needed", explanation: "When the network is healthy, the system can provide both Consistency and Availability. The PACELC extension reminds you that even then, you still trade Latency vs Consistency." },
+    { id: "r-cp", result: "CP system (Consistent + Partition-tolerant)", explanation: "The system refuses to serve reads/writes it cannot guarantee are up-to-date. Examples: Google Spanner, CockroachDB, ZooKeeper. Clients may see errors or timeouts during a partition, but data integrity is never compromised.", link: "#1-linearizability-strong-consistency" },
+    { id: "r-ap", result: "AP system (Available + Partition-tolerant)", explanation: "The system continues serving requests using local state, accepting that replicas may diverge. Examples: DynamoDB, Cassandra (default), CouchDB. Conflicts are reconciled after the partition heals using strategies like LWW or CRDTs.", link: "#4-eventual-consistency" },
+  ]}
+/>
+
 ---
 
 ## The Consistency Spectrum
 
 Distributed databases do not offer a binary choice between strong consistency and eventual consistency. Instead, systems occupy different points on a broad spectrum of guarantees.
+
+<PipelineStrip
+  title="Consistency spectrum: strongest → weakest"
+  stages={[
+    { label: "Linearizability", color: "#34d399", tip: "Single global order of all operations matching real-time. Highest coordination cost — requires distributed consensus (Paxos/Raft).", href: "#1-linearizability-strong-consistency" },
+    { label: "Sequential Consistency", color: "#60a5fa", tip: "All nodes see the same global sequence, and each process's operations appear in program order. Real-time ordering is relaxed.", href: "#2-sequential-consistency" },
+    { label: "Causal Consistency", color: "#f59e0b", tip: "Causally related operations are ordered consistently everywhere. Concurrent (independent) operations may appear in different orders on different nodes.", href: "#3-causal-consistency" },
+    { label: "Eventual Consistency", color: "#f87171", tip: "Replicas converge to the same value given no new writes. Zero real-time coordination — fastest and cheapest, but clients may read stale data.", href: "#4-eventual-consistency" },
+  ]}
+/>
 
 | Consistency Model | Description | Coordination Cost | Typical Systems |
 | :--- | :--- | :--- | :--- |

@@ -14,6 +14,7 @@ related:
 > Solving the impossibility of absolute physical time in distributed networks using Lamport Timestamps and Vector Clocks.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -162,31 +163,26 @@ In a cluster of `N` nodes, each node `P_i` maintains a vector `V_i` of size `N`,
 
 The following sequence timeline traces three concurrent processes (A, B, and C) managing event ordering and message exchanges via Vector Clocks.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant A as Process A
-    participant B as Process B
-    participant C as Process C
-
-    Note over A, C: Initial state: All vectors [0, 0, 0]
-
-    Note over A: Event a1 (local)<br/>Increment own: [1, 0, 0]
-    
-    A->>B: Message 1 (Attach: [2, 0, 0])
-    Note over A: Event a2 (send)<br/>Increment own: [2, 0, 0]
-    
-    Note over B: Event b1 (local)<br/>Increment own: [0, 1, 0]
-    
-    Note over B: Event b2 (recv Msg 1)<br/>Merge: max([0,1,0], [2,0,0]) -> [2,1,0]<br/>Increment own: [2, 2, 0]
-    
-    B->>C: Message 2 (Attach: [2, 3, 0])
-    Note over B: Event b3 (send)<br/>Increment own: [2, 3, 0]
-    
-    Note over C: Event c1 (recv Msg 2)<br/>Merge: max([0,0,0], [2,3,0]) -> [2,3,0]<br/>Increment own: [2, 3, 1]
-    
-    Note over C: Event c2 (local)<br/>Increment own: [2, 3, 2]
-```
+<FlowSimulator
+  title="Vector clock propagation across 3 processes"
+  speed={1000}
+  nodes={[
+    { id: "A", label: "Process A" },
+    { id: "B", label: "Process B" },
+    { id: "C", label: "Process C" },
+  ]}
+  flows={[
+    { label: "Vector clock trace", steps: [
+      { from: "A", to: "A", message: "a1 (local) → V=[1,0,0]" },
+      { from: "A", to: "B", message: "a2 (send) → A attaches V=[2,0,0]" },
+      { from: "B", to: "B", message: "b1 (local) → V=[0,1,0]" },
+      { from: "B", to: "B", message: "b2 (recv Msg 1) → merge max([0,1,0],[2,0,0])+1 → V=[2,2,0]" },
+      { from: "B", to: "C", message: "b3 (send) → B attaches V=[2,3,0]" },
+      { from: "C", to: "C", message: "c1 (recv Msg 2) → merge max([0,0,0],[2,3,0])+1 → V=[2,3,1]" },
+      { from: "C", to: "C", message: "c2 (local) → V=[2,3,2]" },
+    ]},
+  ]}
+/>
 
 ### Detecting Conflicts and Concurrency
 Vector Clocks allow us to mathematically prove whether two events `a` and `b` are causally related or concurrent:
