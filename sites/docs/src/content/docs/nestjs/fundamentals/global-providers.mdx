@@ -29,6 +29,7 @@ source:
 > Two ways to register a global pipe, guard, interceptor, or exception filter. They look interchangeable. They are not.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into global enhancers, make sure you understand:
@@ -37,15 +38,21 @@ Before diving into global enhancers, make sure you understand:
 
 ## Choose in 30 seconds
 
-```mermaid
-flowchart TD
-  A[Registering a global pipe, guard, interceptor, or filter] --> B{Constructor needs DI, config, or REQUEST?}
-  B -->|Yes| C["APP_* in a module providers[]"]
-  B -->|No| D{Hybrid app with microservices or gateways?}
-  D -->|Yes| C
-  D -->|No| E["useGlobalX(new …) in main.ts is fine"]
-  C --> F[Can use useClass, useValue, or useFactory]
-```
+<DecisionGuide
+  title="APP_* token or useGlobalX()?"
+  steps={[
+    { id: "start", question: "Does the constructor need DI (ConfigService, repos, loggers), config injection, or REQUEST scope?", note: "If the enhancer calls any injected dependency, it must live inside the DI container.", options: [
+      { label: "Yes — it injects dependencies", next: "r-app-token" },
+      { label: "No — it's fully self-contained", next: "q-hybrid" },
+    ]},
+    { id: "q-hybrid", question: "Is this a hybrid app with microservices or WebSocket gateways?", note: "useGlobalX() only covers the HTTP layer. Microservice listeners and WS gateways stay uncovered unless you pass inheritAppConfig: true.", options: [
+      { label: "Yes — hybrid app", next: "r-app-token" },
+      { label: "No — HTTP only", next: "r-useglobal" },
+    ]},
+    { id: "r-app-token", result: "Use APP_* in a module providers[]", explanation: "Register via { provide: APP_PIPE, useClass: T } (or useValue / useFactory). Nest builds the instance inside the DI container, so constructor injection, request scope, and multi-transport coverage all work. See the worked examples below." },
+    { id: "r-useglobal", result: "useGlobalX(new …) in main.ts is fine", explanation: "A simple app.useGlobalPipes(new ValidationPipe({ whitelist: true })) in main.ts is the lightest option when the enhancer needs no injected deps and you're not running a hybrid app." },
+  ]}
+/>
 
 | You need                                     | Pick                                       |
 | -------------------------------------------- | ------------------------------------------ |

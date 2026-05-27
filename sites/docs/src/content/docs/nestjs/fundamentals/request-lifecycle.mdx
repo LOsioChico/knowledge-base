@@ -24,6 +24,8 @@ source:
 > How a request flows through a NestJS app, from socket to response. Knowing the order tells you where to put each piece of logic.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -50,32 +52,21 @@ Boot and shutdown (`OnModuleInit`, `enableShutdownHooks`) are **process** lifeti
 
 ## The pipeline
 
-```mermaid
-flowchart TD
-    A[Incoming request] --> M[Middlewares]
-    M --> EZ
-    subgraph EZ [Exception Zone]
-        direction TB
-        G[Guards] --> BI[Before Interceptor]
-        BI --> P[Pipes]
-        P --> C[Controllers]
-        C --> AI[After Interceptor]
-    end
-    BI -. same interceptor wraps both .- AI
-    AI --> R[Response]
-    G -.throws.-> EF[Exception Filters]
-    BI -.throws.-> EF
-    P -.throws.-> EF
-    C -.throws.-> EF
-    EF --> R
+<PipelineStrip
+  title="Request flow"
+  zone={{ start: 1, end: 5, label: "Exception zone", tip: "If any layer here throws, Exception Filters catch it and short-circuit to an error response.", href: "/knowledge-base/nestjs/fundamentals/exception-filters/" }}
+  stages={[
+    { label: "Middleware", color: "#a78bfa", href: "/knowledge-base/nestjs/fundamentals/middleware/", tip: "Runs outside Nest's exception zone. Logging, CORS, body parsing." },
+    { label: "Guards", color: "#f59e0b", href: "/knowledge-base/nestjs/fundamentals/guards/", tip: "canActivate() — returns false → 403 before handler runs." },
+    { label: "Interceptors ⟨pre⟩", color: "#60a5fa", href: "/knowledge-base/nestjs/fundamentals/interceptors/", tip: "Code before next.handle(): timer, logging, cache check." },
+    { label: "Pipes", color: "#34d399", href: "/knowledge-base/nestjs/fundamentals/pipes/", tip: "Transform & validate @Body/@Param/@Query. Bad input → 400." },
+    { label: "Controller", color: "#f472b6", tip: "Your @Get()/@Post() method. All inputs validated, user authorized." },
+    { label: "Interceptors ⟨post⟩", color: "#60a5fa", href: "/knowledge-base/nestjs/fundamentals/interceptors/", tip: "Code after next.handle(): map(), tap(), timeout()." },
+    { label: "Response", color: "#94a3b8" },
+  ]}
+/>
 
-    click M "/knowledge-base/nestjs/fundamentals/middleware/"
-    click G "/knowledge-base/nestjs/fundamentals/guards/"
-    click BI "/knowledge-base/nestjs/fundamentals/interceptors/"
-    click AI "/knowledge-base/nestjs/fundamentals/interceptors/"
-    click P "/knowledge-base/nestjs/fundamentals/pipes/"
-    click EF "/knowledge-base/nestjs/fundamentals/exception-filters/"
-```
+If any layer inside the exception zone throws, **[[nestjs/fundamentals/exception-filters|Exception Filters]]** catch it and format the error response. See the [layer explorer](#walk-the-pipeline) below for details.
 
 <Aside type="note" title="The two interceptor boxes are the same interceptor">
 
@@ -217,6 +208,19 @@ export class CatsController {
 ```
 
 Global `APP_GUARD`, `APP_INTERCEPTOR`, and `APP_PIPE` providers run **before** controller decorators ([[nestjs/fundamentals/global-providers|global enhancers]] note).
+
+<ArchitectureExplorer
+  title="Request pipeline layers"
+  layers={[
+    { id: "middleware", label: "Middleware", color: "#a78bfa", href: "/knowledge-base/nestjs/fundamentals/middleware/", description: "Raw Express/Fastify layer. Runs before Nest's DI container. Used for request logging, CORS, body parsing, and trace ID injection.", items: ["cors()", "helmet()", "LoggerMiddleware", "trace-id"] },
+    { id: "guards", label: "Guards", color: "#f59e0b", href: "/knowledge-base/nestjs/fundamentals/guards/", description: "Authorization gate. Return true to proceed, false to throw ForbiddenException (403). Has access to ExecutionContext for role/permission checks.", items: ["AuthGuard", "RolesGuard", "ThrottlerGuard"] },
+    { id: "interceptors-pre", label: "Interceptors (before)", color: "#60a5fa", href: "/knowledge-base/nestjs/fundamentals/interceptors/", description: "Pre-handler logic: logging, caching checks, request transformation. Runs in registration order. The same interceptor wraps both pre and post.", items: ["LoggingInterceptor", "CacheInterceptor", "TimeoutInterceptor"] },
+    { id: "pipes", label: "Pipes", color: "#34d399", href: "/knowledge-base/nestjs/fundamentals/pipes/", description: "Input validation and transformation. Runs per-parameter. Throws BadRequestException (400) on validation failure.", items: ["ValidationPipe", "ParseIntPipe", "ParseUUIDPipe", "DefaultValuePipe"] },
+    { id: "handler", label: "Controller Handler", color: "#f472b6", description: "Your @Get() / @Post() method. The actual business logic. By this point, all inputs are validated and the user is authorized." },
+    { id: "interceptors-post", label: "Interceptors (after)", color: "#60a5fa", href: "/knowledge-base/nestjs/fundamentals/interceptors/", description: "Post-handler logic: response mapping, cache writing, timing. Runs in FILO order (last registered runs first on the way out).", items: ["map()", "tap()", "timeout()", "catchError()"] },
+    { id: "filters", label: "Exception Filters", color: "#f87171", href: "/knowledge-base/nestjs/fundamentals/exception-filters/", description: "Catches any thrown exception inside the exception zone and maps it to an HTTP response. Only runs when something fails.", items: ["HttpExceptionFilter", "AllExceptionsFilter"] },
+  ]}
+/>
 
 ## Pick the right tool
 

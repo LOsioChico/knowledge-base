@@ -1,0 +1,374 @@
+---
+/**
+ * PipelineStrip.astro
+ * ───────────────────
+ * Vertical pipeline: numbered cards connected by arrows.
+ * Supports multiple zones (grouped panels) with custom colors.
+ * Pure CSS, no JS.
+ */
+
+interface Stage {
+  label: string;
+  color?: string;
+  href?: string;
+  tip?: string;
+}
+
+interface Zone {
+  start: number;
+  end: number;
+  label: string;
+  tip?: string;
+  href?: string;
+  /** CSS color for the zone border/label. Default: red (#f87171) */
+  color?: string;
+  /** Emoji icon before the label. Default: ⚡ */
+  icon?: string;
+}
+
+interface Props {
+  stages: Stage[];
+  title?: string;
+  /** Single zone (backward compat) */
+  zone?: Zone;
+  /** Multiple zones — takes precedence over zone */
+  zones?: Zone[];
+}
+
+const { stages, title, zone, zones: zonesProp } = Astro.props;
+
+// Normalize: zones array always wins, else wrap single zone
+const zones: Zone[] = zonesProp ?? (zone ? [zone] : []);
+
+// Build zone lookup: stage index → Zone object
+const zoneMap = new Map<number, Zone>();
+for (const z of zones) {
+  for (let i = z.start; i <= z.end; i++) zoneMap.set(i, z);
+}
+
+// Build segments: ordered list of zone-panels and standalone-card groups
+interface Segment {
+  kind: 'zone' | 'standalone';
+  zone?: Zone;
+  items: { stage: Stage; idx: number }[];
+}
+
+const segments: Segment[] = [];
+let current: Segment | null = null;
+
+stages.forEach((stage, idx) => {
+  const z = zoneMap.get(idx);
+  if (z) {
+    // If continuing the same zone, append
+    if (current?.kind === 'zone' && current.zone === z) {
+      current.items.push({ stage, idx });
+    } else {
+      current = { kind: 'zone', zone: z, items: [{ stage, idx }] };
+      segments.push(current);
+    }
+  } else {
+    if (current?.kind === 'standalone') {
+      current.items.push({ stage, idx });
+    } else {
+      current = { kind: 'standalone', items: [{ stage, idx }] };
+      segments.push(current);
+    }
+  }
+});
+
+// Default zone color
+const defaultZoneColor = '#f87171';
+---
+
+<div class="ps not-content">
+  {title && <div class="ps-header">{title}</div>}
+
+  <div class="ps-body">
+    {segments.map((seg, si) => (
+      <div class="ps-segment">
+        {/* Arrow before this segment (except first) */}
+        {si > 0 && <div class="ps-arrow"><span>↓</span></div>}
+
+        {seg.kind === 'zone' && seg.zone ? (
+          <div class="ps-zone" style={`--zc: ${seg.zone.color ?? defaultZoneColor}`}>
+            <div class="ps-zone-header">
+              <div class="ps-zone-title-row">
+                <span class="ps-zone-icon">{seg.zone.icon ?? '⚡'}</span>
+                {seg.zone.href ? (
+                  <a class="ps-zone-label" href={seg.zone.href}>{seg.zone.label}</a>
+                ) : (
+                  <span class="ps-zone-label">{seg.zone.label}</span>
+                )}
+              </div>
+              {seg.zone.tip && <span class="ps-zone-tip">{seg.zone.tip}</span>}
+            </div>
+            {seg.items.map(({ stage, idx }) => (
+              <div class="ps-card" style={stage.color ? `--c: ${stage.color}` : ""}>
+                <span class="ps-num">{idx + 1}</span>
+                <div class="ps-info">
+                  {stage.href ? (
+                    <a class="ps-name" href={stage.href}>{stage.label}</a>
+                  ) : (
+                    <span class="ps-name">{stage.label}</span>
+                  )}
+                  {stage.tip && <span class="ps-desc">{stage.tip}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          seg.items.map(({ stage, idx }) => (
+            <div class="ps-card" style={stage.color ? `--c: ${stage.color}` : ""}>
+              <span class="ps-num">{idx + 1}</span>
+              <div class="ps-info">
+                {stage.href ? (
+                  <a class="ps-name" href={stage.href}>{stage.label}</a>
+                ) : (
+                  <span class="ps-name">{stage.label}</span>
+                )}
+                {stage.tip && <span class="ps-desc">{stage.tip}</span>}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  .ps {
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --ps-rule:   var(--sl-color-hairline-shade);
+    --ps-ghost:  var(--sl-color-gray-4);
+    --ps-faint:  var(--sl-color-gray-3);
+    --ps-panel:  var(--sl-color-bg-nav);
+    --ps-surface: var(--sl-color-bg-sidebar);
+    --ps-accent: var(--sl-color-accent-high);
+    margin: 1.5rem 0;
+    background: var(--ps-panel);
+    border: 1px solid var(--ps-rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .ps-header {
+    font-size: var(--sl-text-xs);
+    font-weight: 600;
+    color: var(--ps-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--ps-rule);
+  }
+
+  .ps-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .ps-segment {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── Card ── */
+  .ps-card {
+    --c: var(--ps-accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--ps-rule);
+    border-left: 3px solid var(--c);
+    background: var(--ps-surface);
+    transition: border-left-width 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+  }
+
+  .ps-card:hover {
+    border-left-width: 4px;
+    background: color-mix(in srgb, var(--c) 4%, var(--ps-surface));
+    box-shadow: inset 4px 0 12px -4px color-mix(in srgb, var(--c) 15%, transparent);
+  }
+
+  /* ── Number badge ── */
+  .ps-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--c);
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+    flex-shrink: 0;
+  }
+
+  /* ── Info block ── */
+  .ps-info {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ps-name {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--c);
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  a.ps-name { cursor: pointer; }
+
+  a.ps-name::after {
+    content: " →";
+    font-size: 1em;
+    opacity: 0.5;
+    margin-left: 4px;
+    transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+    display: inline-block;
+  }
+
+  a.ps-name:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  a.ps-name:hover::after {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+
+  .ps-desc {
+    font-size: var(--sl-text-xs);
+    color: var(--ps-ghost);
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .ps-info { flex-direction: column; gap: 2px; }
+    .ps-desc { white-space: normal; }
+  }
+
+  /* ── Arrow between segments ── */
+  .ps-arrow {
+    display: flex;
+    justify-content: center;
+    padding: 6px 0;
+  }
+
+  .ps-arrow span {
+    font-size: 18px;
+    color: var(--ps-ghost);
+    opacity: 0.6;
+  }
+
+  /* ── Zone group ── */
+  .ps-zone {
+    --zc: #f87171;
+    border: 1px dashed color-mix(in srgb, var(--zc) 30%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--zc) 3%, transparent);
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* Inner arrows between consecutive cards inside a zone */
+  .ps-zone .ps-card + .ps-card {
+    position: relative;
+    margin-top: 14px;
+  }
+
+  .ps-zone .ps-card + .ps-card::before {
+    content: "↓";
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: var(--ps-ghost);
+    opacity: 0.45;
+    line-height: 1;
+  }
+
+  .ps-zone .ps-card {
+    border-color: color-mix(in srgb, var(--c) 15%, var(--ps-rule));
+  }
+
+  .ps-zone-header {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 10px 4px;
+  }
+
+  .ps-zone-title-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ps-zone-icon { font-size: 11px; }
+
+  .ps-zone-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: color-mix(in srgb, var(--zc) 60%, var(--ps-faint));
+    text-decoration: none;
+  }
+
+  a.ps-zone-label::after {
+    content: " →";
+    font-size: 1em;
+    opacity: 0.5;
+    margin-left: 3px;
+    transition: opacity 160ms var(--ease), transform 160ms var(--ease);
+    display: inline-block;
+  }
+
+  a.ps-zone-label:hover {
+    color: color-mix(in srgb, var(--zc) 85%, var(--ps-faint));
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  a.ps-zone-label:hover::after {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+
+  .ps-zone-tip {
+    font-size: var(--sl-text-xs);
+    color: var(--ps-faint);
+    line-height: 1.4;
+    padding-left: 16px;
+  }
+
+  /* ═══ REDUCED MOTION ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .ps-card { transition-duration: 0.01ms !important; }
+  }
+
+  /* ═══ PRINT ═══ */
+  @media print {
+    .ps-card { border-left-width: 3px !important; box-shadow: none !important; }
+    .ps-zone { border-color: #ddd; background: transparent; }
+  }
+</style>

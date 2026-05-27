@@ -21,6 +21,8 @@ source:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
+
 <Aside type="tip" title="Prerequisites">
 
 This note is part of the **[[nestjs|NestJS Track]]**. Before diving into Pipes, make sure you understand:
@@ -87,6 +89,16 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
   </TabItem>
 </Tabs>
 
+<CodeWalkthrough
+  title="Pipe chaining per parameter"
+  steps={[
+    { lines: "1", title: "Imports", body: "NestJS decorators and built-in pipes. ParseIntPipe coerces strings to numbers; DefaultValuePipe provides fallbacks." },
+    { lines: "3-4", title: "Controller + route", body: "Standard GET /orders/:id. Nest will run pipes on each parameter before calling the handler." },
+    { lines: "7", title: "@Param pipe", body: "ParseIntPipe coerces the ':id' URL segment from string to number. If 'abc' is passed, it throws 400 immediately." },
+    { lines: "8", title: "Chained @Query pipes", body: "DefaultValuePipe runs first: if ?page is missing, it becomes 1. Then ParseIntPipe coerces to number. Order matters — reversing them would give NaN on a missing page." },
+  ]}
+>
+
 ```typescript title="items.controller.ts"
 import { Controller, Get, Param, Query, ParseIntPipe, DefaultValuePipe } from "@nestjs/common";
 
@@ -99,6 +111,8 @@ export class OrdersController {
   ) {}
 }
 ```
+
+</CodeWalkthrough>
 
 `DefaultValuePipe` must sit **before** `ParseIntPipe` so `?page=` missing becomes `1`, not `NaN`.
 
