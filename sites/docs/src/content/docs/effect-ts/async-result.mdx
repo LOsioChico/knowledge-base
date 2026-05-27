@@ -17,6 +17,7 @@ source: []
 > **Step 12: AsyncResult [[effect-ts/state|State]] Machine**: Represent reactive clientside remote data lifecycles, avoiding empty default values, managing precise execution states, and local atom/subscription derivation. Prerequisite: [[effect-ts/state|Step 11: State coordinates]]; next step: [[effect-ts/observability|Step 13: Observability & Telemetry]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import StateMachineDiagram from '/src/components/interactive/StateMachineDiagram.astro';
 
 <Steps>
 
@@ -53,14 +54,22 @@ This model introduces severe layout and synchronization challenges:
 
 To solve this, we model async lifecycles as a strict, atomic **`AsyncResult` tagged union**. State transitions flow cleanly along a deterministic pathway:
 
-```mermaid
-flowchart TD
-    Waiting["Waiting (Initial)"] --> Loading["Loading (Fetching)"]
-    Loading --> Success["Success (Data Resolved)"]
-    Loading --> Failure["Failure (Error Occurred)"]
-    Success --> Loading
-    Failure --> Loading
-```
+<StateMachineDiagram
+  title="AsyncResult state transitions"
+  states={[
+    { id: "waiting", label: "Waiting", initial: true, color: "#94a3b8", description: "Initial idle state — no fetch has been triggered yet. The UI should show a placeholder or call-to-action.", typeShape: '{ readonly _tag: "Waiting" }' },
+    { id: "loading", label: "Loading", color: "#60a5fa", description: "A fetch is in flight. The UI renders a spinner or skeleton. No data or error is accessible.", typeShape: '{ readonly _tag: "Loading" }' },
+    { id: "success", label: "Success", color: "#4ade80", description: "Data resolved successfully. The UI renders the payload. Can transition back to Loading on refetch.", typeShape: '{ readonly _tag: "Success"; readonly data: A }' },
+    { id: "failure", label: "Failure", color: "#f87171", description: "The fetch failed. The UI renders the typed error. Can transition back to Loading on retry.", typeShape: '{ readonly _tag: "Failure"; readonly error: E }' },
+  ]}
+  transitions={[
+    { from: "waiting", to: "loading", label: "fetch()" },
+    { from: "loading", to: "success", label: "resolve" },
+    { from: "loading", to: "failure", label: "reject" },
+    { from: "success", to: "loading", label: "refetch()" },
+    { from: "failure", to: "loading", label: "retry()" },
+  ]}
+/>
 
 ### The Algebraic Model
 

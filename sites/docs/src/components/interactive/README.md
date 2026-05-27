@@ -774,6 +774,57 @@ interface Layer {
 
 ---
 
+### StateMachineDiagram
+
+Interactive state machine diagram. States rendered as clickable pill-shaped SVG nodes connected by curved arrows. Clicking a state highlights it, shows its TypeScript type shape in an info panel, and dims other states. Optional demo mode auto-animates through a transition sequence.
+
+**When to use:** Tagged unions, finite state machines, protocol states, lifecycle models (4-8 states with explicit transitions).
+
+**When NOT to use:** Linear pipelines (→ PipelineStrip). Temporal message flows (→ FlowSimulator). Decision trees (→ DecisionGuide).
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `states` | `State[]` | yes | — | State nodes with labels and optional type shapes |
+| `transitions` | `Transition[]` | yes | — | Directed edges between states |
+| `title` | `string` | no | — | Optional header title |
+
+```typescript
+interface State {
+  id: string;
+  label: string;
+  description?: string;  // Shown in info panel when selected
+  typeShape?: string;     // TypeScript type, rendered as code
+  color?: string;         // Accent color (defaults: waiting=#94a3b8, loading=#60a5fa, success=#4ade80, failure=#f87171)
+  initial?: boolean;      // Starting state (gets dot+arrow indicator)
+}
+
+interface Transition {
+  from: string;
+  to: string;
+  label?: string;   // Arrow label (e.g., "fetch()", "resolve")
+}
+```
+
+#### Features
+
+- Click to select/deselect with smooth opacity transitions
+- Info panel shows description + TypeScript type shape
+- Outbound transitions from selected state are highlighted
+- Bidirectional arrows use curve offsets to avoid overlap
+- Forking layouts (e.g., Loading → Success/Failure) auto-arrange vertically
+- Auto-selects initial state on load to invite exploration
+- Initial state indicator (dot + arrow)
+
+#### Target notes
+
+| Note | States |
+|------|--------|
+| `effect-ts/async-result` | Waiting → Loading → Success / Failure |
+
+---
+
 ## Future: LinkedDiagram (deferred)
 
 Hover on a diagram node → code highlights; hover on code → diagram node highlights. Deferred due to mermaid SVG ID fragility across versions.
