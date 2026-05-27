@@ -22,6 +22,7 @@ source:
 > **Step 9: Concurrency & Fibers**: Structured concurrency in Effect. Asynchronous units of execution called **fibers** are organized in a strict parent-child hierarchy, guaranteeing no leaked operations or abandoned computations. Prerequisite: [[effect-ts/scoped-resources|Step 8: Scoped resources]]; next step: [[effect-ts/streams|Step 10: Streams]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FiberTimeline from '/src/components/interactive/FiberTimeline.astro';
 
 <Steps>
 
@@ -72,20 +73,25 @@ Effect.runPromise(program);
 
 ### Visualizing execution flow
 
-```mermaid
-sequenceDiagram
-    autonumber
-    Participant P as Parent Fiber
-    Participant C as Child Fiber
-    P->>P: Console.log("Starting parent fiber...")
-    P->>C: Effect.fork(backgroundJob)
-    Note over C: Executes independently
-    P->>P: Console.log("Parent doing other work...")
-    P->>C: Fiber.join(fiber)
-    Note over P: Blocked waiting for Child
-    C-->>P: Returns 42
-    P->>P: Console.log("Joined result: 42")
-```
+<FiberTimeline
+  title="Fork → Work → Join lifecycle"
+  lanes={[
+    { id: "parent", label: "Parent Fiber", color: "#60a5fa" },
+    { id: "child", label: "Child Fiber", color: "#a78bfa" },
+  ]}
+  segments={[
+    { lane: "parent", start: 0, end: 0, state: "active", label: "start" },
+    { lane: "parent", start: 1, end: 1, state: "active", label: "fork + work", tip: "Effect.fork(backgroundJob) spawns the child fiber. Parent immediately continues with Console.log — no waiting." },
+    { lane: "child",  start: 1, end: 3, state: "active", label: "background job", tip: "Child runs in parallel: sleep(100ms), Console.log, then returns 42" },
+    { lane: "parent", start: 2, end: 3, state: "blocked", label: "join — waiting", tip: "Fiber.join(fiber) blocks the parent until the child completes. This is where concurrency meets synchronization." },
+    { lane: "parent", start: 4, end: 4, state: "active", label: "resumed", tip: "Child returned 42 → parent unblocks, receives the value, and logs it" },
+  ]}
+  events={[
+    { time: 1, from: "parent", to: "child", label: "fork" },
+    { time: 3, from: "child", to: "parent", label: "return 42" },
+  ]}
+  steps={5}
+/>
 
 ---
 

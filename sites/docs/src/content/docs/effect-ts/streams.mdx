@@ -21,6 +21,7 @@ source:
 > **Step 10: Streams & Backpressure**: Pull-based streams in Effect. Asynchronous data generators that naturally coordinate ingestion rates with consumer capacity, resolving backpressure without manual buffer management. Prerequisite: [[effect-ts/concurrency|Step 9: Concurrency & Fibers]]; next step: [[effect-ts/state|Step 11: State coordinates]].
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FiberTimeline from '/src/components/interactive/FiberTimeline.astro';
 
 <Steps>
 
@@ -101,21 +102,30 @@ Effect.runPromise(program);
 
 ### Visualizing buffered backpressure
 
-```mermaid
-sequenceDiagram
-    autonumber
-    Participant P as Producer Fiber
-    Participant B as Bounded Buffer (Capacity: 2)
-    Participant C as Consumer Fiber
-    P->>B: Pushes 1 (Buffer count: 1)
-    P->>B: Pushes 2 (Buffer count: 2)
-    Note over P: Producer blocks (Buffer is full)
-    C->>B: Pulls 1 (Buffer count: 1)
-    C->>C: Sleeps 100ms
-    P->>B: Pushes 3 (Buffer count: 2)
-    Note over P: Producer blocks again
-    C->>B: Pulls 2 (Buffer count: 1)
-```
+<FiberTimeline
+  title="Buffered backpressure lifecycle"
+  lanes={[
+    { id: "producer", label: "Producer Fiber", color: "#60a5fa" },
+    { id: "consumer", label: "Consumer Fiber", color: "#a78bfa" },
+  ]}
+  segments={[
+    { lane: "producer", start: 0, end: 0, state: "active", label: "emit 1", tip: "Producer pushes element 1 into the bounded buffer (capacity: 2). Buffer: [1]" },
+    { lane: "producer", start: 1, end: 1, state: "active", label: "emit 2", tip: "Producer pushes element 2 — buffer is now full (2/2). Buffer: [1, 2]" },
+    { lane: "producer", start: 2, end: 2, state: "blocked", label: "buffer full", tip: "Buffer is at capacity — producer suspends. Consumer's pull (same tick) frees a slot." },
+    { lane: "consumer", start: 2, end: 2, state: "active", label: "pull 1" },
+    { lane: "producer", start: 3, end: 3, state: "active", label: "emit 3", tip: "Slot freed → producer resumes immediately and pushes element 3" },
+    { lane: "consumer", start: 3, end: 3, state: "active", label: "process" },
+    { lane: "producer", start: 4, end: 4, state: "blocked", label: "full again" },
+    { lane: "consumer", start: 4, end: 4, state: "active", label: "pull 2" },
+    { lane: "producer", start: 5, end: 5, state: "active", label: "emit 4" },
+    { lane: "consumer", start: 5, end: 5, state: "active", label: "process" },
+  ]}
+  events={[
+    { time: 2, from: "consumer", to: "producer", label: "frees slot" },
+    { time: 4, from: "consumer", to: "producer", label: "frees slot" },
+  ]}
+  steps={6}
+/>
 
 ---
 

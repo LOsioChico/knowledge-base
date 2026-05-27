@@ -1,0 +1,562 @@
+---
+/**
+ * FiberTimeline.astro
+ * ───────────────────
+ * Static Gantt-chart swimlane for concurrent/parallel execution.
+ *
+ * Design: textbook diagram with interactive cross-highlighting.
+ *   - Clean swimlane chart with short labels
+ *   - Only KEY moments get callouts (not every segment)
+ *   - Hover a callout → segment highlights. Hover a segment → callout highlights.
+ *   - No sequential numbering (it fights concurrency)
+ */
+
+interface Lane {
+  id: string;
+  label: string;
+  color?: string;
+}
+
+interface Segment {
+  lane: string;
+  start: number;
+  end: number;
+  state: 'active' | 'blocked' | 'idle';
+  label: string;
+  tip?: string;   // If present, segment appears in the callout legend
+}
+
+interface TimelineEvent {
+  time: number;
+  from: string;
+  to: string;
+  label: string;
+}
+
+interface Props {
+  lanes: Lane[];
+  segments: Segment[];
+  events?: TimelineEvent[];
+  steps: number;
+  title?: string;
+}
+
+const { lanes, segments, events = [], steps, title } = Astro.props;
+
+// Pre-compute empty slot indices per lane
+const laneEmptySlots = new Map<string, number[]>();
+for (const lane of lanes) {
+  const laneSegs = segments.filter(s => s.lane === lane.id);
+  const empties: number[] = [];
+  for (let t = 0; t < steps; t++) {
+    if (!laneSegs.some(s => t >= s.start && t <= s.end)) empties.push(t);
+  }
+  laneEmptySlots.set(lane.id, empties);
+}
+
+// Only segments with tips become callouts
+const callouts = segments.filter(s => s.tip);
+
+// Create stable IDs for cross-highlighting
+function segId(seg: { lane: string; start: number }) {
+  return `${seg.lane}-${seg.start}`;
+}
+---
+
+<div class="ft" data-steps={steps} data-lanes={JSON.stringify(lanes)} data-events={JSON.stringify(events)}>
+  {title && <div class="ft-header">
+    <div class="ft-title">{title}</div>
+    <div class="ft-legend">
+      <span class="ft-lg"><span class="ft-sw ft-sw--active" />running</span>
+      <span class="ft-lg"><span class="ft-sw ft-sw--blocked" />blocked</span>
+    </div>
+  </div>}
+
+  <div class="ft-chart" style={`--cols: ${steps}; --lane-count: ${lanes.length}`}>
+    {/* Lane headers (column 1, one per row) */}
+    {lanes.map((lane, i) => (
+      <div class="ft-lhead" style={`grid-row: ${i + 1}; ${lane.color ? `--lc: ${lane.color}` : ''}`}>
+        <span class="ft-ldot" />
+        <span class="ft-lname">{lane.label}</span>
+      </div>
+    ))}
+
+    {/* Positioning references for arrow JS — span all time columns per lane */}
+    {lanes.map((lane, i) => (
+      <div class="ft-lane-bg" data-lane-id={lane.id} style={`grid-row: ${i + 1}; grid-column: 2 / ${steps + 2}`} />
+    ))}
+
+    {/* Empty slots */}
+    {lanes.map((lane, i) => {
+      const empties = laneEmptySlots.get(lane.id) || [];
+      return empties.map((t) => (
+        <div class="ft-empty" style={`grid-row: ${i + 1}; grid-column: ${t + 2}`} />
+      ));
+    })}
+
+    {/* Segments */}
+    {segments.map((seg) => {
+      const laneIndex = lanes.findIndex(l => l.id === seg.lane);
+      return (
+        <div
+          class={`ft-seg ft-seg--${seg.state}${seg.tip ? ' ft-seg--has-tip' : ''}`}
+          style={`grid-row: ${laneIndex + 1}; grid-column: ${seg.start + 2} / ${seg.end + 3}`}
+          data-seg={seg.tip ? segId(seg) : undefined}
+        >
+          <span class="ft-slbl">{seg.label}</span>
+        </div>
+      );
+    })}
+  </div>
+
+  {callouts.length > 0 && (
+    <div class="ft-callouts">
+      {callouts.map((seg) => (
+        <div class={`ft-co ft-co--${seg.state}`} data-seg={segId(seg)}>
+          <span class={`ft-co-dot ft-co-dot--${seg.state}`} />
+          <span class="ft-co-text">
+            <strong>{seg.label}</strong>
+            <span class="ft-co-sep"> — </span>
+            {seg.tip}
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <svg class="ft-svg" />
+</div>
+
+<style>
+  .ft {
+    --ft-muted:    var(--sl-color-gray-3);
+    --ft-ghost:    var(--sl-color-gray-4);
+    --ft-rule:     var(--sl-color-hairline-shade);
+    --ft-accent:   var(--sl-color-accent-high);
+    --ft-panel:    var(--sl-color-bg-nav);
+    --ft-active:   #4ade80;
+    --ft-blocked:  #fbbf24;
+    --ft-idle:     var(--sl-color-gray-5);
+    margin: 1.5rem 0;
+    background: var(--ft-panel);
+    border: 1px solid var(--ft-rule);
+    border-radius: 10px;
+    overflow: visible;
+    position: relative;
+  }
+
+  /* ═══ HEADER ═══ */
+  .ft-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--ft-rule);
+    border-radius: 10px 10px 0 0;
+    background: var(--ft-panel);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .ft-title {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--ft-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ft-legend { display: flex; gap: 16px; }
+
+  .ft-lg {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--ft-ghost);
+  }
+
+  .ft-sw {
+    width: 16px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .ft-sw--active {
+    background: rgba(74, 222, 128, 0.25);
+    border: 1.5px solid rgba(74, 222, 128, 0.5);
+  }
+
+  .ft-sw--blocked {
+    background: repeating-linear-gradient(
+      135deg, rgba(251,191,36,0.18), rgba(251,191,36,0.18) 2px,
+      rgba(251,191,36,0.06) 2px, rgba(251,191,36,0.06) 4px
+    );
+    border: 1.5px dashed rgba(251, 191, 36, 0.5);
+  }
+
+  /* ═══ CHART (single grid for all lanes) ═══ */
+  .ft-chart {
+    display: grid;
+    grid-template-columns: 120px repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--lane-count), auto);
+    gap: 20px 4px;
+    padding: 16px 20px 12px;
+    align-items: stretch;
+  }
+
+  .ft-lhead {
+    --lc: var(--ft-active);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-right: 12px;
+    min-height: 42px;
+  }
+
+  .ft-ldot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--lc);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.3);
+  }
+
+  .ft-lname {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ft-muted);
+    white-space: nowrap;
+  }
+
+  /* Invisible positioning reference — spans all time columns, stretches to row height */
+  .ft-lane-bg {
+    align-self: stretch;
+    pointer-events: none;
+  }
+
+  .ft-empty {
+    border-radius: 6px;
+    background: transparent;
+    border: 1px dotted rgba(148, 163, 184, 0.06);
+    min-width: 0;
+  }
+
+  /* ═══ SEGMENT ═══ */
+  .ft-seg {
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 8px;
+    position: relative;
+    cursor: default;
+    min-height: 42px;
+    min-width: 0;
+    transition: filter 200ms ease, opacity 200ms ease, box-shadow 200ms ease;
+  }
+
+  .ft-slbl {
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+    min-width: 0;
+  }
+
+  /* ── active ── */
+  .ft-seg--active {
+    background: rgba(74, 222, 128, 0.10);
+    border: 1.5px solid rgba(74, 222, 128, 0.28);
+    color: var(--ft-active);
+  }
+
+  /* ── blocked ── */
+  .ft-seg--blocked {
+    background: repeating-linear-gradient(
+      135deg,
+      rgba(251, 191, 36, 0.08),
+      rgba(251, 191, 36, 0.08) 5px,
+      rgba(251, 191, 36, 0.02) 5px,
+      rgba(251, 191, 36, 0.02) 10px
+    );
+    border: 1.5px dashed rgba(251, 191, 36, 0.40);
+    color: var(--ft-blocked);
+  }
+
+  /* ── idle ── */
+  .ft-seg--idle {
+    background: rgba(148, 163, 184, 0.05);
+    border: 1px dotted rgba(148, 163, 184, 0.2);
+    color: var(--ft-idle);
+  }
+
+  /* ── Highlight on cross-hover ── */
+  .ft-seg--has-tip {
+    cursor: pointer;
+  }
+
+  .ft-seg--highlight {
+    filter: brightness(1.3) !important;
+    box-shadow: 0 0 12px rgba(74, 222, 128, 0.2);
+  }
+
+  .ft-seg--blocked.ft-seg--highlight {
+    box-shadow: 0 0 12px rgba(251, 191, 36, 0.2);
+  }
+
+  .ft-seg--dim {
+    opacity: 0.35;
+  }
+
+  /* ═══ CALLOUT LEGEND ═══ */
+  .ft-callouts {
+    border-top: 1px solid var(--ft-rule);
+    padding: 12px 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ft-co {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    transition: background 200ms ease, opacity 200ms ease;
+    cursor: pointer;
+    line-height: 1.5;
+  }
+
+  .ft-co:hover {
+    background: rgba(148, 163, 184, 0.06);
+  }
+
+  .ft-co--highlight {
+    background: rgba(148, 163, 184, 0.08) !important;
+  }
+
+  .ft-co--dim {
+    opacity: 0.35;
+  }
+
+  .ft-co-dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    position: relative;
+    top: 5px;
+  }
+
+  .ft-co-dot--active {
+    background: var(--ft-active);
+    box-shadow: 0 0 6px rgba(74, 222, 128, 0.3);
+  }
+
+  .ft-co-dot--blocked {
+    background: var(--ft-blocked);
+    box-shadow: 0 0 6px rgba(251, 191, 36, 0.3);
+  }
+
+  .ft-co-dot--idle {
+    background: var(--ft-idle);
+  }
+
+  .ft-co-text {
+    font-size: 12.5px;
+    color: var(--ft-ghost);
+  }
+
+  .ft-co-text strong {
+    color: var(--ft-muted);
+    font-weight: 600;
+  }
+
+  .ft-co-sep {
+    color: var(--ft-ghost);
+    opacity: 0.4;
+  }
+
+  /* ═══ SVG ═══ */
+  .ft-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  /* ═══ RESPONSIVE ═══ */
+  @media (max-width: 640px) {
+    .ft-chart {
+      padding: 12px;
+      grid-template-columns: 90px repeat(var(--cols), minmax(0, 1fr));
+    }
+    .ft-lname { font-size: 10px; }
+    .ft-slbl { font-size: 10px; }
+    .ft-callouts { padding: 10px 12px; }
+    .ft-co-text { font-size: 11px; }
+  }
+
+  @media print {
+    .ft-seg { border-width: 2px; }
+  }
+</style>
+
+<script>
+  function initFT() {
+    document.querySelectorAll<HTMLDivElement>('.ft').forEach(root => {
+      const svg = root.querySelector<SVGSVGElement>('.ft-svg');
+      if (!svg) return;
+
+      // ── Cross-highlighting ──
+      const linkedEls = root.querySelectorAll<HTMLElement>('[data-seg]');
+      const allChartSegs = root.querySelectorAll<HTMLElement>('.ft-seg');
+      const segMap = new Map<string, HTMLElement[]>();
+      linkedEls.forEach(el => {
+        const id = el.dataset.seg!;
+        if (!segMap.has(id)) segMap.set(id, []);
+        segMap.get(id)!.push(el);
+      });
+
+      function highlight(id: string) {
+        // Dim ALL chart segments, then un-dim the matched one
+        allChartSegs.forEach(el => {
+          if (el.dataset.seg === id) {
+            el.classList.add('ft-seg--highlight');
+            el.classList.remove('ft-seg--dim');
+          } else {
+            el.classList.add('ft-seg--dim');
+            el.classList.remove('ft-seg--highlight');
+          }
+        });
+        // Highlight/dim callout items
+        root.querySelectorAll<HTMLElement>('.ft-co').forEach(el => {
+          if (el.dataset.seg === id) {
+            el.classList.add('ft-co--highlight');
+            el.classList.remove('ft-co--dim');
+          } else {
+            el.classList.add('ft-co--dim');
+            el.classList.remove('ft-co--highlight');
+          }
+        });
+      }
+
+      function clearHighlight() {
+        allChartSegs.forEach(el => {
+          el.classList.remove('ft-seg--highlight', 'ft-seg--dim');
+        });
+        root.querySelectorAll<HTMLElement>('.ft-co').forEach(el => {
+          el.classList.remove('ft-co--highlight', 'ft-co--dim');
+        });
+      }
+
+      linkedEls.forEach(el => {
+        el.addEventListener('mouseenter', () => highlight(el.dataset.seg!));
+        el.addEventListener('mouseleave', clearHighlight);
+      });
+
+      // ── Event arrows ──
+      const lanes: Array<{id: string; label: string}> = JSON.parse(root.dataset.lanes || '[]');
+      const evts: Array<{time: number; from: string; to: string; label: string}> = JSON.parse(root.dataset.events || '[]');
+      if (evts.length === 0) return;
+
+      svg.innerHTML = '';
+      const NS = 'http://www.w3.org/2000/svg';
+
+      const defs = document.createElementNS(NS, 'defs');
+      const mkr = document.createElementNS(NS, 'marker');
+      const uid = 'ft-ah-' + Math.random().toString(36).slice(2, 6);
+      mkr.setAttribute('id', uid);
+      mkr.setAttribute('viewBox', '0 0 10 10');
+      mkr.setAttribute('refX', '5');
+      mkr.setAttribute('refY', '5');
+      mkr.setAttribute('markerWidth', '5');
+      mkr.setAttribute('markerHeight', '5');
+      mkr.setAttribute('orient', 'auto-start-reverse');
+      const tri = document.createElementNS(NS, 'path');
+      tri.setAttribute('d', 'M 0 0 L 10 5 L 0 10 z');
+      const accentColor = getComputedStyle(root).getPropertyValue('--ft-accent').trim() || '#a78bfa';
+      tri.setAttribute('fill', accentColor);
+      mkr.appendChild(tri);
+      defs.appendChild(mkr);
+      svg.appendChild(defs);
+
+      const rootRect = root.getBoundingClientRect();
+      const steps = parseInt(root.dataset.steps || '1', 10);
+
+      // Use lane-bg elements for positioning — same role as old ft-track
+      const laneBgs = root.querySelectorAll<HTMLDivElement>('.ft-lane-bg');
+      const laneMap = new Map<string, HTMLDivElement>();
+      laneBgs.forEach(el => laneMap.set(el.dataset.laneId || '', el));
+
+      root.querySelectorAll('[data-ft-evt]').forEach(e => e.remove());
+
+      evts.forEach(evt => {
+        const fromEl = laneMap.get(evt.from);
+        const toEl = laneMap.get(evt.to);
+        if (!fromEl || !toEl || evt.from === evt.to) return;
+
+        const fromRect = fromEl.getBoundingClientRect();
+        const toRect = toEl.getBoundingClientRect();
+
+        // X: same math as old ft-track approach
+        const colW = fromRect.width / steps;
+        const x = fromRect.left + (evt.time + 0.5) * colW - rootRect.left;
+
+        // Y: connect to lane edges (with space between arrows and blocks)
+        const goingDown = toRect.top > fromRect.top;
+        const y1 = goingDown
+          ? fromRect.bottom - rootRect.top - 5
+          : fromRect.top - rootRect.top - 23;
+        const y2 = goingDown
+          ? toRect.top - rootRect.top - 23
+          : toRect.bottom - rootRect.top - 5;
+
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', String(x));
+        line.setAttribute('y1', String(y1));
+        line.setAttribute('x2', String(x));
+        line.setAttribute('y2', String(y2));
+        line.setAttribute('stroke', accentColor);
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-dasharray', '4 3');
+        line.setAttribute('opacity', '0.45');
+        line.setAttribute('marker-end', `url(#${uid})`);
+        svg.appendChild(line);
+
+        const label = document.createElement('div');
+        label.setAttribute('data-ft-evt', '');
+        Object.assign(label.style, {
+          position: 'absolute',
+          left: `${x + 8}px`,
+          top: `${(y1 + y2) / 2 - 10}px`,
+          fontSize: '10px',
+          fontWeight: '600',
+          color: accentColor,
+          opacity: '0.65',
+          whiteSpace: 'nowrap',
+          zIndex: '15',
+          pointerEvents: 'none',
+        });
+        label.textContent = evt.label;
+        root.appendChild(label);
+      });
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    requestAnimationFrame(() => requestAnimationFrame(initFT));
+    document.addEventListener('astro:page-load', () => {
+      requestAnimationFrame(() => requestAnimationFrame(initFT));
+    });
+    window.addEventListener('resize', initFT);
+  }
+</script>
