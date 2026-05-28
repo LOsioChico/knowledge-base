@@ -75,11 +75,11 @@ Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes
   title="Global exception filter walkthrough"
   steps={[
     { lines: "1-13", title: "Imports", body: "Pull in NestJS exception types, BaseExceptionFilter for delegation, pg's DatabaseError for typed driver access, and the isPgError guard + PG SQLSTATE constants defined in the db-errors helper." },
-    { lines: "15-17", title: "@Catch + class scaffold", body: "@Catch(QueryFailedError) tells Nest to route only TypeORM query failures to this filter. Extending BaseExceptionFilter lets us call super.catch() for standard HTTP error rendering." },
-    { lines: "19-23", title: "Postgres guard", body: "If the driver error isn't Postgres (e.g. SQLite in tests), fall through to a generic 500 via super.catch(). This keeps the filter safe across different database backends." },
+    { lines: "15-17", title: "@Catch + class scaffold", body: "@Catch(QueryFailedError) tells Nest to route only TypeORM query failures to this filter. Extending BaseExceptionFilter lets us call super.catch() for standard HTTP error rendering.", tip: "Extending BaseExceptionFilter gives you super.catch() for free — no manual res.json() needed." },
+    { lines: "19-23", title: "Postgres guard", body: "If the driver error isn't Postgres (e.g. SQLite in tests), fall through to a generic 500 via super.catch(). This keeps the filter safe across different database backends.", tip: "Always guard on the driver type — SQLite in tests won't have DatabaseError." },
     { lines: "24-31", title: "Map + log unmapped codes", body: "toHttp() converts the driver error to an HttpException. If the result is a 500 (unmapped SQLSTATE), log the raw code and detail with a full stack trace — your early warning for unhandled constraint types." },
-    { lines: "34-48", title: "toHttp(): Unique + FK → 409", body: "UNIQUE_VIOLATION and FOREIGN_KEY_VIOLATION map to 409 Conflict. The response body includes the constraint name and detail so the client knows which field collided." },
-    { lines: "49-63", title: "toHttp(): NOT NULL + CHECK → 422", body: "NOT_NULL_VIOLATION exposes the offending column; CHECK_VIOLATION exposes the constraint name. Both map to 422 Unprocessable Entity. Unknown codes fall through to 500." },
+    { lines: "34-48", title: "toHttp(): Unique + FK → 409", body: "UNIQUE_VIOLATION and FOREIGN_KEY_VIOLATION map to 409 Conflict. The response body includes the constraint name and detail so the client knows which field collided.", tip: "err.constraint gives you the exact constraint name — use named constraints for readable errors." },
+    { lines: "49-63", title: "toHttp(): NOT NULL + CHECK → 422", body: "NOT_NULL_VIOLATION exposes the offending column; CHECK_VIOLATION exposes the constraint name. Both map to 422 Unprocessable Entity. Unknown codes fall through to 500.", tip: "If NOT NULL reaches the DB, your ValidationPipe missed a @IsNotEmpty()." },
   ]}
 >
 

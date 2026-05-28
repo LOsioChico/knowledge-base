@@ -53,13 +53,13 @@ import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
   title="Effect DI graph"
   steps={[
     { lines: "1",     title: "Import the Effect toolkit",  body: "Context provides the Tag API for declaring service boundaries. Layer provides the wiring API. Effect is the program type." },
-    { lines: "3-6",   title: "Declare Logger service",      body: "Context.Tag creates a unique runtime symbol AND a compile-time type index. The second type parameter defines the service interface — what methods are available." },
+    { lines: "3-6",   title: "Declare Logger service",      body: "Context.Tag creates a unique runtime symbol AND a compile-time type index. The second type parameter defines the service interface — what methods are available.", tip: "The string 'Logger' is a debug label, not the identity — the class itself is the unique key." },
     { lines: "8-11",  title: "Declare Greeter service",     body: "Same pattern: a Tag with an interface. Greeter depends on Logger, but that dependency isn't declared here — it emerges from the Layer wiring below." },
-    { lines: "13-15", title: "Implement Logger",             body: "Layer.succeed provides a static (no-dependency) implementation. This Layer produces Logger and requires nothing (R = never)." },
-    { lines: "17-25", title: "Implement Greeter (depends on Logger)", body: "Layer.effect lets the implementation yield* other services. yield* Logger tells the compiler: this Layer requires Logger in R. The dependency is now tracked in the type system." },
+    { lines: "13-15", title: "Implement Logger",             body: "Layer.succeed provides a static (no-dependency) implementation. This Layer produces Logger and requires nothing (R = never).", tip: "Layer.succeed is for pure values — use Layer.effect when you need to yield* other services." },
+    { lines: "17-25", title: "Implement Greeter (depends on Logger)", body: "Layer.effect lets the implementation yield* other services. yield* Logger tells the compiler: this Layer requires Logger in R. The dependency is now tracked in the type system.", tip: "yield* Logger is both the DI lookup AND the type-level requirement declaration." },
     { lines: "27",    title: "Compose the dependency graph",  body: "Layer.provide wires GreeterLive's Logger requirement to LoggerLive. After this, AppLive provides Greeter with R = never — all deps resolved." },
     { lines: "29-32", title: "Write the program",            body: "The program yield*-s Greeter. Its type is Effect<void, never, Greeter> — the R channel says 'I need Greeter to run'." },
-    { lines: "34-35", title: "Run with all deps provided",   body: "Effect.provide(AppLive) narrows R from Greeter to never. If any dep were missing, this line would be a compile error — not a runtime crash." },
+    { lines: "34-35", title: "Run with all deps provided",   body: "Effect.provide(AppLive) narrows R from Greeter to never. If any dep were missing, this line would be a compile error — not a runtime crash.", tip: "If R is not 'never', TypeScript won't let you call runPromise — missing deps are compile errors." },
   ]}
 >
 
@@ -118,10 +118,10 @@ import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
   title="NestJS DI equivalent"
   steps={[
     { lines: "1-2", title: "Imports", body: "Injectable marks classes as DI-managed providers. Module groups providers into a container. NestFactory creates the runtime context." },
-    { lines: "4-9", title: "Logger provider", body: "@Injectable() makes Logger available to the DI container. No interface needed — NestJS resolves by class reference at runtime, not at compile time." },
-    { lines: "11-18", title: "Greeter provider (depends on Logger)", body: "constructor(private readonly logger: Logger) declares the dependency. Nest sees the Logger type in the constructor metadata and injects it automatically." },
+    { lines: "4-9", title: "Logger provider", body: "@Injectable() makes Logger available to the DI container. No interface needed — NestJS resolves by class reference at runtime, not at compile time.", tip: "NestJS uses the class constructor as the injection token by default." },
+    { lines: "11-18", title: "Greeter provider (depends on Logger)", body: "constructor(private readonly logger: Logger) declares the dependency. Nest sees the Logger type in the constructor metadata and injects it automatically.", tip: "Nest reads constructor param types via reflect-metadata — that's why emitDecoratorMetadata is required." },
     { lines: "20-21", title: "Wire the module", body: "providers: [Logger, Greeter] registers both in the same module. Order doesn't matter — Nest resolves the graph. If Logger were in a separate module, you'd need exports + imports." },
-    { lines: "23-27", title: "Bootstrap and run", body: "createApplicationContext builds the DI graph. app.get(Greeter) retrieves the fully-wired instance. If a provider is missing, this line throws — at runtime, not compile time." },
+    { lines: "23-27", title: "Bootstrap and run", body: "createApplicationContext builds the DI graph. app.get(Greeter) retrieves the fully-wired instance. If a provider is missing, this line throws — at runtime, not compile time.", tip: "createApplicationContext skips the HTTP layer — use it for CLI apps and scripts." },
     { lines: "28-29", title: "Output", body: "Same result as Effect. The difference: if you forget Logger in providers, you get a runtime error at bootstrap — not a red squiggle in the editor." },
   ]}
 >

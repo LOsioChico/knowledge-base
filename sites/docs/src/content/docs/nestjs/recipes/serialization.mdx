@@ -309,11 +309,11 @@ export class DynamicSerializerInterceptor
   title="How DynamicSerializerInterceptor works"
   steps={[
     { lines: "1-9", title: "Imports", body: "Pull in the base ClassSerializerInterceptor we'll extend, plus Reflector (needed by the base constructor) and ClassTransformOptions for the return type." },
-    { lines: "11-18", title: "Class scaffolding", body: "@Injectable() makes this class DI-friendly. We extend ClassSerializerInterceptor so all the heavy lifting (classToPlain, response mapping) is inherited. The constructor just passes Reflector up to super." },
-    { lines: "20-24", title: "Override the hook + extract user", body: "getSerializationOptions is the one method we override. We pull the HTTP request from ExecutionContext and read the user object that your auth guard attached." },
+    { lines: "11-18", title: "Class scaffolding", body: "@Injectable() makes this class DI-friendly. We extend ClassSerializerInterceptor so all the heavy lifting (classToPlain, response mapping) is inherited. The constructor just passes Reflector up to super.", tip: "Extending the base interceptor means you inherit classToPlain — override only what you need." },
+    { lines: "20-24", title: "Override the hook + extract user", body: "getSerializationOptions is the one method we override. We pull the HTTP request from ExecutionContext and read the user object that your auth guard attached.", tip: "Your auth guard must attach user to req — this interceptor reads it, not sets it." },
     { lines: "26", title: "Read default static options", body: "Call super to get any @SerializeOptions() metadata from the handler. This preserves static groups if the route also declared them." },
     { lines: "28-30", title: "Guard: no user → default behavior", body: "If no authenticated user or no roles array, fall back to the static options unchanged. Unauthenticated endpoints still serialize normally." },
-    { lines: "32-35", title: "Inject roles as groups", body: "Merge the user's roles array into the serialization groups. class-transformer will now only @Expose() fields whose groups include one of these roles." },
+    { lines: "32-35", title: "Inject roles as groups", body: "Merge the user's roles array into the serialization groups. class-transformer will now only @Expose() fields whose groups include one of these roles.", tip: "Roles become groups — @Expose({ groups: ['admin'] }) only shows for admin callers." },
   ]}
 >
 ```typescript
