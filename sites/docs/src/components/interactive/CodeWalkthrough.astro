@@ -56,25 +56,8 @@ const parsedSteps = steps.map((s) => {
   </div>
 
   {/* ── CODE (scrollable container) ── */}
-  <div class="cw-code-wrapper">
-    <div class="cw-code">
-      <slot />
-    </div>
-
-    {/* ── MINIMAP (scroll position indicator) ── */}
-    <div class="cw-minimap" aria-hidden="true">
-      <div class="cw-minimap-viewport"></div>
-      {parsedSteps.map((_, i) => (
-        <div class="cw-minimap-region" data-region={i}></div>
-      ))}
-    </div>
-
-    {/* ── INLINE ANNOTATION (floating callout near code) ── */}
-    <div class="cw-annotation" aria-hidden="true">
-      <div class="cw-annotation-pointer"></div>
-      <div class="cw-annotation-num"></div>
-      <div class="cw-annotation-text"></div>
-    </div>
+  <div class="cw-code">
+    <slot />
   </div>
 
   {/* ── STEP CARD (below code) ── */}
@@ -177,18 +160,13 @@ const parsedSteps = steps.map((s) => {
     opacity: 1;
   }
 
-  /* ═══ CODE WRAPPER (contains code + minimap + annotation) ═══ */
-  .cw-code-wrapper {
-    position: relative;
-    border-bottom: 1px solid var(--cw-rule);
-  }
-
   /* ═══ CODE (constrained, scrollable) ═══ */
   .cw-code {
     position: relative;
     max-height: 420px;
     overflow-y: auto;
     scroll-behavior: smooth;
+    border-bottom: 1px solid var(--cw-rule);
   }
 
   .cw-code :global(.expressive-code) {
@@ -231,94 +209,7 @@ const parsedSteps = steps.map((s) => {
     to   { transform: scaleY(1); opacity: 1; }
   }
 
-  /* ═══ MINIMAP ═══ */
-  .cw-minimap {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 8px;
-    height: 100%;
-    background: color-mix(in srgb, var(--cw-panel) 50%, transparent);
-    z-index: 5;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 250ms var(--ease-out);
-  }
 
-  .code-walkthrough[data-cw-active] .cw-minimap {
-    opacity: 1;
-  }
-
-  .cw-minimap-viewport {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    background: color-mix(in srgb, var(--cw-text-ghost) 30%, transparent);
-    border-radius: 4px;
-    transition: top 300ms var(--ease-out), height 300ms var(--ease-out);
-  }
-
-  .cw-minimap-region {
-    position: absolute;
-    left: 1px;
-    width: 6px;
-    border-radius: 3px;
-    background: transparent;
-    transition: background 200ms var(--ease-out), top 300ms var(--ease-out), height 300ms var(--ease-out);
-  }
-
-  .cw-minimap-region.is-active {
-    background: var(--cw-accent);
-  }
-
-  /* ═══ INLINE ANNOTATION ═══ */
-  .cw-annotation {
-    position: absolute;
-    right: 16px;
-    z-index: 10;
-    max-width: 240px;
-    background: var(--cw-panel);
-    border: 1px solid var(--cw-rule);
-    border-left: 3px solid var(--cw-accent);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: var(--sl-text-xs);
-    line-height: 1.5;
-    color: var(--cw-text-faint);
-    opacity: 0;
-    transform: translateX(8px);
-    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
-    pointer-events: none;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-  }
-
-  .code-walkthrough[data-cw-active] .cw-annotation.is-visible {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .cw-annotation-pointer {
-    display: none;
-  }
-
-  .cw-annotation-num {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--cw-accent);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 2px;
-  }
-
-  .cw-annotation-text {
-    color: var(--cw-text-faint);
-  }
-
-  /* Hide annotation on narrow screens — step card is enough */
-  @media (max-width: 768px) {
-    .cw-annotation { display: none; }
-    .cw-minimap { display: none; }
-  }
 
   /* ═══ CARD ═══ */
   .cw-card {
@@ -498,8 +389,6 @@ const parsedSteps = steps.map((s) => {
     .cw-code { max-height: none; overflow: visible; }
     .cw-nav { display: none; }
     .cw-hint { display: none; }
-    .cw-minimap { display: none; }
-    .cw-annotation { display: none; }
     .cw-step { display: block !important; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
     .code-walkthrough[data-cw-active] .cw-code :global(.ec-line) { opacity: 1 !important; background: none !important; }
     .code-walkthrough[data-cw-active] .cw-code :global(.ec-line)::before { display: none !important; }
@@ -526,80 +415,13 @@ const parsedSteps = steps.map((s) => {
       const progressSegments = comp.querySelectorAll<HTMLElement>(".cw-progress-segment");
       const progressCurrent = comp.querySelector<HTMLElement>(".cw-progress-current");
 
-      // Minimap
-      const minimap = comp.querySelector<HTMLElement>(".cw-minimap");
-      const minimapViewport = comp.querySelector<HTMLElement>(".cw-minimap-viewport");
-      const minimapRegions = comp.querySelectorAll<HTMLElement>(".cw-minimap-region");
-
-      // Inline annotation
-      const annotation = comp.querySelector<HTMLElement>(".cw-annotation");
-      const annotationNum = comp.querySelector<HTMLElement>(".cw-annotation-num");
-      const annotationText = comp.querySelector<HTMLElement>(".cw-annotation-text");
-
       if (!prevBtn || !nextBtn || !codePanel) return;
 
       const lineEls = Array.from(
         codePanel.querySelectorAll<HTMLElement>(":scope .ec-line:not(.twoslash-popup-container .ec-line)")
       );
-      const totalLines = lineEls.length;
       let current = 0;
 
-      // ── Minimap: compute proportional positions ──
-      function updateMinimap() {
-        if (!minimap || !minimapViewport || !codePanel) return;
-
-        const scrollH = codePanel.scrollHeight;
-        const clientH = codePanel.clientHeight;
-        const minimapH = minimap.clientHeight;
-
-        if (scrollH <= clientH) {
-          minimap.style.opacity = "0";
-          return;
-        }
-
-        // Viewport indicator
-        const vpTop = (codePanel.scrollTop / scrollH) * minimapH;
-        const vpH = (clientH / scrollH) * minimapH;
-        minimapViewport.style.top = `${vpTop}px`;
-        minimapViewport.style.height = `${vpH}px`;
-
-        // Step regions
-        minimapRegions.forEach((region, i) => {
-          const step = stepsData[i];
-          if (!step || totalLines === 0) return;
-          const rTop = ((step.start - 1) / totalLines) * minimapH;
-          const rH = Math.max(3, ((step.end - step.start + 1) / totalLines) * minimapH);
-          region.style.top = `${rTop}px`;
-          region.style.height = `${rH}px`;
-          region.classList.toggle("is-active", i === current);
-        });
-      }
-
-      // ── Inline annotation: position near highlighted code ──
-      function updateAnnotation(index: number) {
-        if (!annotation || !annotationNum || !annotationText || !codePanel) return;
-
-        const step = stepsData[index];
-        const firstLine = lineEls[step.start - 1];
-
-        if (!firstLine) {
-          annotation.classList.remove("is-visible");
-          return;
-        }
-
-        // Position annotation relative to code wrapper
-        const wrapperRect = codePanel.parentElement!.getBoundingClientRect();
-        const lineRect = firstLine.getBoundingClientRect();
-        const topOffset = lineRect.top - wrapperRect.top;
-
-        // Clamp within the code wrapper bounds
-        const clampedTop = Math.max(8, Math.min(topOffset, wrapperRect.height - 100));
-
-        annotation.style.top = `${clampedTop}px`;
-        annotationNum.textContent = `Step ${index + 1}`;
-        annotationText.textContent = step.title;
-        annotation.classList.add("is-visible");
-      }
 
       function goTo(index: number) {
         if (index < 0 || index >= stepsData.length) return;
@@ -652,12 +474,6 @@ const parsedSteps = steps.map((s) => {
           const targetScroll = lineTop - (containerH - blockH) / 2;
           codePanel.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
         }
-
-        // Update minimap + annotation after scroll settles
-        requestAnimationFrame(() => {
-          updateMinimap();
-          updateAnnotation(index);
-        });
       }
 
       // ── Controls ──
@@ -703,9 +519,6 @@ const parsedSteps = steps.map((s) => {
           }
         }, { passive: true });
       }
-
-      // ── Scroll listener for minimap viewport ──
-      codePanel.addEventListener("scroll", () => updateMinimap(), { passive: true });
 
       // Initialize
       goTo(0);
