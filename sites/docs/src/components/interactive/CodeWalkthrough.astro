@@ -10,9 +10,8 @@
  * UX features:
  *   - Staggered line fade-in animation
  *   - Colored gutter markers on highlighted lines
- *   - Thin progress bar (replaces pip dots)
- *   - Inline code annotations (floating callout near highlighted lines)
- *   - Minimap indicator for scroll position
+ *   - Thin progress bar with clickable segments
+ *   - Floating tips HUD (per-step or UX tips fallback)
  *   - Touch swipe navigation
  *   - Step title in header bar
  */
@@ -24,6 +23,8 @@ interface Step {
   title: string;
   /** Explanation body (plain text or inline markdown) */
   body: string;
+  /** Optional pro-tip shown in the floating HUD. When absent, a UX tip is shown instead. */
+  tip?: string;
 }
 
 interface Props {
@@ -47,7 +48,7 @@ const parsedSteps = steps.map((s) => {
 
 <div
   class="code-walkthrough not-content"
-  data-steps={JSON.stringify(parsedSteps.map((s) => ({ start: s.start, end: s.end, title: s.title, body: s.body })))}
+  data-steps={JSON.stringify(parsedSteps.map((s) => ({ start: s.start, end: s.end, title: s.title, body: s.body, tip: s.tip })))}
 >
   {/* ── HEADER (shows step title dynamically) ── */}
   <div class="cw-header">
@@ -58,10 +59,10 @@ const parsedSteps = steps.map((s) => {
   {/* ── CODE (scrollable container) ── */}
   <div class="cw-code">
     <slot />
-    {/* ── INLINE ANNOTATION (bottom-right HUD) ── */}
-    <div class="cw-annotation" aria-hidden="true">
-      <span class="cw-annotation-num"></span>
-      <span class="cw-annotation-text"></span>
+    {/* ── TIPS HUD (bottom-right floating pill) ── */}
+    <div class="cw-tip" aria-hidden="true">
+      <svg class="cw-tip-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.5a4.5 4.5 0 00-1.4 8.77v1.48a.75.75 0 00.75.75h1.3a.75.75 0 00.75-.75v-1.48A4.5 4.5 0 008 1.5zM6.25 14a.75.75 0 00.75.75h2a.75.75 0 000-1.5H7a.75.75 0 00-.75.75z"/></svg>
+      <span class="cw-tip-text"></span>
     </div>
   </div>
 
@@ -106,11 +107,7 @@ const parsedSteps = steps.map((s) => {
       ))}
     </div>
 
-    <div class="cw-hint">
-      <span class="cw-hint-keys">← → arrow keys</span>
-      <span class="cw-hint-sep">·</span>
-      <span class="cw-hint-swipe">swipe to navigate</span>
-    </div>
+
   </div>
 </div>
 
@@ -221,55 +218,59 @@ const parsedSteps = steps.map((s) => {
     to   { transform: scaleY(1); opacity: 1; }
   }
 
-  /* ═══ INLINE ANNOTATION (bottom-right HUD) ═══ */
-  .cw-annotation {
+  /* ═══ TIPS HUD ═══ */
+  .cw-tip {
     position: sticky;
     bottom: 8px;
     float: right;
     clear: both;
     margin-right: 12px;
-    margin-top: -36px;
+    margin-top: -32px;
     z-index: 5;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
+    gap: 5px;
+    padding: 4px 10px 4px 8px;
     font-size: 11px;
-    line-height: 1;
+    line-height: 1.3;
     color: var(--cw-text-faint);
-    background: color-mix(in srgb, var(--cw-panel) 80%, transparent);
+    background: color-mix(in srgb, var(--cw-panel) 85%, transparent);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--cw-rule);
     border-radius: 6px;
     opacity: 0;
     transform: translateY(4px);
-    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
     pointer-events: none;
-    white-space: nowrap;
-    max-width: 50%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 280px;
   }
 
-  .code-walkthrough[data-cw-active] .cw-annotation.is-visible {
+  .code-walkthrough[data-cw-active] .cw-tip.is-visible {
     opacity: 1;
     transform: translateY(0);
   }
 
-  .cw-annotation-num {
-    font-weight: 700;
-    color: var(--cw-accent);
+  .cw-tip-icon {
+    width: 12px;
+    height: 12px;
     flex-shrink: 0;
+    color: var(--cw-accent);
   }
 
-  .cw-annotation-text {
+  .cw-tip-text {
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Author tips get a subtle accent border */
+  .cw-tip.has-author-tip {
+    border-left: 2px solid var(--cw-accent);
   }
 
   @media (max-width: 640px) {
-    .cw-annotation { display: none; }
+    .cw-tip { display: none; }
   }
   /* ═══ CARD ═══ */
   .cw-card {
@@ -416,33 +417,7 @@ const parsedSteps = steps.map((s) => {
     margin: 0;
   }
 
-  /* ═══ HINT ═══ */
-  .cw-hint {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    text-align: center;
-    font-size: 11px;
-    color: var(--cw-text-ghost);
-    padding: 6px 0 8px;
-    border-top: 1px solid var(--cw-rule);
-    opacity: 0.6;
-  }
 
-  .cw-hint-sep {
-    opacity: 0.4;
-  }
-
-  /* Show swipe hint only on touch devices */
-  .cw-hint-swipe {
-    display: none;
-  }
-
-  @media (pointer: coarse) {
-    .cw-hint-swipe { display: inline; }
-    .cw-hint-keys { display: none; }
-  }
 
   /* ═══ PRINT ═══ */
   @media print {
@@ -456,11 +431,18 @@ const parsedSteps = steps.map((s) => {
 </style>
 
 <script>
+  const UX_TIPS = [
+    "Use ← → arrow keys to navigate",
+    "Click the progress bar to jump to any step",
+    "Swipe left or right on mobile",
+    "Dimmed lines are outside the current step",
+  ];
+
   function initCodeWalkthrough() {
     document.querySelectorAll<HTMLElement>(".code-walkthrough:not([data-init])").forEach((comp) => {
       comp.setAttribute("data-init", "");
 
-      const stepsData: { start: number; end: number; title: string; body: string }[] =
+      const stepsData: { start: number; end: number; title: string; body: string; tip?: string }[] =
         JSON.parse(comp.dataset.steps || "[]");
       if (stepsData.length === 0) return;
 
@@ -475,10 +457,9 @@ const parsedSteps = steps.map((s) => {
       const progressSegments = comp.querySelectorAll<HTMLElement>(".cw-progress-segment");
       const progressCurrent = comp.querySelector<HTMLElement>(".cw-progress-current");
 
-      // Inline annotation HUD
-      const annotation = comp.querySelector<HTMLElement>(".cw-annotation");
-      const annotationNum = comp.querySelector<HTMLElement>(".cw-annotation-num");
-      const annotationText = comp.querySelector<HTMLElement>(".cw-annotation-text");
+      // Tips HUD
+      const tipEl = comp.querySelector<HTMLElement>(".cw-tip");
+      const tipText = comp.querySelector<HTMLElement>(".cw-tip-text");
 
       if (!prevBtn || !nextBtn || !codePanel) return;
 
@@ -524,11 +505,17 @@ const parsedSteps = steps.map((s) => {
         // Update header step title
         if (headerStep) headerStep.textContent = stepsData[index].title;
 
-        // Update inline annotation HUD
-        if (annotation && annotationNum && annotationText) {
-          annotationNum.textContent = `${index + 1}/${stepsData.length}`;
-          annotationText.textContent = stepsData[index].title;
-          annotation.classList.add("is-visible");
+        // Update tips HUD
+        if (tipEl && tipText) {
+          const authorTip = stepsData[index].tip;
+          if (authorTip) {
+            tipText.textContent = authorTip;
+            tipEl.classList.add("has-author-tip");
+          } else {
+            tipText.textContent = UX_TIPS[index % UX_TIPS.length];
+            tipEl.classList.remove("has-author-tip");
+          }
+          tipEl.classList.add("is-visible");
         }
 
         // Navigation buttons
