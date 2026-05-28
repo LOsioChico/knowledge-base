@@ -150,11 +150,11 @@ Failures belong in the type signature (see [[effect-ts/typed-errors|Typed errors
   title="typed error flow"
   steps={[
     { lines: "1",     title: "Import Data + Effect",     body: "Data provides TaggedError for declaring error types with a discriminant _tag field. Effect provides the try/catch combinators." },
-    { lines: "3-4",   title: "Declare a typed error",     body: "TaggedError creates a class with _tag = 'ParseError'. This tag is what catchTag matches on — it's the discriminant for the error union." },
-    { lines: "6-9",   title: "Wrap fallible code",        body: "Effect.try wraps a synchronous operation that might throw. The catch callback converts the unknown exception into your typed ParseError. The return type is Effect<unknown, ParseError>." },
-    { lines: "11-12", title: "Recover with catchTag",     body: "catchTag matches on _tag = 'ParseError' and removes it from the error channel E. After recovery, the effect can't fail with ParseError anymore — the compiler enforces this." },
-    { lines: "14-15", title: "Success path",               body: "Valid JSON parses normally. The recover wrapper is a no-op because no error was thrown." },
-    { lines: "17-18", title: "Failure path",               body: "Invalid JSON throws in try, gets caught and wrapped into ParseError, then catchTag fires and returns the recovery object. No unhandled exceptions — everything is in the type system." },
+    { lines: "3-5",   title: "Declare a typed error",     body: "TaggedError creates a class with _tag = 'ParseError'. This tag is what catchTag matches on — it's the discriminant for the error union." },
+    { lines: "7-11",  title: "Wrap fallible code",        body: "Effect.try wraps a synchronous operation that might throw. The catch callback converts the unknown exception into your typed ParseError. The return type is Effect<unknown, ParseError>." },
+    { lines: "13-14", title: "Recover with catchTag",     body: "catchTag matches on _tag = 'ParseError' and removes it from the error channel E. After recovery, the effect can't fail with ParseError anymore — the compiler enforces this." },
+    { lines: "16-17", title: "Success path",               body: "Valid JSON parses normally. The recover wrapper is a no-op because no error was thrown." },
+    { lines: "19-20", title: "Failure path",               body: "Invalid JSON throws in try, gets caught and wrapped into ParseError, then catchTag fires and returns the recovery object. No unhandled exceptions — everything is in the type system." },
   ]}
 >
 
