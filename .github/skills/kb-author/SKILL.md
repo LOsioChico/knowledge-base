@@ -238,6 +238,10 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   control centers; align group separators with `margin-left: 10px`. Match inline-flex
   chip rows (prereq label + pill) to a shared `height: 20px`.
 
+- **CodeWalkthrough steps must target the wrapped fence only** → In `handle-database-errors.mdx`, step bodies described PG constants/`isPgError` from the setup fence while the wrapped block was `TypeOrmExceptionFilter`; rewrite every step against symbols visible in the child fence, then run Audit I.
+- **Fence `title=` must match later import paths** → Titling a helper stub `typeorm-exception.filter.ts` when the walkthrough does `import { isPgError, PG } from "./db-errors"` sends readers to the wrong file; name `title=` after the file that owns the exports (Audit S5 + J).
+- **CodeWalkthrough on `ts twoslash` fences needs dev-server click-through before editing `lines`** → Misaligned highlights on twoslash blocks were caused by nested popup `.ec-line` DOM (fixed in `CodeWalkthrough.astro`), not wrong ranges — `quickstart.mdx` and `pipes.mdx` originals were correct; always click every step locally before changing step `lines`.
+
 ## Boundaries
 
 

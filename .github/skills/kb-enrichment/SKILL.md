@@ -160,6 +160,10 @@ use the lighter static component. Interactive is the last branch of the decision
 
 ---
 
+- **StateMachineDiagram for finite lifecycle states** → When a single entity moves through named states (Waiting → Loading → Success/Failure) via event-triggered transitions with optional per-state type shapes, use StateMachineDiagram — not FlowSimulator (separate actors exchanging messages) or PipelineStrip (linear all-must-pass sequence). Transition labels describe user-visible events in plain language ("start fetch", "data arrives") — never library jargon (Right/Left) or faux API syntax (`fetch()`). Place after the prose defines each state; example: `effect-ts/async-result`.
+- **LearningRoadmap on track index MOCs** → On area index pages (`{track}/index.mdx`), use LearningRoadmap when the reader navigates a multi-note learning path with prerequisite chains and completion tracking — not DecisionGuide (single-page situational choice tree) or a static wikilink bullet list.
+- **CodeWalkthrough `lines` count fenced code only** → Step `lines` are 1-based indices inside the wrapped fence (first code line = `1`), never MDX file line numbers; skip blank separator lines between sections. Run `bun run lint:interactive-components`, then verify highlights in the dev server — mis-counted ranges highlight empty lines or wrong blocks (see `effect-ts/quickstart` fix).
+
 ## Boundaries
 
 This skill owns the decision-making framework for interactive components. It does NOT own:
