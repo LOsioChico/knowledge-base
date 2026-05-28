@@ -726,6 +726,7 @@ starlight-tabs [role="tabpanel"] {
 .kb-tracks {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  align-items: stretch;
   gap: 0.75rem;
   margin: 0.75rem 0 2rem;
 }
@@ -771,8 +772,8 @@ starlight-tabs [role="tabpanel"] {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.65rem;
+  margin-bottom: 0;
+  padding-bottom: 0.6rem;
   border-bottom: 1px solid color-mix(in srgb, var(--track-color) 12%, transparent);
 }
 
@@ -800,15 +801,29 @@ starlight-tabs [role="tabpanel"] {
 .kb-track__levels {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0;
   flex: 1;
+  padding-top: 0.6rem;
 }
 
 .kb-track__level {
+  display: grid;
+  grid-template-columns: 3rem 1fr;
+  align-items: baseline;
+  gap: 0.4rem;
   font-size: 0.82rem;
   color: var(--sl-color-gray-2);
   line-height: 1.45;
-  padding: 0.2rem 0 0.2rem 0.15rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 20%, transparent);
+}
+
+.kb-track__level:last-child {
+  border-bottom: none;
+}
+
+.kb-track__links {
+  display: inline;
 }
 
 /* Level badges */
