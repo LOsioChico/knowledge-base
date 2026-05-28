@@ -21,6 +21,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into caching, make sure you understand:
@@ -32,6 +33,49 @@ Before diving into caching, make sure you understand:
 <PackageManagers pkg="@nestjs/cache-manager cache-manager" pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 `@nestjs/cache-manager` v3+ uses `cache-manager` v6+, which delegates storage to [Keyv](https://keyv.org/docs/). All TTLs are in **milliseconds**.
+
+## Pick your caching surface
+
+<DecisionGuide
+  title="Which caching approach?"
+  steps={[
+    {
+      id: "start",
+      question: "What do you want to cache?",
+      options: [
+        { label: "GET endpoint responses (by URL)", next: "interceptor-q" },
+        { label: "Arbitrary values with custom keys", next: "r-imperative" },
+      ],
+    },
+    {
+      id: "interceptor-q",
+      question: "Do different users see different responses for the same URL?",
+      note: "e.g. GET /me returns user-specific data",
+      options: [
+        { label: "No — same response for everyone", next: "r-interceptor" },
+        { label: "Yes — per-user responses", next: "r-trackby" },
+      ],
+    },
+    {
+      id: "r-interceptor",
+      result: "CacheInterceptor",
+      explanation: "Apply @UseInterceptors(CacheInterceptor) at controller or method level. Use @CacheTTL(ms) to tune expiration.",
+      link: "#auto-caching-get-responses",
+    },
+    {
+      id: "r-trackby",
+      result: "Custom trackBy() interceptor",
+      explanation: "Subclass CacheInterceptor and override trackBy() to include the user ID in the cache key. See the per-user keys section.",
+      link: "#custom-tracking-per-user-keys",
+    },
+    {
+      id: "r-imperative",
+      result: "Inject CACHE_MANAGER directly",
+      explanation: "@Inject(CACHE_MANAGER) gives you cache.get/set/del with full key control. Use this for write-through caching, computed values, or non-GET endpoints.",
+      link: "#minimal-working-example",
+    },
+  ]}
+/>
 
 ## Minimal working example
 

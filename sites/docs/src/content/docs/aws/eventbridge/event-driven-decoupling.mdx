@@ -17,6 +17,7 @@ source:
 > Amazon EventBridge decouples distributed microservices by acting as an asynchronous serverless event bus, matching structured JSON payloads against declarative rules, and routing events to targets.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -88,6 +89,43 @@ graph TD
     click SQSInv "/knowledge-base/aws/sqs/"
     click SNSNotify "/knowledge-base/aws/sns/"
 ```
+
+<FlowSimulator
+  title="Event routing animation"
+  nodes={[
+    { id: "order", label: "Order Service", col: 0 },
+    { id: "bus", label: "Event Bus", col: 1 },
+    { id: "rule-billing", label: "Billing Rule", col: 2 },
+    { id: "rule-inv", label: "Inventory Rule", col: 2 },
+    { id: "sqs-billing", label: "Billing Queue", col: 3 },
+    { id: "sqs-inv", label: "Inventory Queue", col: 3 },
+    { id: "billing", label: "Billing Service", col: 4 },
+    { id: "inventory", label: "Inventory Service", col: 4 },
+  ]}
+  flows={[
+    {
+      label: "ORDER_COMPLETED (happy path)",
+      steps: [
+        { from: "order", to: "bus", message: "PutEvents(ORDER_COMPLETED)" },
+        { from: "bus", to: "rule-billing", message: "Pattern match ✓", group: 1 },
+        { from: "bus", to: "rule-inv", message: "Pattern match ✓", group: 1 },
+        { from: "rule-billing", to: "sqs-billing", message: "Push to queue", group: 2 },
+        { from: "rule-inv", to: "sqs-inv", message: "Push to queue", group: 2 },
+        { from: "sqs-billing", to: "billing", message: "Pull & process", group: 3 },
+        { from: "sqs-inv", to: "inventory", message: "Pull & process", group: 3 },
+      ],
+    },
+    {
+      label: "Unmatched event (filtered)",
+      steps: [
+        { from: "order", to: "bus", message: "PutEvents(ORDER_FAILED)" },
+        { from: "bus", to: "rule-billing", message: "Pattern match ✗", group: 1 },
+        { from: "bus", to: "rule-inv", message: "Pattern match ✗", group: 1 },
+      ],
+    },
+  ]}
+  speed={900}
+/>
 
 ---
 

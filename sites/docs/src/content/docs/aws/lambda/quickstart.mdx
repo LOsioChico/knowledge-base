@@ -9,6 +9,7 @@ related:
 > CLI walkthrough: write a Node.js function, create an execution role, zip the bundle, deploy, invoke, and clean up. No console clicks.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -17,17 +18,27 @@ Before diving in, make sure you understand:
 
 ## Before you start
 
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "ACCOUNT_ID", placeholder: "123456789012" },
+    { name: "ROLE_NAME", template: "quickstart-lambda-role-${ACCOUNT_ID}" },
+    { name: "FUNCTION_NAME", template: "quickstart-lambda-${ACCOUNT_ID}" },
+  ]}
+/>
+
 - AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:
 
   ```bash
-  aws --profile <name> sts get-caller-identity
+  aws --profile $AWS_PROFILE sts get-caller-identity
   ```
 
 Shared variables for every command below:
 
 ```bash
-export AWS_PROFILE=<your-profile>
-export REGION=us-east-1
+export AWS_PROFILE=$AWS_PROFILE
+export REGION=$REGION
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export ROLE_NAME=quickstart-lambda-role-${ACCOUNT_ID}
 export FUNCTION_NAME=quickstart-lambda-${ACCOUNT_ID}

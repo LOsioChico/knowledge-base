@@ -258,9 +258,9 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
     ]},
     { label: "Fan-Out", steps: [
       { from: "producer", to: "broker", message: "Publish OrderPlaced", description: "Publisher broadcasts an OrderPlaced event to the Topic. The topic will clone the message to every subscription." },
-      { from: "broker", to: "consumer1", message: "Copy → Inventory", description: "Subscription A (Inventory) receives its own copy. It will process the event independently." },
-      { from: "broker", to: "consumer2", message: "Copy → Billing", description: "Subscription B (Billing) receives the same event. All subscriptions process the same event in parallel." },
-      { from: "broker", to: "consumer3", message: "Copy → Email", description: "Subscription C (Email) receives the event too. Each subscription is fully independent — one failure doesn't affect the others." },
+      { from: "broker", to: "consumer1", message: "Copy → Inventory", description: "Subscription A (Inventory) receives its own copy. It will process the event independently.", group: 1 },
+      { from: "broker", to: "consumer2", message: "Copy → Billing", description: "Subscription B (Billing) receives the same event. All subscriptions process the same event in parallel.", group: 1 },
+      { from: "broker", to: "consumer3", message: "Copy → Email", description: "Subscription C (Email) receives the event too. Each subscription is fully independent — one failure doesn't affect the others.", group: 1 },
     ]},
     { label: "Consumer Group", steps: [
       { from: "producer", to: "broker", message: "Write to Partition 0", description: "Producer writes an event with key 'user-42' to the topic. The partition is determined by hash(key) % numPartitions." },

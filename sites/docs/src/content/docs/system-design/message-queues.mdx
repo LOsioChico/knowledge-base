@@ -110,9 +110,9 @@ flowchart TD
     ]},
     { label: "Pub/Sub Fanout", steps: [
       { from: "producer", to: "queue", message: "Publish OrderPlaced", description: "Publisher broadcasts an OrderPlaced event to the Topic. The topic will clone it to every subscription." },
-      { from: "queue", to: "consumer1", message: "Copy → Inventory", description: "Inventory subscription receives its own copy of the event. It will reserve stock independently." },
-      { from: "queue", to: "consumer2", message: "Copy → Billing", description: "Billing subscription receives the same event. It will process payment independently and in parallel." },
-      { from: "queue", to: "consumer3", message: "Copy → Email", description: "Email subscription receives the event too. All three services react to the same event without knowing about each other." },
+      { from: "queue", to: "consumer1", message: "Copy → Inventory", description: "Inventory subscription receives its own copy of the event. It will reserve stock independently.", group: 1 },
+      { from: "queue", to: "consumer2", message: "Copy → Billing", description: "Billing subscription receives the same event. It will process payment independently and in parallel.", group: 1 },
+      { from: "queue", to: "consumer3", message: "Copy → Email", description: "Email subscription receives the event too. All three services react to the same event without knowing about each other.", group: 1 },
     ]},
   ]}
   speed={1400}

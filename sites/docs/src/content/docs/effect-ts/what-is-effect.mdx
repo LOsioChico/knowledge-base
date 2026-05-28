@@ -21,6 +21,7 @@ related:
 > Prerequisite: [[effect-ts|Effect-TS MOC]]
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 ## The type, three channels
 
@@ -63,6 +64,22 @@ Before `runSync`, `program` is still `Effect<number, never, never>`: nothing has
 A `Promise<T>` is an in-flight computation that already started and resolves to `T` or rejects with `unknown`. An `Effect<A, E, R>` is a _recipe_ that has not started, succeeds with `A` or fails with typed `E`, and needs `R` provided. Laziness is what makes retry, scoped cleanup, and structured cancellation one-liners instead of hand-rolled plumbing.
 
 </Aside>
+
+<FlowSimulator
+  title="Effect execution model"
+  nodes={[
+    { id: "Describe", label: "Describe" },
+    { id: "Provide", label: "Provide" },
+    { id: "Run", label: "Run" },
+  ]}
+  flows={[
+    { label: "Lifecycle", steps: [
+      { from: "Describe", to: "Describe", message: "Effect.sync / Effect.gen / pipe — builds a recipe, runs nothing" },
+      { from: "Describe", to: "Provide", message: "Effect.provide(layer) — satisfies R, still runs nothing" },
+      { from: "Provide", to: "Run", message: "runSync / runPromise / runFork — executes the recipe" },
+    ]},
+  ]}
+/>
 
 ## The runtime: three ways to execute
 

@@ -28,6 +28,8 @@ interface FlowStep {
   to: string;
   message: string;
   description?: string;
+  /** Steps with the same group number highlight together (parallel fan-out) */
+  group?: number;
 }
 
 interface Flow {
@@ -59,6 +61,22 @@ function initials(label: string): string {
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return words.map(w => w[0]).join('').toUpperCase().slice(0, 3);
 }
+
+/* ── Compute group metadata for parallel step numbering ── */
+const flowGroupMetas = flows.map(flow => {
+  const meta: { num: number; first: boolean; last: boolean }[] = [];
+  let num = 0;
+  for (let i = 0; i < flow.steps.length; i++) {
+    const g = flow.steps[i].group;
+    const prevG = i > 0 ? flow.steps[i - 1].group : undefined;
+    const nextG = i + 1 < flow.steps.length ? flow.steps[i + 1].group : undefined;
+    const isFirst = g === undefined || g !== prevG;
+    const isLast = g === undefined || g !== nextG;
+    if (isFirst) num++;
+    meta.push({ num, first: isFirst, last: isLast });
+  }
+  return meta;
+});
 ---
 
 <div
@@ -104,10 +122,10 @@ function initials(label: string): string {
     {flows.map((flow, fi) => (
       <div class={`fs-timeline ${fi === 0 ? "is-active" : ""}`} data-timeline={fi}>
         {flow.steps.map((step, si) => (
-          <button class={`fs-step ${si === 0 && fi === 0 ? "is-active" : ""}`} data-step={si}>
+          <button class={`fs-step ${si === 0 && fi === 0 ? "is-active" : ""} ${!flowGroupMetas[fi][si].first ? "is-grouped" : ""}`} data-step={si}>
             <div class="fs-dot-col">
-              <span class="fs-num">{si + 1}</span>
-              {si < flow.steps.length - 1 && <span class="fs-connector" />}
+              <span class="fs-num">{flowGroupMetas[fi][si].num}</span>
+              {flowGroupMetas[fi][si].last && si < flow.steps.length - 1 && <span class="fs-connector" />}
             </div>
             <div class="fs-step-body">
               <span class="fs-step-route">
@@ -461,7 +479,7 @@ function initials(label: string): string {
       comp.setAttribute("data-init", "");
 
       const nodes: { id: string; label: string; col?: number }[] = JSON.parse(comp.dataset.nodes || "[]");
-      const flows: { label: string; steps: { from: string; to: string; message: string; description?: string }[] }[] =
+      const flows: { label: string; steps: { from: string; to: string; message: string; description?: string; group?: number }[] }[] =
         JSON.parse(comp.dataset.flows || "[]");
 
       if (nodes.length === 0 || flows.length === 0) return;
@@ -668,32 +686,58 @@ function initials(label: string): string {
         });
       }
 
-      /* ── Highlight a step ── */
+      /* ── Group helpers for parallel step highlighting ── */
+      function getGroupPeers(flowIdx: number, stepIdx: number): number[] {
+        const flow = flows[flowIdx];
+        const step = flow.steps[stepIdx];
+        if (step.group === undefined) return [stepIdx];
+        return flow.steps
+          .map((s, i) => s.group === step.group ? i : -1)
+          .filter(i => i >= 0);
+      }
+
+      function getGroupStarts(flowIdx: number): number[] {
+        const flow = flows[flowIdx];
+        const starts: number[] = [];
+        let lastGroup: number | undefined;
+        flow.steps.forEach((s, i) => {
+          if (s.group === undefined || s.group !== lastGroup) {
+            starts.push(i);
+            lastGroup = s.group;
+          }
+        });
+        return starts;
+      }
+
+      /* ── Highlight a step (and all its group peers) ── */
       function highlightStep(idx: number) {
         const flow = flows[currentFlow];
         const tl = timelineEls[currentFlow];
         if (!tl) return;
         const stepBtns = tl.querySelectorAll<HTMLElement>(".fs-step");
+        const peers = getGroupPeers(currentFlow, idx);
+        const peerSet = new Set(peers);
 
-        stepBtns.forEach((b, i) => b.classList.toggle("is-active", i === idx));
+        stepBtns.forEach((b, i) => b.classList.toggle("is-active", peerSet.has(i)));
 
-        /* Edges: bright if they contain this step index, dim otherwise */
+        /* Edges: bright if they contain any peer index, dim otherwise */
         const edgeGroups = svg.querySelectorAll<SVGGElement>("g[data-steps]");
         edgeGroups.forEach((g) => {
           const indices = g.dataset.steps!.split(",").map(Number);
-          g.style.opacity = indices.includes(idx) ? "0.9" : "0.12";
+          const match = indices.some(i => peerSet.has(i));
+          g.style.opacity = match ? "0.9" : "0.12";
         });
 
-        if (idx >= 0 && idx < flow.steps.length) {
-          const step = flow.steps[idx];
-          nodeEls.forEach(el => {
-            const nid = el.dataset.nodeId!;
-            el.classList.remove("is-source", "is-target", "is-faded");
-            if (nid === step.from) el.classList.add("is-source");
-            else if (nid === step.to) el.classList.add("is-target");
-            else el.classList.add("is-faded");
-          });
-        }
+        /* Nodes: collect all sources and targets in the group */
+        const sources = new Set(peers.map(i => flow.steps[i].from));
+        const targets = new Set(peers.map(i => flow.steps[i].to));
+        nodeEls.forEach(el => {
+          const nid = el.dataset.nodeId!;
+          el.classList.remove("is-source", "is-target", "is-faded");
+          if (sources.has(nid)) el.classList.add("is-source");
+          else if (targets.has(nid)) el.classList.add("is-target");
+          else el.classList.add("is-faded");
+        });
       }
 
       function resetHighlight() {
@@ -734,14 +778,20 @@ function initials(label: string): string {
 
       comp.setAttribute("tabindex", "0");
       comp.addEventListener("keydown", (e) => {
-        const flow = flows[currentFlow];
+        const starts = getGroupStarts(currentFlow);
+        const currentGroupIdx = starts.findIndex((s, i) => {
+          const next = starts[i + 1] ?? flows[currentFlow].steps.length;
+          return current >= s && current < next;
+        });
         if (e.key === "ArrowDown" || e.key === "ArrowRight") {
           e.preventDefault();
-          current = Math.min(current + 1, flow.steps.length - 1);
+          const nextIdx = Math.min(currentGroupIdx + 1, starts.length - 1);
+          current = starts[nextIdx];
           highlightStep(current);
         } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
           e.preventDefault();
-          current = Math.max(current - 1, 0);
+          const prevIdx = Math.max(currentGroupIdx - 1, 0);
+          current = starts[prevIdx];
           highlightStep(current);
         }
       });

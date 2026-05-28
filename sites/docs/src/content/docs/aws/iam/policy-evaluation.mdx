@@ -11,6 +11,7 @@ related:
 import { Aside } from "@astrojs/starlight/components";
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -59,6 +60,33 @@ The union/intersection rules are the starting point, but resource policies have 
     { id: "scp", label: "Service control policy (SCP)", color: "#f87171", description: "AWS Organizations guardrail on an account or organizational unit. Cannot grant permissions — sets the maximum available permissions for every principal in the account.", items: ["Applies to entire accounts/OUs", "Ceiling only — does not grant", "Check when all principals in an account are blocked"] },
     { id: "rcp", label: "Resource control policy (RCP)", color: "#fb923c", description: "AWS Organizations resource guardrail. Cannot grant permissions — limits what resource-based policies can grant. Check when the denial is tied to an Organizations resource guardrail.", items: ["Applies to resources, not principals", "Ceiling only — does not grant"] },
     { id: "trust", label: "Trust policy", color: "#818cf8", description: "A resource-based policy on an IAM role that defines who can assume it. Can allow sts:AssumeRole only. If AssumeRole fails, the caller never reaches the target service.", items: ["Attached to the role itself", "Names trusted principals and conditions", "Cross-account: both caller permission + trust policy required"] },
+  ]}
+/>
+
+<FlowSimulator
+  title="Same-account vs cross-account evaluation"
+  nodes={[
+    { id: "Principal", label: "Principal" },
+    { id: "IAM", label: "IAM" },
+    { id: "Service", label: "Service" },
+    { id: "Account B", label: "Account B" },
+    { id: "STS", label: "STS" },
+  ]}
+  flows={[
+    { label: "Same-account", steps: [
+      { from: "Principal", to: "IAM", message: "API call with signing credentials" },
+      { from: "IAM", to: "IAM", message: "Collect identity + resource policies (union)" },
+      { from: "IAM", to: "IAM", message: "Check explicit denies — any Deny stops here" },
+      { from: "IAM", to: "IAM", message: "Apply ceilings (boundary, SCP, session)" },
+      { from: "IAM", to: "Service", message: "Allow or implicit deny" },
+    ]},
+    { label: "Cross-account", steps: [
+      { from: "Account B", to: "STS", message: "AssumeRole on Account A's role" },
+      { from: "STS", to: "STS", message: "Account B: caller must have sts:AssumeRole" },
+      { from: "STS", to: "STS", message: "Account A: trust policy must name Account B" },
+      { from: "STS", to: "Account B", message: "Temporary credentials (both sides allowed)" },
+      { from: "Account B", to: "Service", message: "Use credentials — role's identity policies apply" },
+    ]},
   ]}
 />
 

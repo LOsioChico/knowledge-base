@@ -15,6 +15,7 @@ related:
 > When you move a workload between AWS accounts, the same service-level moves recur. This page is the cross-cutting playbook pointing at each per-service recipe.
 
 import { Aside, Steps } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -50,6 +51,18 @@ Before diving in, make sure you understand:
 | [KMS](/knowledge-base/aws/kms/)               | [Cross-account RDS snapshot](/knowledge-base/aws/rds/cross-account-snapshot/)                                                            | Key policy + IAM pattern for cross-account encrypt |
 
 ## Recommended order
+
+<PipelineStrip
+  title="Migration order (left → right)"
+  stages={[
+    { label: "CLI + Identities", color: "#60a5fa", tip: "Named profiles, sts get-caller-identity on both sides" },
+    { label: "IAM Roles", color: "#f59e0b", tip: "Cross-account roles for services staying behind" },
+    { label: "Data", color: "#a78bfa", tip: "RDS snapshots + S3 sync — longest copy windows, start early" },
+    { label: "Compute", color: "#34d399", tip: "Lambda, ECS — deploy after data validates" },
+    { label: "Frontend + DNS", color: "#fb923c", tip: "Amplify, CloudFront, Route 53 — user-visible cutover last" },
+    { label: "Cleanup", color: "#ef4444", tip: "Revoke grants, delete source after rollback window" },
+  ]}
+/>
 
 <Steps>
 

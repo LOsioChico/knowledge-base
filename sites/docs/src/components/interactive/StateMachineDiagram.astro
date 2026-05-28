@@ -2,14 +2,12 @@
 /**
  * StateMachineDiagram.astro
  *
- * Interactive state machine diagram. States are clickable pill-shaped nodes
- * arranged horizontally, connected by curved SVG arrows. Clicking a state
- * highlights it and shows its TypeScript type shape and description.
- * The initial state is pre-selected on load to invite exploration.
+ * Interactive state machine diagram. SVG is fully pre-rendered at build time
+ * (no client-side SVG creation). JavaScript handles click interactions only.
  *
  * Props:
- *   states      – state nodes with id, label, optional typeShape/description
- *   transitions – edges between states
+ *   states      – state nodes with id, label, optional typeShape/description/color
+ *   transitions – directed edges between states
  *   title       – optional heading
  */
 
@@ -35,122 +33,462 @@ interface Props {
 }
 
 const { states, transitions, title } = Astro.props;
+
+/* ---------- Colors ---------- */
+const defaultColors: Record<string, string> = {
+  waiting: '#94a3b8', loading: '#60a5fa', success: '#4ade80', failure: '#f87171',
+};
+function getColor(s: State): string {
+  return s.color || defaultColors[s.id.toLowerCase()] || '#a78bfa';
+}
+
+/* ---------- Adjacency ---------- */
+const adj: Record<string, string[]> = {};
+states.forEach(s => { adj[s.id] = []; });
+transitions.forEach(t => { if (adj[t.from]) adj[t.from].push(t.to); });
+
+/* ---------- Layout ---------- */
+const NODE_W = 130;
+const NODE_H = 44;
+const GAP_X = 90;
+const GAP_Y = 80;
+const PAD = 50;
+
+type Pos = { x: number; y: number };
+const positions: Record<string, Pos> = {};
+
+// Main chain: follow initial → first unvisited → …
+const initialState = states.find(s => s.initial) || states[0];
+const mainChain: string[] = [];
+const placed = new Set<string>();
+let cur = initialState.id;
+while (cur && !placed.has(cur)) {
+  mainChain.push(cur);
+  placed.add(cur);
+  cur = (adj[cur] || []).find(id => !placed.has(id)) || '';
+}
+
+// Fork detection
+const forkId = Object.entries(adj).find(([, targets]) => targets.length > 1)?.[0];
+const forkTargets = forkId ? adj[forkId].filter(id => !mainChain.includes(id)) : [];
+
+// Position main chain horizontally
+mainChain.forEach((id, i) => {
+  positions[id] = { x: PAD + i * (NODE_W + GAP_X) + NODE_W / 2, y: PAD + NODE_H / 2 };
+});
+
+// Position fork targets below the fork node
+if (forkId && positions[forkId]) {
+  forkTargets.forEach((id, i) => {
+    positions[id] = { x: positions[forkId].x, y: positions[forkId].y + GAP_Y + i * (NODE_H + 30) };
+    placed.add(id);
+  });
+}
+
+// Any remaining
+states.forEach(s => {
+  if (!positions[s.id]) {
+    const maxX = Math.max(0, ...Object.values(positions).map(p => p.x));
+    positions[s.id] = { x: maxX + NODE_W + GAP_X, y: PAD + NODE_H / 2 };
+  }
+});
+
+// SVG bounds
+const allPos = Object.values(positions);
+const svgW = Math.max(...allPos.map(p => p.x)) + NODE_W / 2 + PAD;
+const svgH = Math.max(...allPos.map(p => p.y)) + NODE_H / 2 + PAD + 10;
+
+/* ---------- Arrow paths ---------- */
+const pairKey = (a: string, b: string) => [a, b].sort().join('|');
+const pairCount: Record<string, number> = {};
+transitions.forEach(t => {
+  const k = pairKey(t.from, t.to);
+  pairCount[k] = (pairCount[k] || 0) + 1;
+});
+const pairIdx: Record<string, number> = {};
+
+interface Arrow {
+  path: string;
+  lx: number;
+  ly: number;
+  label?: string;
+  color: string;
+  from: string;
+  to: string;
+}
+
+const arrows: Arrow[] = transitions.map(t => {
+  const fp = positions[t.from];
+  const tp = positions[t.to];
+  if (!fp || !tp) return null as unknown as Arrow;
+
+  const pk = pairKey(t.from, t.to);
+  const idx = pairIdx[pk] || 0;
+  pairIdx[pk] = idx + 1;
+  const isBidi = pairCount[pk] > 1;
+
+  const dx = tp.x - fp.x;
+  const dy = tp.y - fp.y;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+  const angle = Math.atan2(dy, dx);
+  const endAngle = angle + Math.PI;
+
+  // Start / end on elliptical boundary of pill
+  const sx = fp.x + Math.cos(angle) * (NODE_W / 2 + 4);
+  const sy = fp.y + Math.sin(angle) * (NODE_H / 2 + 4);
+  const ex = tp.x + Math.cos(endAngle) * (NODE_W / 2 + 8);
+  const ey = tp.y + Math.sin(endAngle) * (NODE_H / 2 + 8);
+
+  // Perpendicular for curve offset
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const perpX = -ny;
+  const perpY = nx;
+  const offset = isBidi ? (idx === 0 ? -28 : 28) : 0;
+
+  const mx = (sx + ex) / 2 + perpX * offset;
+  const my = (sy + ey) / 2 + perpY * offset;
+
+  const path = `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+
+  // Label position: at control point, offset based on direction
+  const isVertical = Math.abs(dy) > Math.abs(dx);
+  const lx = mx + (isVertical ? 14 : 0);
+  const ly = my + (isVertical ? 0 : -8);
+
+  const color = getColor(states.find(s => s.id === t.from) || states[0]);
+
+  return { path, lx, ly, label: t.label, color, from: t.from, to: t.to };
+}).filter(Boolean);
+
+// Pre-compute outgoing info per state for the info panel
+const outgoing: Record<string, { targetLabel: string; trigger: string }[]> = {};
+states.forEach(s => {
+  outgoing[s.id] = transitions
+    .filter(t => t.from === s.id)
+    .map(t => ({
+      targetLabel: states.find(st => st.id === t.to)?.label || t.to,
+      trigger: t.label || '',
+    }));
+});
 ---
 
-<div
-  class="sm"
-  data-sm-states={JSON.stringify(states)}
-  data-sm-transitions={JSON.stringify(transitions)}
->
-  <div class="sm-header">
-    {title && <div class="sm-title">⚡ {title}</div>}
-    <span class="sm-intro">Click any state to explore its type shape and transitions.</span>
+<div class="smd">
+  <div class="smd-header">
+    {title && <div class="smd-title">⚡ {title}</div>}
+    <span class="smd-intro">Click any state to explore its type shape and transitions.</span>
   </div>
 
-  <div class="sm-canvas-wrap">
-    <svg class="sm-svg" aria-label="State machine diagram"></svg>
+  <div class="smd-canvas">
+    <svg
+      class="smd-svg"
+      viewBox={`0 0 ${svgW} ${svgH}`}
+      width={Math.min(svgW, 700)}
+      height={svgH}
+      aria-label="State machine diagram"
+    >
+      {/* Defs: arrowhead markers */}
+      <defs>
+        {arrows.map(a => (
+          <marker
+            id={`smd-ah-${a.from}-${a.to}`}
+            viewBox="0 0 10 7"
+            refX="9"
+            refY="3.5"
+            markerWidth="8"
+            markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill={a.color} opacity="0.8" />
+          </marker>
+        ))}
+      </defs>
+
+      {/* Arrow paths */}
+      <g class="smd-arrows">
+        {arrows.map(a => (
+          <g data-smd-arrow={`${a.from}-${a.to}`} data-smd-source={a.from}>
+            <path
+              d={a.path}
+              stroke={a.color}
+              stroke-width="2"
+              stroke-opacity="0.45"
+              fill="none"
+              marker-end={`url(#smd-ah-${a.from}-${a.to})`}
+              class="smd-arrow-path"
+            />
+            {a.label && (
+              <text
+                x={a.lx.toFixed(1)}
+                y={a.ly.toFixed(1)}
+                text-anchor="middle"
+                font-size="10"
+                fill={a.color}
+                opacity="0.65"
+                class="smd-arrow-label"
+              >
+                {a.label}
+              </text>
+            )}
+          </g>
+        ))}
+      </g>
+
+      {/* State nodes */}
+      <g class="smd-nodes">
+        {states.map(s => {
+          const pos = positions[s.id];
+          const color = getColor(s);
+          const outs = outgoing[s.id].map(o => `${o.trigger}>${o.targetLabel}`).join('|');
+          return (
+            <g
+              data-smd-node={s.id}
+              data-smd-color={color}
+              data-smd-desc={s.description || ''}
+              data-smd-type={s.typeShape || ''}
+              data-smd-outs={outs}
+              class="smd-node-g"
+              tabindex="0"
+              role="button"
+              aria-label={`State: ${s.label}`}
+            >
+              {/* Glow ring */}
+              <rect
+                x={pos.x - NODE_W / 2 - 4}
+                y={pos.y - NODE_H / 2 - 4}
+                width={NODE_W + 8}
+                height={NODE_H + 8}
+                rx={(NODE_H + 8) / 2}
+                fill="none"
+                stroke={color}
+                stroke-width="3"
+                opacity="0"
+                class="smd-glow"
+              />
+              {/* Node pill */}
+              <rect
+                x={pos.x - NODE_W / 2}
+                y={pos.y - NODE_H / 2}
+                width={NODE_W}
+                height={NODE_H}
+                rx={NODE_H / 2}
+                fill="var(--smd-node-bg)"
+                stroke={color}
+                stroke-width="2"
+                class="smd-pill"
+              />
+              {/* Label */}
+              <text
+                x={pos.x}
+                y={pos.y + 1}
+                text-anchor="middle"
+                dominant-baseline="central"
+                font-size="13"
+                font-weight="600"
+                fill={color}
+              >
+                {s.label}
+              </text>
+              {/* Initial dot + stem */}
+              {s.initial && (
+                <g>
+                  <circle cx={pos.x - NODE_W / 2 - 18} cy={pos.y} r="4" fill={color} />
+                  <line
+                    x1={pos.x - NODE_W / 2 - 13}
+                    y1={pos.y}
+                    x2={pos.x - NODE_W / 2 - 2}
+                    y2={pos.y}
+                    stroke={color}
+                    stroke-width="2"
+                  />
+                </g>
+              )}
+            </g>
+          );
+        })}
+      </g>
+    </svg>
   </div>
 
-  <div class="sm-info" style="display:none">
-    <div class="sm-info-header">
-      <div class="sm-info-dot"></div>
-      <div class="sm-info-label"></div>
-      <button class="sm-info-close" type="button" aria-label="Close">✕</button>
+  {/* Info panel (HTML, not SVG) */}
+  <div class="smd-info" data-smd-info style="display:none">
+    <div class="smd-info-bar"></div>
+    <div class="smd-info-body">
+      <div class="smd-info-head">
+        <div class="smd-info-dot"></div>
+        <div class="smd-info-name"></div>
+        <button class="smd-info-close" type="button" aria-label="Close" data-smd-close>✕</button>
+      </div>
+      <div class="smd-info-desc"></div>
+      <div class="smd-info-trans"></div>
+      <pre class="smd-info-code"><code></code></pre>
     </div>
-    <div class="sm-info-desc"></div>
-    <pre class="sm-info-code"><code></code></pre>
   </div>
 </div>
 
 <style>
-  .sm {
-    --sm-bg: var(--sl-color-gray-6, #1e1e2e);
-    --sm-border: var(--sl-color-gray-5, #313244);
-    --sm-text: var(--sl-color-gray-1, #cdd6f4);
-    --sm-text-dim: var(--sl-color-gray-3, #6c7086);
-    --sm-accent: var(--sl-color-accent, #89b4fa);
-    --sm-surface: var(--sl-color-gray-6, #1e1e2e);
-    --sm-node-bg: var(--sl-color-gray-5, #313244);
-    border: 1px solid var(--sm-border);
+  /* ===== Container ===== */
+  .smd {
+    --smd-bg: var(--sl-color-gray-6, #1e1e2e);
+    --smd-border: var(--sl-color-gray-5, #313244);
+    --smd-text: var(--sl-color-gray-1, #cdd6f4);
+    --smd-text-dim: var(--sl-color-gray-3, #6c7086);
+    --smd-accent: var(--sl-color-accent, #89b4fa);
+    --smd-node-bg: var(--sl-color-gray-5, #313244);
+    border: 1px solid var(--smd-border);
     border-radius: 12px;
-    background: var(--sm-bg);
-    padding: 0;
+    background: var(--smd-bg);
     margin: 1.5rem 0;
     overflow: hidden;
   }
 
-  .sm-header {
+  .smd-header {
     padding: 1rem 1.25rem 0.5rem;
-    border-bottom: 1px solid var(--sm-border);
+    border-bottom: 1px solid var(--smd-border);
   }
 
-  .sm-title {
+  .smd-title {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--sm-text);
-    margin-bottom: 0.25rem;
+    color: var(--smd-text);
+    margin-bottom: 0.2rem;
   }
 
-  .sm-intro {
-    font-size: 0.8rem;
-    color: var(--sm-text-dim);
+  .smd-intro {
+    font-size: 0.78rem;
+    color: var(--smd-text-dim);
   }
 
-  .sm-canvas-wrap {
-    padding: 1.5rem 1rem;
+  /* ===== SVG canvas ===== */
+  .smd-canvas {
+    padding: 1rem 0.5rem 0.5rem;
     overflow-x: auto;
     display: flex;
     justify-content: center;
   }
 
-  .sm-svg {
+  .smd-svg {
     display: block;
     max-width: 100%;
   }
 
-  /* Info panel */
-  .sm-info {
-    margin: 0 1rem 1rem;
-    border: 1px solid var(--sm-border);
+  /* ===== Node interactivity ===== */
+  .smd-node-g {
+    cursor: pointer;
+    outline: none;
+  }
+
+  .smd-node-g .smd-pill,
+  .smd-node-g text {
+    transition: opacity 0.3s ease;
+  }
+
+  .smd-node-g .smd-glow {
+    transition: opacity 0.35s ease;
+  }
+
+  .smd-node-g:hover .smd-pill {
+    filter: brightness(1.2);
+  }
+
+  .smd-node-g:focus-visible .smd-glow {
+    opacity: 0.25 !important;
+  }
+
+  /* States applied via JS */
+  .smd-node-g[data-state="selected"] .smd-glow { opacity: 0.4; }
+  .smd-node-g[data-state="selected"] .smd-pill { filter: brightness(1.25); }
+  .smd-node-g[data-state="dimmed"]   { opacity: 0.2; }
+  .smd-node-g[data-state="target"] .smd-pill {
+    stroke-dasharray: 6 3;
+    filter: brightness(1.1);
+  }
+
+  /* ===== Arrows ===== */
+  .smd-arrow-path {
+    transition: stroke-opacity 0.3s ease, stroke-width 0.3s ease;
+  }
+
+  .smd-arrow-label {
+    transition: opacity 0.3s ease;
+    font-family: var(--sl-font-mono, monospace);
+  }
+
+  [data-smd-arrow][data-arrow-state="highlight"] .smd-arrow-path {
+    stroke-opacity: 0.95;
+    stroke-width: 2.5;
+    stroke-dasharray: 6 4;
+    animation: smd-flow 0.6s linear infinite;
+  }
+
+  [data-smd-arrow][data-arrow-state="highlight"] .smd-arrow-label {
+    opacity: 1;
+    font-weight: 600;
+  }
+
+  [data-smd-arrow][data-arrow-state="dimmed"] .smd-arrow-path {
+    stroke-opacity: 0.08;
+  }
+
+  [data-smd-arrow][data-arrow-state="dimmed"] .smd-arrow-label {
+    opacity: 0.08;
+  }
+
+  @keyframes smd-flow {
+    to { stroke-dashoffset: -10; }
+  }
+
+  /* ===== Info panel ===== */
+  .smd-info {
+    margin: 0 0.75rem 0.75rem;
+    border: 1px solid var(--smd-border);
     border-radius: 10px;
-    background: color-mix(in srgb, var(--sm-surface) 85%, transparent);
+    background: color-mix(in srgb, var(--smd-bg) 92%, transparent);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     overflow: hidden;
-    animation: sm-slide-in 0.25s ease-out;
+    animation: smd-slide 0.25s ease-out;
   }
 
-  @keyframes sm-slide-in {
-    from { opacity: 0; transform: translateY(-8px); }
+  @keyframes smd-slide {
+    from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .sm-info-header {
+  .smd-info-bar {
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+  }
+
+  .smd-info-body {
+    padding: 0;
+  }
+
+  .smd-info-head {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--sm-border);
+    padding: 0.65rem 1rem;
   }
 
-  .sm-info-dot {
+  .smd-info-dot {
     width: 10px;
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
   }
 
-  .sm-info-label {
+  .smd-info-name {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--sm-text);
+    color: var(--smd-text);
     flex: 1;
   }
 
-  .sm-info-close {
+  .smd-info-close {
     background: none;
     border: none;
-    color: var(--sm-text-dim);
+    color: var(--smd-text-dim);
     cursor: pointer;
     font-size: 1rem;
     padding: 0.2rem 0.4rem;
@@ -159,440 +497,169 @@ const { states, transitions, title } = Astro.props;
     line-height: 1;
   }
 
-  .sm-info-close:hover {
-    color: var(--sm-text);
-    background: var(--sm-node-bg);
+  .smd-info-close:hover {
+    color: var(--smd-text);
+    background: var(--smd-node-bg);
   }
 
-  .sm-info-desc {
-    padding: 0.75rem 1rem;
-    font-size: 0.85rem;
-    color: var(--sm-text-dim);
+  .smd-info-desc {
+    padding: 0 1rem 0.6rem;
+    font-size: 0.82rem;
+    color: var(--smd-text-dim);
     line-height: 1.5;
   }
 
-  .sm-info-desc:empty {
-    display: none;
+  .smd-info-desc:empty { display: none; }
+
+  .smd-info-trans {
+    padding: 0 1rem 0.6rem;
+    font-size: 0.78rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
-  .sm-info-code {
+  .smd-info-trans:empty { display: none; }
+
+  .smd-info-trans .smd-t {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--smd-node-bg) 70%, transparent);
+    color: var(--smd-text-dim);
+    font-size: 0.75rem;
+  }
+
+  .smd-info-trans .smd-t code {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--smd-accent);
+  }
+
+  .smd-info-code {
     margin: 0;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     background: var(--sl-color-gray-7, #11111b);
-    border-top: 1px solid var(--sm-border);
+    border-top: 1px solid var(--smd-border);
     overflow-x: auto;
   }
 
-  .sm-info-code code {
+  .smd-info-code code {
     font-family: var(--sl-font-mono, monospace);
     font-size: 0.82rem;
-    color: var(--sm-accent);
+    color: var(--smd-accent);
     line-height: 1.6;
     white-space: pre;
   }
 
-  .sm-info-code:has(code:empty) {
-    display: none;
-  }
+  .smd-info-code:has(code:empty) { display: none; }
 
   @media print {
-    .sm-info-close { display: none; }
+    .smd-info-close { display: none; }
   }
 </style>
 
 <script>
-document.addEventListener('astro:page-load', initStateMachine);
+  document.addEventListener('astro:page-load', initSMD);
 
-function initStateMachine() {
-  document.querySelectorAll<HTMLElement>('.sm[data-sm-states]').forEach((root) => {
-    if ((root as any).__smInit) return;
-    (root as any).__smInit = true;
+  function initSMD() {
+    document.querySelectorAll<HTMLElement>('.smd:not([data-smd-ready])').forEach((root) => {
+      root.setAttribute('data-smd-ready', '');
 
-    const states: any[] = JSON.parse(root.dataset.smStates || '[]');
-    const transitions: any[] = JSON.parse(root.dataset.smTransitions || '[]');
+      const nodeGs = root.querySelectorAll<SVGGElement>('[data-smd-node]');
+      const arrowGs = root.querySelectorAll<SVGGElement>('[data-smd-arrow]');
+      const info = root.querySelector<HTMLElement>('[data-smd-info]');
+      const infoBar = info?.querySelector<HTMLElement>('.smd-info-bar');
+      const infoName = info?.querySelector<HTMLElement>('.smd-info-name');
+      const infoDot = info?.querySelector<HTMLElement>('.smd-info-dot');
+      const infoDesc = info?.querySelector<HTMLElement>('.smd-info-desc');
+      const infoTrans = info?.querySelector<HTMLElement>('.smd-info-trans');
+      const infoCode = info?.querySelector<HTMLElement>('.smd-info-code code');
+      const closeBtn = root.querySelector<HTMLElement>('[data-smd-close]');
 
-    const svg = root.querySelector<SVGSVGElement>('.sm-svg');
-    if (!svg || states.length === 0) return;
+      let selectedId: string | null = null;
 
-    // Layout constants
-    const NODE_W = 140;
-    const NODE_H = 48;
-    const MARGIN_X = 40;
-    const MARGIN_Y = 60;
-    const PAD_TOP = 40;
-    const PAD_SIDES = 30;
+      function select(id: string) {
+        if (selectedId === id) { deselect(); return; }
+        selectedId = id;
 
-    // Color defaults
-    const defaultColors: Record<string, string> = {
-      waiting: '#94a3b8',
-      loading: '#60a5fa',
-      success: '#4ade80',
-      failure: '#f87171',
-    };
+        const g = root.querySelector<SVGGElement>(`[data-smd-node="${id}"]`);
+        if (!g) return;
 
-    function getColor(s: any): string {
-      if (s.color) return s.color;
-      const key = s.id.toLowerCase();
-      return defaultColors[key] || '#a78bfa';
-    }
+        const color = g.dataset.smdColor || '#94a3b8';
+        const desc = g.dataset.smdDesc || '';
+        const typeShape = g.dataset.smdType || '';
+        const outsRaw = g.dataset.smdOuts || '';
+        const outs = outsRaw ? outsRaw.split('|').map(o => {
+          const [trigger, target] = o.split('>');
+          return { trigger, target };
+        }) : [];
 
-    // Position states horizontally — initial state first
-    const positions: Record<string, { x: number; y: number }> = {};
-    const sorted = [...states].sort((a, b) => {
-      if (a.initial) return -1;
-      if (b.initial) return 1;
-      return 0;
-    });
+        const outTargetIds = outs.map(o =>
+          Array.from(nodeGs).find(n => {
+            const label = n.querySelector('text')?.textContent?.trim();
+            return label === o.target;
+          })?.dataset.smdNode || ''
+        ).filter(Boolean);
 
-    // Detect forking (a node with 2+ outbound transitions)
-    const outCount: Record<string, string[]> = {};
-    transitions.forEach((t: any) => {
-      if (!outCount[t.from]) outCount[t.from] = [];
-      outCount[t.from].push(t.to);
-    });
-    const forkNode = Object.entries(outCount).find(([_, targets]) => targets.length > 1)?.[0];
-    const hasForking = !!forkNode;
-
-    if (hasForking && sorted.length >= 4) {
-      // Layout: linear chain left-to-right, fork targets offset vertically
-      let x = PAD_SIDES;
-      const centerY = PAD_TOP + NODE_H;
-      const placed = new Set<string>();
-
-      // Build main chain: initial → fork node
-      const mainChain: string[] = [];
-      let current = sorted.find(s => s.initial)?.id || sorted[0].id;
-      while (current && !placed.has(current)) {
-        mainChain.push(current);
-        placed.add(current);
-        const next = transitions.find(t => t.from === current && !placed.has(t.to));
-        current = next?.to || '';
-      }
-
-      // Fork targets not in main chain
-      const forkTargets = forkNode ? (outCount[forkNode] || []).filter(id => !mainChain.includes(id)) : [];
-
-      // Position main chain
-      mainChain.forEach((id) => {
-        positions[id] = { x: x + NODE_W / 2, y: centerY };
-        x += NODE_W + MARGIN_X;
-      });
-
-      // Position fork targets vertically offset
-      if (forkNode && forkTargets.length > 0) {
-        const forkX = positions[forkNode]?.x || 0;
-        const baseX = forkX + NODE_W + MARGIN_X;
-        forkTargets.forEach((id, i) => {
-          const yOff = i === 0 ? -MARGIN_Y : MARGIN_Y;
-          positions[id] = { x: baseX + NODE_W / 2, y: centerY + yOff };
-          placed.add(id);
+        // Update node states
+        nodeGs.forEach(n => {
+          const nid = n.dataset.smdNode || '';
+          if (nid === id) n.setAttribute('data-state', 'selected');
+          else if (outTargetIds.includes(nid)) n.setAttribute('data-state', 'target');
+          else n.setAttribute('data-state', 'dimmed');
         });
-      }
 
-      // Remaining unplaced
-      sorted.forEach(s => {
-        if (!placed.has(s.id)) {
-          positions[s.id] = { x: x + NODE_W / 2, y: centerY };
-          x += NODE_W + MARGIN_X;
-          placed.add(s.id);
-        }
-      });
-    } else {
-      // Simple horizontal layout
-      sorted.forEach((s, i) => {
-        positions[s.id] = {
-          x: PAD_SIDES + i * (NODE_W + MARGIN_X) + NODE_W / 2,
-          y: PAD_TOP + NODE_H,
-        };
-      });
-    }
-
-    // Compute SVG dimensions
-    const allX = Object.values(positions).map(p => p.x);
-    const allY = Object.values(positions).map(p => p.y);
-    const svgW = Math.max(...allX) + NODE_W / 2 + PAD_SIDES;
-    const svgH = Math.max(...allY) + NODE_H + PAD_TOP + 20;
-
-    svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
-    svg.setAttribute('width', `${Math.min(svgW, 720)}`);
-    svg.setAttribute('height', `${Math.min(svgH, 300)}`);
-
-    // SVG helpers
-    const ns = 'http://www.w3.org/2000/svg';
-    function el(tag: string, attrs: Record<string, string> = {}): SVGElement {
-      const e = document.createElementNS(ns, tag);
-      Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v));
-      return e;
-    }
-
-    // Defs: arrowhead markers
-    const defs = el('defs');
-    transitions.forEach((t: any) => {
-      const fromState = states.find(s => s.id === t.from);
-      const color = fromState ? getColor(fromState) : '#94a3b8';
-      const markerId = `sm-arrow-${t.from}-${t.to}`;
-      const marker = el('marker', {
-        id: markerId,
-        viewBox: '0 0 10 7',
-        refX: '9',
-        refY: '3.5',
-        markerWidth: '8',
-        markerHeight: '6',
-        orient: 'auto-start-reverse',
-      });
-      const poly = el('polygon', {
-        points: '0 0, 10 3.5, 0 7',
-        fill: color,
-        opacity: '0.7',
-      });
-      marker.appendChild(poly);
-      defs.appendChild(marker);
-    });
-    svg.appendChild(defs);
-
-    // Draw transition arrows
-    const arrowGroup = el('g', { class: 'sm-arrows' });
-    const labelGroup = el('g', { class: 'sm-labels' });
-
-    // Track bidirectional pairs for curve offset
-    const pairKey = (a: string, b: string) => [a, b].sort().join('|');
-    const pairCount: Record<string, number> = {};
-    transitions.forEach((t: any) => {
-      const key = pairKey(t.from, t.to);
-      pairCount[key] = (pairCount[key] || 0) + 1;
-    });
-    const pairIndex: Record<string, number> = {};
-
-    transitions.forEach((t: any) => {
-      const from = positions[t.from];
-      const to = positions[t.to];
-      if (!from || !to) return;
-
-      const key = pairKey(t.from, t.to);
-      const idx = pairIndex[key] || 0;
-      pairIndex[key] = idx + 1;
-      const isBidi = pairCount[key] > 1;
-
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const angle = Math.atan2(dy, dx);
-
-      // Start/end on pill edge
-      const startX = from.x + Math.cos(angle) * (NODE_W / 2 + 2);
-      const startY = from.y + Math.sin(angle) * (NODE_H / 2 + 2);
-      const endX = to.x - Math.cos(angle) * (NODE_W / 2 + 6);
-      const endY = to.y - Math.sin(angle) * (NODE_H / 2 + 6);
-
-      // Curve offset for bidirectional edges
-      const curveOffset = isBidi ? (idx === 0 ? -25 : 25) : 0;
-      const midX = (startX + endX) / 2;
-      const midY = (startY + endY) / 2;
-
-      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      const perpX = -dy / len * curveOffset;
-      const perpY = dx / len * curveOffset;
-      const ctrlX = midX + perpX;
-      const ctrlY = midY + perpY;
-
-      const fromState = states.find(s => s.id === t.from);
-      const color = fromState ? getColor(fromState) : '#94a3b8';
-      const markerId = `sm-arrow-${t.from}-${t.to}`;
-
-      const path = el('path', {
-        d: `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`,
-        stroke: color,
-        'stroke-width': '2',
-        'stroke-opacity': '0.5',
-        fill: 'none',
-        'marker-end': `url(#${markerId})`,
-        'data-sm-edge': `${t.from}-${t.to}`,
-        'data-sm-from': t.from,
-      });
-      path.style.transition = 'stroke-opacity 0.3s ease, stroke-width 0.3s ease';
-      arrowGroup.appendChild(path);
-
-      // Transition label on the arrow
-      if (t.label) {
-        const labelEl = el('text', {
-          x: `${ctrlX}`,
-          y: `${ctrlY - 6}`,
-          'text-anchor': 'middle',
-          'font-size': '10',
-          fill: color,
-          opacity: '0.6',
-          'data-sm-edge-label': `${t.from}-${t.to}`,
-          'data-sm-from': t.from,
+        // Update arrows
+        arrowGs.forEach(a => {
+          if (a.dataset.smdSource === id) a.setAttribute('data-arrow-state', 'highlight');
+          else a.setAttribute('data-arrow-state', 'dimmed');
         });
-        labelEl.textContent = t.label;
-        labelEl.style.transition = 'opacity 0.3s ease';
-        labelGroup.appendChild(labelEl);
+
+        // Show info panel
+        if (info && infoBar && infoName && infoDot && infoDesc && infoCode) {
+          info.style.display = '';
+          infoBar.style.background = color;
+          infoDot.style.background = color;
+          infoName.textContent = g.querySelector('text')?.textContent?.trim() || '';
+          infoDesc.textContent = desc;
+          infoCode.textContent = typeShape;
+
+          if (infoTrans) {
+            infoTrans.innerHTML = outs.map(o =>
+              `<span class="smd-t">${o.trigger ? `<code>${o.trigger}</code> →` : '→'} ${o.target}</span>`
+            ).join('');
+          }
+        }
+      }
+
+      function deselect() {
+        selectedId = null;
+        nodeGs.forEach(n => n.removeAttribute('data-state'));
+        arrowGs.forEach(a => a.removeAttribute('data-arrow-state'));
+        if (info) info.style.display = 'none';
+      }
+
+      // Click handlers
+      nodeGs.forEach(n => {
+        n.addEventListener('click', () => select(n.dataset.smdNode || ''));
+        n.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            select(n.dataset.smdNode || '');
+          }
+        });
+      });
+      closeBtn?.addEventListener('click', deselect);
+
+      // Auto-select initial state
+      const initial = root.querySelector<SVGGElement>('[data-smd-node] circle');
+      if (initial) {
+        const parentG = initial.closest<SVGGElement>('[data-smd-node]');
+        if (parentG) select(parentG.dataset.smdNode || '');
       }
     });
-
-    svg.appendChild(arrowGroup);
-    svg.appendChild(labelGroup);
-
-    // Draw state nodes
-    const nodeGroup = el('g', { class: 'sm-nodes' });
-
-    sorted.forEach((s) => {
-      const pos = positions[s.id];
-      if (!pos) return;
-      const color = getColor(s);
-
-      const g = el('g', {
-        'data-sm-node': s.id,
-        style: 'cursor: pointer; transition: opacity 0.3s ease;',
-      });
-
-      // Glow ring (hidden initially, visible when selected)
-      const glow = el('rect', {
-        x: `${pos.x - NODE_W / 2 - 3}`,
-        y: `${pos.y - NODE_H / 2 - 3}`,
-        width: `${NODE_W + 6}`,
-        height: `${NODE_H + 6}`,
-        rx: `${NODE_H / 2 + 3}`,
-        ry: `${NODE_H / 2 + 3}`,
-        fill: 'none',
-        stroke: color,
-        'stroke-width': '3',
-        opacity: '0',
-        'data-sm-glow': s.id,
-      });
-      glow.style.transition = 'opacity 0.3s ease';
-      g.appendChild(glow);
-
-      // Pill background
-      const rect = el('rect', {
-        x: `${pos.x - NODE_W / 2}`,
-        y: `${pos.y - NODE_H / 2}`,
-        width: `${NODE_W}`,
-        height: `${NODE_H}`,
-        rx: `${NODE_H / 2}`,
-        ry: `${NODE_H / 2}`,
-        fill: 'var(--sm-node-bg)',
-        stroke: color,
-        'stroke-width': '2',
-      });
-      g.appendChild(rect);
-
-      // Label text
-      const text = el('text', {
-        x: `${pos.x}`,
-        y: `${pos.y + 1}`,
-        'text-anchor': 'middle',
-        'dominant-baseline': 'central',
-        'font-size': '13',
-        'font-weight': '600',
-        fill: color,
-      });
-      text.textContent = s.label;
-      g.appendChild(text);
-
-      // Initial state indicator (dot + short arrow)
-      if (s.initial) {
-        const dotX = pos.x - NODE_W / 2 - 18;
-        const dotY = pos.y;
-        g.appendChild(el('circle', {
-          cx: `${dotX}`, cy: `${dotY}`, r: '4', fill: color,
-        }));
-        g.appendChild(el('line', {
-          x1: `${dotX + 5}`, y1: `${dotY}`,
-          x2: `${pos.x - NODE_W / 2 - 2}`, y2: `${dotY}`,
-          stroke: color, 'stroke-width': '2',
-        }));
-      }
-
-      g.addEventListener('click', () => selectState(s.id));
-      nodeGroup.appendChild(g);
-    });
-
-    svg.appendChild(nodeGroup);
-
-    // Selection logic
-    const infoPanel = root.querySelector<HTMLElement>('.sm-info');
-    const infoLabel = root.querySelector<HTMLElement>('.sm-info-label');
-    const infoDot = root.querySelector<HTMLElement>('.sm-info-dot');
-    const infoDesc = root.querySelector<HTMLElement>('.sm-info-desc');
-    const infoCode = root.querySelector<HTMLElement>('.sm-info-code code');
-    const infoClose = root.querySelector<HTMLElement>('.sm-info-close');
-
-    let selectedId: string | null = null;
-
-    function selectState(id: string) {
-      if (selectedId === id) {
-        deselectAll();
-        return;
-      }
-      selectedId = id;
-      const state = states.find(s => s.id === id);
-      if (!state) return;
-      const color = getColor(state);
-
-      // Highlight selected, dim others
-      svg!.querySelectorAll<SVGElement>('[data-sm-node]').forEach(n => {
-        const nid = n.dataset.smNode;
-        if (nid === id) {
-          n.style.opacity = '1';
-          const gl = n.querySelector<SVGElement>('[data-sm-glow]');
-          if (gl) gl.setAttribute('opacity', '0.35');
-        } else {
-          n.style.opacity = '0.3';
-          const gl = n.querySelector<SVGElement>('[data-sm-glow]');
-          if (gl) gl.setAttribute('opacity', '0');
-        }
-      });
-
-      // Highlight outbound edges
-      svg!.querySelectorAll<SVGElement>('[data-sm-edge]').forEach(e => {
-        if (e.dataset.smFrom === id) {
-          e.setAttribute('stroke-opacity', '0.9');
-          e.setAttribute('stroke-width', '3');
-        } else {
-          e.setAttribute('stroke-opacity', '0.15');
-          e.setAttribute('stroke-width', '1.5');
-        }
-      });
-
-      svg!.querySelectorAll<SVGElement>('[data-sm-edge-label]').forEach(e => {
-        e.setAttribute('opacity', e.dataset.smFrom === id ? '0.9' : '0.15');
-      });
-
-      // Show info panel
-      if (infoPanel && infoLabel && infoDot && infoDesc && infoCode) {
-        infoPanel.style.display = '';
-        infoPanel.style.borderColor = color;
-        infoDot.style.background = color;
-        infoLabel.textContent = state.label;
-        infoDesc.textContent = state.description || '';
-        infoCode.textContent = state.typeShape || '';
-      }
-    }
-
-    function deselectAll() {
-      selectedId = null;
-      svg!.querySelectorAll<SVGElement>('[data-sm-node]').forEach(n => {
-        n.style.opacity = '1';
-        const gl = n.querySelector<SVGElement>('[data-sm-glow]');
-        if (gl) gl.setAttribute('opacity', '0');
-      });
-      svg!.querySelectorAll<SVGElement>('[data-sm-edge]').forEach(e => {
-        e.setAttribute('stroke-opacity', '0.5');
-        e.setAttribute('stroke-width', '2');
-      });
-      svg!.querySelectorAll<SVGElement>('[data-sm-edge-label]').forEach(e => {
-        e.setAttribute('opacity', '0.6');
-      });
-      if (infoPanel) infoPanel.style.display = 'none';
-    }
-
-    infoClose?.addEventListener('click', deselectAll);
-
-    // Auto-select the initial state on load to invite exploration
-    const initialState = states.find(s => s.initial);
-    if (initialState) {
-      selectState(initialState.id);
-    }
-  });
-}
+  }
 </script>

@@ -16,6 +16,7 @@ source:
 > CLI walkthrough: stand up a custom Amazon EventBridge event bus, configure an SQS queue as a target, write JSON routing rules, publish test events, and cleanly tear down resources.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -24,10 +25,21 @@ Before diving in, make sure you understand:
 
 ## Before you start
 
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "ACCOUNT_ID", placeholder: "123456789012" },
+    { name: "BUS_NAME", default: "orders-event-bus" },
+    { name: "QUEUE_NAME", template: "billing-orders-queue-${ACCOUNT_ID}" },
+    { name: "RULE_NAME", default: "billing-orders-rule" },
+  ]}
+/>
+
 - AWS CLI profile resolving to a writable developer account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify that the account matches your expected testing environment:
 
   ```bash
-  aws --profile <name> sts get-caller-identity
+  aws --profile $AWS_PROFILE sts get-caller-identity
   ```
 
   Expected output format:
@@ -42,8 +54,8 @@ Before diving in, make sure you understand:
 Shared environment variables for every command below:
 
 ```bash
-export AWS_PROFILE=<your-profile>
-export REGION=us-east-1
+export AWS_PROFILE=$AWS_PROFILE
+export REGION=$REGION
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUS_NAME=orders-event-bus
 export QUEUE_NAME=billing-orders-queue-${ACCOUNT_ID}

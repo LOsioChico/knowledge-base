@@ -1,0 +1,676 @@
+---
+/**
+ * ShellSession.astro
+ * ──────────────────
+ * Fill-in-your-values form for CLI recipes. Renders an input bar
+ * at the top of a recipe page. When the reader fills in values,
+ * all bash/shell code blocks on the page update live — both
+ * visually and in the copy-to-clipboard button.
+ *
+ * Props:
+ *   vars       – Variables to expose as inputs
+ *   storageKey – localStorage key for persistence (default: page pathname)
+ */
+
+interface Var {
+  name: string;
+  placeholder?: string;
+  default?: string;
+  template?: string;
+  /** Render a custom dropdown instead of a text input */
+  type?: 'text' | 'select';
+  /** Options for select-type vars (ignored for text) */
+  options?: { label: string; value: string }[];
+  /** Built-in preset that auto-fills type + options */
+  preset?: 'aws-region';
+}
+
+interface Props {
+  vars: Var[];
+  storageKey?: string;
+}
+
+const AWS_REGIONS = [
+  { label: 'us-east-1 (N. Virginia)',    value: 'us-east-1' },
+  { label: 'us-east-2 (Ohio)',           value: 'us-east-2' },
+  { label: 'us-west-1 (N. California)',  value: 'us-west-1' },
+  { label: 'us-west-2 (Oregon)',         value: 'us-west-2' },
+  { label: 'ca-central-1 (Canada)',      value: 'ca-central-1' },
+  { label: 'eu-west-1 (Ireland)',        value: 'eu-west-1' },
+  { label: 'eu-west-2 (London)',         value: 'eu-west-2' },
+  { label: 'eu-west-3 (Paris)',          value: 'eu-west-3' },
+  { label: 'eu-central-1 (Frankfurt)',   value: 'eu-central-1' },
+  { label: 'eu-north-1 (Stockholm)',     value: 'eu-north-1' },
+  { label: 'ap-southeast-1 (Singapore)', value: 'ap-southeast-1' },
+  { label: 'ap-southeast-2 (Sydney)',    value: 'ap-southeast-2' },
+  { label: 'ap-northeast-1 (Tokyo)',     value: 'ap-northeast-1' },
+  { label: 'ap-northeast-2 (Seoul)',     value: 'ap-northeast-2' },
+  { label: 'ap-south-1 (Mumbai)',        value: 'ap-south-1' },
+  { label: 'sa-east-1 (São Paulo)',      value: 'sa-east-1' },
+];
+
+const { vars, storageKey } = Astro.props;
+
+// Resolve presets before passing to client
+const resolvedVars = vars.map((v) => {
+  if (v.preset === 'aws-region') {
+    return { ...v, type: 'select' as const, options: v.options || AWS_REGIONS };
+  }
+  return v;
+});
+---
+
+<div
+  class="ss not-content"
+  data-ss-vars={JSON.stringify(resolvedVars)}
+  data-ss-key={storageKey || ''}
+>
+  <div class="ss-header">
+    <span class="ss-title">
+      <svg class="ss-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="1" y="2" width="14" height="12" rx="2" />
+        <path d="M4 7l2.5 2L4 11" />
+        <line x1="8.5" y1="11" x2="12" y2="11" />
+      </svg>
+      Session variables
+    </span>
+    <button class="ss-reset" type="button" aria-label="Reset all values">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M2 8a6 6 0 1 1 1.5 4" />
+        <polyline points="1 5 2 8 5 7" />
+      </svg>
+      Reset
+    </button>
+  </div>
+
+  <div class="ss-fields">
+    {resolvedVars.map((v) => (
+      <div class="ss-field" data-ss-name={v.name}>
+        <label class="ss-label">
+          <span class="ss-var-name">${v.name}</span>
+        </label>
+        {v.template ? (
+          <input
+            type="text"
+            class="ss-input ss-input--computed"
+            data-ss-input={v.name}
+            data-ss-template={v.template}
+            value=""
+            readonly
+            tabindex="-1"
+            aria-label={`${v.name} (computed)`}
+          />
+        ) : v.type === 'select' ? (
+          <div class="ss-dropdown" data-ss-input={v.name} tabindex="0" role="combobox" aria-label={v.name} aria-expanded="false">
+            <span class="ss-dropdown-value">{v.default || (v.options?.[0]?.value ?? '')}</span>
+            <svg class="ss-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" />
+            </svg>
+            <div class="ss-dropdown-menu" role="listbox">
+              {(v.options || []).map((opt) => (
+                <div
+                  class={`ss-dropdown-option${opt.value === v.default ? ' ss-dropdown-option--active' : ''}`}
+                  data-value={opt.value}
+                  role="option"
+                  aria-selected={opt.value === v.default ? 'true' : 'false'}
+                >
+                  {opt.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <input
+            type="text"
+            class="ss-input"
+            data-ss-input={v.name}
+            placeholder={v.placeholder || ''}
+            value={v.default || ''}
+            aria-label={v.name}
+          />
+        )}
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  /* ===== Container ===== */
+  .ss {
+    --ss-text:       var(--sl-color-text);
+    --ss-text-faint: var(--sl-color-gray-3);
+    --ss-text-ghost: var(--sl-color-gray-4);
+    --ss-rule:       var(--sl-color-hairline-shade);
+    --ss-accent:     var(--sl-color-accent-high);
+    --ss-accent-low: var(--sl-color-accent-low);
+    --ss-panel:      var(--sl-color-bg-nav);
+    --ss-green:      #4ade80;
+    margin: 1.5rem 0;
+    background: var(--ss-panel);
+    border: 1px solid var(--ss-rule);
+    border-radius: 10px;
+  }
+
+  .ss-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--ss-rule);
+    gap: 12px;
+  }
+
+  .ss-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--ss-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ss-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--ss-accent);
+    flex-shrink: 0;
+  }
+
+  .ss-reset {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--ss-text-ghost);
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 5px;
+    transition: color 160ms ease, background 160ms ease;
+  }
+
+  .ss-reset:hover {
+    color: var(--ss-accent);
+    background: var(--ss-accent-low);
+  }
+
+  .ss-reset svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  /* ===== Fields ===== */
+  .ss-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0;
+  }
+
+  .ss-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px 20px;
+    border-right: 1px solid var(--ss-rule);
+    border-bottom: 1px solid var(--ss-rule);
+  }
+
+  .ss-field:last-child {
+    border-right: none;
+  }
+
+  .ss-field:has(.ss-input--computed) {
+    grid-column: 1 / -1;
+  }
+
+  .ss-label {
+    font-size: 11px;
+    color: var(--ss-text-ghost);
+    font-weight: 500;
+  }
+
+  .ss-var-name {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    color: var(--ss-text-faint);
+    font-weight: 600;
+  }
+
+  .ss-input {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: var(--sl-text-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--ss-rule);
+    border-radius: 6px;
+    color: var(--ss-text);
+    padding: 6px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    box-sizing: border-box;
+  }
+
+  .ss-input:focus {
+    border-color: var(--ss-accent);
+    box-shadow: 0 0 0 2px var(--ss-accent-low);
+  }
+
+  .ss-input::placeholder {
+    color: var(--ss-text-ghost);
+    opacity: 0.6;
+  }
+
+  .ss-input--computed {
+    background: rgba(74, 222, 128, 0.04);
+    border-style: dashed;
+    color: var(--ss-green);
+    cursor: default;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ss-input--computed:focus {
+    border-color: var(--ss-green);
+    box-shadow: none;
+  }
+
+  /* ===== Custom Dropdown ===== */
+  .ss-dropdown {
+    position: relative;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: var(--sl-text-sm);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--ss-rule);
+    border-radius: 6px;
+    color: var(--ss-text);
+    padding: 6px 32px 6px 10px;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+
+  .ss-dropdown:focus,
+  .ss-dropdown[aria-expanded="true"] {
+    border-color: var(--ss-accent);
+    box-shadow: 0 0 0 2px var(--ss-accent-low);
+  }
+
+  .ss-dropdown-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ss-dropdown-arrow {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    color: var(--ss-text-ghost);
+    pointer-events: none;
+    transition: transform 200ms ease;
+  }
+
+  .ss-dropdown[aria-expanded="true"] .ss-dropdown-arrow {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .ss-dropdown-menu {
+    display: none;
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: calc(100% + 4px);
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--ss-rule);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .ss-dropdown[aria-expanded="true"] .ss-dropdown-menu {
+    display: block;
+  }
+
+  .ss-dropdown-option {
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--ss-text);
+    transition: background 120ms ease;
+    white-space: nowrap;
+  }
+
+  .ss-dropdown-option:hover {
+    background: var(--ss-accent-low);
+  }
+
+  .ss-dropdown-option--active {
+    color: var(--ss-accent);
+    font-weight: 600;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 560px) {
+    .ss-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .ss-field {
+      border-right: none;
+    }
+  }
+
+  @media print {
+    .ss-reset { display: none; }
+  }
+</style>
+
+<script>
+
+  function initShellSession() {
+    document.querySelectorAll<HTMLElement>('.ss:not([data-init])').forEach((root) => {
+      root.setAttribute('data-init', '');
+
+      interface VarDef {
+        name: string;
+        placeholder?: string;
+        default?: string;
+        template?: string;
+        type?: 'text' | 'select';
+        options?: { label: string; value: string }[];
+      }
+
+      const varDefs: VarDef[] = JSON.parse(root.dataset.ssVars || '[]');
+      const storageKey = root.dataset.ssKey || window.location.pathname;
+
+      /* ── Custom dropdown setup ── */
+      root.querySelectorAll<HTMLElement>('.ss-dropdown').forEach((dd) => {
+        const valueEl = dd.querySelector<HTMLElement>('.ss-dropdown-value')!;
+        const optionEls = dd.querySelectorAll<HTMLElement>('.ss-dropdown-option');
+
+        dd.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const option = target.closest<HTMLElement>('.ss-dropdown-option');
+          if (option) {
+            const val = option.dataset.value || '';
+            valueEl.textContent = val;
+            // Update active state
+            optionEls.forEach((o) => {
+              o.classList.toggle('ss-dropdown-option--active', o === option);
+              o.setAttribute('aria-selected', o === option ? 'true' : 'false');
+            });
+            dd.setAttribute('aria-expanded', 'false');
+            // Fire custom event for our update logic
+            dd.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            // Toggle menu
+            const open = dd.getAttribute('aria-expanded') === 'true';
+            dd.setAttribute('aria-expanded', open ? 'false' : 'true');
+          }
+        });
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+          if (!dd.contains(e.target as Node)) {
+            dd.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Keyboard: Escape closes, Enter/Space toggles
+        dd.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') dd.setAttribute('aria-expanded', 'false');
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const open = dd.getAttribute('aria-expanded') === 'true';
+            dd.setAttribute('aria-expanded', open ? 'false' : 'true');
+          }
+        });
+      });
+
+      // Unified way to get/set values for both inputs and custom dropdowns
+      function getControlValue(el: HTMLElement): string {
+        if (el.classList.contains('ss-dropdown')) {
+          return el.querySelector<HTMLElement>('.ss-dropdown-value')?.textContent || '';
+        }
+        return (el as HTMLInputElement).value;
+      }
+
+      function setControlValue(el: HTMLElement, val: string) {
+        if (el.classList.contains('ss-dropdown')) {
+          const valueEl = el.querySelector<HTMLElement>('.ss-dropdown-value');
+          if (valueEl) valueEl.textContent = val;
+          // Update active option
+          el.querySelectorAll<HTMLElement>('.ss-dropdown-option').forEach((o) => {
+            const isActive = o.dataset.value === val;
+            o.classList.toggle('ss-dropdown-option--active', isActive);
+            o.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          });
+        } else {
+          (el as HTMLInputElement).value = val;
+        }
+      }
+
+      // Collect all controls (inputs and custom dropdowns)
+      const controls = root.querySelectorAll<HTMLElement>('[data-ss-input]');
+      const resetBtn = root.querySelector<HTMLButtonElement>('.ss-reset');
+
+      /* ── Original code block data ── */
+      interface BlockData {
+        codeEl: HTMLElement;
+        copyBtn: HTMLButtonElement | null;
+        originalDataCode: string;
+      }
+
+      const blocks: BlockData[] = [];
+
+      // Store original text nodes per .ec-line
+      const lineOriginals = new Map<HTMLElement, { node: Text; original: string }[]>();
+
+      function findShellBlocks() {
+        const scope = root.closest('main') || document.body;
+        const allBlocks = scope.querySelectorAll<HTMLElement>('.expressive-code');
+
+        allBlocks.forEach((ec) => {
+          const pre = ec.querySelector('pre');
+          if (!pre) return;
+
+          const codeEl = pre.querySelector('code');
+          if (!codeEl) return;
+
+          const copyBtn = ec.querySelector<HTMLButtonElement>('.copy button[data-code]');
+          const fullText = codeEl.textContent || '';
+          const dataCode = copyBtn?.dataset.code || '';
+
+          // Check if any of our vars appear
+          const combined = fullText + '\n' + dataCode;
+          const hasVars = varDefs.some((v) =>
+            combined.includes(`$${v.name}`) || combined.includes(`\${${v.name}}`)
+          );
+
+          if (!hasVars) return;
+
+          blocks.push({ codeEl, copyBtn, originalDataCode: dataCode });
+
+          // Walk each .ec-line and snapshot every Text node
+          const lineEls = codeEl.querySelectorAll<HTMLElement>('.ec-line');
+          lineEls.forEach((line) => {
+            const textNodes: { node: Text; original: string }[] = [];
+            const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
+            let n: Text | null;
+            while ((n = walker.nextNode() as Text | null)) {
+              textNodes.push({ node: n, original: n.nodeValue || '' });
+            }
+            lineOriginals.set(line, textNodes);
+          });
+        });
+      }
+
+      /* ── localStorage persistence ── */
+      function loadSaved(): Record<string, string> {
+        try {
+          const raw = localStorage.getItem(`ss:${storageKey}`);
+          return raw ? JSON.parse(raw) : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function saveCurrent() {
+        const vals: Record<string, string> = {};
+        controls.forEach((el) => {
+          const name = (el as HTMLElement).dataset.ssInput!;
+          const def = varDefs.find((v) => v.name === name);
+          const val = getControlValue(el);
+          if (!def?.template && val) {
+            vals[name] = val;
+          }
+        });
+        try {
+          localStorage.setItem(`ss:${storageKey}`, JSON.stringify(vals));
+        } catch { /* quota exceeded or private browsing */ }
+      }
+
+      /* ── Template resolution ── */
+      function resolveTemplate(template: string, values: Record<string, string>): string {
+        return template.replace(/\$\{(\w+)\}/g, (_, name) => values[name] || '');
+      }
+
+      /* ── Gather current values ── */
+      function gatherValues(): Record<string, string> {
+        const vals: Record<string, string> = {};
+        // First pass: non-template values
+        controls.forEach((el) => {
+          const name = (el as HTMLElement).dataset.ssInput!;
+          const def = varDefs.find((v) => v.name === name);
+          if (!def?.template) {
+            vals[name] = getControlValue(el);
+          }
+        });
+        // Second pass: resolve templates
+        controls.forEach((el) => {
+          const name = (el as HTMLElement).dataset.ssInput!;
+          const def = varDefs.find((v) => v.name === name);
+          if (def?.template) {
+            vals[name] = resolveTemplate(def.template, vals);
+            setControlValue(el, vals[name]);
+          }
+        });
+        return vals;
+      }
+
+      /* ── Replace variables in plain text ── */
+      function replaceVars(text: string, values: Record<string, string>): string {
+        let result = text;
+        for (const [name, value] of Object.entries(values)) {
+          if (!value) continue;
+          result = result.replace(new RegExp(`\\$\\{${name}\\}`, 'g'), value);
+          result = result.replace(new RegExp(`\\$${name}(?=[^A-Za-z0-9_]|$)`, 'g'), value);
+        }
+        return result;
+      }
+
+      /* ── Update code blocks (simple text-node replacement) ── */
+      function updateBlocks() {
+        const values = gatherValues();
+        const hasAnyValue = Object.values(values).some((v) => v.length > 0);
+
+        blocks.forEach(({ codeEl, copyBtn, originalDataCode }) => {
+          const lineEls = codeEl.querySelectorAll<HTMLElement>('.ec-line');
+
+          lineEls.forEach((line) => {
+            const originals = lineOriginals.get(line);
+            if (!originals) return;
+
+            originals.forEach(({ node, original }) => {
+              if (!hasAnyValue) {
+                // Restore original text
+                node.nodeValue = original;
+              } else {
+                // Replace vars in this text node's original value
+                node.nodeValue = replaceVars(original, values);
+              }
+            });
+          });
+
+          // Update copy button data-code
+          if (copyBtn) {
+            if (hasAnyValue) {
+              const resolvedCode = replaceVars(
+                originalDataCode.replace(/\u007f/g, '\n'),
+                values
+              ).replace(/\n/g, '\u007f');
+              copyBtn.dataset.code = resolvedCode;
+            } else {
+              copyBtn.dataset.code = originalDataCode;
+            }
+          }
+        });
+      }
+
+      /* ── Initialize ── */
+      requestAnimationFrame(() => {
+        findShellBlocks();
+
+        // Load saved values
+        const saved = loadSaved();
+        controls.forEach((el) => {
+          const name = (el as HTMLElement).dataset.ssInput!;
+          const def = varDefs.find((v) => v.name === name);
+          if (!def?.template && saved[name]) {
+            setControlValue(el, saved[name]);
+          }
+        });
+
+        // Initial update
+        updateBlocks();
+      });
+
+      // Bind input/change events
+      controls.forEach((el) => {
+        const def = varDefs.find((v) => v.name === (el as HTMLElement).dataset.ssInput);
+        if (def?.template) return; // computed fields don't get input events
+
+        const eventName = el.classList.contains('ss-dropdown') ? 'change' : 'input';
+        el.addEventListener(eventName, () => {
+          updateBlocks();
+          saveCurrent();
+        });
+      });
+
+      // Reset button
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          controls.forEach((el) => {
+            const name = (el as HTMLElement).dataset.ssInput!;
+            const def = varDefs.find((v) => v.name === name);
+            if (def?.template) {
+              setControlValue(el, '');
+            } else {
+              setControlValue(el, def?.default || '');
+            }
+          });
+          updateBlocks();
+          try {
+            localStorage.removeItem(`ss:${storageKey}`);
+          } catch { /* ignore */ }
+        });
+      }
+    });
+  }
+
+  initShellSession();
+  document.addEventListener('astro:page-load', initShellSession);
+
+</script>

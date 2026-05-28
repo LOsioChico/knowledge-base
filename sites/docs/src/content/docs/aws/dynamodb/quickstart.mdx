@@ -8,6 +8,7 @@ related:
 > First-table walkthrough: create with on-demand capacity, write a JSON item, query by partition key, and clean up. No console clicks.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -16,17 +17,26 @@ Before diving in, make sure you understand:
 
 ## Before you start
 
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "ACCOUNT_ID", placeholder: "123456789012" },
+    { name: "TABLE_NAME", template: "quickstart-dynamo-${ACCOUNT_ID}" },
+  ]}
+/>
+
 - AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:
 
   ```bash
-  aws --profile <name> sts get-caller-identity
+  aws --profile $AWS_PROFILE sts get-caller-identity
   ```
 
 Shared variables for every command below:
 
 ```bash
-export AWS_PROFILE=<your-profile>
-export REGION=us-east-1
+export AWS_PROFILE=$AWS_PROFILE
+export REGION=$REGION
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export TABLE_NAME=quickstart-dynamo-${ACCOUNT_ID}
 ```

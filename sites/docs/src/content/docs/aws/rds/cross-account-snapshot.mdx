@@ -14,6 +14,7 @@ related:
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -34,13 +35,21 @@ Re-encrypt under a **customer-managed key (CMK)** in `account-a`, grant `account
 
 ## Before you start
 
+<ShellSession
+  vars={[
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "ACCOUNT_A_ID", placeholder: "111122223333" },
+    { name: "ACCOUNT_B_ID", placeholder: "444455556666" },
+  ]}
+/>
+
 - Two named CLI profiles ([[aws/cli/profiles-and-credentials|profiles and credentials]]): `account-a` (source) and `account-b` (target). Convention matches [[aws/account-migrations|account migrations]].
 - Replace placeholders in every command: `REGION`, `ACCOUNT_A_ID`, `ACCOUNT_B_ID`, `source-db`, `target-db`, subnet group, security group.
 
 ```bash
-export REGION=us-east-1
-export ACCOUNT_A_ID=111122223333
-export ACCOUNT_B_ID=444455556666
+export REGION=$REGION
+export ACCOUNT_A_ID=$ACCOUNT_A_ID
+export ACCOUNT_B_ID=$ACCOUNT_B_ID
 ```
 
 ## Recipe overview

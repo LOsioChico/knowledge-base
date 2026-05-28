@@ -15,6 +15,7 @@ related:
 > First-bucket walkthrough: create with safe defaults, upload, share via [[aws/s3/presigned-urls|presigned URL]], clean up. No console clicks.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -26,10 +27,19 @@ This note is part of the **[[aws|AWS Serverless Track]]**. Before starting your 
 
 ## Before you start
 
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "ACCOUNT_ID", placeholder: "111122223333" },
+    { name: "BUCKET", template: "quickstart-${ACCOUNT_ID}-${REGION}" },
+  ]}
+/>
+
 - AWS CLI profile that resolves to a writable account: [[aws/cli/profiles-and-credentials|profiles and credentials]]. Verify `Account` in the JSON matches the account you intend to bill:
 
   ```bash
-  aws --profile <name> sts get-caller-identity
+  aws --profile $AWS_PROFILE sts get-caller-identity
   ```
 
 - Region pinned forever at bucket creation; pick the Region closest to readers.
@@ -37,8 +47,8 @@ This note is part of the **[[aws|AWS Serverless Track]]**. Before starting your 
 Shared variables for every command below:
 
 ```bash
-export AWS_PROFILE=<your-profile>
-export REGION=us-east-1
+export AWS_PROFILE=$AWS_PROFILE
+export REGION=$REGION
 export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 export BUCKET=quickstart-${ACCOUNT_ID}-${REGION}
 ```

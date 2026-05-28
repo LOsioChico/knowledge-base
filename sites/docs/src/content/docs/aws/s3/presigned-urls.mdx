@@ -11,12 +11,38 @@ related:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/s3/quickstart|S3 quickstart]]: since generating secure presigned links assumes existing S3 object paths.
 - [[aws/iam|IAM Policies & Resource Permissions]]: since signatures inherit the signer's IAM capabilities, and bucket policies can block presigned operations.
 </Aside>
+
+<FlowSimulator
+  title="Presigned URL flows"
+  nodes={[
+    { id: "Client", label: "Client" },
+    { id: "Server", label: "Server" },
+    { id: "S3", label: "S3" },
+  ]}
+  flows={[
+    { label: "Download (GET)", steps: [
+      { from: "Client", to: "Server", message: "Request download link" },
+      { from: "Server", to: "Server", message: "Sign GetObject (local crypto, no S3 call)" },
+      { from: "Server", to: "Client", message: "Return presigned URL" },
+      { from: "Client", to: "S3", message: "GET with signed query params" },
+      { from: "S3", to: "Client", message: "Object data (200 OK)" },
+    ]},
+    { label: "Direct upload (PUT)", steps: [
+      { from: "Client", to: "Server", message: "Request upload URL" },
+      { from: "Server", to: "Server", message: "Sign PutObject (local crypto)" },
+      { from: "Server", to: "Client", message: "Return presigned PUT URL" },
+      { from: "Client", to: "S3", message: "PUT file + signed headers" },
+      { from: "S3", to: "Client", message: "200 OK (empty body)" },
+    ]},
+  ]}
+/>
 
 ## When to reach for one
 

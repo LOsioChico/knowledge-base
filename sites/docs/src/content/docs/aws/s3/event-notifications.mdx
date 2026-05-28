@@ -9,6 +9,7 @@ related:
 > S3 event notifications fire to [[aws/sns|SNS]], [[aws/sqs|SQS]], [[aws/lambda|Lambda]], or [[aws/eventbridge|EventBridge]] when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
 
 import { Aside } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -30,6 +31,29 @@ Ten activity types including Intelligent-Tiering auto-tier ([source](https://doc
 ## Destinations
 
 One destination per configuration; must be **same Region** as bucket. Destination needs policy allowing `s3.amazonaws.com`.
+
+<FlowSimulator
+  title="S3 event notification routing"
+  nodes={[
+    { id: "bucket", label: "S3 Bucket", col: 0 },
+    { id: "sqs", label: "SQS Queue", col: 1 },
+    { id: "lambda", label: "Lambda", col: 1 },
+    { id: "worker", label: "Worker", col: 2 },
+  ]}
+  flows={[
+    { label: "Direct notification (SQS)", steps: [
+      { from: "bucket", to: "bucket", message: "PutObject incoming/*.jpg" },
+      { from: "bucket", to: "sqs", message: "s3:ObjectCreated:Put", description: "S3 matches the prefix/suffix filter and pushes the event to the configured SQS queue. Delivery is at-least-once." },
+      { from: "sqs", to: "worker", message: "Pull & process", description: "Worker pulls the event, extracts the bucket/key from the S3 event record, and processes the object. Must be idempotent." },
+    ]},
+    { label: "Recursion trap (Lambda)", steps: [
+      { from: "bucket", to: "lambda", message: "s3:ObjectCreated:*", description: "Notification fires on any object creation. No prefix filter means the trigger matches everything." },
+      { from: "lambda", to: "bucket", message: "PutObject output.json", description: "Lambda writes a result back to the SAME bucket. This fires another s3:ObjectCreated event." },
+      { from: "bucket", to: "lambda", message: "s3:ObjectCreated:* ♻️", description: "The new object triggers Lambda again. Infinite loop — billed by the millisecond. Fix: use disjoint prefixes (in/ → out/) or separate buckets." },
+    ]},
+  ]}
+  speed={1400}
+/>
 
 ## Minimum config (SQS, prefix filter)
 

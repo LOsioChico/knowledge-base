@@ -15,6 +15,7 @@ related:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into PostgreSQL setup, make sure you understand:
@@ -28,6 +29,17 @@ Before diving into PostgreSQL setup, make sure you understand:
 <PackageManagers pkg="@types/pg" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
 `pg` is the [Postgres driver](https://node-postgres.com/) TypeORM loads when `type: "postgres"`.
+
+<PipelineStrip
+  title="Setup progression"
+  stages={[
+    { label: "Smoke test", color: "#f59e0b", tip: "forRoot + synchronize:true (dev only)" },
+    { label: "forRootAsync", color: "#60a5fa", tip: "ConfigService + env validation" },
+    { label: "Entities + forFeature", color: "#a78bfa", tip: "One forFeature per module" },
+    { label: "Repository CRUD", color: "#34d399", tip: "InjectRepository + service layer" },
+    { label: "Migrations", color: "#ef4444", tip: "Standalone DataSource + CLI" },
+  ]}
+/>
 
 <Steps>
 

@@ -14,6 +14,7 @@ related:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into rate limiting, make sure you understand:
@@ -91,6 +92,17 @@ Before diving into rate limiting, make sure you understand:
    ```
 
 </Steps>
+
+<PipelineStrip
+  title="ThrottlerGuard evaluation pipeline"
+  stages={[
+    { label: "Extract tracker", description: "Identify the client: req.ip by default, or user ID via custom getTracker() override." },
+    { label: "Lookup counter", description: "Read the request count for this tracker from the storage backend (in-memory Map or Redis)." },
+    { label: "Check TTL window", description: "Is the counter still within the sliding window? If expired, reset to zero." },
+    { label: "Evaluate limit", description: "Compare counter + 1 against the configured limit. Per-route @Throttle overrides apply here." },
+    { label: "Accept or reject", description: "Under limit → increment counter, continue to handler. Over limit → throw 429 ThrottlerException." },
+  ]}
+/>
 
 ---
 

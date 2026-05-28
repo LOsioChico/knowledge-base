@@ -413,7 +413,8 @@ function segId(seg: { lane: string; start: number }) {
 
 <script>
   function initFT() {
-    document.querySelectorAll<HTMLDivElement>('.ft').forEach(root => {
+    document.querySelectorAll<HTMLDivElement>('.ft:not([data-init])').forEach(root => {
+      root.setAttribute('data-init', '');
       const svg = root.querySelector<SVGSVGElement>('.ft-svg');
       if (!svg) return;
 

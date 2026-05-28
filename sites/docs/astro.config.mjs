@@ -207,6 +207,7 @@ const awsSidebar = [
     collapsed: true,
     items: [
       { label: "Lambda overview", slug: "aws/lambda" },
+      { label: "Quickstart", slug: "aws/lambda/quickstart" },
       { label: "Lambda CLI", slug: "aws/lambda/cli" },
     ],
   },
@@ -236,7 +237,9 @@ const awsSidebar = [
     collapsed: true,
     items: [
       { label: "DynamoDB", slug: "aws/dynamodb" },
+      { label: "DynamoDB Quickstart", slug: "aws/dynamodb/quickstart" },
       { label: "SQS", slug: "aws/sqs" },
+      { label: "SQS Quickstart", slug: "aws/sqs/quickstart" },
       { label: "SNS", slug: "aws/sns" },
       { label: "VPC", slug: "aws/vpc" },
       { label: "ECS and Fargate", slug: "aws/ecs" },
@@ -260,7 +263,16 @@ const systemDesignSidebar = [
   { label: "Overview", slug: "system-design" },
   { label: "Estimation Primitives", slug: "system-design/back-of-the-envelope-estimation" },
   { label: "Distributed Caching", slug: "system-design/distributed-caching" },
-  { label: "Asynchronous Message Queues", slug: "system-design/message-queues" },
+  {
+    label: "Messaging",
+    collapsed: true,
+    items: [
+      { label: "Asynchronous Message Queues", slug: "system-design/message-queues" },
+      { label: "Messaging Patterns", slug: "system-design/messaging-patterns" },
+      { label: "Delivery Semantics", slug: "system-design/delivery-semantics" },
+      { label: "Dead Letter Queues", slug: "system-design/dead-letter-queues" },
+    ],
+  },
   { label: "Rate Limiting & Traffic Shaping", slug: "system-design/rate-limiting" },
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },

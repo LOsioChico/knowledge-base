@@ -29,6 +29,7 @@ import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 import StackDiagram from '/src/components/interactive/StackDiagram.astro';
+import StateMachineDiagram from '/src/components/interactive/StateMachineDiagram.astro';
 ```
 
 ## Components
@@ -707,11 +708,18 @@ Animated message/data flow between nodes. Dots move along edges between labeled 
 interface Node {
   id: string;
   label: string;
+  col?: number;       // Column index for layout grouping (nodes in same col stack vertically)
 }
 
 interface Flow {
   label: string;
-  steps: { from: string; to: string; message: string }[];
+  steps: {
+    from: string;
+    to: string;
+    message: string;
+    description?: string;  // Detailed explanation shown below the step
+    group?: number;        // Steps with the same group highlight together (parallel fan-out)
+  }[];
 }
 ```
 
@@ -774,54 +782,125 @@ interface Layer {
 
 ---
 
-### StateMachineDiagram
+### StateExplorer
 
-Interactive state machine diagram. States rendered as clickable pill-shaped SVG nodes connected by curved arrows. Clicking a state highlights it, shows its TypeScript type shape in an info panel, and dims other states. Optional demo mode auto-animates through a transition sequence.
+Interactive "boolean trap" explorer that teaches why independent boolean flags create impossible states, and how tagged unions solve the problem. Users toggle flags and discover contradictions; below, they explore the clean alternative.
 
-**When to use:** Tagged unions, finite state machines, protocol states, lifecycle models (4-8 states with explicit transitions).
+**When to use:** Tagged unions vs boolean state, impossible state problems, state modeling comparisons, any "before/after" where the before uses multiple booleans and the after uses a discriminated union.
 
-**When NOT to use:** Linear pipelines (→ PipelineStrip). Temporal message flows (→ FlowSimulator). Decision trees (→ DecisionGuide).
+**When NOT to use:** State machine transitions between states (→ mermaid). Simple true/false concepts (plain text is fine). Purely sequential flows (→ PipelineStrip).
 
 #### Props
 
 | Prop | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
-| `states` | `State[]` | yes | — | State nodes with labels and optional type shapes |
-| `transitions` | `Transition[]` | yes | — | Directed edges between states |
-| `title` | `string` | no | — | Optional header title |
+| `title` | `string` | no | — | Optional heading |
+| `flags` | `Flag[]` | yes | — | Boolean flags the user can toggle |
+| `states` | `TaggedState[]` | yes | — | Tagged-union states (the clean solution) |
 
 ```typescript
-interface State {
-  id: string;
-  label: string;
-  description?: string;  // Shown in info panel when selected
-  typeShape?: string;     // TypeScript type, rendered as code
-  color?: string;         // Accent color (defaults: waiting=#94a3b8, loading=#60a5fa, success=#4ade80, failure=#f87171)
-  initial?: boolean;      // Starting state (gets dot+arrow indicator)
+interface Flag {
+  id: string;      // Used internally for combination logic
+  label: string;   // Displayed as code, e.g. "isLoading"
 }
 
-interface Transition {
-  from: string;
-  to: string;
-  label?: string;   // Arrow label (e.g., "fetch()", "resolve")
+interface TaggedState {
+  label: string;        // State name, e.g. "Waiting"
+  description: string;  // Shown in info panel when clicked
+  typeShape: string;    // TypeScript type shape, rendered as code
+  color: string;        // Accent color for the state pill
 }
 ```
 
 #### Features
 
-- Click to select/deselect with smooth opacity transitions
-- Info panel shows description + TypeScript type shape
-- Outbound transitions from selected state are highlighted
-- Bidirectional arrows use curve offsets to avoid overlap
-- Forking layouts (e.g., Loading → Success/Failure) auto-arrange vertically
-- Auto-selects initial state on load to invite exploration
-- Initial state indicator (dot + arrow)
+- Toggle switches for each boolean flag — the user IS the interaction
+- Result card updates instantly: ✅ valid or ⚠️ impossible with contextual message
+- Shake animation on impossible state discovery
+- Discovery tracker with progress bar ("Found 2 of 4 impossible states")
+- Celebration when all impossible states found
+- Below: clickable tagged-union state pills showing type shapes
+- Info panel with accent bar, description, and TypeScript type
+- "Zero contradictions" verdict badge for the solution
 
 #### Target notes
 
-| Note | States |
-|------|--------|
-| `effect-ts/async-result` | Waiting → Loading → Success / Failure |
+| Note | Flags | States |
+|------|-------|--------|
+| `effect-ts/async-result` | isLoading, isError, hasData | Waiting, Loading, Success, Failure |
+
+---
+
+### StateMachineDiagram
+
+Interactive SVG state machine diagram. States are rendered as colored pills; transitions are curved arrows with optional labels. Click any state to inspect its type shape and outgoing transitions in an info panel. SVG is fully pre-rendered at build time — JavaScript handles click interactions only.
+
+**When to use:** Finite state machines, lifecycle states (HTTP request states, connection states, order workflows), any concept where nodes have typed shapes and directed transitions between them.
+
+**When NOT to use:** Simple linear flows (→ PipelineStrip). Boolean flag combinatorics (→ StateExplorer). Message passing between services (→ FlowSimulator).
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `states` | `State[]` | yes | — | State nodes to render |
+| `transitions` | `Transition[]` | yes | — | Directed edges between states |
+| `title` | `string` | no | — | Optional heading above the diagram |
+
+```typescript
+interface State {
+  id: string;            // Unique identifier, used in transitions
+  label: string;         // Display text inside the pill
+  description?: string;  // Shown in the info panel on click
+  typeShape?: string;    // TypeScript type shape, rendered as code in the panel
+  color?: string;        // Accent color; defaults: waiting=#94a3b8, loading=#60a5fa,
+                         // success=#4ade80, failure=#f87171, else=#a78bfa
+  initial?: boolean;     // If true, this state starts the layout chain
+}
+
+interface Transition {
+  from: string;   // Source state id
+  to: string;     // Target state id
+  label?: string; // Text rendered on the arrow (e.g., event/trigger name)
+}
+```
+
+#### Features
+
+- **Build-time SVG**: Layout computed server-side; zero client-side SVG generation
+- **Auto-layout**: Main chain placed horizontally; fork targets stack below the fork node
+- **Bidirectional arrows**: Curved with offset when two states connect both ways
+- **Click to explore**: Info panel shows description, type shape, and outgoing transitions
+- **Glow ring**: Active state gets a pulsing glow in its accent color
+- **Keyboard navigation**: States are focusable (`tabindex="0"`, `role="button"`)
+- **Theme-aware**: Uses `--sl-color-*` variables for backgrounds and text
+
+#### Example
+
+```mdx
+import StateMachineDiagram from '/src/components/interactive/StateMachineDiagram.astro';
+
+<StateMachineDiagram
+  title="HTTP request lifecycle"
+  states={[
+    { id: "idle", label: "Idle", initial: true, description: "No request in flight.", typeShape: "{ tag: 'idle' }" },
+    { id: "loading", label: "Loading", description: "Request pending.", typeShape: "{ tag: 'loading'; startedAt: number }" },
+    { id: "success", label: "Success", description: "Data received.", typeShape: "{ tag: 'success'; data: T }" },
+    { id: "failure", label: "Failure", description: "Request failed.", typeShape: "{ tag: 'failure'; error: Error }" },
+  ]}
+  transitions={[
+    { from: "idle", to: "loading", label: "fetch()" },
+    { from: "loading", to: "success", label: "200 OK" },
+    { from: "loading", to: "failure", label: "Error" },
+    { from: "failure", to: "loading", label: "retry()" },
+    { from: "success", to: "loading", label: "refresh()" },
+  ]}
+/>
+```
+
+#### Target notes
+
+No current usages. Good candidates: Effect-TS `AsyncResult` lifecycle, NestJS module lifecycle hooks.
 
 ---
 

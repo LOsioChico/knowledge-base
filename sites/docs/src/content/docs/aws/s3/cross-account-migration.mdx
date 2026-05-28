@@ -11,6 +11,7 @@ related:
 > Move a bucket between accounts by recreating config in the target, granting cross-account read on the source, and using `aws s3 sync` for server-side copies.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -23,12 +24,20 @@ Before diving in, make sure you understand:
 
 ## Recipe
 
+<ShellSession
+  vars={[
+    { name: "ACCOUNT_B_ID", placeholder: "444455556666" },
+    { name: "SRC_BUCKET", placeholder: "my-source-bucket" },
+    { name: "DST_BUCKET", placeholder: "my-dest-bucket" },
+  ]}
+/>
+
 Profiles: `account-a` (source), `account-b` (target). Set once (same pattern as [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]] exports):
 
 ```bash
-export ACCOUNT_B_ID=444455556666
-export SRC_BUCKET=my-source-bucket
-export DST_BUCKET=my-dest-bucket
+export ACCOUNT_B_ID=$ACCOUNT_B_ID
+export SRC_BUCKET=$SRC_BUCKET
+export DST_BUCKET=$DST_BUCKET
 ```
 
 Use `"$SRC_BUCKET"` / `"$DST_BUCKET"` in commands and `${ACCOUNT_B_ID}` inside heredocs below.

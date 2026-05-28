@@ -2,8 +2,13 @@
 /**
  * PipelineStrip.astro
  * ───────────────────
- * Vertical pipeline: numbered cards connected by arrows.
- * Supports multiple zones (grouped panels) with custom colors.
+ * Vertical pipeline with left-bordered stage cards connected by
+ * flow arrows. Matches the ArchitectureExplorer / DecisionGuide
+ * visual language: bg-nav panel, hairline-shade borders, accent
+ * left-border cards on bg-sidebar.
+ *
+ * All content visible — no hover-to-reveal.
+ * Supports zones (grouped panels) with custom colors.
  * Pure CSS, no JS.
  */
 
@@ -20,33 +25,25 @@ interface Zone {
   label: string;
   tip?: string;
   href?: string;
-  /** CSS color for the zone border/label. Default: red (#f87171) */
   color?: string;
-  /** Emoji icon before the label. Default: ⚡ */
   icon?: string;
 }
 
 interface Props {
   stages: Stage[];
   title?: string;
-  /** Single zone (backward compat) */
   zone?: Zone;
-  /** Multiple zones — takes precedence over zone */
   zones?: Zone[];
 }
 
 const { stages, title, zone, zones: zonesProp } = Astro.props;
-
-// Normalize: zones array always wins, else wrap single zone
 const zones: Zone[] = zonesProp ?? (zone ? [zone] : []);
-
-// Build zone lookup: stage index → Zone object
 const zoneMap = new Map<number, Zone>();
 for (const z of zones) {
   for (let i = z.start; i <= z.end; i++) zoneMap.set(i, z);
 }
 
-// Build segments: ordered list of zone-panels and standalone-card groups
+// Build segments for zone grouping
 interface Segment {
   kind: 'zone' | 'standalone';
   zone?: Zone;
@@ -59,7 +56,6 @@ let current: Segment | null = null;
 stages.forEach((stage, idx) => {
   const z = zoneMap.get(idx);
   if (z) {
-    // If continuing the same zone, append
     if (current?.kind === 'zone' && current.zone === z) {
       current.items.push({ stage, idx });
     } else {
@@ -76,62 +72,66 @@ stages.forEach((stage, idx) => {
   }
 });
 
-// Default zone color
 const defaultZoneColor = '#f87171';
+const circled = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 ---
 
 <div class="ps not-content">
-  {title && <div class="ps-header">{title}</div>}
+  {title && (
+    <div class="ps-header">
+      <span class="ps-title">{title}</span>
+    </div>
+  )}
 
-  <div class="ps-body">
+  <div class="ps-stack">
     {segments.map((seg, si) => (
-      <div class="ps-segment">
-        {/* Arrow before this segment (except first) */}
-        {si > 0 && <div class="ps-arrow"><span>↓</span></div>}
+      <>
+        {/* Inter-segment flow arrow */}
+        {si > 0 && <div class="ps-flow-arrow">↓</div>}
 
         {seg.kind === 'zone' && seg.zone ? (
           <div class="ps-zone" style={`--zc: ${seg.zone.color ?? defaultZoneColor}`}>
             <div class="ps-zone-header">
-              <div class="ps-zone-title-row">
-                <span class="ps-zone-icon">{seg.zone.icon ?? '⚡'}</span>
-                {seg.zone.href ? (
-                  <a class="ps-zone-label" href={seg.zone.href}>{seg.zone.label}</a>
-                ) : (
-                  <span class="ps-zone-label">{seg.zone.label}</span>
-                )}
-              </div>
+              <span class="ps-zone-icon">{seg.zone.icon ?? '⚡'}</span>
+              {seg.zone.href ? (
+                <a class="ps-zone-label" href={seg.zone.href}>{seg.zone.label}</a>
+              ) : (
+                <span class="ps-zone-label">{seg.zone.label}</span>
+              )}
               {seg.zone.tip && <span class="ps-zone-tip">{seg.zone.tip}</span>}
             </div>
             {seg.items.map(({ stage, idx }) => (
-              <div class="ps-card" style={stage.color ? `--c: ${stage.color}` : ""}>
-                <span class="ps-num">{idx + 1}</span>
-                <div class="ps-info">
+              <div class="ps-card" style={stage.color ? `--ps-c: ${stage.color}` : ''}>
+                <div class="ps-card-bar" />
+                <div class="ps-card-left">
+                  <span class="ps-card-num">{circled[idx] || idx + 1}</span>
                   {stage.href ? (
-                    <a class="ps-name" href={stage.href}>{stage.label}</a>
+                    <a class="ps-card-name ps-card-link" href={stage.href}>{stage.label}</a>
                   ) : (
-                    <span class="ps-name">{stage.label}</span>
+                    <span class="ps-card-name">{stage.label}</span>
                   )}
-                  {stage.tip && <span class="ps-desc">{stage.tip}</span>}
                 </div>
+                {stage.tip && <span class="ps-card-desc">{stage.tip}</span>}
               </div>
             ))}
           </div>
         ) : (
           seg.items.map(({ stage, idx }) => (
-            <div class="ps-card" style={stage.color ? `--c: ${stage.color}` : ""}>
-              <span class="ps-num">{idx + 1}</span>
-              <div class="ps-info">
+            <div class="ps-card" style={stage.color ? `--ps-c: ${stage.color}` : ''}>
+              <div class="ps-card-bar" />
+              <div class="ps-card-left">
+                <span class="ps-card-num">{circled[idx] || idx + 1}</span>
                 {stage.href ? (
-                  <a class="ps-name" href={stage.href}>{stage.label}</a>
+                  <a class="ps-card-name ps-card-link" href={stage.href}>{stage.label}</a>
                 ) : (
-                  <span class="ps-name">{stage.label}</span>
+                  <span class="ps-card-name">{stage.label}</span>
                 )}
-                {stage.tip && <span class="ps-desc">{stage.tip}</span>}
               </div>
+              {stage.tip && <span class="ps-card-desc">{stage.tip}</span>}
             </div>
           ))
         )}
-      </div>
+      </>
     ))}
   </div>
 </div>
@@ -139,12 +139,14 @@ const defaultZoneColor = '#f87171';
 <style>
   .ps {
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
-    --ps-rule:   var(--sl-color-hairline-shade);
-    --ps-ghost:  var(--sl-color-gray-4);
-    --ps-faint:  var(--sl-color-gray-3);
-    --ps-panel:  var(--sl-color-bg-nav);
-    --ps-surface: var(--sl-color-bg-sidebar);
-    --ps-accent: var(--sl-color-accent-high);
+    --ps-text:       var(--sl-color-text);
+    --ps-text-faint: var(--sl-color-gray-3);
+    --ps-text-ghost: var(--sl-color-gray-4);
+    --ps-rule:       var(--sl-color-hairline-shade);
+    --ps-accent:     var(--sl-color-accent-high);
+    --ps-panel:      var(--sl-color-bg-nav);
+    --ps-surface:    var(--sl-color-bg-sidebar);
+    --ps-c:          var(--ps-accent);
     margin: 1.5rem 0;
     background: var(--ps-panel);
     border: 1px solid var(--ps-rule);
@@ -152,85 +154,102 @@ const defaultZoneColor = '#f87171';
     overflow: hidden;
   }
 
+  /* ═══ HEADER ═══ */
   .ps-header {
-    font-size: var(--sl-text-xs);
-    font-weight: 600;
-    color: var(--ps-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--ps-rule);
   }
 
-  .ps-body {
-    padding: 14px;
+  .ps-title {
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--ps-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* ═══ CARD STACK ═══ */
+  .ps-stack {
     display: flex;
     flex-direction: column;
     gap: 0;
+    padding: 6px 0;
   }
 
-  .ps-segment {
+  /* ── Card row ── */
+  .ps-card {
+    --ps-c: var(--ps-accent);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 4px;
+    padding: 10px 20px;
+    border-left: 3px solid var(--ps-c);
+    margin: 0 12px;
+    background: var(--ps-surface);
+    border-radius: 0;
+    border-top: 1px solid var(--ps-rule);
+    border-right: 1px solid var(--ps-rule);
+    border-bottom: 1px solid var(--ps-rule);
+    transition: background 160ms var(--ease), box-shadow 160ms var(--ease);
+    position: relative;
   }
 
-  /* ── Card ── */
-  .ps-card {
-    --c: var(--ps-accent);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--ps-rule);
-    border-left: 3px solid var(--c);
-    background: var(--ps-surface);
-    transition: border-left-width 160ms var(--ease), box-shadow 160ms var(--ease), background 160ms var(--ease);
+  .ps-card + .ps-card {
+    margin-top: -1px;
+  }
+
+  .ps-card:first-child {
+    border-radius: 6px 6px 0 0;
+  }
+
+  .ps-card:last-child {
+    border-radius: 0 0 6px 6px;
+  }
+
+  .ps-card:only-child {
+    border-radius: 6px;
   }
 
   .ps-card:hover {
-    border-left-width: 4px;
-    background: color-mix(in srgb, var(--c) 4%, var(--ps-surface));
-    box-shadow: inset 4px 0 12px -4px color-mix(in srgb, var(--c) 15%, transparent);
+    background: color-mix(in srgb, var(--ps-c) 4%, var(--ps-surface));
+    box-shadow: inset 4px 0 12px -4px color-mix(in srgb, var(--ps-c) 15%, transparent);
   }
 
-  /* ── Number badge ── */
-  .ps-num {
+  /* ── Number + label row ── */
+  .ps-card-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--c);
-    background: color-mix(in srgb, var(--c) 12%, transparent);
+    gap: 10px;
+  }
+
+  .ps-card-num {
+    font-size: var(--sl-text-sm);
+    color: var(--ps-c);
+    opacity: 0.6;
     flex-shrink: 0;
+    width: 18px;
+    text-align: center;
   }
 
-  /* ── Info block ── */
-  .ps-info {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .ps-name {
+  .ps-card-name {
     font-size: var(--sl-text-sm);
     font-weight: 600;
-    color: var(--c);
-    text-decoration: none;
-    white-space: nowrap;
-    flex-shrink: 0;
+    color: var(--ps-text);
+    transition: color 160ms var(--ease);
   }
 
-  a.ps-name { cursor: pointer; }
+  .ps-card:hover .ps-card-name {
+    color: var(--ps-c);
+  }
 
-  a.ps-name::after {
+  a.ps-card-link {
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  a.ps-card-link::after {
     content: " →";
     font-size: 1em;
     opacity: 0.5;
@@ -239,88 +258,62 @@ const defaultZoneColor = '#f87171';
     display: inline-block;
   }
 
-  a.ps-name:hover {
+  a.ps-card-link:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
-  a.ps-name:hover::after {
+  a.ps-card-link:hover::after {
     opacity: 1;
     transform: translateX(3px);
   }
 
-  .ps-desc {
+  /* ── Description ── */
+  .ps-card-desc {
     font-size: var(--sl-text-xs);
-    color: var(--ps-ghost);
-    line-height: 1.4;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    color: var(--ps-text-ghost);
+    line-height: 1.5;
+    padding-left: 28px; /* align with label text (18px num + 10px gap) */
   }
 
-  @media (max-width: 560px) {
-    .ps-info { flex-direction: column; gap: 2px; }
-    .ps-desc { white-space: normal; }
+  /* ── Flow arrow between segments ── */
+  .ps-flow-arrow {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ps-text-ghost);
+    opacity: 0.5;
+    padding: 4px 0;
   }
 
-  /* ── Arrow between segments ── */
-  .ps-arrow {
-    display: flex;
-    justify-content: center;
-    padding: 6px 0;
-  }
-
-  .ps-arrow span {
-    font-size: 18px;
-    color: var(--ps-ghost);
-    opacity: 0.6;
-  }
-
-  /* ── Zone group ── */
+  /* ═══ ZONE GROUP ═══ */
   .ps-zone {
     --zc: #f87171;
-    border: 1px dashed color-mix(in srgb, var(--zc) 30%, transparent);
-    border-radius: 10px;
+    margin: 0 12px;
+    border: 1px dashed color-mix(in srgb, var(--zc) 25%, transparent);
+    border-radius: 8px;
     background: color-mix(in srgb, var(--zc) 3%, transparent);
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  /* Inner arrows between consecutive cards inside a zone */
-  .ps-zone .ps-card + .ps-card {
-    position: relative;
-    margin-top: 14px;
-  }
-
-  .ps-zone .ps-card + .ps-card::before {
-    content: "↓";
-    position: absolute;
-    top: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 14px;
-    color: var(--ps-ghost);
-    opacity: 0.45;
-    line-height: 1;
+    padding: 0;
+    overflow: hidden;
   }
 
   .ps-zone .ps-card {
-    border-color: color-mix(in srgb, var(--c) 15%, var(--ps-rule));
+    margin: 0;
+    border-radius: 0;
+    border-right: none;
+    border-left-width: 3px;
+    border-top: 1px solid color-mix(in srgb, var(--ps-c) 12%, var(--ps-rule));
+  }
+
+  .ps-zone .ps-card:first-of-type {
+    border-top: none;
   }
 
   .ps-zone-header {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 4px 10px 4px;
-  }
-
-  .ps-zone-title-row {
-    display: flex;
     align-items: center;
     gap: 5px;
+    padding: 6px 14px;
+    flex-wrap: wrap;
   }
 
   .ps-zone-icon { font-size: 11px; }
@@ -330,34 +323,20 @@ const defaultZoneColor = '#f87171';
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: color-mix(in srgb, var(--zc) 60%, var(--ps-faint));
+    color: color-mix(in srgb, var(--zc) 60%, var(--ps-text-faint));
     text-decoration: none;
   }
 
-  a.ps-zone-label::after {
-    content: " →";
-    font-size: 1em;
-    opacity: 0.5;
-    margin-left: 3px;
-    transition: opacity 160ms var(--ease), transform 160ms var(--ease);
-    display: inline-block;
-  }
-
   a.ps-zone-label:hover {
-    color: color-mix(in srgb, var(--zc) 85%, var(--ps-faint));
     text-decoration: underline;
     text-underline-offset: 2px;
   }
 
-  a.ps-zone-label:hover::after {
-    opacity: 1;
-    transform: translateX(3px);
-  }
-
   .ps-zone-tip {
     font-size: var(--sl-text-xs);
-    color: var(--ps-faint);
+    color: color-mix(in srgb, var(--zc) 40%, var(--ps-text-ghost));
     line-height: 1.4;
+    flex-basis: 100%;
     padding-left: 16px;
   }
 
@@ -368,7 +347,7 @@ const defaultZoneColor = '#f87171';
 
   /* ═══ PRINT ═══ */
   @media print {
-    .ps-card { border-left-width: 3px !important; box-shadow: none !important; }
-    .ps-zone { border-color: #ddd; background: transparent; }
+    .ps-card { box-shadow: none !important; }
+    .ps-zone { border-style: solid; }
   }
 </style>

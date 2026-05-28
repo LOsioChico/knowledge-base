@@ -15,6 +15,7 @@ related:
 
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into handling database errors, make sure you understand:
@@ -67,7 +68,17 @@ export function isUniqueViolation(
 
 Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes, not `err.message`.
 
-## Recipe 1: Global exception filter
+<CodeWalkthrough
+  title="Global exception filter walkthrough"
+  steps={[
+    { lines: "1-8", title: "Imports & constants", body: "Import pg's DatabaseError for typed access to driver fields, and define SQLSTATE codes as named constants. These 4 codes cover the most common constraint violations in Postgres." },
+    { lines: "10-12", title: "Type guard: isPgError", body: "Narrows any unknown error to QueryFailedError<DatabaseError> — confirms both the TypeORM wrapper AND the Postgres driver are involved before accessing driver-specific fields." },
+    { lines: "14-21", title: "Type guard: isUniqueViolation", body: "Builds on isPgError to check the specific SQLSTATE. The optional constraint parameter lets service-level code test by constraint name (e.g. 'users_email_key')." },
+    { lines: "23-30", title: "@Catch + catch() dispatch", body: "The filter catches only QueryFailedError. If the driver isn't Postgres (e.g. SQLite in tests), it falls through to a generic 500. Otherwise it maps via toHttp()." },
+    { lines: "31-37", title: "Logging unmapped codes", body: "Any SQLSTATE not in the switch gets logged with full stack trace before returning 500. This is your early warning for unhandled constraint types." },
+    { lines: "39-68", title: "toHttp() switch mapping", body: "Maps each SQLSTATE to an HTTP exception. Unique + FK → 409 Conflict (with constraint name). NOT NULL + CHECK → 422 Unprocessable. Unknown → 500." },
+  ]}
+>
 
 ```typescript title="typeorm-exception.filter.ts" collapse={1-8}
   ArgumentsHost,
@@ -136,6 +147,8 @@ export class TypeOrmExceptionFilter extends BaseExceptionFilter {
   }
 }
 ```
+
+</CodeWalkthrough>
 
 ```typescript title="app.module.ts"
 import { Module } from "@nestjs/common";

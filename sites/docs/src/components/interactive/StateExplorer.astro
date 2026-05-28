@@ -1,0 +1,527 @@
+---
+/**
+ * StateExplorer.astro
+ *
+ * Interactive "boolean trap" explorer. Toggle boolean flags → see the live
+ * state object + verdict. Compare with the clean tagged-union alternative.
+ * Code-centric: shows actual TypeScript at every step.
+ */
+
+interface Flag {
+  id: string;
+  label: string;
+}
+
+interface TaggedState {
+  label: string;
+  description: string;
+  typeShape: string;
+  color: string;
+}
+
+interface Props {
+  title?: string;
+  flags: Flag[];
+  states: TaggedState[];
+}
+
+const { title, flags, states } = Astro.props;
+const totalCombinations = Math.pow(2, flags.length);
+const validCount = flags.length + 1;
+const impossibleCount = totalCombinations - validCount;
+
+/** Syntax-highlight a type shape string at build time */
+function highlightType(shape: string): string {
+  return shape
+    .replace(/readonly/g, '<span class="hl-kw">readonly</span>')
+    .replace(/'([^']+)'/g, '<span class="hl-str">\'$1\'</span>')
+    .replace(/\b(_tag|data|error)\b(?=\s*:)/g, '<span class="hl-key">$1</span>')
+    .replace(/\b([A-Z])\b(?![a-z])/g, '<span class="hl-type">$1</span>');
+}
+---
+
+<div class="se" data-se-flags={JSON.stringify(flags)}>
+  {title && (
+    <div class="se-header">
+      <div class="se-title">{title}</div>
+      <span class="se-hint">Toggle the flags — watch the state object change.</span>
+    </div>
+  )}
+
+  {/* ===== THE PROBLEM ===== */}
+  <div class="se-section">
+    <div class="se-section-head">
+      <span class="se-tag se-tag-warn">Problem</span>
+      <span class="se-section-sub">{flags.length} booleans → {totalCombinations} combinations</span>
+    </div>
+
+    <div class="se-row">
+      <div class="se-toggles">
+        {flags.map((f) => (
+          <label class="se-toggle">
+            <input type="checkbox" data-se-flag={f.id} />
+            <span class="se-switch"><span class="se-knob"></span></span>
+            <code class="se-flag-name">{f.label}</code>
+          </label>
+        ))}
+      </div>
+
+      <pre class="se-code" data-se-code><code>{`{\n${flags.map(f => `  ${f.label}: false,`).join('\n')}\n}\n// ✅ Idle — no flags set`}</code></pre>
+    </div>
+
+    <div class="se-tracker">
+      <div class="se-bar"><div class="se-bar-fill" data-se-fill></div></div>
+      <span class="se-bar-text" data-se-text>0 / {impossibleCount} impossible states found</span>
+    </div>
+  </div>
+
+  {/* ===== VS DIVIDER ===== */}
+  <div class="se-vs"><span>vs</span></div>
+
+  {/* ===== THE SOLUTION ===== */}
+  <div class="se-section">
+    <div class="se-section-head">
+      <span class="se-tag se-tag-ok">Solution</span>
+      <span class="se-section-sub">1 tagged union → exactly {states.length} valid states</span>
+    </div>
+
+    <div class="se-type-table">
+      {states.map((s) => (
+        <div class="se-type-row" style={`--sc: ${s.color}`}>
+          <div class="se-type-name">
+            <span class="se-type-dot"></span>
+            <span>{s.label}</span>
+          </div>
+          <code class="se-type-shape" set:html={highlightType(s.typeShape)} />
+        </div>
+      ))}
+    </div>
+
+    <div class="se-bottom-badge">
+      <span>✅ {states.length} states · zero contradictions · compile-time safe</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  .se {
+    --se-bg: var(--sl-color-gray-6, #1e1e2e);
+    --se-surface: var(--sl-color-gray-5, #313244);
+    --se-border: var(--sl-color-gray-5, #313244);
+    --se-text: var(--sl-color-gray-1, #cdd6f4);
+    --se-dim: var(--sl-color-gray-3, #6c7086);
+    --se-accent: var(--sl-color-accent, #89b4fa);
+    --se-green: #4ade80;
+    --se-red: #f87171;
+    --se-amber: #fbbf24;
+    border: 1px solid var(--se-border);
+    border-radius: 12px;
+    background: var(--se-bg);
+    margin: 1.5rem 0;
+    overflow: hidden;
+  }
+
+  .se-header {
+    padding: 0.85rem 1.1rem 0.65rem;
+    border-bottom: 1px solid var(--se-border);
+  }
+
+  .se-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--se-text);
+    margin-bottom: 0.1rem;
+  }
+
+  .se-hint {
+    font-size: 0.75rem;
+    color: var(--se-dim);
+  }
+
+  /* ===== Sections ===== */
+  .se-section {
+    padding: 1rem 1.1rem;
+  }
+
+  .se-section-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .se-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+  }
+
+  .se-tag-warn {
+    background: color-mix(in srgb, var(--se-amber) 15%, transparent);
+    color: var(--se-amber);
+  }
+
+  .se-tag-ok {
+    background: color-mix(in srgb, var(--se-green) 15%, transparent);
+    color: var(--se-green);
+  }
+
+  .se-section-sub {
+    font-size: 0.75rem;
+    color: var(--se-dim);
+  }
+
+  .se-toggles {
+    margin-bottom: 0.6rem;
+  }
+
+  /* ===== VS divider ===== */
+  .se-vs {
+    display: flex;
+    align-items: center;
+    padding: 0 1.1rem;
+  }
+
+  .se-vs::before,
+  .se-vs::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--se-border);
+  }
+
+  .se-vs span {
+    padding: 0 0.75rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--se-dim);
+  }
+
+  /* ===== Row layout (toggles + code) ===== */
+  .se-row {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ===== Toggles ===== */
+  .se-toggles {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    justify-content: center;
+  }
+
+  .se-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .se-toggle input { display: none; }
+
+  .se-switch {
+    width: 34px;
+    height: 18px;
+    border-radius: 9px;
+    background: var(--se-surface);
+    border: 1.5px solid color-mix(in srgb, var(--se-dim) 35%, transparent);
+    position: relative;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .se-knob {
+    position: absolute;
+    top: 1.5px;
+    left: 1.5px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--se-dim);
+    transition: all 0.2s ease;
+  }
+
+  .se-toggle input:checked + .se-switch {
+    background: color-mix(in srgb, var(--se-accent) 25%, var(--se-surface));
+    border-color: var(--se-accent);
+  }
+
+  .se-toggle input:checked + .se-switch .se-knob {
+    transform: translateX(16px);
+    background: var(--se-accent);
+  }
+
+  .se-flag-name {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.78rem;
+    color: var(--se-text);
+    transition: color 0.2s ease;
+  }
+
+  .se-toggle input:checked ~ .se-flag-name {
+    color: var(--se-accent);
+  }
+
+  /* ===== Code block ===== */
+  .se-code {
+    margin: 0;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    background: var(--sl-color-gray-7, #11111b);
+    border: 1px solid var(--se-border);
+    overflow-x: auto;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .se-code code {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--se-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .se-code.has-conflict {
+    border-color: color-mix(in srgb, var(--se-red) 40%, transparent);
+    animation: se-shake 0.35s ease;
+  }
+
+  @keyframes se-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    50% { transform: translateX(3px); }
+    75% { transform: translateX(-2px); }
+  }
+
+  .se-code :global(.hl-true) { color: var(--se-accent); }
+  .se-code :global(.hl-false) { color: var(--se-dim); }
+  .se-code :global(.hl-warn) { color: var(--se-red); }
+  .se-code :global(.hl-key) { color: var(--se-text); }
+  .se-code :global(.hl-comment) { color: var(--se-green); font-style: italic; }
+  .se-code :global(.hl-comment-warn) { color: var(--se-red); font-style: italic; }
+
+  /* Shared syntax colors (solution table + code) */
+  .se :global(.hl-kw) { color: var(--se-dim); font-style: italic; }
+  .se :global(.hl-str) { color: var(--se-green); }
+  .se :global(.hl-key) { color: var(--se-text); }
+  .se :global(.hl-type) { color: var(--se-accent); font-weight: 600; }
+
+  /* ===== Tracker ===== */
+  .se-tracker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .se-bar {
+    flex: 0 0 50px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--se-surface);
+    overflow: hidden;
+  }
+
+  .se-bar-fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--se-amber), var(--se-red));
+    transition: width 0.4s ease;
+  }
+
+  .se-bar-text {
+    font-size: 0.65rem;
+    color: var(--se-dim);
+  }
+
+  .se-bar-text.is-done {
+    color: var(--se-amber);
+    font-weight: 600;
+  }
+
+  /* ===== Solution type table ===== */
+  .se-type-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--se-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .se-type-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    background: var(--se-surface);
+    border-bottom: 1px solid color-mix(in srgb, var(--se-border) 60%, transparent);
+  }
+
+  .se-type-row:last-child {
+    border-bottom: none;
+  }
+
+  .se-type-row:hover {
+    background: color-mix(in srgb, var(--sc) 6%, var(--se-surface));
+  }
+
+  .se-type-name {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 0 0 80px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--sc);
+  }
+
+  .se-type-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sc);
+    flex-shrink: 0;
+  }
+
+  .se-type-shape {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--se-dim);
+    white-space: nowrap;
+    overflow-x: auto;
+  }
+
+  /* ===== Bottom badge ===== */
+  .se-bottom-badge {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--se-green) 6%, transparent);
+    border: 1px solid color-mix(in srgb, var(--se-green) 15%, transparent);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--se-green);
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 520px) {
+    .se-row {
+      flex-direction: column;
+    }
+    .se-toggles {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+    .se-type-name {
+      flex: 0 0 65px;
+    }
+    .se-type-shape {
+      font-size: 0.65rem;
+    }
+  }
+</style>
+
+<script>
+  function initStateExplorer() {
+    document.querySelectorAll<HTMLElement>(".se:not([data-init])").forEach((root) => {
+      root.setAttribute("data-init", "");
+
+      const flagsData: { id: string; label: string }[] = JSON.parse(root.dataset.seFlags || "[]");
+      const checkboxes = root.querySelectorAll<HTMLInputElement>("[data-se-flag]");
+      const codeBlock = root.querySelector<HTMLElement>("[data-se-code] code");
+      const codeWrapper = root.querySelector<HTMLElement>("[data-se-code]");
+      const fill = root.querySelector<HTMLElement>("[data-se-fill]");
+      const barText = root.querySelector<HTMLElement>("[data-se-text]");
+
+      const discovered = new Set<string>();
+      const totalImpossible = Math.pow(2, checkboxes.length) - checkboxes.length - 1;
+
+      const MSGS: Record<string, { t: string; d: string }> = {
+        'error+loading': { t: 'Loading AND Error?', d: 'Spinner or error?' },
+        'data+loading':  { t: 'Data AND Loading?', d: 'Stale? Refetching?' },
+        'data+error':    { t: 'Error AND Data?', d: 'Show which one?' },
+      };
+      const ALL = { t: 'All true', d: 'Completely undefined.' };
+
+      function update() {
+        const active: string[] = [];
+        const values: Record<string, boolean> = {};
+        checkboxes.forEach(cb => {
+          const id = cb.dataset.seFlag || '';
+          values[id] = cb.checked;
+          if (cb.checked) active.push(id);
+        });
+
+        const key = active.slice().sort().join('+');
+        let isValid = active.length <= 1;
+        let comment = '\u2705 Idle \u2014 no flags set';
+
+        if (active.length === 1) {
+          const f = active[0];
+          if (f === 'loading') comment = '\u2705 Loading \u2014 show spinner. Unambiguous.';
+          else if (f === 'error') comment = '\u2705 Error \u2014 show error. Clear.';
+          else if (f === 'data') comment = '\u2705 Success \u2014 render payload. Clean.';
+          else comment = `\u2705 ${f} \u2014 single flag, unambiguous.`;
+        } else if (active.length >= 2) {
+          isValid = false;
+          const msg = active.length >= 3 ? ALL : MSGS[key];
+          if (msg) comment = `\u26A0\uFE0F ${msg.t} \u2014 ${msg.d}`;
+          else comment = `\u26A0\uFE0F ${active.join(' + ')} \u2014 ambiguous!`;
+          discovered.add(key);
+        }
+
+        // Render code block with inline verdict comment
+        if (codeBlock) {
+          const commentClass = isValid ? 'hl-comment' : 'hl-comment-warn';
+          const lines = flagsData.map(f => {
+            const val = values[f.id];
+            const valClass = val ? (active.length >= 2 ? 'hl-warn' : 'hl-true') : 'hl-false';
+            return `  <span class="hl-key">${f.label}</span>: <span class="${valClass}">${val}</span>,`;
+          });
+          codeBlock.innerHTML = `{\n${lines.join('\n')}\n}\n<span class="${commentClass}">// ${comment}</span>`;
+        }
+
+        if (codeWrapper) {
+          codeWrapper.classList.toggle('has-conflict', !isValid);
+          if (!isValid) {
+            codeWrapper.style.animation = 'none';
+            codeWrapper.offsetHeight;
+            codeWrapper.style.animation = '';
+          }
+        }
+
+        if (fill) fill.style.width = `${(discovered.size / totalImpossible) * 100}%`;
+        if (barText) {
+          if (discovered.size >= totalImpossible) {
+            barText.textContent = '\uD83C\uDF89 All impossible states found!';
+            barText.classList.add('is-done');
+          } else {
+            barText.textContent = `${discovered.size} / ${totalImpossible} impossible states found`;
+            barText.classList.remove('is-done');
+          }
+        }
+      }
+
+      checkboxes.forEach(cb => cb.addEventListener('change', update));
+      update(); // render initial highlighted state
+    });
+  }
+
+  initStateExplorer();
+  document.addEventListener("astro:page-load", initStateExplorer);
+</script>

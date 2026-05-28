@@ -9,6 +9,7 @@ related:
 > Up to 1,000 rules per bucket age objects automatically: transition to cheaper [[aws/s3/storage-classes|storage classes]] or delete. Scales without custom code.
 
 import { Aside } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -64,6 +65,16 @@ aws s3api put-bucket-lifecycle-configuration \
   ]
 }
 ```
+
+<PipelineStrip
+  title="logs/ tiering timeline"
+  stages={[
+    { label: "STANDARD", color: "#60a5fa", tip: "Day 0–29: default hot storage, highest $/GB" },
+    { label: "STANDARD_IA", color: "#34d399", tip: "Day 30–89: same durability, lower $/GB, per-object retrieval fee" },
+    { label: "GLACIER", color: "#a78bfa", tip: "Day 90–2554: archive tier, retrieval in minutes to hours" },
+    { label: "DELETE", color: "#ef4444", tip: "Day 2555 (~7 years): object permanently removed" },
+  ]}
+/>
 
 ## Action elements
 
