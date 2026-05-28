@@ -10,6 +10,7 @@ related:
 > [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims**: retries stack faster than DNS can chase them.
 
 import { Aside, Steps } from "@astrojs/starlight/components";
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -51,6 +52,39 @@ If you control the holding distribution, prefer documented [`update-domain-assoc
 Failed Amplify associations can leave claims for hours. Each retry adds another ghost. Switch strategy instead of clicking Retry.
 
 </Aside>
+
+<FlowSimulator
+  title="Why retries create ghost claims"
+  nodes={[
+    { id: "user", label: "You", col: 0 },
+    { id: "amplify", label: "Amplify", col: 1 },
+    { id: "cf", label: "CloudFront", col: 2 },
+    { id: "dns", label: "Route 53", col: 3 },
+  ]}
+  flows={[
+    {
+      label: "Happy path",
+      steps: [
+        { from: "user", to: "amplify", message: "add domain", description: "Request Amplify domain association" },
+        { from: "amplify", to: "cf", message: "create distribution", description: "Amplify provisions a CloudFront distribution" },
+        { from: "cf", to: "cf", message: "claim CNAME", description: "CloudFront registers the alternate domain globally" },
+        { from: "amplify", to: "dns", message: "update DNS target", description: "Amplify points DNS to the new distribution" },
+        { from: "dns", to: "cf", message: "resolve", description: "DNS resolves to CloudFront — site works" },
+      ],
+    },
+    {
+      label: "Ghost race (each retry)",
+      steps: [
+        { from: "user", to: "amplify", message: "retry domain", description: "You click Retry after seeing the CNAME error" },
+        { from: "amplify", to: "cf", message: "new distribution #2", description: "Amplify provisions ANOTHER distribution for the same domain" },
+        { from: "cf", to: "cf", message: "claim CNAME → CONFLICT", description: "Ghost from previous attempt still holds the CNAME globally — fails" },
+        { from: "user", to: "amplify", message: "retry again", description: "You retry a third time — creating distribution #3" },
+        { from: "amplify", to: "cf", message: "new distribution #3", description: "Yet ANOTHER distribution provisioned, each one leaving a ghost claim" },
+        { from: "cf", to: "cf", message: "claim CNAME → CONFLICT", description: "Now 3 ghosts hold the alias. Claims persist for hours." },
+      ],
+    },
+  ]}
+/>
 
 ## Workaround: bring your own ACM certificate
 

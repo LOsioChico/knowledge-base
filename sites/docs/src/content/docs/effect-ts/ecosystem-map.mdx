@@ -22,6 +22,7 @@ related:
 > Every package from the [`Effect-TS/effect` monorepo](https://github.com/Effect-TS/effect/tree/main/packages). Core ships as `effect`; integrations ship as `@effect/*`.
 
 import { Aside } from "@astrojs/starlight/components";
+import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
 
 > Prerequisite: [[effect-ts/what-is-effect|What is Effect]]
 
@@ -89,18 +90,16 @@ Before picking a package: [[effect-ts/quickstart|Quickstart]] (core only), [[eff
 
 Install `@effect/ai` plus one of: `@effect/ai-openai`, `@effect/ai-anthropic`, `@effect/ai-google`, `@effect/ai-amazon-bedrock`, `@effect/ai-openrouter` ([`packages/ai` tree](https://github.com/Effect-TS/effect/tree/main/packages/ai)).
 
-## Dependency sketch
-
-```
-effect (core)
-   ├── @effect/platform → platform-node | -bun | -browser
-   ├── @effect/sql + driver
-   ├── @effect/ai + provider
-   ├── @effect/rpc
-   ├── @effect/cluster → @effect/workflow
-   ├── @effect/opentelemetry
-   └── @effect/vitest
-```
+<ArchitectureExplorer
+  title="Effect package dependency map"
+  layers={[
+    { id: "core", label: "effect (core)", color: "#a78bfa", description: "The foundation: Effect<A, E, R>, runners, Schema, Layer, [[effect-ts/streams|Stream]], Schedule, Fiber, Scope, and all combinators. Always installed.", items: ["Effect<A, E, R>", "Schema", "Layer", "Stream", "Fiber", "Schedule", "Scope"] },
+    { id: "platform", label: "@effect/platform + adapters", color: "#f472b6", description: "Cross-runtime abstractions for HTTP, FileSystem, Terminal, and Workers. Pick one adapter for your runtime.", items: ["@effect/platform-node", "@effect/platform-bun", "@effect/platform-browser"] },
+    { id: "domain", label: "Domain packages", color: "#34d399", description: "Typed integrations for specific problem domains. Each adds a Layer that slots into R.", items: ["@effect/sql + driver", "@effect/ai + provider", "@effect/cli", "@effect/rpc", "@effect/cluster", "@effect/workflow"] },
+    { id: "tooling", label: "Tooling", color: "#fbbf24", description: "[[effect-ts/observability|Observability]], testing, and utility packages. Install as needed.", items: ["@effect/opentelemetry", "@effect/vitest", "@effect/printer", "@effect/typeclass"] },
+    { id: "experimental", label: "@effect/experimental", color: "#94a3b8", description: "Staging modules with no stability guarantee. Pin versions if you adopt in production.", items: [] },
+  ]}
+/>
 
 Arrows mean "typically composed with", not strict npm trees. `@effect/workflow` README composes `ClusterWorkflowEngine` with `PgClient.layer` from `@effect/sql-pg`.
 

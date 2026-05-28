@@ -8,6 +8,8 @@ related:
 > Take a manual backup of every EC2 instance by creating one AMI per instance. AMIs capture root volume, attached EBS, and boot config: redeployable from a single image ID.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -29,7 +31,22 @@ Default `create-image` reboots to quiesce volumes. `--no-reboot` avoids downtime
 
 ## Recipe
 
-Replace `PROFILE` and `REGION` in the exports below.
+<PipelineStrip
+  title="Backup pipeline"
+  stages={[
+    { label: "Snapshot", color: "#a78bfa", tip: "Create one AMI per instance with tagged metadata" },
+    { label: "Wait", color: "#fbbf24", tip: "Block until all AMIs reach 'available' state" },
+    { label: "Restore", color: "#34d399", tip: "Launch new instances from saved AMI IDs" },
+    { label: "Cleanup", color: "#f87171", tip: "Deregister AMIs AND delete orphaned snapshots" },
+  ]}
+/>
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "AWS_REGION", default: "us-east-1" },
+  ]}
+/>
 
 ## 1. Snapshot every instance
 
@@ -50,8 +67,8 @@ i-0abcdef1234567890	production-db-replica
 If the list is correct, proceed to run the complete loop to create an AMI for each target instance. We export `AWS_PROFILE` and `AWS_REGION` to explicitly direct our AWS CLI requests to the correct account and target region, and generate a dynamic `STAMP` variable so that all derived AMIs and snapshots share an identical point-in-time timestamp tag `Backup=manual-${STAMP}` for coordinated tracking and automated deletion cleanup:
 
 ```bash
-export AWS_PROFILE=PROFILE
-export AWS_REGION=REGION
+export AWS_PROFILE=$AWS_PROFILE
+export AWS_REGION=$AWS_REGION
 STAMP=$(date +%Y%m%d-%H%M%S)
 
 aws ec2 describe-instances \
