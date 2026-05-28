@@ -53,28 +53,19 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     </div>
   </div>
 
-  <div class="lr__bar"><div class="lr__bar-fill"></div></div>
-
-  <div class="lr__legend">
-    <div class="lr__legend-section">
-      <span class="lr__leg" data-c="required"><i></i>Required</span>
-      <span class="lr__leg" data-c="optional"><i></i>Optional</span>
-      <span class="lr__leg" data-c="comparison"><i></i>Comparison</span>
-      <span class="lr__leg" data-c="reference"><i></i>Reference</span>
-    </div>
-    <span class="lr__legend-divider"></span>
-    <div class="lr__legend-section">
-      <span class="lr__leg lr__leg--unlock"><i></i>Unlocked</span>
-      <span class="lr__leg lr__leg--lock"><i></i>Locked</span>
-    </div>
-  </div>
+  <div class="lr__bar"><div class="lr__bar-fill"><span class="lr__bar-pct">0%</span></div></div>
 
   {groupEntries.map(([groupName, groupNodes], gi) => (
     <div class="lr__group" data-group={groupName}>
-      <div class="lr__gh">
-        <span class="lr__gh-label">{groupName}</span>
+      <button class="lr__gh" type="button" aria-expanded="true">
+        <div class="lr__gh-left">
+          <svg class="lr__gh-chevron" viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+            <path d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+          <span class="lr__gh-label">{groupName}</span>
+        </div>
         <span class="lr__gh-progress" data-group-total={groupNodes.length}>0/{groupNodes.length}</span>
-      </div>
+      </button>
       
       <div class="lr__rows">
         {groupNodes.map((node) => {
@@ -88,9 +79,9 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
               <div class="lr__row-checkbox">
                 <button class="lr__cb" aria-label={`Mark ${node.label} complete`} title="Toggle completed">
                   <svg viewBox="0 0 20 20" width="100%" height="100%">
-                    <!-- Tick (visible when is-done) -->
+                    {/* Tick (visible when is-done) */}
                     <path class="lr__cb-tick" d="M6 10.5 L9 13.5 L14 7.5" />
-                    <!-- Lock Icon (visible when is-locked) -->
+                    {/* Lock Icon (visible when is-locked) */}
                     <g class="lr__cb-lock">
                       <path d="M7 9.5 V6.5 A3 3 0 0 1 13 6.5 V9.5" />
                       <rect x="5.5" y="9.5" width="9" height="6.5" rx="1.5" />
@@ -109,15 +100,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
                 {node.description && <div class="lr__desc">{node.description}</div>}
                 {directPrereqs.length > 0 && (
                   <div class="lr__prereqs">
-                    <span class="lr__prereqs-label">
-                      <svg class="lr__prereqs-icon" viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
-                        <!-- Closed Lock -->
-                        <path class="lr__lock-closed" d="M8 1a3 3 0 0 0-3 3v2H4.5A1.5 1.5 0 0 0 3 7.5v6A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 11.5 6H11V4a3 3 0 0 0-3-3zm2 5H6V4a2 2 0 1 1 4 0v2z" />
-                        <!-- Open Lock -->
-                        <path class="lr__lock-open" d="M8 1a3 3 0 0 0-3 3v2H4.5A1.5 1.5 0 0 0 3 7.5v6A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-6A1.5 1.5 0 0 0 11.5 6H6V4a2 2 0 1 1 4 0v2h1V4a3 3 0 0 0-3-3z" />
-                      </svg>
-                      Requires to unlock:
-                    </span>
                     {directPrereqs.map((p) => (
                       <button class="lr__prereq-pill" data-target={p.id} type="button" title={`Go to ${p.label}`}>{p.label}</button>
                     ))}
@@ -143,7 +125,7 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     --c-cmp: #fbbf24;
     --c-ref: #94a3b8;
     --c-done: #34d399;
-    --c-lock: #fb7185;
+    --c-lock: #64748b;
     margin: 2rem 0;
   }
 
@@ -196,88 +178,47 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     justify-content: center !important;
   }
   .lr__reset:hover {
-    background: rgba(251, 113, 133, 0.1) !important;
-    border-color: rgba(251, 113, 133, 0.3) !important;
-    color: var(--c-lock) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #ef4444 !important;
   }
 
   /* ── Progress Bar ── */
   .lr__bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 3px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 5px;
     overflow: hidden;
-    margin-bottom: 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.02);
+    margin-bottom: 1.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    position: relative;
   }
   .lr__bar-fill {
     height: 100%;
     width: 0%;
-    border-radius: 3px;
-    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    background: linear-gradient(90deg, var(--c-done) 0%, var(--c-req) 50%, var(--c-opt) 100%);
-    box-shadow: 0 0 8px rgba(52, 211, 153, 0.4);
-  }
-
-  /* ── Legend Toolbar ── */
-  .lr__legend {
+    border-radius: 5px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, var(--c-done) 0%, #10b981 50%, var(--c-req) 100%);
+    box-shadow: 0 0 12px rgba(52, 211, 153, 0.5);
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    margin-bottom: 1.5rem;
-    padding: 0.6rem 0.8rem;
-    background: rgba(255, 255, 255, 0.015);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    border-radius: 10px;
+    justify-content: flex-end;
   }
-  .lr__legend-section {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.6rem;
+  .lr__bar-pct {
+    font-size: 0.5rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.9);
+    padding-right: 4px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
   }
-  .lr__legend-divider {
-    flex-grow: 0;
-    width: 1px;
-    height: 14px;
-    background: rgba(255, 255, 255, 0.12);
-    align-self: center;
-  }
-  @media (max-width: 640px) {
-    .lr__legend-divider {
-      display: none;
-    }
-  }
-  .lr__leg {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--sl-color-gray-3);
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.02);
-  }
-  .lr__leg i {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    display: block;
-  }
-  [data-c="required"] i  { background: var(--c-req); box-shadow: 0 0 6px var(--c-req); }
-  [data-c="optional"] i  { background: var(--c-opt); box-shadow: 0 0 6px var(--c-opt); }
-  [data-c="comparison"] i { background: var(--c-cmp); box-shadow: 0 0 6px var(--c-cmp); }
-  [data-c="reference"] i { background: var(--c-ref); box-shadow: 0 0 6px var(--c-ref); }
-  .lr__leg--unlock i { background: var(--c-done); box-shadow: 0 0 6px var(--c-done); }
-  .lr__leg--lock i { background: var(--c-lock); box-shadow: 0 0 6px var(--c-lock); }
+  .lr__bar-fill[style*="width: 0%"] .lr__bar-pct,
+  .lr__bar-fill:not([style]) .lr__bar-pct { opacity: 0; }
 
-  /* ── Group & Timeline Connector Line ── */
+  /* ── Group Headers (collapsible) ── */
   .lr__group {
     position: relative;
     padding-left: 0;
@@ -285,12 +226,34 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
   }
 
   .lr__gh {
+    all: unset !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 0.6rem 0.2rem !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    margin-bottom: 0.6rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    border-radius: 4px !important;
+  }
+  .lr__gh:hover {
+    background: rgba(255, 255, 255, 0.02) !important;
+  }
+  .lr__gh-left {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.8rem 0.2rem 0.4rem 0.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 0.8rem;
+    gap: 0.4rem;
+  }
+  .lr__gh-chevron {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--sl-color-gray-4);
+    flex-shrink: 0;
+  }
+  .lr__gh[aria-expanded="true"] .lr__gh-chevron {
+    transform: rotate(90deg);
   }
   .lr__gh-label {
     font-size: 0.75rem;
@@ -310,16 +273,29 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     font-variant-numeric: tabular-nums;
   }
 
+  /* Collapsed rows */
   .lr__rows {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+  }
+  .lr__group.is-collapsed .lr__rows {
+    max-height: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .lr__group.is-collapsed .lr__gh {
+    margin-bottom: 0 !important;
+    border-bottom-color: transparent !important;
   }
 
   .lr__sep {
     display: flex;
     padding: 0.6rem 0;
-    margin-left: 10px; /* Align with the timeline track line */
+    margin-left: 10px;
   }
   .lr__sep span {
     width: 2px;
@@ -350,7 +326,7 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 11px; /* Mathematically center checkbox (22px button, 11px padding) with card title text */
+    padding-top: 11px;
     flex-shrink: 0;
     position: relative;
     z-index: 2;
@@ -358,21 +334,20 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
   .lr__row-checkbox::before {
     content: '';
     position: absolute;
-    top: -4px; /* Extends vertically past row margins to seamlessly overlap sibling segments */
+    top: -4px;
     bottom: -4px;
-    left: 10px; /* Center of the 22px checkbox container (width 2px line at center 11px) */
+    left: 10px;
     width: 2px;
     background: rgba(255, 255, 255, 0.08);
     z-index: 1;
     pointer-events: none;
     transition: background 0.25s ease;
   }
-  /* Timeline start/finish styling based on positions in rows */
   .lr__row:first-child .lr__row-checkbox::before {
-    top: 22px; /* Starts exactly at the vertical center of the first checkbox */
+    top: 22px;
   }
   .lr__row:last-child .lr__row-checkbox::before {
-    bottom: calc(100% - 22px); /* Ends exactly at the vertical center of the last checkbox */
+    bottom: calc(100% - 22px);
   }
 
   .lr__cb {
@@ -437,7 +412,7 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     border-left: 4px solid var(--rc);
     border-radius: 12px;
     padding: 0.8rem 1.2rem;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
@@ -452,24 +427,22 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     border-left-color: var(--rc);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px color-mix(in srgb, var(--rc) 15%, transparent);
   }
-  /* Lift the checkbox in perfect unison with the card on hover, while keeping the timeline connector stationary */
   .lr__row.is-hovered .lr__cb {
     transform: translateY(-2px) !important;
   }
   .lr__row.is-hovered .lr__cb:hover {
     transform: translateY(-2px) scale(1.05) !important;
   }
-  /* Glow the connector line segment behind the hovered row for a premium immersive effect */
   .lr__row.is-hovered .lr__row-checkbox::before {
     background: rgba(255, 255, 255, 0.16);
   }
 
   /* ── Completion State ── */
   .lr__row.is-done .lr__cb {
-    background: linear-gradient(135deg, #10b981, #059669);
-    border-color: #10b981;
-    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-    color: #ffffff;
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4) !important;
+    color: #ffffff !important;
   }
   .lr__row.is-done .lr__cb-tick {
     opacity: 1;
@@ -494,34 +467,82 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     opacity: 0.65;
   }
 
-  /* ── Locked State ── */
+  /* ── Locked State: compact card ── */
   .lr__row.is-locked .lr__cb {
-    background: rgba(244, 63, 94, 0.03);
-    border-color: rgba(244, 63, 94, 0.2);
-    color: var(--c-lock);
+    background: rgba(100, 116, 139, 0.05) !important;
+    border-color: rgba(100, 116, 139, 0.25) !important;
+    color: var(--c-lock) !important;
   }
   .lr__row.is-locked .lr__cb-lock {
     opacity: 1;
     transform: scale(1);
   }
   .lr__row.is-locked .lr__cb:hover {
-    border-color: var(--c-lock);
-    background: rgba(244, 63, 94, 0.08);
-    box-shadow: 0 0 8px rgba(244, 63, 94, 0.2);
+    border-color: var(--c-lock) !important;
+    background: rgba(100, 116, 139, 0.1) !important;
+    box-shadow: 0 0 8px rgba(100, 116, 139, 0.2) !important;
   }
   .lr__row.is-locked .lr__row-content {
-    background: rgba(244, 63, 94, 0.01);
+    background: rgba(30, 41, 59, 0.08);
     border-color: rgba(255, 255, 255, 0.03);
-    border-left-color: color-mix(in srgb, var(--rc) 30%, transparent);
-    opacity: 0.6;
+    border-left-color: color-mix(in srgb, var(--rc) 20%, transparent);
+    padding: 0.5rem 1rem;
+    opacity: 0.45;
   }
-  .lr__row.is-locked.is-hovered .lr__row-content {
-    background: rgba(244, 63, 94, 0.02);
-    opacity: 0.85;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px rgba(244, 63, 94, 0.05);
+  /* Compact: hide desc and prereqs when locked */
+  .lr__row.is-locked .lr__desc {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+  }
+  .lr__row.is-locked .lr__prereqs {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    border: none;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+  }
+  /* Expand on hover */
+  .lr__row.is-locked:hover .lr__row-content {
+    opacity: 0.75;
+    background: rgba(30, 41, 59, 0.2);
+    border-color: rgba(255, 255, 255, 0.06);
+    border-left-color: color-mix(in srgb, var(--rc) 40%, transparent);
+    padding: 0.8rem 1.2rem;
+  }
+  .lr__row.is-locked:hover .lr__desc {
+    max-height: 3em;
+    opacity: 1;
+  }
+  .lr__row.is-locked:hover .lr__prereqs {
+    max-height: 4em;
+    opacity: 1;
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
   }
   .lr__row.is-locked .lr__link {
     color: var(--sl-color-gray-3);
+    font-size: 0.82rem;
+  }
+
+  /* ── "Start here" indicator ── */
+  @keyframes lr-start-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rc) 30%, transparent); }
+    50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--rc) 10%, transparent); }
+  }
+  .lr__row.is-next .lr__row-content {
+    border-color: color-mix(in srgb, var(--rc) 40%, transparent);
+    border-left-color: var(--rc);
+    background: rgba(30, 41, 59, 0.35);
+    animation: lr-start-pulse 2.5s ease-in-out infinite;
+  }
+  .lr__row.is-next .lr__cb {
+    border-color: var(--rc) !important;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--rc) 30%, transparent) !important;
   }
 
   /* ── Unlocked unchecked state (interactive tick preview) ── */
@@ -590,46 +611,20 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    padding-top: 0.4rem;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+    padding-top: 0.35rem;
     border-top: 1px solid rgba(255, 255, 255, 0.04);
   }
-  .lr__prereqs-label {
-    height: 20px; /* Precise height matching the pill for exact vertical alignment on baseline */
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--sl-color-gray-4);
-    transition: color 0.2s;
-  }
-  .lr__prereqs-icon {
-    flex-shrink: 0;
-  }
-  .lr__lock-closed { fill: var(--c-lock); }
-  .lr__lock-open { fill: var(--c-done); }
-
-  /* Change label colors based on lock status */
-  .lr__row.is-locked .lr__prereqs-label { color: var(--c-lock); }
-  .lr__row.is-unlocked .lr__prereqs-label { color: var(--c-done); }
-  .lr__row.is-done .lr__prereqs-label { color: var(--c-done); }
-
-  .lr__row.is-unlocked .lr__lock-closed { display: none; }
-  .lr__row.is-locked .lr__lock-open { display: none; }
-  .lr__row.is-done .lr__lock-closed { display: none; }
 
   .lr__prereq-pill {
     all: unset !important;
     box-sizing: border-box !important;
-    height: 20px !important; /* Matches prerequisites label height perfectly */
-    font-size: 0.62rem !important;
+    height: 20px !important;
+    font-size: 0.6rem !important;
     font-weight: 600 !important;
     font-family: inherit !important;
-    padding: 0 0.5rem !important; /* Exact visual padding with height */
+    padding: 0 0.45rem !important;
     border-radius: 6px !important;
     cursor: pointer !important;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -637,20 +632,15 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 0.25rem !important;
-  }
-
-  /* Uncompleted / Locked pill state */
-  .lr__prereq-pill {
-    color: var(--c-lock) !important;
-    border: 1px solid rgba(251, 113, 133, 0.18) !important;
-    background: rgba(251, 113, 133, 0.03) !important;
+    gap: 0.2rem !important;
+    color: var(--sl-color-gray-3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: rgba(255, 255, 255, 0.02) !important;
   }
   .lr__prereq-pill:hover {
     color: #ffffff !important;
-    background: var(--c-lock) !important;
-    border-color: var(--c-lock) !important;
-    box-shadow: 0 0 10px rgba(251, 113, 133, 0.3) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
   }
 
   /* Completed pill state */
@@ -670,6 +660,11 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     font-weight: 800;
   }
 
+  /* Uncompleted pill — needs attention */
+  .lr__prereq-pill:not(.is-pill-done) {
+    color: var(--sl-color-gray-4) !important;
+  }
+
   /* ── Interactive Focus States (Hover Focus Effect) ── */
   .lr__row.is-prereq-hl .lr__row-content {
     border-color: var(--rc);
@@ -681,8 +676,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
   }
 
   /* ── Animations ── */
-
-  /* Shake animation for locked clicks */
   @keyframes lr-shake {
     0%, 100% { transform: translateX(0); }
     20%, 60% { transform: translateX(-4px); }
@@ -692,7 +685,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     animation: lr-shake 0.38s cubic-bezier(.36,.07,.19,.97) both;
   }
 
-  /* Flash animation for target scrolls */
   @keyframes lr-flash {
     0%, 100% { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-color: rgba(255, 255, 255, 0.05); }
     50% {
@@ -705,7 +697,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     animation: lr-flash 0.6s ease 2;
   }
 
-  /* Pulse animation for locked alerts */
   @keyframes lr-pill-pulse {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.08); box-shadow: 0 0 10px var(--c-lock); border-color: var(--c-lock); }
@@ -716,11 +707,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
 
   /* Responsive styling */
   @media (max-width: 600px) {
-    .lr__legend {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
-    }
     .lr__row {
       gap: 0.6rem;
     }
@@ -730,7 +716,12 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     .lr__tag {
       display: none;
     }
-    /* Removed in favor of robust CSS segment lines */
+    /* Keep locked cards always compact on mobile (no hover expand) */
+    .lr__row.is-locked:hover .lr__desc,
+    .lr__row.is-locked:hover .lr__prereqs {
+      max-height: 0;
+      opacity: 0;
+    }
   }
 </style>
 
@@ -772,7 +763,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
           const r = localStorage.getItem(key);
           const done = new Set<string>(r ? (JSON.parse(r) as string[]) : []);
           
-          // Auto-cascade complete prerequisites for any nodes that were marked done (e.g. from scroll depth completion)
           let changed = false;
           done.forEach(id => {
             const prereqs = allPrereqs(id);
@@ -794,10 +784,16 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
 
       const render = (done: Set<string>) => {
         const n = done.size;
+        const pct = total ? Math.round((n / total) * 100) : 0;
         const fill = rm.querySelector<HTMLElement>('.lr__bar-fill');
         const ctr = rm.querySelector<HTMLElement>('.lr__counter');
+        const pctEl = rm.querySelector<HTMLElement>('.lr__bar-pct');
         if (fill) fill.style.width = `${total ? (n / total) * 100 : 0}%`;
         if (ctr) ctr.textContent = `${n} / ${total}`;
+        if (pctEl) {
+          pctEl.textContent = `${pct}%`;
+          pctEl.style.opacity = pct > 0 ? '1' : '0';
+        }
 
         // Per-group progress
         rm.querySelectorAll<HTMLElement>('.lr__group').forEach(grp => {
@@ -808,22 +804,35 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
           if (progEl) progEl.textContent = `${groupDone}/${progEl.dataset.groupTotal || groupRows.length}`;
         });
 
+        // Track if we've found the "next" node
+        let foundNext = false;
+
         // Update row states
         rows.forEach(r => {
           const id = r.dataset.id || '';
           const isDone = done.has(id);
           r.classList.toggle('is-done', isDone);
+          r.classList.remove('is-next');
 
-          // Check if all prereqs are done → unlocked
           const prereqs = (r.dataset.prereqs || '').split(',').filter(Boolean);
           if (prereqs.length > 0) {
             const allPrereqsDone = prereqs.every(pid => done.has(pid));
             r.classList.toggle('is-unlocked', allPrereqsDone || isDone);
             r.classList.toggle('is-locked', !allPrereqsDone && !isDone);
+
+            // Mark first unlocked-but-not-done as "next"
+            if (!foundNext && allPrereqsDone && !isDone) {
+              r.classList.add('is-next');
+              foundNext = true;
+            }
           } else {
-            // No prereqs = always unlocked
             r.classList.remove('is-locked');
             r.classList.add('is-unlocked');
+            // No-prereq node can be "next" if not done
+            if (!foundNext && !isDone) {
+              r.classList.add('is-next');
+              foundNext = true;
+            }
           }
         });
 
@@ -832,7 +841,47 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
           const targetId = pill.dataset.target || '';
           pill.classList.toggle('is-pill-done', done.has(targetId));
         });
+
+        // Auto-collapse groups that are fully locked
+        rm.querySelectorAll<HTMLElement>('.lr__group').forEach(grp => {
+          const groupRows = grp.querySelectorAll<HTMLElement>('.lr__row');
+          const ghBtn = grp.querySelector<HTMLButtonElement>('.lr__gh');
+          let hasUnlockedOrDone = false;
+          groupRows.forEach(r => {
+            if (r.classList.contains('is-unlocked') || r.classList.contains('is-done')) {
+              hasUnlockedOrDone = true;
+            }
+          });
+          // Only auto-collapse if ALL items in group are locked
+          if (!hasUnlockedOrDone && groupRows.length > 0) {
+            grp.classList.add('is-collapsed');
+            if (ghBtn) ghBtn.setAttribute('aria-expanded', 'false');
+          } else {
+            grp.classList.remove('is-collapsed');
+            if (ghBtn) ghBtn.setAttribute('aria-expanded', 'true');
+          }
+        });
+
+        // Set max-height for expanded rows containers
+        rm.querySelectorAll<HTMLElement>('.lr__group:not(.is-collapsed) .lr__rows').forEach(rowsEl => {
+          rowsEl.style.maxHeight = rowsEl.scrollHeight + 'px';
+        });
       };
+
+      // Group header click → toggle collapse
+      rm.querySelectorAll<HTMLButtonElement>('.lr__gh').forEach(ghBtn => {
+        ghBtn.addEventListener('click', () => {
+          const grp = ghBtn.closest<HTMLElement>('.lr__group');
+          if (!grp) return;
+          const isCollapsed = grp.classList.contains('is-collapsed');
+          grp.classList.toggle('is-collapsed', !isCollapsed);
+          ghBtn.setAttribute('aria-expanded', isCollapsed ? 'true' : 'false');
+          if (isCollapsed) {
+            const rowsEl = grp.querySelector<HTMLElement>('.lr__rows');
+            if (rowsEl) rowsEl.style.maxHeight = rowsEl.scrollHeight + 'px';
+          }
+        });
+      });
 
       // Checkbox click
       rm.querySelectorAll<HTMLButtonElement>('.lr__cb').forEach(btn => {
@@ -847,7 +896,6 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
           const newlyCompleted = new Set<string>();
 
           if (!isCurrentlyDone) {
-            // Check current node and all of its transitive prerequisites
             newlyCompleted.add(id);
             done.add(id);
             const prereqs = allPrereqs(id);
@@ -861,18 +909,16 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
             save(done);
             render(done);
 
-            // Animate completed nodes with a premium glowing flash
             newlyCompleted.forEach(nodeId => {
               const el = rm.querySelector<HTMLElement>(`[data-id="${nodeId}"]`);
               if (el) {
                 el.classList.remove('is-flash');
-                void el.offsetWidth; // Trigger reflow
+                void el.offsetWidth;
                 el.classList.add('is-flash');
                 el.addEventListener('animationend', () => el.classList.remove('is-flash'), { once: true });
               }
             });
           } else {
-            // Uncheck current node and all of its transitive dependents
             const dependents = allDependents(id);
             done.delete(id);
             for (const depId of dependents) {
@@ -917,12 +963,26 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
           if (!tid) return;
           const target = rm.querySelector<HTMLElement>(`[data-id="${tid}"]`);
           if (!target) return;
+
+          // Expand the target's group if collapsed
+          const targetGroup = target.closest<HTMLElement>('.lr__group');
+          if (targetGroup?.classList.contains('is-collapsed')) {
+            targetGroup.classList.remove('is-collapsed');
+            const ghBtn = targetGroup.querySelector<HTMLButtonElement>('.lr__gh');
+            if (ghBtn) ghBtn.setAttribute('aria-expanded', 'true');
+            const rowsEl = targetGroup.querySelector<HTMLElement>('.lr__rows');
+            if (rowsEl) rowsEl.style.maxHeight = rowsEl.scrollHeight + 'px';
+          }
+
           rows.forEach(r => r.classList.remove('is-prereq-hl', 'is-hovered', 'is-dim'));
-          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          target.classList.remove('is-flash');
-          void target.offsetWidth;
-          target.classList.add('is-flash');
-          target.addEventListener('animationend', () => target.classList.remove('is-flash'), { once: true });
+          // Small delay to let expand animation finish
+          setTimeout(() => {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.remove('is-flash');
+            void target.offsetWidth;
+            target.classList.add('is-flash');
+            target.addEventListener('animationend', () => target.classList.remove('is-flash'), { once: true });
+          }, 50);
         });
       });
 
