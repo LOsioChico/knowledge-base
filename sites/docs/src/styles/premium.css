@@ -1,8 +1,8 @@
 /**
  * Premium visual overrides for Starlight default elements.
  *
- * Covers: Asides, Tables, Code blocks, Blockquotes, Inline code,
- *         Sidebar, Nav, Typography, Scrollbar, Transitions.
+ * Covers: Asides, Tables, Code blocks, Blockquotes, Inline code, Tabs,
+ *         Steps, Cards/CardGrid, Sidebar, Nav, Typography, Scrollbar, Transitions.
  * Uses Starlight's CSS custom properties for dark/light mode support.
  * Loaded via customCss in astro.config.mjs — runs after Starlight layers.
  */
@@ -491,3 +491,98 @@ starlight-tabs [role="tabpanel"] {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════
+   STEPS (<Steps> component)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Step number badges — accent-colored circles */
+.sl-steps > li::before {
+  background: color-mix(in srgb, var(--sl-color-accent-high) 18%, var(--sl-color-gray-6)) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sl-color-accent-high) 30%, transparent),
+    0 0 8px color-mix(in srgb, var(--sl-color-accent) 10%, transparent) !important;
+  color: var(--sl-color-accent-high) !important;
+  font-weight: 700 !important;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+/* Active step — glow on hover */
+.sl-steps > li:hover::before {
+  background: color-mix(in srgb, var(--sl-color-accent-high) 25%, var(--sl-color-gray-6)) !important;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--sl-color-accent-high) 40%, transparent),
+    0 0 12px color-mix(in srgb, var(--sl-color-accent) 18%, transparent) !important;
+  transform: scale(1.08);
+}
+
+/* Guide line — accent gradient instead of plain hairline */
+.sl-steps > li::after {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--sl-color-accent) 25%, transparent),
+    color-mix(in srgb, var(--sl-color-accent) 6%, transparent)
+  ) !important;
+  width: 1.5px !important;
+}
+
+/* Step content — subtle left border on hover */
+.sl-steps > li {
+  transition: background 0.2s ease;
+  border-radius: 0 8px 8px 0;
+}
+
+.sl-steps > li:hover {
+  background: color-mix(in srgb, var(--sl-color-accent) 3%, transparent);
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   CARDS & CARD GRID (<Card>, <CardGrid> components)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Card — glassmorphism surface with accent border */
+.card.sl-flex {
+  border-radius: 10px !important;
+  border: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 50%, transparent) !important;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sl-card-border) 6%, transparent) 0%,
+      transparent 50%
+    ),
+    var(--sl-color-black) !important;
+  box-shadow:
+    0 1px 3px hsla(0, 0%, 0%, 0.08),
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 3%, transparent);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.card.sl-flex:hover {
+  border-color: color-mix(in srgb, var(--sl-card-border) 40%, transparent) !important;
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--sl-card-border) 10%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--sl-card-border) 15%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 5%, transparent);
+  transform: translateY(-2px);
+}
+
+/* Card icon — rounded with subtle glow */
+.card .icon {
+  border-radius: 8px !important;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.card.sl-flex:hover .icon {
+  background-color: color-mix(in srgb, var(--sl-card-bg) 80%, transparent) !important;
+  border-color: color-mix(in srgb, var(--sl-card-border) 60%, transparent) !important;
+}
+
+/* Card title — subtle transition */
+.card .title {
+  transition: color 0.2s ease;
+}
+
+/* CardGrid — consistent gap */
+.sl-link-card-grid {
+  border-radius: 10px;
+}
