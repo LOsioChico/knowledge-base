@@ -11,6 +11,7 @@ related:
 > Recreate [[aws/amplify|Amplify Hosting]] in a new account: `create-app` → branch → zip deployment → move custom domain. CLI-driven and scriptable for dry runs.
 
 import { Aside } from "@astrojs/starlight/components";
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -38,6 +39,16 @@ Delete the **source** `domain-association` before attaching the domain in accoun
 ## Recipe
 
 Profiles: `account-a`, `account-b`. Confirm both profiles target the **same Region** as the source app (domain associations and ACM for custom domains are regional).
+
+<PipelineStrip
+  title="Migration flow"
+  stages={[
+    { label: "Pre-flight", tip: "Verify both profiles with sts get-caller-identity. Export the source app's custom rules and build spec for recreation." },
+    { label: "Create app", tip: "create-app in account B with SPA rewrite rules, then create-branch for production. Returns the new appId." },
+    { label: "Zip deploy", tip: "Build locally, upload zip to create-deployment presigned URL, start the job. Smoke-test the amplifyapp.com URL before DNS cutover." },
+    { label: "Move domain", tip: "Delete domain-association in account A first (prevents ghost claims), then create-domain-association in account B with custom ACM cert." },
+  ]}
+/>
 
 ## 1. Pre-flight + inventory
 
