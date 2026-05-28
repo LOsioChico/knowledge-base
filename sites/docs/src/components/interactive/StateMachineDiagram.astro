@@ -1,14 +1,16 @@
 ---
 /**
- * StateMachineDiagram.astro
+ * StateMachineDiagram.astro — v2
  *
- * Interactive state machine diagram. SVG is fully pre-rendered at build time
- * (no client-side SVG creation). JavaScript handles click interactions only.
+ * Interactive state machine diagram. Rebuilt from scratch.
  *
- * Props:
- *   states      – state nodes with id, label, optional typeShape/description/color
- *   transitions – directed edges between states
- *   title       – optional heading
+ * Layout: BFS-layered (states arranged in columns by graph distance
+ * from the initial state). Multi-node layers are vertically centered.
+ *
+ * Arrows: forward edges use direct curves; backward edges arc above
+ * or below to avoid overlap. Labels get background pills.
+ *
+ * SVG is fully pre-rendered at build time. JS handles click only.
  */
 
 interface State {
@@ -34,81 +36,88 @@ interface Props {
 
 const { states, transitions, title } = Astro.props;
 
-/* ---------- Colors ---------- */
-const defaultColors: Record<string, string> = {
+/* ═══ Colors ═══ */
+const palette: Record<string, string> = {
   waiting: '#94a3b8', loading: '#60a5fa', success: '#4ade80', failure: '#f87171',
 };
-function getColor(s: State): string {
-  return s.color || defaultColors[s.id.toLowerCase()] || '#a78bfa';
+function clr(s: State): string {
+  return s.color || palette[s.id.toLowerCase()] || '#a78bfa';
 }
 
-/* ---------- Adjacency ---------- */
+/* ═══ Adjacency ═══ */
 const adj: Record<string, string[]> = {};
 states.forEach(s => { adj[s.id] = []; });
 transitions.forEach(t => { if (adj[t.from]) adj[t.from].push(t.to); });
 
-/* ---------- Layout ---------- */
-const NODE_W = 130;
-const NODE_H = 44;
-const GAP_X = 90;
-const GAP_Y = 80;
-const PAD = 50;
+/* ═══ BFS-layered layout ═══ */
+const NODE_W = 136;
+const NODE_H = 48;
+const GAP_X = 80;
+const GAP_Y = 64;
+const PAD = 48;
+const ARC_CLEARANCE = 40;
 
 type Pos = { x: number; y: number };
-const positions: Record<string, Pos> = {};
 
-// Main chain: follow initial → first unvisited → …
-const initialState = states.find(s => s.initial) || states[0];
-const mainChain: string[] = [];
-const placed = new Set<string>();
-let cur = initialState.id;
-while (cur && !placed.has(cur)) {
-  mainChain.push(cur);
-  placed.add(cur);
-  cur = (adj[cur] || []).find(id => !placed.has(id)) || '';
+const initial = states.find(s => s.initial) || states[0];
+const layerOf: Record<string, number> = {};
+const queue: string[] = [initial.id];
+layerOf[initial.id] = 0;
+
+while (queue.length > 0) {
+  const cur = queue.shift()!;
+  for (const next of adj[cur] || []) {
+    if (!(next in layerOf)) {
+      layerOf[next] = layerOf[cur] + 1;
+      queue.push(next);
+    }
+  }
 }
-
-// Fork detection
-const forkId = Object.entries(adj).find(([, targets]) => targets.length > 1)?.[0];
-const forkTargets = forkId ? adj[forkId].filter(id => !mainChain.includes(id)) : [];
-
-// Position main chain horizontally
-mainChain.forEach((id, i) => {
-  positions[id] = { x: PAD + i * (NODE_W + GAP_X) + NODE_W / 2, y: PAD + NODE_H / 2 };
+// Unreachable nodes go at the end
+states.forEach(s => {
+  if (!(s.id in layerOf)) layerOf[s.id] = Math.max(0, ...Object.values(layerOf)) + 1;
 });
 
-// Position fork targets below the fork node
-if (forkId && positions[forkId]) {
-  forkTargets.forEach((id, i) => {
-    positions[id] = { x: positions[forkId].x, y: positions[forkId].y + GAP_Y + i * (NODE_H + 30) };
-    placed.add(id);
+// Group by layer
+const groups: Record<number, string[]> = {};
+for (const [id, layer] of Object.entries(layerOf)) {
+  (groups[layer] ??= []).push(id);
+}
+
+const numCols = Math.max(...Object.keys(groups).map(Number)) + 1;
+const maxRows = Math.max(...Object.values(groups).map(g => g.length));
+const contentH = maxRows * NODE_H + Math.max(0, maxRows - 1) * GAP_Y;
+
+const pos: Record<string, Pos> = {};
+for (const [layerStr, ids] of Object.entries(groups)) {
+  const col = Number(layerStr);
+  const layerH = ids.length * NODE_H + Math.max(0, ids.length - 1) * GAP_Y;
+  const offsetY = (contentH - layerH) / 2;
+  ids.forEach((id, row) => {
+    pos[id] = {
+      x: PAD + col * (NODE_W + GAP_X) + NODE_W / 2,
+      y: PAD + offsetY + row * (NODE_H + GAP_Y) + NODE_H / 2,
+    };
   });
 }
 
-// Any remaining
-states.forEach(s => {
-  if (!positions[s.id]) {
-    const maxX = Math.max(0, ...Object.values(positions).map(p => p.x));
-    positions[s.id] = { x: maxX + NODE_W + GAP_X, y: PAD + NODE_H / 2 };
-  }
-});
+/* ═══ Arrow paths ═══ */
+const hw = NODE_W / 2;
+const hh = NODE_H / 2;
 
-// SVG bounds
-const allPos = Object.values(positions);
-const svgW = Math.max(...allPos.map(p => p.x)) + NODE_W / 2 + PAD;
-const svgH = Math.max(...allPos.map(p => p.y)) + NODE_H / 2 + PAD + 10;
-
-/* ---------- Arrow paths ---------- */
-const pairKey = (a: string, b: string) => [a, b].sort().join('|');
-const pairCount: Record<string, number> = {};
-transitions.forEach(t => {
-  const k = pairKey(t.from, t.to);
-  pairCount[k] = (pairCount[k] || 0) + 1;
-});
-const pairIdx: Record<string, number> = {};
+/** Intersection of a ray from (cx,cy) toward (tx,ty) with the node rect. */
+function edgeHit(cx: number, cy: number, tx: number, ty: number, pad: number): Pos {
+  const dx = tx - cx;
+  const dy = ty - cy;
+  if (dx === 0 && dy === 0) return { x: cx + hw + pad, y: cy };
+  const sx = (hw + pad) / Math.abs(dx);
+  const sy = (hh + pad) / Math.abs(dy);
+  const s = Math.min(sx, sy);
+  return { x: cx + dx * s, y: cy + dy * s };
+}
 
 interface Arrow {
-  path: string;
+  d: string;
   lx: number;
   ly: number;
   label?: string;
@@ -117,189 +126,222 @@ interface Arrow {
   to: string;
 }
 
+// Track all Y control points to size the SVG correctly
+let minY = PAD;
+let maxY = PAD + contentH;
+
 const arrows: Arrow[] = transitions.map(t => {
-  const fp = positions[t.from];
-  const tp = positions[t.to];
-  if (!fp || !tp) return null as unknown as Arrow;
+  const fp = pos[t.from];
+  const tp = pos[t.to];
+  if (!fp || !tp) return null!;
 
-  const pk = pairKey(t.from, t.to);
-  const idx = pairIdx[pk] || 0;
-  pairIdx[pk] = idx + 1;
-  const isBidi = pairCount[pk] > 1;
+  const fromL = layerOf[t.from];
+  const toL = layerOf[t.to];
+  const isBackward = fromL > toL;
+  const color = clr(states.find(s => s.id === t.from)!);
 
-  const dx = tp.x - fp.x;
-  const dy = tp.y - fp.y;
-  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-  const angle = Math.atan2(dy, dx);
-  const endAngle = angle + Math.PI;
+  let d: string;
+  let lx: number, ly: number;
 
-  // Start / end on elliptical boundary of pill
-  const sx = fp.x + Math.cos(angle) * (NODE_W / 2 + 4);
-  const sy = fp.y + Math.sin(angle) * (NODE_H / 2 + 4);
-  const ex = tp.x + Math.cos(endAngle) * (NODE_W / 2 + 8);
-  const ey = tp.y + Math.sin(endAngle) * (NODE_H / 2 + 8);
+  if (isBackward) {
+    /* ── Backward arrow: arc above or below ── */
+    const midCenter = (PAD + contentH / 2);
+    const pairMidY = (fp.y + tp.y) / 2;
+    const goAbove = pairMidY <= midCenter;
 
-  // Perpendicular for curve offset
-  const nx = dx / dist;
-  const ny = dy / dist;
-  const perpX = -ny;
-  const perpY = nx;
-  const offset = isBidi ? (idx === 0 ? -28 : 28) : 0;
+    const srcY = goAbove ? fp.y - hh - 3 : fp.y + hh + 3;
+    const tgtY = goAbove ? tp.y - hh - 3 : tp.y + hh + 3;
+    const arcY = goAbove
+      ? Math.min(srcY, tgtY) - ARC_CLEARANCE
+      : Math.max(srcY, tgtY) + ARC_CLEARANCE;
 
-  const mx = (sx + ex) / 2 + perpX * offset;
-  const my = (sy + ey) / 2 + perpY * offset;
+    const midX = (fp.x + tp.x) / 2;
+    d = `M ${fp.x} ${srcY} Q ${midX} ${arcY} ${tp.x} ${tgtY}`;
 
-  const path = `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`;
+    // Parametric midpoint of quadratic bezier
+    lx = 0.25 * fp.x + 0.5 * midX + 0.25 * tp.x;
+    ly = 0.25 * srcY + 0.5 * arcY + 0.25 * tgtY + (goAbove ? -8 : 12);
 
-  // Label position: at control point, offset based on direction
-  const isVertical = Math.abs(dy) > Math.abs(dx);
-  const lx = mx + (isVertical ? 14 : 0);
-  const ly = my + (isVertical ? 0 : -8);
+    // Extend SVG bounds
+    if (arcY < minY) minY = arcY;
+    if (arcY > maxY) maxY = arcY;
+  } else {
+    /* ── Forward / same-layer arrow: direct curve ── */
+    const sp = edgeHit(fp.x, fp.y, tp.x, tp.y, 4);
+    const ep = edgeHit(tp.x, tp.y, fp.x, fp.y, 8);
 
-  const color = getColor(states.find(s => s.id === t.from) || states[0]);
+    const dx = ep.x - sp.x;
+    const dy = ep.y - sp.y;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    // Gentle perpendicular curve
+    const perpX = -dy / dist * 10;
+    const perpY =  dx / dist * 10;
+    const cx = (sp.x + ep.x) / 2 + perpX;
+    const cy = (sp.y + ep.y) / 2 + perpY;
 
-  return { path, lx, ly, label: t.label, color, from: t.from, to: t.to };
+    d = `M ${sp.x} ${sp.y} Q ${cx} ${cy} ${ep.x} ${ep.y}`;
+    lx = 0.25 * sp.x + 0.5 * cx + 0.25 * ep.x;
+    ly = 0.25 * sp.y + 0.5 * cy + 0.25 * ep.y - 8;
+  }
+
+  return { d, lx, ly, label: t.label, color, from: t.from, to: t.to };
 }).filter(Boolean);
 
-// Pre-compute outgoing info per state for the info panel
-const outgoing: Record<string, { targetLabel: string; trigger: string }[]> = {};
+const svgW = PAD * 2 + numCols * NODE_W + Math.max(0, numCols - 1) * GAP_X;
+const svgH = (maxY - minY) + PAD * 2;
+const yShift = minY < PAD ? PAD - minY : 0; // shift everything down if arcs go above PAD
+
+/* ═══ Outgoing transitions per state (for info panel) ═══ */
+const outgoing: Record<string, { target: string; trigger: string }[]> = {};
 states.forEach(s => {
   outgoing[s.id] = transitions
     .filter(t => t.from === s.id)
     .map(t => ({
-      targetLabel: states.find(st => st.id === t.to)?.label || t.to,
+      target: states.find(st => st.id === t.to)?.label || t.to,
       trigger: t.label || '',
     }));
 });
+
+/* ═══ Unique marker IDs ═══ */
+const uid = Math.random().toString(36).slice(2, 8);
 ---
 
-<div class="smd">
-  <div class="smd-header">
-    {title && <div class="smd-title">⚡ {title}</div>}
-    <span class="smd-intro">Click any state to explore its type shape and transitions.</span>
-  </div>
+<div class="smd not-content">
+  {title && (
+    <div class="smd-header">
+      <span class="smd-title">{title}</span>
+      <span class="smd-hint">Click a state to inspect its type shape and transitions.</span>
+    </div>
+  )}
 
   <div class="smd-canvas">
     <svg
       class="smd-svg"
       viewBox={`0 0 ${svgW} ${svgH}`}
       width={Math.min(svgW, 700)}
-      height={svgH}
       aria-label="State machine diagram"
     >
-      {/* Defs: arrowhead markers */}
       <defs>
         {arrows.map(a => (
           <marker
-            id={`smd-ah-${a.from}-${a.to}`}
+            id={`ah-${uid}-${a.from}-${a.to}`}
             viewBox="0 0 10 7"
-            refX="9"
-            refY="3.5"
-            markerWidth="8"
-            markerHeight="6"
+            refX="9" refY="3.5"
+            markerWidth="7" markerHeight="5"
             orient="auto-start-reverse"
           >
-            <polygon points="0 0, 10 3.5, 0 7" fill={a.color} opacity="0.8" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={a.color} opacity="0.75" />
           </marker>
         ))}
       </defs>
 
-      {/* Arrow paths */}
-      <g class="smd-arrows">
+      {/* ── Arrow paths ── */}
+      <g class="smd-arrows" transform={`translate(0 ${yShift})`}>
         {arrows.map(a => (
-          <g data-smd-arrow={`${a.from}-${a.to}`} data-smd-source={a.from}>
+          <g data-smd-arrow={`${a.from}-${a.to}`} data-smd-src={a.from}>
             <path
-              d={a.path}
+              d={a.d}
               stroke={a.color}
-              stroke-width="2"
-              stroke-opacity="0.45"
+              stroke-width="1.5"
+              stroke-opacity="0.4"
               fill="none"
-              marker-end={`url(#smd-ah-${a.from}-${a.to})`}
-              class="smd-arrow-path"
+              marker-end={`url(#ah-${uid}-${a.from}-${a.to})`}
+              class="smd-edge"
             />
             {a.label && (
-              <text
-                x={a.lx.toFixed(1)}
-                y={a.ly.toFixed(1)}
-                text-anchor="middle"
-                font-size="10"
-                fill={a.color}
-                opacity="0.65"
-                class="smd-arrow-label"
-              >
-                {a.label}
-              </text>
+              <g>
+                <rect
+                  x={a.lx - a.label.length * 3.2 - 5}
+                  y={a.ly - 8}
+                  width={a.label.length * 6.4 + 10}
+                  height={16}
+                  rx="4"
+                  fill="var(--smd-bg)"
+                  fill-opacity="0.9"
+                  stroke={a.color}
+                  stroke-width="0.5"
+                  stroke-opacity="0.3"
+                />
+                <text
+                  x={a.lx}
+                  y={a.ly + 3}
+                  text-anchor="middle"
+                  font-size="10"
+                  font-family="var(--sl-font-mono, monospace)"
+                  fill={a.color}
+                  opacity="0.85"
+                  class="smd-edge-label"
+                >
+                  {a.label}
+                </text>
+              </g>
             )}
           </g>
         ))}
       </g>
 
-      {/* State nodes */}
-      <g class="smd-nodes">
+      {/* ── State nodes ── */}
+      <g class="smd-nodes" transform={`translate(0 ${yShift})`}>
         {states.map(s => {
-          const pos = positions[s.id];
-          const color = getColor(s);
-          const outs = outgoing[s.id].map(o => `${o.trigger}>${o.targetLabel}`).join('|');
+          const p = pos[s.id];
+          const c = clr(s);
+          const outs = outgoing[s.id].map(o => `${o.trigger}>${o.target}`).join('|');
           return (
             <g
               data-smd-node={s.id}
-              data-smd-color={color}
+              data-smd-color={c}
               data-smd-desc={s.description || ''}
               data-smd-type={s.typeShape || ''}
               data-smd-outs={outs}
-              class="smd-node-g"
+              class="smd-node"
               tabindex="0"
               role="button"
               aria-label={`State: ${s.label}`}
             >
-              {/* Glow ring */}
+              {/* Glow rect (shown on select) */}
               <rect
-                x={pos.x - NODE_W / 2 - 4}
-                y={pos.y - NODE_H / 2 - 4}
-                width={NODE_W + 8}
-                height={NODE_H + 8}
-                rx={(NODE_H + 8) / 2}
-                fill="none"
-                stroke={color}
-                stroke-width="3"
-                opacity="0"
+                x={p.x - hw - 5} y={p.y - hh - 5}
+                width={NODE_W + 10} height={NODE_H + 10}
+                rx="14"
+                fill="none" stroke={c} stroke-width="2.5" opacity="0"
                 class="smd-glow"
               />
-              {/* Node pill */}
+              {/* Node body */}
               <rect
-                x={pos.x - NODE_W / 2}
-                y={pos.y - NODE_H / 2}
-                width={NODE_W}
-                height={NODE_H}
-                rx={NODE_H / 2}
-                fill="var(--smd-node-bg)"
-                stroke={color}
-                stroke-width="2"
-                class="smd-pill"
+                x={p.x - hw} y={p.y - hh}
+                width={NODE_W} height={NODE_H}
+                rx="10"
+                fill="var(--smd-surface)"
+                stroke="var(--smd-rule)"
+                stroke-width="1"
+                class="smd-body"
+              />
+              {/* Left accent bar */}
+              <rect
+                x={p.x - hw} y={p.y - hh + 6}
+                width="3" height={NODE_H - 12}
+                rx="1.5"
+                fill={c}
+                opacity="0.8"
               />
               {/* Label */}
               <text
-                x={pos.x}
-                y={pos.y + 1}
+                x={p.x + 4} y={p.y + 1}
                 text-anchor="middle"
                 dominant-baseline="central"
-                font-size="13"
-                font-weight="600"
-                fill={color}
+                font-size="13" font-weight="600"
+                fill="var(--smd-text)"
               >
                 {s.label}
               </text>
-              {/* Initial dot + stem */}
+              {/* Initial indicator */}
               {s.initial && (
                 <g>
-                  <circle cx={pos.x - NODE_W / 2 - 18} cy={pos.y} r="4" fill={color} />
+                  <circle cx={p.x - hw - 16} cy={p.y} r="4" fill={c} />
                   <line
-                    x1={pos.x - NODE_W / 2 - 13}
-                    y1={pos.y}
-                    x2={pos.x - NODE_W / 2 - 2}
-                    y2={pos.y}
-                    stroke={color}
-                    stroke-width="2"
+                    x1={p.x - hw - 11} y1={p.y}
+                    x2={p.x - hw - 2}  y2={p.y}
+                    stroke={c} stroke-width="2"
                   />
                 </g>
               )}
@@ -310,7 +352,7 @@ states.forEach(s => {
     </svg>
   </div>
 
-  {/* Info panel (HTML, not SVG) */}
+  {/* ── Info panel ── */}
   <div class="smd-info" data-smd-info style="display:none">
     <div class="smd-info-bar"></div>
     <div class="smd-info-body">
@@ -327,41 +369,48 @@ states.forEach(s => {
 </div>
 
 <style>
-  /* ===== Container ===== */
+  /* ═══ Container ═══ */
   .smd {
-    --smd-bg: var(--sl-color-gray-6, #1e1e2e);
-    --smd-border: var(--sl-color-gray-5, #313244);
-    --smd-text: var(--sl-color-gray-1, #cdd6f4);
-    --smd-text-dim: var(--sl-color-gray-3, #6c7086);
-    --smd-accent: var(--sl-color-accent, #89b4fa);
-    --smd-node-bg: var(--sl-color-gray-5, #313244);
-    border: 1px solid var(--smd-border);
-    border-radius: 12px;
-    background: var(--smd-bg);
+    --smd-bg:      var(--sl-color-bg-nav);
+    --smd-surface: var(--sl-color-bg-sidebar);
+    --smd-rule:    var(--sl-color-hairline-shade);
+    --smd-text:    var(--sl-color-text);
+    --smd-dim:     var(--sl-color-gray-3);
+    --smd-ghost:   var(--sl-color-gray-4);
+    --smd-accent:  var(--sl-color-accent-high);
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
     margin: 1.5rem 0;
+    background: var(--smd-bg);
+    border: 1px solid var(--smd-rule);
+    border-radius: 10px;
     overflow: hidden;
   }
 
+  /* ── Header ── */
   .smd-header {
-    padding: 1rem 1.25rem 0.5rem;
-    border-bottom: 1px solid var(--smd-border);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--smd-rule);
   }
 
   .smd-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--smd-text);
-    margin-bottom: 0.2rem;
+    font-size: var(--sl-text-sm);
+    font-weight: 600;
+    color: var(--smd-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .smd-intro {
-    font-size: 0.78rem;
-    color: var(--smd-text-dim);
+  .smd-hint {
+    font-size: var(--sl-text-xs);
+    color: var(--smd-ghost);
   }
 
-  /* ===== SVG canvas ===== */
+  /* ── SVG canvas ── */
   .smd-canvas {
-    padding: 1rem 0.5rem 0.5rem;
+    padding: 0.75rem 0.5rem 0.25rem;
     overflow-x: auto;
     display: flex;
     justify-content: center;
@@ -370,88 +419,90 @@ states.forEach(s => {
   .smd-svg {
     display: block;
     max-width: 100%;
+    height: auto;
   }
 
-  /* ===== Node interactivity ===== */
-  .smd-node-g {
+  /* ═══ Nodes ═══ */
+  .smd-node {
     cursor: pointer;
     outline: none;
   }
 
-  .smd-node-g .smd-pill,
-  .smd-node-g text {
-    transition: opacity 0.3s ease;
+  .smd-body {
+    transition: filter 200ms var(--ease), stroke 200ms var(--ease);
   }
 
-  .smd-node-g .smd-glow {
-    transition: opacity 0.35s ease;
+  .smd-glow {
+    transition: opacity 250ms var(--ease);
   }
 
-  .smd-node-g:hover .smd-pill {
-    filter: brightness(1.2);
+  .smd-node:hover .smd-body {
+    filter: brightness(1.15);
+    stroke-width: 1.5;
   }
 
-  .smd-node-g:focus-visible .smd-glow {
-    opacity: 0.25 !important;
+  .smd-node:focus-visible .smd-glow {
+    opacity: 0.2 !important;
   }
 
-  /* States applied via JS */
-  .smd-node-g[data-state="selected"] .smd-glow { opacity: 0.4; }
-  .smd-node-g[data-state="selected"] .smd-pill { filter: brightness(1.25); }
-  .smd-node-g[data-state="dimmed"]   { opacity: 0.2; }
-  .smd-node-g[data-state="target"] .smd-pill {
-    stroke-dasharray: 6 3;
-    filter: brightness(1.1);
+  /* JS-applied states */
+  .smd-node[data-state="selected"] .smd-glow { opacity: 0.35; }
+  .smd-node[data-state="selected"] .smd-body { filter: brightness(1.2); stroke-width: 1.5; }
+  .smd-node[data-state="dimmed"]   { opacity: 0.2; pointer-events: none; }
+  .smd-node[data-state="target"] .smd-body {
+    stroke-dasharray: 5 3;
+    filter: brightness(1.08);
   }
 
-  /* ===== Arrows ===== */
-  .smd-arrow-path {
-    transition: stroke-opacity 0.3s ease, stroke-width 0.3s ease;
+  /* ═══ Arrows ═══ */
+  .smd-edge {
+    transition: stroke-opacity 250ms var(--ease), stroke-width 250ms var(--ease);
   }
 
-  .smd-arrow-label {
-    transition: opacity 0.3s ease;
-    font-family: var(--sl-font-mono, monospace);
+  .smd-edge-label {
+    transition: opacity 250ms var(--ease);
   }
 
-  [data-smd-arrow][data-arrow-state="highlight"] .smd-arrow-path {
-    stroke-opacity: 0.95;
+  [data-smd-arrow][data-arrow-state="highlight"] .smd-edge {
+    stroke-opacity: 0.9;
     stroke-width: 2.5;
     stroke-dasharray: 6 4;
     animation: smd-flow 0.6s linear infinite;
   }
 
-  [data-smd-arrow][data-arrow-state="highlight"] .smd-arrow-label {
+  [data-smd-arrow][data-arrow-state="highlight"] .smd-edge-label {
     opacity: 1;
     font-weight: 600;
   }
 
-  [data-smd-arrow][data-arrow-state="dimmed"] .smd-arrow-path {
-    stroke-opacity: 0.08;
+  [data-smd-arrow][data-arrow-state="dimmed"] .smd-edge {
+    stroke-opacity: 0.06;
   }
 
-  [data-smd-arrow][data-arrow-state="dimmed"] .smd-arrow-label {
-    opacity: 0.08;
+  [data-smd-arrow][data-arrow-state="dimmed"] .smd-edge-label {
+    opacity: 0.06;
+  }
+
+  [data-smd-arrow][data-arrow-state="dimmed"] rect {
+    opacity: 0.06;
   }
 
   @keyframes smd-flow {
     to { stroke-dashoffset: -10; }
   }
 
-  /* ===== Info panel ===== */
+  /* ═══ Info panel ═══ */
   .smd-info {
-    margin: 0 0.75rem 0.75rem;
-    border: 1px solid var(--smd-border);
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--smd-bg) 92%, transparent);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    margin: 0 12px 12px;
+    border: 1px solid var(--smd-rule);
+    border-radius: 8px;
+    background: var(--smd-surface);
     overflow: hidden;
-    animation: smd-slide 0.25s ease-out;
+    animation: smd-slide 0.2s ease-out;
   }
 
   @keyframes smd-slide {
-    from { opacity: 0; transform: translateY(-6px); }
+    from { opacity: 0; transform: translateY(-4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
@@ -460,15 +511,13 @@ states.forEach(s => {
     border-radius: 3px 3px 0 0;
   }
 
-  .smd-info-body {
-    padding: 0;
-  }
+  .smd-info-body { padding: 0; }
 
   .smd-info-head {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.65rem 1rem;
+    padding: 0.6rem 1rem;
   }
 
   .smd-info-dot {
@@ -488,7 +537,7 @@ states.forEach(s => {
   .smd-info-close {
     background: none;
     border: none;
-    color: var(--smd-text-dim);
+    color: var(--smd-ghost);
     cursor: pointer;
     font-size: 1rem;
     padding: 0.2rem 0.4rem;
@@ -499,24 +548,23 @@ states.forEach(s => {
 
   .smd-info-close:hover {
     color: var(--smd-text);
-    background: var(--smd-node-bg);
+    background: var(--smd-bg);
   }
 
   .smd-info-desc {
-    padding: 0 1rem 0.6rem;
-    font-size: 0.82rem;
-    color: var(--smd-text-dim);
+    padding: 0 1rem 0.5rem;
+    font-size: var(--sl-text-xs);
+    color: var(--smd-dim);
     line-height: 1.5;
   }
 
   .smd-info-desc:empty { display: none; }
 
   .smd-info-trans {
-    padding: 0 1rem 0.6rem;
-    font-size: 0.78rem;
+    padding: 0 1rem 0.5rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .smd-info-trans:empty { display: none; }
@@ -525,10 +573,10 @@ states.forEach(s => {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.2rem 0.5rem;
+    padding: 0.15rem 0.5rem;
     border-radius: 6px;
-    background: color-mix(in srgb, var(--smd-node-bg) 70%, transparent);
-    color: var(--smd-text-dim);
+    background: color-mix(in srgb, var(--smd-bg) 70%, transparent);
+    color: var(--smd-dim);
     font-size: 0.75rem;
   }
 
@@ -540,15 +588,15 @@ states.forEach(s => {
 
   .smd-info-code {
     margin: 0;
-    padding: 0.65rem 1rem;
-    background: var(--sl-color-gray-7, #11111b);
-    border-top: 1px solid var(--smd-border);
+    padding: 0.55rem 1rem;
+    background: color-mix(in srgb, var(--smd-bg) 60%, #000);
+    border-top: 1px solid var(--smd-rule);
     overflow-x: auto;
   }
 
   .smd-info-code code {
     font-family: var(--sl-font-mono, monospace);
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: var(--smd-accent);
     line-height: 1.6;
     white-space: pre;
@@ -556,8 +604,14 @@ states.forEach(s => {
 
   .smd-info-code:has(code:empty) { display: none; }
 
+  /* ═══ Reduced motion / Print ═══ */
+  @media (prefers-reduced-motion: reduce) {
+    .smd-edge, .smd-body, .smd-glow { transition-duration: 0.01ms !important; }
+  }
+
   @media print {
     .smd-info-close { display: none; }
+    .smd-node { opacity: 1 !important; }
   }
 </style>
 
@@ -565,19 +619,19 @@ states.forEach(s => {
   document.addEventListener('astro:page-load', initSMD);
 
   function initSMD() {
-    document.querySelectorAll<HTMLElement>('.smd:not([data-smd-ready])').forEach((root) => {
+    document.querySelectorAll<HTMLElement>('.smd:not([data-smd-ready])').forEach(root => {
       root.setAttribute('data-smd-ready', '');
 
-      const nodeGs = root.querySelectorAll<SVGGElement>('[data-smd-node]');
+      const nodeGs  = root.querySelectorAll<SVGGElement>('[data-smd-node]');
       const arrowGs = root.querySelectorAll<SVGGElement>('[data-smd-arrow]');
-      const info = root.querySelector<HTMLElement>('[data-smd-info]');
-      const infoBar = info?.querySelector<HTMLElement>('.smd-info-bar');
-      const infoName = info?.querySelector<HTMLElement>('.smd-info-name');
-      const infoDot = info?.querySelector<HTMLElement>('.smd-info-dot');
-      const infoDesc = info?.querySelector<HTMLElement>('.smd-info-desc');
+      const info      = root.querySelector<HTMLElement>('[data-smd-info]');
+      const infoBar   = info?.querySelector<HTMLElement>('.smd-info-bar');
+      const infoName  = info?.querySelector<HTMLElement>('.smd-info-name');
+      const infoDot   = info?.querySelector<HTMLElement>('.smd-info-dot');
+      const infoDesc  = info?.querySelector<HTMLElement>('.smd-info-desc');
       const infoTrans = info?.querySelector<HTMLElement>('.smd-info-trans');
-      const infoCode = info?.querySelector<HTMLElement>('.smd-info-code code');
-      const closeBtn = root.querySelector<HTMLElement>('[data-smd-close]');
+      const infoCode  = info?.querySelector<HTMLElement>('.smd-info-code code');
+      const closeBtn  = root.querySelector<HTMLElement>('[data-smd-close]');
 
       let selectedId: string | null = null;
 
@@ -588,10 +642,10 @@ states.forEach(s => {
         const g = root.querySelector<SVGGElement>(`[data-smd-node="${id}"]`);
         if (!g) return;
 
-        const color = g.dataset.smdColor || '#94a3b8';
-        const desc = g.dataset.smdDesc || '';
+        const color     = g.dataset.smdColor || '#94a3b8';
+        const desc      = g.dataset.smdDesc || '';
         const typeShape = g.dataset.smdType || '';
-        const outsRaw = g.dataset.smdOuts || '';
+        const outsRaw   = g.dataset.smdOuts || '';
         const outs = outsRaw ? outsRaw.split('|').map(o => {
           const [trigger, target] = o.split('>');
           return { trigger, target };
@@ -604,7 +658,7 @@ states.forEach(s => {
           })?.dataset.smdNode || ''
         ).filter(Boolean);
 
-        // Update node states
+        // Node states
         nodeGs.forEach(n => {
           const nid = n.dataset.smdNode || '';
           if (nid === id) n.setAttribute('data-state', 'selected');
@@ -612,13 +666,13 @@ states.forEach(s => {
           else n.setAttribute('data-state', 'dimmed');
         });
 
-        // Update arrows
+        // Arrow states
         arrowGs.forEach(a => {
-          if (a.dataset.smdSource === id) a.setAttribute('data-arrow-state', 'highlight');
+          if (a.dataset.smdSrc === id) a.setAttribute('data-arrow-state', 'highlight');
           else a.setAttribute('data-arrow-state', 'dimmed');
         });
 
-        // Show info panel
+        // Info panel
         if (info && infoBar && infoName && infoDot && infoDesc && infoCode) {
           info.style.display = '';
           infoBar.style.background = color;
@@ -642,7 +696,6 @@ states.forEach(s => {
         if (info) info.style.display = 'none';
       }
 
-      // Click handlers
       nodeGs.forEach(n => {
         n.addEventListener('click', () => select(n.dataset.smdNode || ''));
         n.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -655,9 +708,9 @@ states.forEach(s => {
       closeBtn?.addEventListener('click', deselect);
 
       // Auto-select initial state
-      const initial = root.querySelector<SVGGElement>('[data-smd-node] circle');
-      if (initial) {
-        const parentG = initial.closest<SVGGElement>('[data-smd-node]');
+      const initialCircle = root.querySelector<SVGGElement>('.smd-node circle');
+      if (initialCircle) {
+        const parentG = initialCircle.closest<SVGGElement>('[data-smd-node]');
         if (parentG) select(parentG.dataset.smdNode || '');
       }
     });
