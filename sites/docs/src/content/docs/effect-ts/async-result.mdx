@@ -73,17 +73,17 @@ To solve this, we model async lifecycles as a strict, atomic **`AsyncResult` tag
 <StateMachineDiagram
   title="AsyncResult transition diagram"
   states={[
-    { id: "waiting", label: "Waiting", initial: true, description: "No fetch has started yet. The UI shows a placeholder or call-to-action. Every AsyncResult store starts here.", typeShape: "{ readonly _tag: 'Waiting' }", color: "#94a3b8" },
-    { id: "loading", label: "Loading", description: "A network request is in flight. The UI shows a spinner or skeleton. The store transitions here whenever a fetch, retry, or refresh is triggered.", typeShape: "{ readonly _tag: 'Loading' }", color: "#60a5fa" },
-    { id: "success", label: "Success", description: "The fetch resolved with data. The UI renders the payload. From here, the user can trigger a refresh to reload the data.", typeShape: "{ readonly _tag: 'Success'; readonly data: A }", color: "#4ade80" },
-    { id: "failure", label: "Failure", description: "The fetch failed with an error. The UI shows the error cause and a retry button. From here, the user can retry the same request.", typeShape: "{ readonly _tag: 'Failure'; readonly error: E }", color: "#f87171" },
+    { id: "waiting", label: "Waiting", initial: true, description: "No fetch started. Show a placeholder or call-to-action. This is the initial state when the store is created.", typeShape: "{ readonly _tag: 'Waiting' }", color: "#94a3b8" },
+    { id: "loading", label: "Loading", description: "Fetch in progress. Show a spinner or skeleton. Entered when the network call begins.", typeShape: "{ readonly _tag: 'Loading' }", color: "#60a5fa" },
+    { id: "success", label: "Success", description: "Data loaded successfully. Render the payload. Entered when the fetch resolves with Right.", typeShape: "{ readonly _tag: 'Success'; readonly data: A }", color: "#4ade80" },
+    { id: "failure", label: "Failure", description: "Fetch failed. Show the error cause. Entered when the fetch resolves with Left.", typeShape: "{ readonly _tag: 'Failure'; readonly error: E }", color: "#f87171" },
   ]}
   transitions={[
-    { from: "waiting", to: "loading", label: "start fetch" },
-    { from: "loading", to: "success", label: "data arrives" },
-    { from: "loading", to: "failure", label: "error occurs" },
-    { from: "failure", to: "loading", label: "retry" },
-    { from: "success", to: "loading", label: "refresh" },
+    { from: "waiting", to: "loading", label: "fetch()" },
+    { from: "loading", to: "success", label: "Right" },
+    { from: "loading", to: "failure", label: "Left" },
+    { from: "failure", to: "loading", label: "retry()" },
+    { from: "success", to: "loading", label: "refresh()" },
   ]}
 />
 

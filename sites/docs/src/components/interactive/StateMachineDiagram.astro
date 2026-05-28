@@ -312,6 +312,14 @@ const uid = Math.random().toString(36).slice(2, 8);
               role="button"
               aria-label={`State: ${s.label}`}
             >
+              {/* Invisible hit area — ensures clicks work anywhere inside the pill */}
+              <rect
+                x={p.x - hw} y={p.y - hh}
+                width={NODE_W} height={NODE_H}
+                rx={NODE_RX}
+                fill="transparent"
+                class="smd-hitarea"
+              />
               {/* Glow ring (shown on select) */}
               <rect
                 x={p.x - hw - 5} y={p.y - hh - 5}
@@ -634,6 +642,8 @@ const uid = Math.random().toString(36).slice(2, 8);
 
 <script>
   document.addEventListener('astro:page-load', initSMD);
+  // Fallback: init immediately if page already loaded
+  if (document.readyState !== 'loading') initSMD();
 
   function initSMD() {
     document.querySelectorAll<HTMLElement>('.smd:not([data-smd-ready])').forEach(root => {
@@ -647,8 +657,10 @@ const uid = Math.random().toString(36).slice(2, 8);
       const infoDot   = info?.querySelector<HTMLElement>('.smd-info-dot');
       const infoDesc  = info?.querySelector<HTMLElement>('.smd-info-desc');
       const infoTrans = info?.querySelector<HTMLElement>('.smd-info-trans');
-      const infoCode  = info?.querySelector<HTMLElement>('.smd-info-code code');
+      const infoCodeEl = info?.querySelector<HTMLElement>('.smd-info-code code');
       const closeBtn  = root.querySelector<HTMLElement>('[data-smd-close]');
+
+      if (!info) return;
 
       let selectedId: string | null = null;
 
@@ -670,7 +682,7 @@ const uid = Math.random().toString(36).slice(2, 8);
 
         const outTargetIds = outs.map(o =>
           Array.from(nodeGs).find(n => {
-            const label = n.querySelector('text')?.textContent?.trim();
+            const label = n.querySelector('.smd-label')?.textContent?.trim();
             return label === o.target;
           })?.dataset.smdNode || ''
         ).filter(Boolean);
@@ -689,20 +701,17 @@ const uid = Math.random().toString(36).slice(2, 8);
           else a.setAttribute('data-arrow-state', 'dimmed');
         });
 
-        // Info panel
-        if (info && infoBar && infoName && infoDot && infoDesc && infoCode) {
-          info.style.display = '';
-          infoBar.style.background = color;
-          infoDot.style.background = color;
-          infoName.textContent = g.querySelector('text')?.textContent?.trim() || '';
-          infoDesc.textContent = desc;
-          infoCode.textContent = typeShape;
-
-          if (infoTrans) {
-            infoTrans.innerHTML = outs.map(o =>
-              `<span class="smd-t">${o.trigger ? `<code>${o.trigger}</code> →` : '→'} ${o.target}</span>`
-            ).join('');
-          }
+        // Show info panel (each element is optional — show what we can)
+        info!.style.display = '';
+        if (infoBar)    infoBar.style.background = color;
+        if (infoDot)    infoDot.style.background = color;
+        if (infoName)   infoName.textContent = g.querySelector('.smd-label')?.textContent?.trim() || '';
+        if (infoDesc)   infoDesc.textContent = desc;
+        if (infoCodeEl) infoCodeEl.textContent = typeShape;
+        if (infoTrans) {
+          infoTrans.innerHTML = outs.map(o =>
+            `<span class="smd-t">${o.trigger ? `<code>${o.trigger}</code> →` : '→'} ${o.target}</span>`
+          ).join('');
         }
       }
 
@@ -710,11 +719,14 @@ const uid = Math.random().toString(36).slice(2, 8);
         selectedId = null;
         nodeGs.forEach(n => n.removeAttribute('data-state'));
         arrowGs.forEach(a => a.removeAttribute('data-arrow-state'));
-        if (info) info.style.display = 'none';
+        info!.style.display = 'none';
       }
 
       nodeGs.forEach(n => {
-        n.addEventListener('click', () => select(n.dataset.smdNode || ''));
+        n.addEventListener('click', (e: Event) => {
+          e.stopPropagation();
+          select(n.dataset.smdNode || '');
+        });
         n.addEventListener('keydown', (e: KeyboardEvent) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
@@ -724,12 +736,9 @@ const uid = Math.random().toString(36).slice(2, 8);
       });
       closeBtn?.addEventListener('click', deselect);
 
-      // Auto-select initial state
-      const initialCircle = root.querySelector<SVGGElement>('.smd-node circle');
-      if (initialCircle) {
-        const parentG = initialCircle.closest<SVGGElement>('[data-smd-node]');
-        if (parentG) select(parentG.dataset.smdNode || '');
-      }
+      // Auto-select initial state on load
+      const initialNode = root.querySelector<SVGGElement>('.smd-initial')?.closest<SVGGElement>('[data-smd-node]');
+      if (initialNode) select(initialNode.dataset.smdNode || '');
     });
   }
 </script>
