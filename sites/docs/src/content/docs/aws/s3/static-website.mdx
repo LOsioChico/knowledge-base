@@ -3,6 +3,8 @@ title: S3 static website hosting
 description: Serve a bucket as a public HTTP website — index documents, HTTPS gap, and CloudFront or Amplify front-ends.
 related:
   - "[[aws/s3/quickstart]]"
+prerequisites:
+  - "[[aws/s3/quickstart]]"
 ---
 
 > S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only: production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.

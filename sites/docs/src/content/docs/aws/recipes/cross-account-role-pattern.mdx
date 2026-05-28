@@ -10,6 +10,8 @@ related:
   - "[[aws/iam/cli]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/secrets-manager]]"
+prerequisites:
+  - "[[aws/iam/policy-evaluation]]"
 ---
 
 > Pattern for partial [[aws/account-migrations|account migrations]]: leave a service in the old account and let new-account compute reach it via STS `AssumeRole` with ExternalId and a tightly scoped permission policy.

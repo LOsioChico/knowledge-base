@@ -16,6 +16,8 @@ related:
   - "[[nestjs/recipes/trace-id]]"
 source:
   - https://docs.nestjs.com/interceptors
+prerequisites:
+  - "[[nestjs/fundamentals/guards]]"
 ---
 
 > The **around** layer: logic before `next.handle()` and after the handler emits on an RxJS stream. Use interceptors for logging, response shaping, [[nestjs/data/caching|caching]], and timeouts: not for raw `req` mutation or per-argument [[nestjs/recipes/validation|validation]].

@@ -3,6 +3,7 @@ title: Lambda vs EC2 vs Fargate
 description: AWS compute decision guide — workload shape, limits, pricing crossover, and when Lambda-as-monolith fails.
 related:
   - "[[aws/s3/presigned-urls]]"
+prerequisites: []
 ---
 
 > [[aws/lambda|Lambda]], [[aws/ec2|EC2]], and [[aws/ecs|Fargate]] solve different workload shapes. Picking Lambda for a long-lived backend trades cold starts, connection-pool overhead, and per-request pricing that crosses always-on compute well before "high traffic".

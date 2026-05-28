@@ -5,6 +5,9 @@ related:
   - "[[aws/account-migrations]]"
   - "[[aws/ec2/snapshot-all-instances]]"
   - "[[aws/rds/cross-account-snapshot]]"
+prerequisites:
+  - "[[aws/ec2/snapshot-all-instances]]"
+  - "[[aws/iam/policy-evaluation]]"
 ---
 
 > Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image`: snapshot share is required.

@@ -6,6 +6,9 @@ related:
   - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3/cli]]"
+prerequisites:
+  - "[[aws/s3/quickstart]]"
+  - "[[aws/iam/policy-evaluation]]"
 ---
 
 > Move a bucket between accounts by recreating config in the target, granting cross-account read on the source, and using `aws s3 sync` for server-side copies.

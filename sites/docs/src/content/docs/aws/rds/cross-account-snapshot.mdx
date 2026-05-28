@@ -9,6 +9,9 @@ related:
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/ec2/ami-cross-account-copy]]"
+prerequisites:
+  - "[[aws/rds/cli]]"
+  - "[[aws/iam/policy-evaluation]]"
 ---
 
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.

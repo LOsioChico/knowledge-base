@@ -4,6 +4,8 @@ description: Default deny, explicit deny, policy layers, simulator diagnostics, 
 related:
   - "[[aws/iam/cli]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
+prerequisites:
+  - "[[aws/cli/profiles-and-credentials]]"
 ---
 
 > IAM policy evaluation is the authorization pass behind every AWS API call: start at deny, find every applicable allow, then let explicit denies and guardrail policies decide what survives.
