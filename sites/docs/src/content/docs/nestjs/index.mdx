@@ -3,7 +3,8 @@ title: NestJS
 description: Map of content for NestJS — fundamentals, recipes, data, auth, and releases.
 ---
 
-import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
+import LearningRoadmap from '/src/components/interactive/LearningRoadmap.astro';
 
 > TypeScript [[effect-ts/platform|HTTP]] framework built on Express (default) or Fastify: modules, DI, and a fixed per-request pipeline.
 
@@ -15,62 +16,40 @@ import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/compone
 - **Boot/shutdown** is separate from per-request flow: [[nestjs/fundamentals/lifecycle-hooks|Lifecycle hooks]].
 - Default dev build in this KB: [[nestjs/recipes/swc-setup|SWC]] + `--type-check`.
 
-## Learning Pathway Sequence
+## Learning Roadmap
 
-Follow this highly curated step-by-step reading flow to build deep engineering intuition, starting from the low-level request pipeline up to production auth stacks.
+<Aside type="tip">**Hover** a node to highlight its prerequisites. **Right-click** to mark as complete. Click to navigate.</Aside>
 
-```mermaid
-flowchart TD
-    RL["1. Request Lifecycle (Entry)"] --> MW["2. Middleware"]
-    MW --> G["3. Guards"]
-    G --> I["4. Interceptors"]
-    I --> P["5. Pipes"]
-    P --> EF["6. Exception Filters"]
-    EF --> DM["7. Dynamic Modules"]
-    DM --> CFG["8. Config Injection"]
-    CFG --> AUTH["9. Auth Stack"]
-    CFG --> DB["10. PostgreSQL Setup"]
-    P --> VAL["Validation"]
-    I --> SER["Serialization"]
-    EF --> RATE["Rate Limiting"]
-
-    click RL "/knowledge-base/nestjs/fundamentals/request-lifecycle/"
-    click MW "/knowledge-base/nestjs/fundamentals/middleware/"
-    click G "/knowledge-base/nestjs/fundamentals/guards/"
-    click I "/knowledge-base/nestjs/fundamentals/interceptors/"
-    click P "/knowledge-base/nestjs/fundamentals/pipes/"
-    click EF "/knowledge-base/nestjs/fundamentals/exception-filters/"
-    click DM "/knowledge-base/nestjs/recipes/dynamic-modules/"
-    click CFG "/knowledge-base/nestjs/recipes/configuration/"
-    click AUTH "/knowledge-base/nestjs/auth/jwt-strategy/"
-    click DB "/knowledge-base/nestjs/data/typeorm/postgresql-setup/"
-    click VAL "/knowledge-base/nestjs/recipes/validation/"
-    click SER "/knowledge-base/nestjs/recipes/serialization/"
-    click RATE "/knowledge-base/nestjs/recipes/rate-limiting/"
-```
-
-## Start here
-
-<CardGrid>
-  <Card title="Request lifecycle" icon="list-format">
-    [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]: learn the execution order from socket to response.
-  </Card>
-  <Card title="Fundamentals" icon="open-book">
-    Review the [[nestjs/fundamentals|Fundamentals MOC]] to understand the core parts of NestJS.
-  </Card>
-  <Card title="Recipes" icon="rocket">
-    Explore [[nestjs/recipes/validation|Validation]], [[nestjs/recipes/file-uploads|file uploads]], [[nestjs/recipes/swc-setup|SWC setup]], and [[nestjs/recipes/trace-id|request tracing]] (see [[nestjs/recipes|all recipes]]).
-  </Card>
-  <Card title="Data" icon="document">
-    Configure [[nestjs/data/typeorm/postgresql-setup|TypeORM]] database setup and configure [[nestjs/data/caching|caching]] layers (see [[nestjs/data|all data guides]]).
-  </Card>
-  <Card title="Auth" icon="setting">
-    Configure the [[nestjs/auth/jwt-strategy|JWT + Passport]] authentication stack (see [[nestjs/auth|all auth guides]]).
-  </Card>
-  <Card title="Releases" icon="information">
-    Read the [[nestjs/releases/v11|v11]] and [[nestjs/releases/v10|v10]] cheat sheets (see [[nestjs/releases|all releases]]).
-  </Card>
-</CardGrid>
+<LearningRoadmap
+  trackId="nestjs"
+  title="NestJS Learning Path"
+  nodes={[
+    { id: "request-lifecycle", label: "Request Lifecycle", href: "/knowledge-base/nestjs/fundamentals/request-lifecycle/", description: "The execution order from socket to response", category: "required", group: "Pipeline" },
+    { id: "middleware", label: "Middleware", href: "/knowledge-base/nestjs/fundamentals/middleware/", description: "Express-compatible pre-route handlers", category: "required", group: "Pipeline", prereqs: ["request-lifecycle"] },
+    { id: "guards", label: "Guards", href: "/knowledge-base/nestjs/fundamentals/guards/", description: "Authorization: can this request proceed?", category: "required", group: "Pipeline", prereqs: ["middleware"] },
+    { id: "interceptors", label: "Interceptors", href: "/knowledge-base/nestjs/fundamentals/interceptors/", description: "Wrap the handler stream (before + after)", category: "required", group: "Pipeline", prereqs: ["guards"] },
+    { id: "pipes", label: "Pipes", href: "/knowledge-base/nestjs/fundamentals/pipes/", description: "Transform and validate one argument", category: "required", group: "Pipeline", prereqs: ["interceptors"] },
+    { id: "exception-filters", label: "Exception Filters", href: "/knowledge-base/nestjs/fundamentals/exception-filters/", description: "Shape error responses", category: "required", group: "Pipeline", prereqs: ["pipes"] },
+    { id: "global-providers", label: "Global Enhancers", href: "/knowledge-base/nestjs/fundamentals/global-providers/", description: "APP_* tokens and useGlobalX()", category: "required", group: "Pipeline", prereqs: ["guards", "pipes", "exception-filters"] },
+    { id: "lifecycle-hooks", label: "Lifecycle Hooks", href: "/knowledge-base/nestjs/fundamentals/lifecycle-hooks/", description: "Boot/shutdown: onModuleInit, onApplicationShutdown", category: "optional", group: "Pipeline", prereqs: ["request-lifecycle"] },
+    { id: "configuration", label: "Configuration", href: "/knowledge-base/nestjs/recipes/configuration/", description: "Env loading, validation, typed factories", category: "required", group: "Applied Recipes" },
+    { id: "validation", label: "Validation", href: "/knowledge-base/nestjs/recipes/validation/", description: "Global ValidationPipe, DTOs, whitelist", category: "required", group: "Applied Recipes", prereqs: ["pipes"] },
+    { id: "serialization", label: "Serialization", href: "/knowledge-base/nestjs/recipes/serialization/", description: "class-transformer to exclude fields", category: "optional", group: "Applied Recipes", prereqs: ["interceptors"] },
+    { id: "file-uploads", label: "File Uploads", href: "/knowledge-base/nestjs/recipes/file-uploads/", description: "Multer, ParseFilePipeBuilder, size checks", category: "optional", group: "Applied Recipes", prereqs: ["interceptors", "pipes"] },
+    { id: "trace-id", label: "Trace IDs", href: "/knowledge-base/nestjs/recipes/trace-id/", description: "AsyncLocalStorage for logs and errors", category: "optional", group: "Applied Recipes", prereqs: ["middleware"] },
+    { id: "rate-limiting", label: "Rate Limiting", href: "/knowledge-base/nestjs/recipes/rate-limiting/", description: "@nestjs/throttler global guard", category: "optional", group: "Applied Recipes", prereqs: ["guards"] },
+    { id: "dynamic-modules", label: "Dynamic Modules", href: "/knowledge-base/nestjs/recipes/dynamic-modules/", description: "ConfigurableModuleBuilder, async options", category: "optional", group: "Applied Recipes", prereqs: ["configuration"] },
+    { id: "testing", label: "Testing", href: "/knowledge-base/nestjs/recipes/testing/", description: "@nestjs/testing: unit, HTTP, E2E", category: "optional", group: "Applied Recipes", prereqs: ["guards", "pipes"] },
+    { id: "caching", label: "Caching", href: "/knowledge-base/nestjs/data/caching/", description: "@nestjs/cache-manager interceptor", category: "optional", group: "Data & Auth", prereqs: ["interceptors"] },
+    { id: "postgresql-setup", label: "PostgreSQL + TypeORM", href: "/knowledge-base/nestjs/data/typeorm/postgresql-setup/", description: "Database connection and entity setup", category: "optional", group: "Data & Auth", prereqs: ["configuration"] },
+    { id: "handle-database-errors", label: "Database Errors", href: "/knowledge-base/nestjs/data/typeorm/handle-database-errors/", description: "Map DB exceptions to HTTP responses", category: "optional", group: "Data & Auth", prereqs: ["exception-filters", "postgresql-setup"] },
+    { id: "jwt-strategy", label: "JWT + Passport", href: "/knowledge-base/nestjs/auth/jwt-strategy/", description: "Authentication stack with guards", category: "optional", group: "Data & Auth", prereqs: ["guards", "configuration"] },
+    { id: "swc-setup", label: "SWC Builder", href: "/knowledge-base/nestjs/recipes/swc-setup/", description: "Fast compilation with SWC", category: "reference", group: "Infrastructure" },
+    { id: "monorepo", label: "Monorepo", href: "/knowledge-base/nestjs/recipes/monorepo/", description: "Turborepo, apps, libraries", category: "reference", group: "Infrastructure" },
+    { id: "v11", label: "NestJS 11", href: "/knowledge-base/nestjs/releases/v11/", description: "Latest release changelog", category: "reference", group: "Releases" },
+    { id: "v10", label: "NestJS 10", href: "/knowledge-base/nestjs/releases/v10/", description: "Previous major release", category: "reference", group: "Releases" },
+  ]}
+/>
 
 ## Recipes at a glance
 

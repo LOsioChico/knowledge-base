@@ -587,3 +587,109 @@ starlight-tabs [role="tabpanel"] {
   border-radius: 10px;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   ROADMAP TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════════════ */
+
+#toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.lr-toast {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid var(--sl-color-accent, #34d399);
+  border-radius: 12px;
+  min-width: 280px;
+  max-width: 380px;
+  box-shadow: 
+    0 10px 30px -5px rgba(0, 0, 0, 0.5), 
+    0 0 20px rgba(52, 211, 153, 0.05),
+    inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lr-toast.is-active {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.lr-toast.is-exit {
+  transform: translateY(20px) scale(0.9);
+  opacity: 0;
+}
+
+.lr-toast__content {
+  display: flex;
+  align-items: center;
+  gap: 0.88rem;
+  padding: 0.9rem 1.2rem;
+}
+
+.lr-toast__icon {
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: lr-bounce 1s ease infinite alternate;
+}
+
+.lr-toast__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lr-toast__title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--sl-color-white, #ffffff);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
+.lr-toast__desc {
+  font-size: 0.82rem;
+  color: var(--sl-color-gray-2, #cbd5e1);
+  line-height: 1.3;
+}
+
+.lr-toast__desc strong {
+  color: var(--sl-color-accent, #34d399);
+  font-weight: 600;
+}
+
+.lr-toast__progress {
+  height: 3px;
+  background: linear-gradient(90deg, var(--sl-color-accent, #34d399) 0%, #10b981 100%);
+  width: 100%;
+  transform-origin: left;
+  animation: lr-shrink 4s linear forwards;
+}
+
+@keyframes lr-bounce {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.1); }
+}
+
+@keyframes lr-shrink {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+

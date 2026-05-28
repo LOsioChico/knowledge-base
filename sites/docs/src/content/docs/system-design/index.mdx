@@ -3,7 +3,8 @@ title: Systems Design
 description: Map of content for Systems Design fundamentals, including Consistent Hashing, Consistency Models, and Logical Clocks.
 ---
 
-import { Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
+import LearningRoadmap from '/src/components/interactive/LearningRoadmap.astro';
 
 > Foundational concepts and mathematical primitives for designing robust, distributed, and highly available systems.
 
@@ -16,129 +17,45 @@ In a single-computer system, building software is straightforward: there is a si
 *   **No instant updates**: If a user updates their profile picture, how does every other server learn about it without slowing down the site?
 *   **No single truth of time**: Computers have physical clocks that drift. How do we know which event happened first if servers disagree on what time it is?
 
-[[system-design/back-of-the-envelope-estimation|Estimation Primitives]], [[system-design/distributed-caching|Distributed Caching]], [[system-design/message-queues|Asynchronous Message Queues]], [[system-design/messaging-patterns|Messaging Patterns]], [[system-design/delivery-semantics|Delivery Semantics]], [[system-design/dead-letter-queues|Dead Letter Queues]], [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]], [[system-design/consistency-models|Consistency Models]], [[system-design/logical-clocks|Logical Clocks]], [[system-design/consistent-hashing|Consistent Hashing]], and [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] are the core foundational pillars of distributed software architecture.
+## Learning Roadmap
 
-## TL;DR
+<Aside type="tip">**Hover** a node to highlight its prerequisites. **Right-click** to mark as complete. Click to navigate.</Aside>
 
-*   **Estimation Primitives**: Frames system capacities and constraints using powers of two, network latencies, and SLA uptime compounding formulas. See [[system-design/back-of-the-envelope-estimation|Estimation Primitives]].
-*   **Distributed Caching**: Analyzes read/write synchronization patterns, LRU eviction models, and high-load database stampede mitigations. See [[system-design/distributed-caching|Distributed Caching]].
-*   **Asynchronous Message Queues**: Decouples compute, routes pub/sub event fanout, clarifies delivery semantics, and establishes dead-letter recovery pipelines. See [[system-design/message-queues|Asynchronous Message Queues]].
-*   **Messaging Patterns**: Competing consumers, fan-out, consumer groups, and shared subscriptions — the distribution models that determine how messages flow from queues to consumer pools. See [[system-design/messaging-patterns|Messaging Patterns]].
-*   **Delivery Semantics**: At-most-once, at-least-once, exactly-once guarantees and idempotency engineering strategies for safe duplicate handling. See [[system-design/delivery-semantics|Delivery Semantics]].
-*   **Dead Letter Queues**: Poison pill detection, retry strategies with exponential backoff, DLQ metadata envelopes, and recovery workflows. See [[system-design/dead-letter-queues|Dead Letter Queues]].
-*   **Rate Limiting & Traffic Shaping**: Regulates API requests and protects downstream compute from spikes using Token Bucket, Leaky Bucket, and Sliding Window algorithms. See [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]].
-*   **Consistency Models**: Frames partition-tolerance trade-offs via the CAP theorem, defining consistency spectrums from Strong/Linearizable to Client-Centric and Eventual models. See [[system-design/consistency-models|Consistency Models]].
-*   **Logical Clocks**: Captures causality and order of events in asynchronous distributed systems where physical time synchronization is unreliable. See [[system-design/logical-clocks|Logical Clocks]].
-*   **Consistent Hashing**: Minimizes data migration during cluster resizing by mapping keys and nodes to a circular hash ring topology. See [[system-design/consistent-hashing|Consistent Hashing]].
-*   **Distributed Transactions & Saga Patterns**: Coordinates multi-service state changes using Two-Phase Commit or Sagas with compensating workflows. See [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]].
-
-## Learning Pathway Sequence
-
-For a progressive learning flow, we recommend mastering quantitative estimation and cache distribution before diving into traffic regulation, consistency spectrums, event coordination, and ring distribution:
-
-```mermaid
-flowchart TD
-    EST["1. Estimation Primitives (Entry)"] --> CA["2. Distributed Caching"]
-    CA --> MQ["3. Asynchronous Message Queues"]
-    MQ --> RL["4. Rate Limiting & Traffic Shaping"]
-    RL --> CM["5. Consistency Models"]
-    CM --> LC["6. Logical Clocks"]
-    CM --> CH["7. Consistent Hashing"]
-    CH --> DT["8. Distributed Transactions & Saga Patterns"]
-    CM --> DT
-    MQ --> DT
-
-    click EST "/knowledge-base/system-design/back-of-the-envelope-estimation/"
-    click CA "/knowledge-base/system-design/distributed-caching/"
-    click MQ "/knowledge-base/system-design/message-queues/"
-    click RL "/knowledge-base/system-design/rate-limiting/"
-    click CM "/knowledge-base/system-design/consistency-models/"
-    click LC "/knowledge-base/system-design/logical-clocks/"
-    click CH "/knowledge-base/system-design/consistent-hashing/"
-    click DT "/knowledge-base/system-design/distributed-transactions/"
-```
-
-## Choose a path
-
-<Tabs>
-  <TabItem label="Core Architecture">
-    <Steps>
-
-    1. [[system-design/back-of-the-envelope-estimation|Estimation Primitives]]: Master the power-of-two scale, Jeff Dean latency numbers, compounding SLA availability math, and raw QPS/storage blueprints.
-    2. [[system-design/distributed-caching|Distributed Caching]]: Analyze read/write strategies, LRU cache memory, cache invalidation models, and database stampede gotchas.
-    3. [[system-design/message-queues|Asynchronous Message Queues]]: Decouple compute, analyze Pub/Sub vs. Point-to-Point, trace delivery semantics, and design resilient Dead Letter Queues.
-    4. [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Master Token Bucket, Leaky Bucket, and sliding window counter algorithms at the edge.
-    5. [[system-design/consistency-models|Consistency Models]]: Understand the CAP theorem, sequential/causal models, and client-centric guarantees like Read-Your-Writes.
-    6. [[system-design/logical-clocks|Logical Clocks]]: Solve time synchronization limits using Lamport Timestamps and Vector Clocks for causal histories.
-    7. [[system-design/consistent-hashing|Consistent Hashing]]: Master data partitioning, circular hashing rings, and hotspot mitigation with virtual nodes.
-    8. [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]]: Master Two-Phase Commit (2PC) and Saga patterns (Orchestration vs. Choreography) with compensating transactions.
-
-    </Steps>
-  </TabItem>
-  <TabItem label="Algorithmic Primitives">
-    <Steps>
-
-    1. **Quantitative Calculations**: Practice step-by-step arithmetic to estimate storage footprint, bandwidth requirements, and caching memory size: [[system-design/back-of-the-envelope-estimation#worked-example-capstone-high-scale-photo-platform|Worked Example Blueprint]].
-    2. **Cache Eviction Simulation**: Build and analyze an O(1) Least Recently Used cache using a doubly linked list and Map: [[system-design/distributed-caching#typescript-lru-cache-implementation|TypeScript LRU Cache Code]].
-    3. **Idempotency & DLQ Pipeline**: Model At-Least-Once delivery duplication, message deduplication, and dead-letter queue routing pipelines: [[system-design/message-queues#delivery-semantics-and-the-two-generals-limit|Delivery Semantics & DLQ]].
-    4. **Rate Limiting Simulator**: Build a fully typed TypeScript sliding window log rate limiter using millisecond log sets: [[system-design/rate-limiting#typescript-sliding-window-log-limiter|TypeScript Sliding Window Limiter]].
-    5. **TypeScript Implementation**: Walk through a fully typed hash ring class using MD5 and O(log N) binary search: [[system-design/consistent-hashing#typescript-implementation|Consistent Hashing Code]].
-    6. **Causal Timeline Verifications**: Compare vector clocks and trace event ordering: [[system-design/logical-clocks#visualizing-logical-clocks|Causal Tracing]].
-    7. **Saga Workflow Orchestrator**: Build a self-contained orchestrator managing forward steps and backward compensation rollbacks: [[system-design/distributed-transactions#typescript-saga-orchestrator-simulation|TypeScript Saga Orchestrator Code]].
-
-    </Steps>
-  </TabItem>
-</Tabs>
-
-## Start here
-
-<CardGrid>
-  <Card title="Estimation Primitives" icon="calculator">
-    <p><a href="/knowledge-base/system-design/back-of-the-envelope-estimation/">Quantitative scale</a>: Latency, availability nines, and worked math blueprints.</p>
-  </Card>
-  <Card title="Distributed Caching" icon="setting">
-    <p><a href="/knowledge-base/system-design/distributed-caching/">Cache tiers</a>: Read/Write strategies, LRU cache TS simulation, and stampede defenses.</p>
-  </Card>
-  <Card title="Asynchronous Message Queues" icon="email">
-    <p><a href="/knowledge-base/system-design/message-queues/">Message brokers</a>: P2P vs Pub/Sub, traditional vs log-based event [[effect-ts/streams|streams]], and DLQs.</p>
-  </Card>
-  <Card title="Rate Limiting & Traffic Shaping" icon="lock">
-    <p><a href="/knowledge-base/system-design/rate-limiting/">Traffic shaping</a>: Token bucket, leaky bucket, sliding window log counters, and security gotchas.</p>
-  </Card>
-  <Card title="Consistency Models" icon="matrix">
-    <p><a href="/knowledge-base/system-design/consistency-models/">Consistency spectrum</a>: CAP theorem, linearizability, and client models.</p>
-  </Card>
-  <Card title="Logical Clocks" icon="random">
-    <p><a href="/knowledge-base/system-design/logical-clocks/">Logical time</a>: NTP limits, Lamport, and Vector clocks.</p>
-  </Card>
-  <Card title="Consistent Hashing" icon="puzzle">
-    <p><a href="/knowledge-base/system-design/consistent-hashing/">Partitioning ring</a>: VNodes, balancing, and TS implementation.</p>
-  </Card>
-  <Card title="Distributed Transactions & Saga Patterns" icon="setting">
-    <p><a href="/knowledge-base/system-design/distributed-transactions/">Transaction patterns</a>: 2PC limits, Saga Orchestrator/Choreography, and Transactional Outbox.</p>
-  </Card>
-</CardGrid>
+<LearningRoadmap
+  trackId="system-design"
+  title="Systems Design Learning Path"
+  nodes={[
+    { id: "estimation", label: "Estimation Primitives", href: "/knowledge-base/system-design/back-of-the-envelope-estimation/", description: "Powers of two, latency numbers, SLA nines, QPS math", category: "required", group: "Foundations" },
+    { id: "distributed-caching", label: "Distributed Caching", href: "/knowledge-base/system-design/distributed-caching/", description: "Read/Write strategies, LRU eviction, cache stampede", category: "required", group: "Foundations" },
+    { id: "rate-limiting", label: "Rate Limiting", href: "/knowledge-base/system-design/rate-limiting/", description: "Token Bucket, Leaky Bucket, Sliding Window", category: "required", group: "Foundations" },
+    { id: "message-queues", label: "Message Queues", href: "/knowledge-base/system-design/message-queues/", description: "P2P vs Pub/Sub, traditional vs log-based brokers", category: "required", group: "Messaging" },
+    { id: "messaging-patterns", label: "Messaging Patterns", href: "/knowledge-base/system-design/messaging-patterns/", description: "Competing consumers, fan-out, consumer groups", category: "required", group: "Messaging", prereqs: ["message-queues"] },
+    { id: "delivery-semantics", label: "Delivery Semantics", href: "/knowledge-base/system-design/delivery-semantics/", description: "At-most-once, at-least-once, exactly-once", category: "required", group: "Messaging", prereqs: ["message-queues"] },
+    { id: "dead-letter-queues", label: "Dead Letter Queues", href: "/knowledge-base/system-design/dead-letter-queues/", description: "Poison pills, retry strategies, DLQ recovery", category: "required", group: "Messaging", prereqs: ["delivery-semantics"] },
+    { id: "consistency-models", label: "Consistency Models", href: "/knowledge-base/system-design/consistency-models/", description: "CAP theorem, linearizability, causal ordering", category: "required", group: "Consistency & Partitioning" },
+    { id: "logical-clocks", label: "Logical Clocks", href: "/knowledge-base/system-design/logical-clocks/", description: "Lamport timestamps, Vector clocks, NTP skew", category: "required", group: "Consistency & Partitioning", prereqs: ["consistency-models"] },
+    { id: "consistent-hashing", label: "Consistent Hashing", href: "/knowledge-base/system-design/consistent-hashing/", description: "Circular rings, virtual nodes, MD5 search", category: "required", group: "Consistency & Partitioning" },
+    { id: "distributed-transactions", label: "Distributed Transactions", href: "/knowledge-base/system-design/distributed-transactions/", description: "2PC, Saga Orchestrator/Choreography, Transactional Outbox", category: "required", group: "Coordination", prereqs: ["consistency-models", "message-queues"] },
+  ]}
+/>
 
 ## Guides Summary
 
-| Guide | MOC Link | Key Primitives |
-| --- | --- | --- |
-| Estimation Primitives | [Estimation Primitives](/knowledge-base/system-design/back-of-the-envelope-estimation/) | Powers of two, Latency numbers, SLA nines, QPS math |
-| Distributed Caching | [Distributed Caching](/knowledge-base/system-design/distributed-caching/) | Read/Write patterns, Eviction LRU/LFU, Cache Stampede |
-| Asynchronous Message Queues | [Asynchronous Message Queues](/knowledge-base/system-design/message-queues/) | P2P vs Pub/Sub, Brokers vs Logs, Push vs Pull delivery |
-| Messaging Patterns | [Messaging Patterns](/knowledge-base/system-design/messaging-patterns/) | Competing Consumers, Fan-Out, Consumer Groups, Shared Subscriptions |
-| Delivery Semantics | [Delivery Semantics](/knowledge-base/system-design/delivery-semantics/) | At-most-once, At-least-once, Exactly-once, Idempotency strategies |
-| Dead Letter Queues | [Dead Letter Queues](/knowledge-base/system-design/dead-letter-queues/) | Poison pills, Retry strategies, DLQ metadata, Recovery workflows |
-| Rate Limiting & Traffic Shaping | [Rate Limiting & Traffic Shaping](/knowledge-base/system-design/rate-limiting/) | Token Bucket, Leaky Bucket, Sliding Window, Horizontal Lua scripts |
-| Consistency Models | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
-| Logical Clocks | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
-| Consistent Hashing | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
-| Distributed Transactions & Saga Patterns | [Distributed Transactions & Saga Patterns](/knowledge-base/system-design/distributed-transactions/) | 2PC, Saga Orchestrator, Saga Choreography, Transactional Outbox, Compensating rollbacks |
+| Guide | Key Primitives |
+| --- | --- |
+| [[system-design/back-of-the-envelope-estimation|Estimation Primitives]] | Powers of two, Latency numbers, SLA nines, QPS math |
+| [[system-design/distributed-caching|Distributed Caching]] | Read/Write patterns, Eviction LRU/LFU, Cache Stampede |
+| [[system-design/message-queues|Asynchronous Message Queues]] | P2P vs Pub/Sub, Brokers vs Logs, Push vs Pull delivery |
+| [[system-design/messaging-patterns|Messaging Patterns]] | Competing Consumers, Fan-Out, Consumer Groups, Shared Subscriptions |
+| [[system-design/delivery-semantics|Delivery Semantics]] | At-most-once, At-least-once, Exactly-once, Idempotency strategies |
+| [[system-design/dead-letter-queues|Dead Letter Queues]] | Poison pills, Retry strategies, DLQ metadata, Recovery workflows |
+| [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]] | Token Bucket, Leaky Bucket, Sliding Window, Horizontal Lua scripts |
+| [[system-design/consistency-models|Consistency Models]] | CAP spectrum, Linearizability, Causal ordering |
+| [[system-design/logical-clocks|Logical Clocks]] | Lamport timestamps, Vector clocks, NTP skew |
+| [[system-design/consistent-hashing|Consistent Hashing]] | Circular rings, Virtual Nodes, MD5 search |
+| [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] | 2PC, Saga Orchestrator, Saga Choreography, Transactional Outbox |
 
 ## Planned Concepts
 
-To expand our distributed systems curriculum and prepare for advanced real-world architectures, the following core topics are planned to be added next:
-
 - **Distributed Consensus & Coordination**: Master election, split-brain mitigation, heartbeats, and leader coordination using consensus algorithms like Raft and Paxos.
 - **Storage Internals & Advanced Data Structures**: Analyzing B-Trees vs. LSM Trees for read/write performance, and using Bloom Filters, Merkle Trees, and Geohashes for efficient distributed data storage.
-

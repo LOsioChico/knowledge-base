@@ -5,6 +5,13 @@ const { entry } = Astro.props;
 const title = entry?.data?.title;
 const description = entry?.data?.description;
 
+// Extract roadmap tracking metadata
+const slug = entry?.slug || "";
+const slugParts = slug.split("/").filter(Boolean);
+const isContentPage = slugParts.length >= 2;
+const trackId = slugParts[0];
+const nodeId = slugParts[slugParts.length - 1];
+
 const structuredData = title
   ? {
       "@context": "https://schema.org",
@@ -37,5 +44,138 @@ const structuredData = title
       type="application/ld+json"
       set:html={JSON.stringify(structuredData)}
     />
+  )
+}
+{
+  isContentPage && (
+    <script
+      is:inline
+      data-track-id={trackId}
+      data-node-id={nodeId}
+      data-node-title={title}
+      id="roadmap-page-meta"
+    />
+    <script is:inline>
+      (function() {
+        function throttle(fn, delay) {
+          let lastTime = 0;
+          return function(...args) {
+            const now = new Date().getTime();
+            if (now - lastTime >= delay) {
+              lastTime = now;
+              fn.apply(this, args);
+            }
+          };
+        }
+
+        function showToast(title) {
+          let container = document.getElementById('toast-container');
+          if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+          }
+
+          const toast = document.createElement('div');
+          toast.className = 'lr-toast';
+          toast.innerHTML = `
+            <div class="lr-toast__content">
+              <div class="lr-toast__icon">🎉</div>
+              <div class="lr-toast__body">
+                <div class="lr-toast__title">Pathway Updated</div>
+                <div class="lr-toast__desc">Completed <strong>${title}</strong>!</div>
+              </div>
+            </div>
+            <div class="lr-toast__progress"></div>
+          `;
+          container.appendChild(toast);
+
+          // Force reflow and add active class
+          setTimeout(() => toast.classList.add('is-active'), 50);
+
+          // Exit after 4 seconds
+          setTimeout(() => {
+            toast.classList.remove('is-active');
+            toast.classList.add('is-exit');
+            toast.addEventListener('transitionend', () => toast.remove());
+          }, 4000);
+        }
+
+        function initScrollTracker() {
+          const metaEl = document.getElementById('roadmap-page-meta');
+          if (!metaEl) return;
+
+          const trackId = metaEl.dataset.trackId;
+          const nodeId = metaEl.dataset.nodeId;
+          const nodeTitle = metaEl.dataset.nodeTitle;
+          if (!trackId || !nodeId) return;
+
+          const key = 'kb-roadmap-' + trackId;
+
+          const isDone = () => {
+            try {
+              const r = localStorage.getItem(key);
+              return r ? new Set(JSON.parse(r)).has(nodeId) : false;
+            } catch {
+              return false;
+            }
+          };
+
+          if (isDone()) return;
+
+          const completePage = () => {
+            try {
+              const r = localStorage.getItem(key);
+              const done = r ? new Set(JSON.parse(r)) : new Set();
+              if (!done.has(nodeId)) {
+                done.add(nodeId);
+                localStorage.setItem(key, JSON.stringify([...done]));
+                showToast(nodeTitle);
+              }
+            } catch (err) {
+              console.error('Failed to update roadmap:', err);
+            }
+          };
+
+          const handleScroll = throttle(() => {
+            const scrollY = window.scrollY || window.pageYOffset;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            const progress = (scrollY + windowHeight) / documentHeight;
+            
+            if (progress >= 0.8) {
+              completePage();
+              window.removeEventListener('scroll', handleScroll);
+            }
+          }, 150);
+
+          // Scroll check on load (for short pages or already scrolled positions)
+          setTimeout(() => {
+            const scrollY = window.scrollY || window.pageYOffset;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight;
+            const progress = (scrollY + windowHeight) / documentHeight;
+            
+            if (progress >= 0.8) {
+              completePage();
+            } else {
+              window.addEventListener('scroll', handleScroll);
+            }
+          }, 800);
+
+          document.addEventListener('astro:before-swap', () => {
+            window.removeEventListener('scroll', handleScroll);
+          }, { once: true });
+        }
+
+        // Initialize scroll tracker cleanly
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initScrollTracker);
+        } else {
+          initScrollTracker();
+        }
+        document.addEventListener('astro:after-swap', initScrollTracker);
+      })();
+    </script>
   )
 }
