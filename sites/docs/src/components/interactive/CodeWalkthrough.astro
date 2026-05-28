@@ -6,6 +6,15 @@
  * regions of a code block; the current region is highlighted and a
  * step card appears below the code. The code scrolls to keep
  * highlighted lines in view within a constrained container.
+ *
+ * UX features:
+ *   - Staggered line fade-in animation
+ *   - Colored gutter markers on highlighted lines
+ *   - Thin progress bar (replaces pip dots)
+ *   - Inline code annotations (floating callout near highlighted lines)
+ *   - Minimap indicator for scroll position
+ *   - Touch swipe navigation
+ *   - Step title in header bar
  */
 
 interface Step {
@@ -38,31 +47,60 @@ const parsedSteps = steps.map((s) => {
 
 <div
   class="code-walkthrough not-content"
-  data-steps={JSON.stringify(parsedSteps.map((s) => ({ start: s.start, end: s.end })))}
+  data-steps={JSON.stringify(parsedSteps.map((s) => ({ start: s.start, end: s.end, title: s.title, body: s.body })))}
 >
-  {title && <div class="cw-header">{title}</div>}
-
-  {/* ── CODE (scrollable container) ── */}
-  <div class="cw-code">
-    <slot />
+  {/* ── HEADER (shows step title dynamically) ── */}
+  <div class="cw-header">
+    <span class="cw-header-title">{title || "Code Walkthrough"}</span>
+    <span class="cw-header-step"></span>
   </div>
 
-  {/* ── STEP CARD (below code, never overlaps) ── */}
+  {/* ── CODE (scrollable container) ── */}
+  <div class="cw-code-wrapper">
+    <div class="cw-code">
+      <slot />
+    </div>
+
+    {/* ── MINIMAP (scroll position indicator) ── */}
+    <div class="cw-minimap" aria-hidden="true">
+      <div class="cw-minimap-viewport"></div>
+      {parsedSteps.map((_, i) => (
+        <div class="cw-minimap-region" data-region={i}></div>
+      ))}
+    </div>
+
+    {/* ── INLINE ANNOTATION (floating callout near code) ── */}
+    <div class="cw-annotation" aria-hidden="true">
+      <div class="cw-annotation-pointer"></div>
+      <div class="cw-annotation-num"></div>
+      <div class="cw-annotation-text"></div>
+    </div>
+  </div>
+
+  {/* ── STEP CARD (below code) ── */}
   <div class="cw-card">
+    {/* ── PROGRESS BAR (replaces pip dots) ── */}
     <div class="cw-nav">
       <button class="cw-prev" aria-label="Previous step" disabled>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
         Prev
       </button>
 
-      <div class="cw-progress">
-        {parsedSteps.map((_, i) => (
-          <button
-            class={`cw-pip ${i === 0 ? "is-active" : ""}`}
-            data-step={i}
-            aria-label={`Step ${i + 1}`}
-          />
-        ))}
+      <div class="cw-progress-bar">
+        <div class="cw-progress-track">
+          <div class="cw-progress-fill"></div>
+          {parsedSteps.map((_, i) => (
+            <button
+              class={`cw-progress-segment ${i === 0 ? "is-active" : ""}`}
+              data-step={i}
+              aria-label={`Step ${i + 1}`}
+              style={`left: ${(i / parsedSteps.length) * 100}%; width: ${100 / parsedSteps.length}%`}
+            />
+          ))}
+        </div>
+        <div class="cw-progress-label">
+          <span class="cw-progress-current">1</span>/<span class="cw-progress-total">{parsedSteps.length}</span>
+        </div>
       </div>
 
       <button class="cw-next" aria-label="Next step">
@@ -74,16 +112,17 @@ const parsedSteps = steps.map((s) => {
     <div class="cw-steps">
       {parsedSteps.map((step, i) => (
         <div class={`cw-step ${i === 0 ? "is-active" : ""}`} data-step-index={i}>
-          <div class="cw-step-meta">
-            <span class="cw-step-num">{i + 1}/{parsedSteps.length}</span>
-          </div>
           <div class="cw-step-title">{step.title}</div>
           <div class="cw-step-body">{step.body}</div>
         </div>
       ))}
     </div>
 
-    <div class="cw-hint">Use ← → arrow keys to navigate</div>
+    <div class="cw-hint">
+      <span class="cw-hint-keys">← → arrow keys</span>
+      <span class="cw-hint-sep">·</span>
+      <span class="cw-hint-swipe">swipe to navigate</span>
+    </div>
   </div>
 </div>
 
@@ -96,6 +135,7 @@ const parsedSteps = steps.map((s) => {
     --cw-accent:     var(--sl-color-accent-high);
     --cw-accent-low: var(--sl-color-accent-low);
     --cw-panel:      var(--sl-color-bg-nav);
+    --cw-gutter:     var(--sl-color-accent-high);
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     margin: 1.5rem 0;
     background: var(--cw-panel);
@@ -104,13 +144,42 @@ const parsedSteps = steps.map((s) => {
     overflow: hidden;
   }
 
+  /* ═══ HEADER (dynamic step title) ═══ */
   .cw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: var(--sl-text-sm);
     font-weight: 600;
     color: var(--cw-text-faint);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 12px 20px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--cw-rule);
+    min-height: 40px;
+  }
+
+  .cw-header-step {
+    font-size: var(--sl-text-xs);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--cw-accent);
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 200ms var(--ease-out);
+  }
+
+  .code-walkthrough[data-cw-active] .cw-header-step {
+    opacity: 1;
+  }
+
+  /* ═══ CODE WRAPPER (contains code + minimap + annotation) ═══ */
+  .cw-code-wrapper {
+    position: relative;
     border-bottom: 1px solid var(--cw-rule);
   }
 
@@ -120,7 +189,6 @@ const parsedSteps = steps.map((s) => {
     max-height: 420px;
     overflow-y: auto;
     scroll-behavior: smooth;
-    border-bottom: 1px solid var(--cw-rule);
   }
 
   .cw-code :global(.expressive-code) {
@@ -133,18 +201,126 @@ const parsedSteps = steps.map((s) => {
     box-shadow: none !important;
   }
 
-  /* Line dimming when active */
+  /* ═══ LINE DIMMING + STAGGERED ANIMATION ═══ */
   .code-walkthrough[data-cw-active] .cw-code :global(.ec-line) {
     opacity: 0.25;
-    transition: opacity 250ms var(--ease-out);
+    transition: opacity 200ms var(--ease-out);
   }
 
   .code-walkthrough[data-cw-active] .cw-code :global(.ec-line[data-cw-highlight]) {
     opacity: 1;
     background: var(--cw-accent-low);
+    transition: opacity 200ms var(--ease-out), background 200ms var(--ease-out);
   }
 
-  /* ═══ CARD (static, below code) ═══ */
+  /* ═══ GUTTER MARKERS ═══ */
+  .code-walkthrough[data-cw-active] .cw-code :global(.ec-line[data-cw-highlight])::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--cw-gutter);
+    border-radius: 0 2px 2px 0;
+    animation: cw-gutter-in 300ms var(--ease-out) both;
+  }
+
+  @keyframes cw-gutter-in {
+    from { transform: scaleY(0); opacity: 0; }
+    to   { transform: scaleY(1); opacity: 1; }
+  }
+
+  /* ═══ MINIMAP ═══ */
+  .cw-minimap {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 100%;
+    background: color-mix(in srgb, var(--cw-panel) 50%, transparent);
+    z-index: 5;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 250ms var(--ease-out);
+  }
+
+  .code-walkthrough[data-cw-active] .cw-minimap {
+    opacity: 1;
+  }
+
+  .cw-minimap-viewport {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    background: color-mix(in srgb, var(--cw-text-ghost) 30%, transparent);
+    border-radius: 4px;
+    transition: top 300ms var(--ease-out), height 300ms var(--ease-out);
+  }
+
+  .cw-minimap-region {
+    position: absolute;
+    left: 1px;
+    width: 6px;
+    border-radius: 3px;
+    background: transparent;
+    transition: background 200ms var(--ease-out), top 300ms var(--ease-out), height 300ms var(--ease-out);
+  }
+
+  .cw-minimap-region.is-active {
+    background: var(--cw-accent);
+  }
+
+  /* ═══ INLINE ANNOTATION ═══ */
+  .cw-annotation {
+    position: absolute;
+    right: 16px;
+    z-index: 10;
+    max-width: 240px;
+    background: var(--cw-panel);
+    border: 1px solid var(--cw-rule);
+    border-left: 3px solid var(--cw-accent);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: var(--sl-text-xs);
+    line-height: 1.5;
+    color: var(--cw-text-faint);
+    opacity: 0;
+    transform: translateX(8px);
+    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+    pointer-events: none;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+  }
+
+  .code-walkthrough[data-cw-active] .cw-annotation.is-visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .cw-annotation-pointer {
+    display: none;
+  }
+
+  .cw-annotation-num {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--cw-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 2px;
+  }
+
+  .cw-annotation-text {
+    color: var(--cw-text-faint);
+  }
+
+  /* Hide annotation on narrow screens — step card is enough */
+  @media (max-width: 768px) {
+    .cw-annotation { display: none; }
+    .cw-minimap { display: none; }
+  }
+
+  /* ═══ CARD ═══ */
   .cw-card {
     background: var(--cw-panel);
   }
@@ -200,32 +376,59 @@ const parsedSteps = steps.map((s) => {
     flex-shrink: 0;
   }
 
-  /* Progress pips */
-  .cw-progress {
+  /* ═══ PROGRESS BAR ═══ */
+  .cw-progress-bar {
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: 4px;
-    justify-content: center;
+    gap: 10px;
+    min-width: 0;
   }
 
-  .cw-pip {
-    all: unset;
-    width: 18px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--cw-text-ghost);
-    cursor: pointer;
-    transition: background 200ms var(--ease-out), transform 200ms var(--ease-out);
+  .cw-progress-track {
+    flex: 1;
+    height: 4px;
+    background: color-mix(in srgb, var(--cw-text-ghost) 30%, transparent);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
   }
 
-  .cw-pip:hover {
-    background: var(--cw-text-faint);
-    transform: scaleY(1.8);
-  }
-
-  .cw-pip.is-active {
+  .cw-progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
     background: var(--cw-accent);
-    transform: scaleY(1.8);
+    border-radius: 4px;
+    transition: width 350ms var(--ease-out);
+    width: 0%;
+  }
+
+  .cw-progress-segment {
+    all: unset;
+    position: absolute;
+    top: -6px;
+    height: 16px;
+    cursor: pointer;
+    z-index: 2;
+  }
+
+  .cw-progress-segment:hover ~ .cw-progress-fill,
+  .cw-progress-segment:focus-visible ~ .cw-progress-fill {
+    opacity: 0.8;
+  }
+
+  .cw-progress-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--cw-text-faint);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cw-progress-current {
+    color: var(--cw-accent);
   }
 
   /* ═══ STEP CONTENT ═══ */
@@ -239,29 +442,16 @@ const parsedSteps = steps.map((s) => {
 
   .cw-step.is-active {
     display: block;
-    animation: cw-fade-in 200ms var(--ease-out);
+    animation: cw-fade-in 250ms var(--ease-out);
   }
 
   @keyframes cw-fade-in {
-    from { opacity: 0; transform: translateY(3px); }
+    from { opacity: 0; transform: translateY(4px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .cw-step-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 6px;
-    font-size: var(--sl-text-sm);
-  }
-
-  .cw-step-num {
-    color: var(--cw-accent);
-    font-weight: 600;
-  }
-
   .cw-step-title {
-    font-size: var(--sl-text-lg);
+    font-size: var(--sl-text-base);
     font-weight: 600;
     color: var(--cw-text);
     line-height: 1.4;
@@ -277,6 +467,10 @@ const parsedSteps = steps.map((s) => {
 
   /* ═══ HINT ═══ */
   .cw-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     text-align: center;
     font-size: 11px;
     color: var(--cw-text-ghost);
@@ -285,13 +479,30 @@ const parsedSteps = steps.map((s) => {
     opacity: 0.6;
   }
 
+  .cw-hint-sep {
+    opacity: 0.4;
+  }
+
+  /* Show swipe hint only on touch devices */
+  .cw-hint-swipe {
+    display: none;
+  }
+
+  @media (pointer: coarse) {
+    .cw-hint-swipe { display: inline; }
+    .cw-hint-keys { display: none; }
+  }
+
   /* ═══ PRINT ═══ */
   @media print {
     .cw-code { max-height: none; overflow: visible; }
     .cw-nav { display: none; }
     .cw-hint { display: none; }
+    .cw-minimap { display: none; }
+    .cw-annotation { display: none; }
     .cw-step { display: block !important; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 6px; }
     .code-walkthrough[data-cw-active] .cw-code :global(.ec-line) { opacity: 1 !important; background: none !important; }
+    .code-walkthrough[data-cw-active] .cw-code :global(.ec-line)::before { display: none !important; }
   }
 </style>
 
@@ -300,19 +511,95 @@ const parsedSteps = steps.map((s) => {
     document.querySelectorAll<HTMLElement>(".code-walkthrough:not([data-init])").forEach((comp) => {
       comp.setAttribute("data-init", "");
 
-      const stepsData: { start: number; end: number }[] = JSON.parse(comp.dataset.steps || "[]");
+      const stepsData: { start: number; end: number; title: string; body: string }[] =
+        JSON.parse(comp.dataset.steps || "[]");
       if (stepsData.length === 0) return;
 
       const stepEls = comp.querySelectorAll<HTMLElement>(".cw-step");
-      const pipEls = comp.querySelectorAll<HTMLElement>(".cw-pip");
       const prevBtn = comp.querySelector<HTMLButtonElement>(".cw-prev");
       const nextBtn = comp.querySelector<HTMLButtonElement>(".cw-next");
       const codePanel = comp.querySelector<HTMLElement>(".cw-code");
+      const headerStep = comp.querySelector<HTMLElement>(".cw-header-step");
+
+      // Progress bar
+      const progressFill = comp.querySelector<HTMLElement>(".cw-progress-fill");
+      const progressSegments = comp.querySelectorAll<HTMLElement>(".cw-progress-segment");
+      const progressCurrent = comp.querySelector<HTMLElement>(".cw-progress-current");
+
+      // Minimap
+      const minimap = comp.querySelector<HTMLElement>(".cw-minimap");
+      const minimapViewport = comp.querySelector<HTMLElement>(".cw-minimap-viewport");
+      const minimapRegions = comp.querySelectorAll<HTMLElement>(".cw-minimap-region");
+
+      // Inline annotation
+      const annotation = comp.querySelector<HTMLElement>(".cw-annotation");
+      const annotationNum = comp.querySelector<HTMLElement>(".cw-annotation-num");
+      const annotationText = comp.querySelector<HTMLElement>(".cw-annotation-text");
 
       if (!prevBtn || !nextBtn || !codePanel) return;
 
-      const lineEls = Array.from(codePanel.querySelectorAll<HTMLElement>(":scope .ec-line:not(.twoslash-popup-container .ec-line)"));
+      const lineEls = Array.from(
+        codePanel.querySelectorAll<HTMLElement>(":scope .ec-line:not(.twoslash-popup-container .ec-line)")
+      );
+      const totalLines = lineEls.length;
       let current = 0;
+
+      // ── Minimap: compute proportional positions ──
+      function updateMinimap() {
+        if (!minimap || !minimapViewport || !codePanel) return;
+
+        const scrollH = codePanel.scrollHeight;
+        const clientH = codePanel.clientHeight;
+        const minimapH = minimap.clientHeight;
+
+        if (scrollH <= clientH) {
+          minimap.style.opacity = "0";
+          return;
+        }
+
+        // Viewport indicator
+        const vpTop = (codePanel.scrollTop / scrollH) * minimapH;
+        const vpH = (clientH / scrollH) * minimapH;
+        minimapViewport.style.top = `${vpTop}px`;
+        minimapViewport.style.height = `${vpH}px`;
+
+        // Step regions
+        minimapRegions.forEach((region, i) => {
+          const step = stepsData[i];
+          if (!step || totalLines === 0) return;
+          const rTop = ((step.start - 1) / totalLines) * minimapH;
+          const rH = Math.max(3, ((step.end - step.start + 1) / totalLines) * minimapH);
+          region.style.top = `${rTop}px`;
+          region.style.height = `${rH}px`;
+          region.classList.toggle("is-active", i === current);
+        });
+      }
+
+      // ── Inline annotation: position near highlighted code ──
+      function updateAnnotation(index: number) {
+        if (!annotation || !annotationNum || !annotationText || !codePanel) return;
+
+        const step = stepsData[index];
+        const firstLine = lineEls[step.start - 1];
+
+        if (!firstLine) {
+          annotation.classList.remove("is-visible");
+          return;
+        }
+
+        // Position annotation relative to code wrapper
+        const wrapperRect = codePanel.parentElement!.getBoundingClientRect();
+        const lineRect = firstLine.getBoundingClientRect();
+        const topOffset = lineRect.top - wrapperRect.top;
+
+        // Clamp within the code wrapper bounds
+        const clampedTop = Math.max(8, Math.min(topOffset, wrapperRect.height - 100));
+
+        annotation.style.top = `${clampedTop}px`;
+        annotationNum.textContent = `Step ${index + 1}`;
+        annotationText.textContent = step.title;
+        annotation.classList.add("is-visible");
+      }
 
       function goTo(index: number) {
         if (index < 0 || index >= stepsData.length) return;
@@ -320,20 +607,37 @@ const parsedSteps = steps.map((s) => {
 
         const { start, end } = stepsData[index];
 
-        // Update highlights
+        // Mark active
         comp.setAttribute("data-cw-active", "");
+
+        // Update highlights with staggered delay
         lineEls.forEach((el, i) => {
           const lineNum = i + 1;
           if (lineNum >= start && lineNum <= end) {
+            const delay = (lineNum - start) * 30; // 30ms stagger per line
+            el.style.transitionDelay = `${delay}ms`;
             el.setAttribute("data-cw-highlight", "");
           } else {
+            el.style.transitionDelay = "0ms";
             el.removeAttribute("data-cw-highlight");
           }
         });
 
-        // Update step card + pips
+        // Update step card
         stepEls.forEach((el, i) => el.classList.toggle("is-active", i === index));
-        pipEls.forEach((el, i) => el.classList.toggle("is-active", i === index));
+
+        // Update progress bar
+        if (progressFill) {
+          const pct = ((index + 1) / stepsData.length) * 100;
+          progressFill.style.width = `${pct}%`;
+        }
+        progressSegments.forEach((el, i) => el.classList.toggle("is-active", i === index));
+        if (progressCurrent) progressCurrent.textContent = String(index + 1);
+
+        // Update header step title
+        if (headerStep) headerStep.textContent = stepsData[index].title;
+
+        // Navigation buttons
         prevBtn!.disabled = index === 0;
         nextBtn!.disabled = index === stepsData.length - 1;
 
@@ -341,30 +645,33 @@ const parsedSteps = steps.map((s) => {
         const firstLine = lineEls[start - 1];
         const lastLine = lineEls[Math.min(end - 1, lineEls.length - 1)];
         if (firstLine && codePanel) {
-          const containerTop = codePanel.scrollTop;
           const containerH = codePanel.clientHeight;
           const lineTop = firstLine.offsetTop;
           const lineBottom = lastLine ? lastLine.offsetTop + lastLine.offsetHeight : lineTop + 20;
           const blockH = lineBottom - lineTop;
-
-          // Center the highlighted block in the scroll container
           const targetScroll = lineTop - (containerH - blockH) / 2;
           codePanel.scrollTo({ top: Math.max(0, targetScroll), behavior: "smooth" });
         }
+
+        // Update minimap + annotation after scroll settles
+        requestAnimationFrame(() => {
+          updateMinimap();
+          updateAnnotation(index);
+        });
       }
 
-      // Controls
+      // ── Controls ──
       prevBtn.addEventListener("click", () => goTo(current - 1));
       nextBtn.addEventListener("click", () => goTo(current + 1));
 
-      pipEls.forEach((pip) => {
-        pip.addEventListener("click", () => {
-          const idx = parseInt(pip.dataset.step || "0", 10);
+      progressSegments.forEach((seg) => {
+        seg.addEventListener("click", () => {
+          const idx = parseInt(seg.dataset.step || "0", 10);
           goTo(idx);
         });
       });
 
-      // Keyboard
+      // ── Keyboard ──
       comp.setAttribute("tabindex", "0");
       comp.addEventListener("keydown", (e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -376,6 +683,31 @@ const parsedSteps = steps.map((s) => {
         }
       });
 
+      // ── Touch swipe ──
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const card = comp.querySelector<HTMLElement>(".cw-card");
+      if (card) {
+        card.addEventListener("touchstart", (e) => {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        card.addEventListener("touchend", (e) => {
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          // Only register horizontal swipes (dx > 40px, dy < 30px)
+          if (Math.abs(dx) > 40 && Math.abs(dy) < 30) {
+            if (dx < 0) goTo(current + 1); // swipe left = next
+            else goTo(current - 1);        // swipe right = prev
+          }
+        }, { passive: true });
+      }
+
+      // ── Scroll listener for minimap viewport ──
+      codePanel.addEventListener("scroll", () => updateMinimap(), { passive: true });
+
+      // Initialize
       goTo(0);
     });
   }
