@@ -86,7 +86,7 @@ const flowGroupMetas = flows.map(flow => {
 >
   {title && <div class="fs-header">
     <div class="fs-title">{title}</div>
-    <span class="fs-subtitle">Hover a step to highlight its path</span>
+    <span class="fs-badge">⬡ Interactive</span>
   </div>}
 
   {/* Flow tabs */}
@@ -179,10 +179,25 @@ const flowGroupMetas = flows.map(flow => {
     letter-spacing: 0.05em;
   }
 
-  .fs-subtitle {
-    font-size: var(--sl-text-xs);
-    color: var(--fs-text-ghost);
-    font-style: italic;
+  .fs-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fs-accent);
+    background: color-mix(in srgb, var(--fs-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--fs-accent) 25%, transparent);
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* ═══ Particles ═══ */
+  .fs-particle {
+    filter: blur(0.5px);
   }
 
   /* ═══ TABS ═══ */
@@ -709,6 +724,47 @@ const flowGroupMetas = flows.map(flow => {
         return starts;
       }
 
+      /* ── Particle helpers ── */
+      function clearParticles() {
+        svg.querySelectorAll('.fs-particle').forEach(p => p.remove());
+      }
+
+      function spawnParticle(g: SVGGElement) {
+        // Find the drawable path — either a <path> or build one from a <line>
+        const pathEl = g.querySelector<SVGPathElement>('path');
+        const lineEl = g.querySelector<SVGLineElement>('line');
+        let d = '';
+
+        if (pathEl) {
+          d = pathEl.getAttribute('d') || '';
+        } else if (lineEl) {
+          const x1 = lineEl.getAttribute('x1') || '0';
+          const y1 = lineEl.getAttribute('y1') || '0';
+          const x2 = lineEl.getAttribute('x2') || '0';
+          const y2 = lineEl.getAttribute('y2') || '0';
+          d = `M ${x1},${y1} L ${x2},${y2}`;
+        }
+
+        if (!d) return;
+
+        for (let i = 0; i < 2; i++) {
+          const circle = document.createElementNS(NS, 'circle');
+          circle.setAttribute('r', '2.5');
+          circle.setAttribute('fill', 'var(--fs-accent)');
+          circle.setAttribute('opacity', '0.85');
+          circle.classList.add('fs-particle');
+
+          const motion = document.createElementNS(NS, 'animateMotion');
+          motion.setAttribute('dur', '1.6s');
+          motion.setAttribute('repeatCount', 'indefinite');
+          motion.setAttribute('begin', `${i * 0.8}s`);
+          motion.setAttribute('path', d);
+
+          circle.appendChild(motion);
+          svg.appendChild(circle);
+        }
+      }
+
       /* ── Highlight a step (and all its group peers) ── */
       function highlightStep(idx: number) {
         const flow = flows[currentFlow];
@@ -721,11 +777,13 @@ const flowGroupMetas = flows.map(flow => {
         stepBtns.forEach((b, i) => b.classList.toggle("is-active", peerSet.has(i)));
 
         /* Edges: bright if they contain any peer index, dim otherwise */
+        clearParticles();
         const edgeGroups = svg.querySelectorAll<SVGGElement>("g[data-steps]");
         edgeGroups.forEach((g) => {
           const indices = g.dataset.steps!.split(",").map(Number);
           const match = indices.some(i => peerSet.has(i));
           g.style.opacity = match ? "0.9" : "0.12";
+          if (match) spawnParticle(g);
         });
 
         /* Nodes: collect all sources and targets in the group */
