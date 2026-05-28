@@ -1,0 +1,457 @@
+---
+/**
+ * LearningRoadmap — Interactive visual roadmap for learning pathways.
+ *
+ * Renders a vertical flow of grouped nodes with prerequisite connections,
+ * category-based styling, completion tracking, and hover highlighting.
+ *
+ * @example
+ * <LearningRoadmap
+ *   trackId="effect-ts"
+ *   title="Effect-TS Learning Path"
+ *   nodes={[
+ *     { id: "what-is-effect", label: "What is Effect", href: "/knowledge-base/effect-ts/what-is-effect/", category: "required", group: "Core" },
+ *     { id: "quickstart", label: "Quickstart", href: "/knowledge-base/effect-ts/quickstart/", category: "required", group: "Core", prereqs: ["what-is-effect"] },
+ *   ]}
+ * />
+ */
+
+interface RoadmapNode {
+  id: string;
+  label: string;
+  href: string;
+  description?: string;
+  category: 'required' | 'optional' | 'comparison' | 'reference';
+  group: string;
+  prereqs?: string[];
+}
+
+interface Props {
+  nodes: RoadmapNode[];
+  title?: string;
+  trackId: string;
+}
+
+const { nodes, title, trackId } = Astro.props;
+
+// Group nodes by their group label, preserving insertion order
+const groups: Map<string, RoadmapNode[]> = new Map();
+for (const node of nodes) {
+  if (!groups.has(node.group)) {
+    groups.set(node.group, []);
+  }
+  groups.get(node.group)!.push(node);
+}
+
+const groupEntries = [...groups.entries()];
+
+// Category config
+const categoryConfig: Record<string, { icon: string; borderStyle: string; label: string }> = {
+  required:   { icon: '●', borderStyle: 'solid',  label: 'Required' },
+  optional:   { icon: '◑', borderStyle: 'dashed', label: 'Optional' },
+  comparison: { icon: '⇄', borderStyle: 'dotted', label: 'Comparison' },
+  reference:  { icon: '◷', borderStyle: 'dashed', label: 'Reference' },
+};
+---
+
+<div class="lr" data-track-id={trackId}>
+  {title && <h3 class="lr__title">{title}</h3>}
+
+  <div class="lr__legend">
+    <span class="lr__legend-item lr__legend-item--required"><span class="lr__legend-dot"></span>Required</span>
+    <span class="lr__legend-item lr__legend-item--optional"><span class="lr__legend-dot"></span>Optional</span>
+    <span class="lr__legend-item lr__legend-item--comparison"><span class="lr__legend-dot"></span>Comparison</span>
+    <span class="lr__legend-item lr__legend-item--reference"><span class="lr__legend-dot"></span>Reference</span>
+    <button class="lr__reset" title="Reset progress">↺ Reset</button>
+  </div>
+
+  <div class="lr__flow">
+    {groupEntries.map(([groupName, groupNodes], gi) => (
+      <div class="lr__group" data-group={groupName}>
+        <div class="lr__group-label">{groupName}</div>
+        <div class="lr__group-nodes">
+          {groupNodes.map((node) => (
+            <a
+              class={`lr__node lr__node--${node.category}`}
+              href={node.href}
+              data-node-id={node.id}
+              data-prereqs={node.prereqs?.join(',') || ''}
+              data-category={node.category}
+              title={node.description || node.label}
+            >
+              <span class="lr__node-check" aria-hidden="true">✓</span>
+              <span class="lr__node-label">{node.label}</span>
+              <span class="lr__node-cat">{categoryConfig[node.category]?.icon}</span>
+            </a>
+          ))}
+        </div>
+        {gi < groupEntries.length - 1 && (
+          <div class="lr__connector" aria-hidden="true">
+            <span class="lr__connector-line"></span>
+            <span class="lr__connector-arrow">▾</span>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
+
+  <div class="lr__progress">
+    <div class="lr__progress-bar">
+      <div class="lr__progress-fill"></div>
+    </div>
+    <span class="lr__progress-text">0 / {nodes.length} completed</span>
+  </div>
+</div>
+
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     LEARNING ROADMAP — Core layout
+     ═══════════════════════════════════════════════════════════════ */
+
+  .lr {
+    --lr-accent: var(--sl-color-accent);
+    --lr-required: #60a5fa;
+    --lr-optional: #a78bfa;
+    --lr-comparison: #fbbf24;
+    --lr-reference: var(--sl-color-gray-3);
+    --lr-complete: #34d399;
+    margin: 1.5rem 0;
+  }
+
+  .lr__title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+    color: var(--sl-color-white);
+  }
+
+  /* Legend */
+  .lr__legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: color-mix(in srgb, var(--sl-color-gray-6) 50%, transparent);
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sl-color-gray-3);
+  }
+
+  .lr__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .lr__legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .lr__legend-item--required .lr__legend-dot  { background: var(--lr-required); }
+  .lr__legend-item--optional .lr__legend-dot  { background: var(--lr-optional); }
+  .lr__legend-item--comparison .lr__legend-dot { background: var(--lr-comparison); }
+  .lr__legend-item--reference .lr__legend-dot { background: var(--lr-reference); }
+
+  .lr__reset {
+    margin-left: auto;
+    background: none;
+    border: 1px solid color-mix(in srgb, var(--sl-color-gray-4) 40%, transparent);
+    border-radius: 4px;
+    color: var(--sl-color-gray-3);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.2em 0.5em;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .lr__reset:hover {
+    border-color: var(--sl-color-gray-3);
+    color: var(--sl-color-white);
+  }
+
+  /* Flow container */
+  .lr__flow {
+    position: relative;
+  }
+
+  /* Group */
+  .lr__group {
+    margin-bottom: 0;
+  }
+
+  .lr__group-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--sl-color-gray-3);
+    margin-bottom: 0.4rem;
+    padding-left: 0.25rem;
+  }
+
+  .lr__group-nodes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Connector between groups */
+  .lr__connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.35rem 0;
+    color: var(--sl-color-gray-4);
+  }
+
+  .lr__connector-line {
+    width: 1px;
+    height: 12px;
+    background: var(--sl-color-gray-4);
+  }
+
+  .lr__connector-arrow {
+    font-size: 0.65rem;
+    line-height: 1;
+    margin-top: -2px;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     NODE — Individual roadmap node
+     ═══════════════════════════════════════════════════════════════ */
+
+  .lr__node {
+    --node-color: var(--lr-required);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    color: var(--sl-color-gray-2);
+    background: color-mix(in srgb, var(--node-color) 6%, transparent);
+    border: 1.5px solid color-mix(in srgb, var(--node-color) 25%, transparent);
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .lr__node:hover {
+    background: color-mix(in srgb, var(--node-color) 14%, transparent);
+    border-color: color-mix(in srgb, var(--node-color) 50%, transparent);
+    color: var(--sl-color-white);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--node-color) 12%, transparent);
+    text-decoration: none;
+  }
+
+  /* Category variants */
+  .lr__node--required  { --node-color: var(--lr-required); border-style: solid; }
+  .lr__node--optional  { --node-color: var(--lr-optional); border-style: dashed; }
+  .lr__node--comparison { --node-color: var(--lr-comparison); border-style: dotted; }
+  .lr__node--reference { --node-color: var(--lr-reference); border-style: dashed; }
+
+  /* Completion checkmark */
+  .lr__node-check {
+    display: none;
+    font-size: 0.65rem;
+    color: var(--lr-complete);
+    font-weight: 700;
+  }
+
+  .lr__node.is-complete .lr__node-check {
+    display: inline;
+  }
+
+  .lr__node.is-complete {
+    background: color-mix(in srgb, var(--lr-complete) 8%, transparent);
+    border-color: color-mix(in srgb, var(--lr-complete) 30%, transparent);
+  }
+
+  /* Category icon */
+  .lr__node-cat {
+    font-size: 0.55rem;
+    opacity: 0.5;
+    margin-left: 0.1rem;
+  }
+
+  .lr__node--required .lr__node-cat { display: none; }
+
+  /* Prerequisite highlighting */
+  .lr__node.is-prereq {
+    background: color-mix(in srgb, var(--node-color) 18%, transparent);
+    border-color: color-mix(in srgb, var(--node-color) 55%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-color) 15%, transparent);
+  }
+
+  .lr__node.is-dimmed {
+    opacity: 0.35;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PROGRESS BAR
+     ═══════════════════════════════════════════════════════════════ */
+
+  .lr__progress {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+    padding-top: 0.6rem;
+    border-top: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
+  }
+
+  .lr__progress-bar {
+    flex: 1;
+    height: 4px;
+    background: color-mix(in srgb, var(--sl-color-gray-5) 30%, transparent);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .lr__progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--lr-complete), color-mix(in srgb, var(--lr-complete) 70%, var(--lr-required)));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  .lr__progress-text {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .lr__node {
+      font-size: 0.75rem;
+      padding: 0.3rem 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  function initRoadmaps() {
+    document.querySelectorAll<HTMLElement>('.lr').forEach((roadmap) => {
+      const trackId = roadmap.dataset.trackId || 'default';
+      const storageKey = `kb-roadmap-${trackId}`;
+      const nodes = roadmap.querySelectorAll<HTMLAnchorElement>('.lr__node');
+      const totalNodes = nodes.length;
+
+      // Load completed state
+      function getCompleted(): Set<string> {
+        try {
+          const stored = localStorage.getItem(storageKey);
+          return stored ? new Set(JSON.parse(stored)) : new Set();
+        } catch {
+          return new Set();
+        }
+      }
+
+      function saveCompleted(completed: Set<string>) {
+        localStorage.setItem(storageKey, JSON.stringify([...completed]));
+      }
+
+      function updateProgress(completed: Set<string>) {
+        const count = completed.size;
+        const pct = totalNodes > 0 ? (count / totalNodes) * 100 : 0;
+        const fill = roadmap.querySelector<HTMLElement>('.lr__progress-fill');
+        const text = roadmap.querySelector<HTMLElement>('.lr__progress-text');
+        if (fill) fill.style.width = `${pct}%`;
+        if (text) text.textContent = `${count} / ${totalNodes} completed`;
+      }
+
+      function applyCompleted(completed: Set<string>) {
+        nodes.forEach((node) => {
+          const id = node.dataset.nodeId || '';
+          node.classList.toggle('is-complete', completed.has(id));
+        });
+        updateProgress(completed);
+      }
+
+      // Get all prerequisite IDs recursively
+      function getAllPrereqs(nodeId: string, visited = new Set<string>()): Set<string> {
+        if (visited.has(nodeId)) return visited;
+        const node = roadmap.querySelector<HTMLElement>(`[data-node-id="${nodeId}"]`);
+        if (!node) return visited;
+        const prereqs = (node.dataset.prereqs || '').split(',').filter(Boolean);
+        for (const prereqId of prereqs) {
+          if (!visited.has(prereqId)) {
+            visited.add(prereqId);
+            getAllPrereqs(prereqId, visited);
+          }
+        }
+        return visited;
+      }
+
+      // Hover: highlight prerequisites
+      nodes.forEach((node) => {
+        node.addEventListener('mouseenter', () => {
+          const nodeId = node.dataset.nodeId || '';
+          const prereqIds = getAllPrereqs(nodeId);
+
+          nodes.forEach((n) => {
+            const nId = n.dataset.nodeId || '';
+            if (prereqIds.has(nId)) {
+              n.classList.add('is-prereq');
+              n.classList.remove('is-dimmed');
+            } else if (nId !== nodeId) {
+              n.classList.add('is-dimmed');
+              n.classList.remove('is-prereq');
+            }
+          });
+        });
+
+        node.addEventListener('mouseleave', () => {
+          nodes.forEach((n) => {
+            n.classList.remove('is-prereq', 'is-dimmed');
+          });
+        });
+
+        // Right-click to toggle completion (left-click navigates)
+        node.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          const id = node.dataset.nodeId || '';
+          const completed = getCompleted();
+          if (completed.has(id)) {
+            completed.delete(id);
+          } else {
+            completed.add(id);
+          }
+          saveCompleted(completed);
+          applyCompleted(completed);
+        });
+      });
+
+      // Reset button
+      const resetBtn = roadmap.querySelector<HTMLButtonElement>('.lr__reset');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          localStorage.removeItem(storageKey);
+          applyCompleted(new Set());
+        });
+      }
+
+      // Initial render
+      applyCompleted(getCompleted());
+    });
+  }
+
+  // Run on initial load and on Astro page transitions
+  initRoadmaps();
+  document.addEventListener('astro:after-swap', initRoadmaps);
+</script>

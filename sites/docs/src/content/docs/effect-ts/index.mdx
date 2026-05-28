@@ -13,7 +13,8 @@ source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Stream.ts
 ---
 
-import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
+import { Aside } from "@astrojs/starlight/components";
+import LearningRoadmap from '/src/components/interactive/LearningRoadmap.astro';
 
 > Effect is a TypeScript library for building robust applications with [[effect-ts/typed-errors|typed errors]], dependency injection, and [[effect-ts/concurrency|structured concurrency]] (child fibers cancelled with their parent scope). Programs are values (`Effect<A, E, R>`) that a runtime executes; everything you do with them stays type-safe.
 
@@ -51,132 +52,35 @@ const program = Effect.sync(() => {
 
 See [[effect-ts/what-is-effect|What is Effect]] for the longer version.
 
-## Learning Pathway Sequence
+## Learning Roadmap
 
-Follow this structured step-by-step track sequence to master Effect-TS, from foundational generator composition up to fault-tolerant streaming pipelines:
+<Aside type="tip">**Hover** a node to highlight its prerequisites. **Right-click** to mark as complete. Click to navigate.</Aside>
 
-```mermaid
-flowchart TD
-    QS["1. Quickstart (Entry)"] --> WE["2. What is Effect"]
-    WE --> COMP["3. Composition"]
-    COMP --> ERR["4. Typed Errors"]
-    ERR --> SCH["5. Schema"]
-    SCH --> LYR["6. Layers & DI"]
-    LYR --> RET["7. Retry & Schedule"]
-    RET --> SCP["8. Scoped Resources"]
-    SCP --> CONC["9. Concurrency"]
-    CONC --> STR["10. Streams"]
-    STR --> ST["11. State Coordinates"]
-    ST --> AR["12. AsyncResult State Machine"]
-    AR --> OBS["13. Observability"]
-    OBS --> PLT["14. Platform Layers"]
-    PLT --> FT["15. Ingestion Capstone"]
+<LearningRoadmap
+  trackId="effect-ts"
+  title="Effect-TS Learning Path"
+  nodes={[
+    { id: "what-is-effect", label: "What is Effect", href: "/knowledge-base/effect-ts/what-is-effect/", description: "Mental model, laziness, and the three channels", category: "required", group: "Core" },
+    { id: "quickstart", label: "Quickstart", href: "/knowledge-base/effect-ts/quickstart/", description: "Install, write, and run your first effect", category: "required", group: "Core", prereqs: ["what-is-effect"] },
+    { id: "composition", label: "Composition", href: "/knowledge-base/effect-ts/composition/", description: "pipe, gen, and fn — when to reach for each", category: "required", group: "Core", prereqs: ["quickstart"] },
+    { id: "typed-errors", label: "Typed Errors", href: "/knowledge-base/effect-ts/typed-errors/", description: "The E channel: try, catchTag, tagged errors", category: "required", group: "Core", prereqs: ["composition"] },
+    { id: "schema", label: "Schema", href: "/knowledge-base/effect-ts/schema/", description: "Runtime boundaries: decode unknown input into typed effects", category: "required", group: "Intermediate", prereqs: ["typed-errors"] },
+    { id: "layers-and-di", label: "Layers & DI", href: "/knowledge-base/effect-ts/layers-and-di/", description: "The R channel: Context.Tag, Layer, compile-time DI", category: "required", group: "Intermediate", prereqs: ["typed-errors"] },
+    { id: "retry-and-schedule", label: "Retry & Schedule", href: "/knowledge-base/effect-ts/retry-and-schedule/", description: "Bounded retries and backoff policies", category: "optional", group: "Intermediate", prereqs: ["composition"] },
+    { id: "scoped-resources", label: "Scoped Resources", href: "/knowledge-base/effect-ts/scoped-resources/", description: "acquireRelease, Scope, and safe cleanup", category: "required", group: "Intermediate", prereqs: ["layers-and-di"] },
+    { id: "concurrency", label: "Concurrency & Fibers", href: "/knowledge-base/effect-ts/concurrency/", description: "Fibers, fork, and bounded execution", category: "required", group: "Advanced", prereqs: ["composition"] },
+    { id: "streams", label: "Streams", href: "/knowledge-base/effect-ts/streams/", description: "Pull-based streams and backpressure", category: "required", group: "Advanced", prereqs: ["concurrency"] },
+    { id: "state", label: "State Coordinates", href: "/knowledge-base/effect-ts/state/", description: "Ref, SubscriptionRef, and STM", category: "optional", group: "Advanced", prereqs: ["typed-errors"] },
+    { id: "async-result", label: "AsyncResult", href: "/knowledge-base/effect-ts/async-result/", description: "Reactive state machines for remote async lifecycles", category: "optional", group: "Advanced", prereqs: ["state"] },
+    { id: "observability", label: "Observability", href: "/knowledge-base/effect-ts/observability/", description: "Structured telemetry, logging, OpenTelemetry", category: "optional", group: "Advanced", prereqs: ["layers-and-di"] },
+    { id: "platform", label: "Platform Layers", href: "/knowledge-base/effect-ts/platform/", description: "Runtime-agnostic FileSystem, HttpClient, routing", category: "optional", group: "Advanced", prereqs: ["layers-and-di"] },
+    { id: "fault-tolerant-ingestion", label: "Ingestion Capstone", href: "/knowledge-base/effect-ts/fault-tolerant-ingestion/", description: "Fault-tolerant pipeline recipe combining everything", category: "required", group: "Capstone", prereqs: ["streams", "scoped-resources", "schema"] },
+    { id: "ecosystem-map", label: "Ecosystem Map", href: "/knowledge-base/effect-ts/ecosystem-map/", description: "Lookup reference for @effect/* packages", category: "reference", group: "Reference" },
+    { id: "layers-vs-nestjs-di", label: "Layers vs NestJS DI", href: "/knowledge-base/effect-ts/layers-vs-nestjs-di/", description: "Compare Effect Layers with NestJS IoC container", category: "comparison", group: "Reference", prereqs: ["layers-and-di"] },
+  ]}
+/>
 
-    click QS "/knowledge-base/effect-ts/quickstart/"
-    click WE "/knowledge-base/effect-ts/what-is-effect/"
-    click COMP "/knowledge-base/effect-ts/composition/"
-    click ERR "/knowledge-base/effect-ts/typed-errors/"
-    click SCH "/knowledge-base/effect-ts/schema/"
-    click LYR "/knowledge-base/effect-ts/layers-and-di/"
-    click RET "/knowledge-base/effect-ts/retry-and-schedule/"
-    click SCP "/knowledge-base/effect-ts/scoped-resources/"
-    click CONC "/knowledge-base/effect-ts/concurrency/"
-    click STR "/knowledge-base/effect-ts/streams/"
-    click ST "/knowledge-base/effect-ts/state/"
-    click AR "/knowledge-base/effect-ts/async-result/"
-    click OBS "/knowledge-base/effect-ts/observability/"
-    click PLT "/knowledge-base/effect-ts/platform/"
-    click FT "/knowledge-base/effect-ts/fault-tolerant-ingestion/"
-```
-
-## Start here
-
-<CardGrid>
-  <Card title="Step 1: Quickstart" icon="rocket">
-    <p>
-      <a href="/knowledge-base/effect-ts/quickstart/">Install, write, and run</a> your first effect
-      (~10 min).
-    </p>
-  </Card>
-  <Card title="Step 2: What is Effect" icon="open-book">
-    <p>
-      <a href="/knowledge-base/effect-ts/what-is-effect/">What is Effect</a>: mental model,
-      laziness, and the three channels.
-    </p>
-  </Card>
-  <Card title="Step 3: Composition" icon="seti:typescript">
-    <p>
-      <a href="/knowledge-base/effect-ts/composition/">pipe, gen, and fn</a>: when to reach for
-      each.
-    </p>
-  </Card>
-  <Card title="Step 4: Typed errors" icon="warning">
-    <p>
-      The <code>E</code> channel:{" "}
-      <a href="/knowledge-base/effect-ts/typed-errors/">try, catchTag</a>.
-    </p>
-  </Card>
-  <Card title="Step 5: Schema" icon="document">
-    <p>
-      <a href="/knowledge-base/effect-ts/schema/">Runtime boundaries</a>: decode unknown input into
-      typed effects.
-    </p>
-  </Card>
-  <Card title="Step 6: Layers and DI" icon="setting">
-    <p>
-      The <code>R</code> channel:{" "}
-      <a href="/knowledge-base/effect-ts/layers-and-di/">Context.Tag, Layer</a>.
-    </p>
-  </Card>
-  <Card title="Step 7: Retry and Schedule" icon="retry">
-    <p>
-      <a href="/knowledge-base/effect-ts/retry-and-schedule/">Bounded retries and backoff</a>.
-    </p>
-  </Card>
-  <Card title="Step 8: Scoped resources" icon="approve-check">
-    <p>
-      <a href="/knowledge-base/effect-ts/scoped-resources/">acquireRelease, Scope</a>.
-    </p>
-  </Card>
-  <Card title="Step 9: Concurrency" icon="random">
-    <p>
-      <a href="/knowledge-base/effect-ts/concurrency/">Fibers, fork, and bounded execution</a>.
-    </p>
-  </Card>
-  <Card title="Step 10: Streams" icon="list-format">
-    <p>
-      <a href="/knowledge-base/effect-ts/streams/">Pull-based streams and backpressure</a>.
-    </p>
-  </Card>
-  <Card title="Step 11: State coordinates" icon="seti:db">
-    <p>
-      <a href="/knowledge-base/effect-ts/state/">Lock-free fiber coordinates</a>: <code>Ref</code> (see [[effect-ts/state|State coordinates]]), <code>SubscriptionRef</code>, and Software Transactional Memory (STM).
-    </p>
-  </Card>
-  <Card title="Step 12: AsyncResult" icon="document">
-    <p>
-      <a href="/knowledge-base/effect-ts/async-result/">Reactive state machines</a>: modeling remote async lifecycles, avoiding loading defaults, and local atom/ref derivation.
-    </p>
-  </Card>
-  <Card title="Step 13: Observability" icon="star">
-    <p>
-      <a href="/knowledge-base/effect-ts/observability/">Structured telemetry</a>: logging, <code>withLogSpan</code>, and OpenTelemetry.
-    </p>
-  </Card>
-  <Card title="Step 14: Platform layers" icon="laptop">
-    <p>
-      <a href="/knowledge-base/effect-ts/platform/">Runtime-agnostic contexts</a>: FileSystem, HttpClient, and modular routing.
-    </p>
-  </Card>
-  <Card title="Step 15: Ingestion capstone" icon="approve-check">
-    <p>
-      <a href="/knowledge-base/effect-ts/fault-tolerant-ingestion/">Fault-tolerant pipeline</a>{" "}
-      recipe.
-    </p>
-  </Card>
-</CardGrid>
-
-After the sequence above, [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for `@effect/*` packages.
+After the roadmap above, the [[effect-ts/ecosystem-map|Ecosystem map]] is a lookup reference for `@effect/*` packages.
 
 ## Pending notes (vault)
 
