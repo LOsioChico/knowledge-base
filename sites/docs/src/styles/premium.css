@@ -720,46 +720,42 @@ starlight-tabs [role="tabpanel"] {
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   LEARNING PATHWAY TRACK CARDS
+   LEARNING PATHWAY TRACKS — PILL LAYOUT
    ═══════════════════════════════════════════════════════════════════ */
 
 .kb-tracks {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  align-items: stretch;
-  gap: 0.75rem;
-  margin: 0.75rem 0 2rem;
-}
-
-@media (max-width: 680px) {
-  .kb-tracks {
-    grid-template-columns: 1fr;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.75rem 0 1rem;
 }
 
 .kb-track {
   --track-color: var(--sl-color-accent);
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--track-color) 20%, var(--sl-color-gray-5));
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--track-color) 6%, transparent) 0%,
-      transparent 40%
-    ),
-    var(--sl-color-black);
-  padding: 1.1rem 1.25rem;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
   display: flex;
-  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--sl-color-black);
+  border: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 50%, transparent);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .kb-track:hover {
-  border-color: color-mix(in srgb, var(--track-color) 40%, transparent);
-  box-shadow:
-    0 4px 20px color-mix(in srgb, var(--track-color) 10%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 3%, transparent);
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--track-color) 30%, transparent);
+  box-shadow: 0 2px 16px color-mix(in srgb, var(--track-color) 6%, transparent);
+}
+
+/* Colored left accent bar */
+.kb-track__bar {
+  width: 4px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--track-color), color-mix(in srgb, var(--track-color) 40%, transparent));
+}
+
+.kb-track__body {
+  flex: 1;
+  padding: 0.9rem 1.1rem;
+  min-width: 0;
 }
 
 /* Per-track accent colors */
@@ -768,17 +764,16 @@ starlight-tabs [role="tabpanel"] {
 .kb-track--effect  { --track-color: #a78bfa; }
 .kb-track--systems { --track-color: #34d399; }
 
+/* Header — icon + title inline */
 .kb-track__header {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0;
-  padding-bottom: 0.6rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--track-color) 12%, transparent);
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
 }
 
 .kb-track__icon {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -790,77 +785,102 @@ starlight-tabs [role="tabpanel"] {
   color: var(--sl-color-white);
 }
 
-.kb-track__desc {
-  font-size: 0.75rem;
-  color: var(--sl-color-gray-3);
-  margin: 0.15rem 0 0;
-  line-height: 1.3;
-}
-
-/* Level rows — tight spacing */
-.kb-track__levels {
+/* Pill flow */
+.kb-track__pills {
   display: flex;
-  flex-direction: column;
-  gap: 0;
-  flex: 1;
-  padding-top: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
-.kb-track__level {
-  display: grid;
-  grid-template-columns: 3rem 1fr;
-  align-items: baseline;
-  gap: 0.4rem;
-  font-size: 0.82rem;
-  color: var(--sl-color-gray-2);
-  line-height: 1.45;
-  padding: 0.35rem 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 20%, transparent);
+/* Individual pills */
+.kb-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  line-height: 1;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.kb-track__level:last-child {
-  border-bottom: none;
+.kb-pill:hover {
+  transform: translateY(-1px);
 }
 
-.kb-track__links {
-  display: inline;
-}
-
-/* Level badges */
-.kb-track__badge {
-  display: inline-block;
-  font-size: 0.6rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  padding: 0.1em 0.45em;
-  border-radius: 3px;
-  margin-right: 0.35rem;
-  vertical-align: middle;
-  min-width: 3.2rem;
-  text-align: center;
-}
-
-.kb-track__badge--core {
-  background: color-mix(in srgb, #34d399 15%, transparent);
-  color: #34d399;
+/* Level colors */
+.kb-pill--core {
+  background: color-mix(in srgb, #34d399 10%, transparent);
   border: 1px solid color-mix(in srgb, #34d399 25%, transparent);
+  color: var(--sl-color-gray-2);
+}
+.kb-pill--core:hover {
+  background: color-mix(in srgb, #34d399 18%, transparent);
+  border-color: color-mix(in srgb, #34d399 45%, transparent);
 }
 
-.kb-track__badge--mid {
-  background: color-mix(in srgb, #fbbf24 15%, transparent);
-  color: #fbbf24;
+.kb-pill--mid {
+  background: color-mix(in srgb, #fbbf24 10%, transparent);
   border: 1px solid color-mix(in srgb, #fbbf24 25%, transparent);
+  color: var(--sl-color-gray-2);
+}
+.kb-pill--mid:hover {
+  background: color-mix(in srgb, #fbbf24 18%, transparent);
+  border-color: color-mix(in srgb, #fbbf24 45%, transparent);
 }
 
-.kb-track__badge--adv {
-  background: color-mix(in srgb, #f87171 15%, transparent);
-  color: #f87171;
+.kb-pill--adv {
+  background: color-mix(in srgb, #f87171 10%, transparent);
   border: 1px solid color-mix(in srgb, #f87171 25%, transparent);
+  color: var(--sl-color-gray-2);
 }
+.kb-pill--adv:hover {
+  background: color-mix(in srgb, #f87171 18%, transparent);
+  border-color: color-mix(in srgb, #f87171 45%, transparent);
+}
+
+/* Links inside pills should inherit pill styling */
+.kb-pill a,
+.kb-pill a:hover {
+  color: inherit;
+  text-decoration: none;
+}
+.kb-pill:hover a {
+  text-decoration: underline;
+}
+
+/* Legend */
+.kb-legend {
+  display: flex;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  padding-left: 0.25rem;
+}
+
+.kb-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--sl-color-gray-3);
+}
+
+.kb-legend__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.kb-legend__dot--core { background: #34d399; }
+.kb-legend__dot--mid  { background: #fbbf24; }
+.kb-legend__dot--adv  { background: #f87171; }
 
 @media (prefers-reduced-motion: reduce) {
   .kb-hero__orb {
     animation: none;
   }
 }
+
+
