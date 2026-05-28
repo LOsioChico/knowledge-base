@@ -3,123 +3,53 @@ title: Knowledge Base
 description: TypeScript backends on Starlight — Effect-TS, NestJS, and AWS.
 ---
 
-<div class="kb-hero">
-  <div class="kb-hero__orb" aria-hidden="true"></div>
-  <div class="kb-hero__content">
-    <p class="kb-hero__eyebrow">Personal Engineering Notebook</p>
-    <h2 class="kb-hero__title">TypeScript · Cloud · Systems</h2>
-    <p class="kb-hero__subtitle">
-      Deep notes on Effect-TS, NestJS, and AWS — from first principles to production patterns.
-      Every page is interactive, source-linked, and lint-checked.
-    </p>
-    <div class="kb-hero__stats">
-      <div class="kb-hero__stat">
-        <span class="kb-hero__stat-value">110+</span>
-        <span class="kb-hero__stat-label">Notes</span>
-      </div>
-      <div class="kb-hero__stat">
-        <span class="kb-hero__stat-value">71</span>
-        <span class="kb-hero__stat-label">Interactive</span>
-      </div>
-      <div class="kb-hero__stat">
-        <span class="kb-hero__stat-value">13</span>
-        <span class="kb-hero__stat-label">Components</span>
-      </div>
-      <div class="kb-hero__stat">
-        <span class="kb-hero__stat-value">4</span>
-        <span class="kb-hero__stat-label">Tracks</span>
-      </div>
-    </div>
-  </div>
-</div>
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+> Deep notes on **Effect-TS**, **NestJS**, and **AWS** — from first principles to production patterns.
+> Every page is interactive, source-linked, and lint-checked. 110+ notes across 4 tracks.
 
 ## Learning Pathways
 
-<div class="kb-tracks">
+<CardGrid>
+  <Card title="NestJS" icon="rocket">
+    Core request flow, modular boundaries, and dependency injection.
 
-<div class="kb-track kb-track--nestjs">
-  <div class="kb-track__bar"></div>
-  <div class="kb-track__body">
-    <div class="kb-track__header">
-      <span class="kb-track__icon">🚀</span>
-      <h3 class="kb-track__title">NestJS</h3>
-    </div>
-    <div class="kb-track__pills">
-      <span class="kb-pill kb-pill--core">[[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]</span>
-      <span class="kb-pill kb-pill--core">[[nestjs/fundamentals/middleware|Middleware]]</span>
-      <span class="kb-pill kb-pill--core">[[nestjs/fundamentals/guards|Guards]]</span>
-      <span class="kb-pill kb-pill--mid">[[nestjs/fundamentals/interceptors|Interceptors]]</span>
-      <span class="kb-pill kb-pill--mid">[[nestjs/fundamentals/pipes|Pipes]]</span>
-      <span class="kb-pill kb-pill--mid">[[nestjs/fundamentals/exception-filters|Exception Filters]]</span>
-      <span class="kb-pill kb-pill--adv">[[nestjs/recipes/dynamic-modules|Dynamic Modules]]</span>
-      <span class="kb-pill kb-pill--adv">[[nestjs/recipes/configuration|Config Injection]]</span>
-      <span class="kb-pill kb-pill--adv">[[nestjs/auth/jwt-strategy|Auth Stack]]</span>
-    </div>
-  </div>
-</div>
+    - [[nestjs/fundamentals/request-lifecycle|Request Lifecycle]]
+    - [[nestjs/fundamentals/middleware|Middleware]] · [[nestjs/fundamentals/guards|Guards]]
+    - [[nestjs/fundamentals/interceptors|Interceptors]] · [[nestjs/fundamentals/pipes|Pipes]]
+    - [[nestjs/fundamentals/exception-filters|Exception Filters]]
+    - [[nestjs/recipes/dynamic-modules|Dynamic Modules]] · [[nestjs/recipes/configuration|Config]]
+    - [[nestjs/auth/jwt-strategy|Auth Stack]]
+  </Card>
 
-<div class="kb-track kb-track--aws">
-  <div class="kb-track__bar"></div>
-  <div class="kb-track__body">
-    <div class="kb-track__header">
-      <span class="kb-track__icon">☁️</span>
-      <h3 class="kb-track__title">AWS</h3>
-    </div>
-    <div class="kb-track__pills">
-      <span class="kb-pill kb-pill--core">[[aws/cli/profiles-and-credentials|CLI Credentials]]</span>
-      <span class="kb-pill kb-pill--core">[[aws/s3/quickstart|S3 Quickstart]]</span>
-      <span class="kb-pill kb-pill--core">[[aws/s3/storage-classes|Storage Classes]]</span>
-      <span class="kb-pill kb-pill--mid">[[aws/s3/lifecycle-rules|S3 Lifecycles]]</span>
-      <span class="kb-pill kb-pill--mid">[[aws/sqs|SQS]]</span>
-      <span class="kb-pill kb-pill--mid">[[aws/sns|SNS]]</span>
-      <span class="kb-pill kb-pill--adv">[[aws/eventbridge/event-driven-decoupling|EventBridge Decoupling]]</span>
-    </div>
-  </div>
-</div>
+  <Card title="AWS" icon="setting">
+    Cloud infrastructure primitives to decoupled event-driven queues.
 
-<div class="kb-track kb-track--effect">
-  <div class="kb-track__bar"></div>
-  <div class="kb-track__body">
-    <div class="kb-track__header">
-      <span class="kb-track__icon">⚡</span>
-      <h3 class="kb-track__title">Effect-TS</h3>
-    </div>
-    <div class="kb-track__pills">
-      <span class="kb-pill kb-pill--core">[[effect-ts/what-is-effect|What is Effect]]</span>
-      <span class="kb-pill kb-pill--core">[[effect-ts/quickstart|Quickstart]]</span>
-      <span class="kb-pill kb-pill--core">[[effect-ts/composition|Composition]]</span>
-      <span class="kb-pill kb-pill--mid">[[effect-ts/typed-errors|Typed Errors]]</span>
-      <span class="kb-pill kb-pill--mid">[[effect-ts/layers-and-di|Layers & DI]]</span>
-      <span class="kb-pill kb-pill--mid">[[effect-ts/scoped-resources|Scoped Resources]]</span>
-      <span class="kb-pill kb-pill--adv">[[effect-ts/concurrency|Concurrency & Fibers]]</span>
-      <span class="kb-pill kb-pill--adv">[[effect-ts/streams|Streams]]</span>
-      <span class="kb-pill kb-pill--adv">[[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]</span>
-    </div>
-  </div>
-</div>
+    - [[aws/cli/profiles-and-credentials|CLI Credentials]]
+    - [[aws/s3/quickstart|S3 Quickstart]] · [[aws/s3/storage-classes|Storage Classes]]
+    - [[aws/s3/lifecycle-rules|S3 Lifecycles]]
+    - [[aws/sqs|SQS]] · [[aws/sns|SNS]]
+    - [[aws/eventbridge/event-driven-decoupling|EventBridge Decoupling]]
+  </Card>
 
-<div class="kb-track kb-track--systems">
-  <div class="kb-track__bar"></div>
-  <div class="kb-track__body">
-    <div class="kb-track__header">
-      <span class="kb-track__icon">🧩</span>
-      <h3 class="kb-track__title">Systems Design</h3>
-    </div>
-    <div class="kb-track__pills">
-      <span class="kb-pill kb-pill--core">[[system-design/consistency-models|Consistency Models]]</span>
-      <span class="kb-pill kb-pill--mid">[[system-design/logical-clocks|Logical Clocks]]</span>
-      <span class="kb-pill kb-pill--adv">[[system-design/consistent-hashing|Consistent Hashing]]</span>
-    </div>
-  </div>
-</div>
+  <Card title="Effect-TS" icon="open-book">
+    Functional programming, compile-time DI, and structured concurrency.
 
-</div>
+    - [[effect-ts/what-is-effect|What is Effect]] · [[effect-ts/quickstart|Quickstart]]
+    - [[effect-ts/composition|Composition]] · [[effect-ts/typed-errors|Typed Errors]]
+    - [[effect-ts/layers-and-di|Layers & DI]] · [[effect-ts/scoped-resources|Scoped Resources]]
+    - [[effect-ts/concurrency|Concurrency & Fibers]] · [[effect-ts/streams|Streams]]
+    - [[effect-ts/fault-tolerant-ingestion|Ingestion Capstone]]
+  </Card>
 
-<div class="kb-legend">
-  <span class="kb-legend__item"><span class="kb-legend__dot kb-legend__dot--core"></span>Core</span>
-  <span class="kb-legend__item"><span class="kb-legend__dot kb-legend__dot--mid"></span>Intermediate</span>
-  <span class="kb-legend__item"><span class="kb-legend__dot kb-legend__dot--adv"></span>Advanced</span>
-</div>
+  <Card title="Systems Design" icon="puzzle">
+    Distributed systems foundations and partitioning algorithms.
+
+    - [[system-design/consistency-models|Consistency Models]]
+    - [[system-design/logical-clocks|Logical Clocks]]
+    - [[system-design/consistent-hashing|Consistent Hashing]]
+  </Card>
+</CardGrid>
 
 ## Maintainer workflow
 
