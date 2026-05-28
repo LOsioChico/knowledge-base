@@ -643,6 +643,25 @@ const uid = Math.random().toString(36).slice(2, 8);
     color: var(--smd-accent);
   }
 
+  .smd-info-trans .smd-t:hover {
+    background: color-mix(in srgb, var(--smd-bg) 50%, transparent);
+    border-color: color-mix(in srgb, var(--smd-rule) 80%, transparent);
+  }
+
+  .smd-info-trans .smd-arrow-icon {
+    color: var(--smd-ghost);
+    font-size: 0.85em;
+  }
+
+  .smd-info-trans .smd-t-target {
+    font-weight: 600;
+  }
+
+  /* ═══ Particles ═══ */
+  .smd-particle {
+    filter: blur(0.5px);
+  }
+
   .smd-info-code {
     margin: 0;
     padding: 0.55rem 1rem;
@@ -680,15 +699,15 @@ const uid = Math.random().toString(36).slice(2, 8);
 
 <script>
   document.addEventListener('astro:page-load', initSMD);
-  // Fallback: init immediately if page already loaded
   if (document.readyState !== 'loading') initSMD();
 
   function initSMD() {
     document.querySelectorAll<HTMLElement>('.smd:not([data-smd-ready])').forEach(root => {
       root.setAttribute('data-smd-ready', '');
 
-      const nodeGs  = root.querySelectorAll<SVGGElement>('[data-smd-node]');
-      const arrowGs = root.querySelectorAll<SVGGElement>('[data-smd-arrow]');
+      const svg       = root.querySelector<SVGSVGElement>('.smd-svg');
+      const nodeGs    = root.querySelectorAll<SVGGElement>('[data-smd-node]');
+      const arrowGs   = root.querySelectorAll<SVGGElement>('[data-smd-arrow]');
       const info      = root.querySelector<HTMLElement>('[data-smd-info]');
       const infoBar   = info?.querySelector<HTMLElement>('.smd-info-bar');
       const infoName  = info?.querySelector<HTMLElement>('.smd-info-name');
@@ -698,10 +717,52 @@ const uid = Math.random().toString(36).slice(2, 8);
       const infoCodeEl = info?.querySelector<HTMLElement>('.smd-info-code code');
       const closeBtn  = root.querySelector<HTMLElement>('[data-smd-close]');
 
-      if (!info) return;
+      if (!info || !svg) return;
+
+      // Build label → stateId map for clickable transitions
+      const labelToId: Record<string, string> = {};
+      nodeGs.forEach(n => {
+        const label = n.querySelector('.smd-label')?.textContent?.trim();
+        if (label) labelToId[label] = n.dataset.smdNode || '';
+      });
 
       let selectedId: string | null = null;
+      const NS = 'http://www.w3.org/2000/svg';
 
+      // ── Particle management ──
+      function clearParticles() {
+        root.querySelectorAll('.smd-particle').forEach(p => p.remove());
+      }
+
+      function spawnParticles(arrowG: SVGGElement, color: string) {
+        const pathEl = arrowG.querySelector<SVGPathElement>('.smd-edge');
+        if (!pathEl) return;
+        const d = pathEl.getAttribute('d');
+        if (!d) return;
+
+        // Spawn 2 particles staggered along the path
+        for (let i = 0; i < 2; i++) {
+          const circle = document.createElementNS(NS, 'circle');
+          circle.setAttribute('r', '3');
+          circle.setAttribute('fill', color);
+          circle.setAttribute('opacity', '0.8');
+          circle.classList.add('smd-particle');
+
+          const motion = document.createElementNS(NS, 'animateMotion');
+          motion.setAttribute('dur', '1.8s');
+          motion.setAttribute('repeatCount', 'indefinite');
+          motion.setAttribute('begin', `${i * 0.9}s`);
+          motion.setAttribute('path', d);
+
+          circle.appendChild(motion);
+
+          // Add to the same parent group that contains arrows
+          const arrowsGroup = pathEl.closest('.smd-arrows');
+          if (arrowsGroup) arrowsGroup.appendChild(circle);
+        }
+      }
+
+      // ── Select / Deselect ──
       function select(id: string) {
         if (selectedId === id) { deselect(); return; }
         selectedId = id;
@@ -718,12 +779,7 @@ const uid = Math.random().toString(36).slice(2, 8);
           return { trigger, target };
         }) : [];
 
-        const outTargetIds = outs.map(o =>
-          Array.from(nodeGs).find(n => {
-            const label = n.querySelector('.smd-label')?.textContent?.trim();
-            return label === o.target;
-          })?.dataset.smdNode || ''
-        ).filter(Boolean);
+        const outTargetIds = outs.map(o => labelToId[o.target] || '').filter(Boolean);
 
         // Node states
         nodeGs.forEach(n => {
@@ -733,13 +789,19 @@ const uid = Math.random().toString(36).slice(2, 8);
           else n.setAttribute('data-state', 'dimmed');
         });
 
-        // Arrow states
+        // Arrow states + particles
+        clearParticles();
         arrowGs.forEach(a => {
-          if (a.dataset.smdSrc === id) a.setAttribute('data-arrow-state', 'highlight');
-          else a.setAttribute('data-arrow-state', 'dimmed');
+          if (a.dataset.smdSrc === id) {
+            a.setAttribute('data-arrow-state', 'highlight');
+            const aColor = a.querySelector<SVGPathElement>('.smd-edge')?.getAttribute('stroke') || color;
+            spawnParticles(a, aColor);
+          } else {
+            a.setAttribute('data-arrow-state', 'dimmed');
+          }
         });
 
-        // Show info panel (each element is optional — show what we can)
+        // Show info panel
         info!.style.display = '';
         if (infoBar)    infoBar.style.background = color;
         if (infoDot)    infoDot.style.background = color;
@@ -747,9 +809,23 @@ const uid = Math.random().toString(36).slice(2, 8);
         if (infoDesc)   infoDesc.textContent = desc;
         if (infoCodeEl) infoCodeEl.textContent = typeShape;
         if (infoTrans) {
-          infoTrans.innerHTML = outs.map(o =>
-            `<span class="smd-t">${o.trigger ? `<code>${o.trigger}</code> →` : '→'} ${o.target}</span>`
-          ).join('');
+          infoTrans.innerHTML = outs.map(o => {
+            const targetId = labelToId[o.target] || '';
+            const targetNode = targetId ? root.querySelector<SVGGElement>(`[data-smd-node="${targetId}"]`) : null;
+            const targetColor = targetNode?.dataset.smdColor || '';
+            return `<span class="smd-t" ${targetId ? `data-smd-goto="${targetId}"` : ''} style="cursor:pointer">`
+              + `${o.trigger ? `<code>${o.trigger}</code> <span class="smd-arrow-icon">→</span>` : '<span class="smd-arrow-icon">→</span>'}`
+              + ` <span class="smd-t-target" ${targetColor ? `style="color:${targetColor}"` : ''}>${o.target}</span>`
+              + `</span>`;
+          }).join('');
+
+          // Attach click handlers to transition rows
+          infoTrans.querySelectorAll<HTMLElement>('[data-smd-goto]').forEach(row => {
+            row.addEventListener('click', () => {
+              const targetId = row.dataset.smdGoto;
+              if (targetId) select(targetId);
+            });
+          });
         }
       }
 
@@ -757,6 +833,7 @@ const uid = Math.random().toString(36).slice(2, 8);
         selectedId = null;
         nodeGs.forEach(n => n.removeAttribute('data-state'));
         arrowGs.forEach(a => a.removeAttribute('data-arrow-state'));
+        clearParticles();
         info!.style.display = 'none';
       }
 
