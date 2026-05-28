@@ -115,7 +115,19 @@ Custom Astro components under `src/components/interactive/` for teaching pattern
 
 | Component | Purpose | When to use |
 | --- | --- | --- |
-| `BeforeAfter` | Draggable split-pane comparison with named slots | Architectural or code comparisons where seeing both sides simultaneously matters |
+| `ShellSession` | CLI recipe with variable replacement | AWS CLI recipes with reusable commands |
+| `CodeWalkthrough` | Step-through annotated code | 20+ line code blocks needing guided understanding |
+| `DecisionGuide` | Interactive decision tree | Multi-approach comparisons where context determines the choice |
+| `FlowSimulator` | Animated message/data flow | Message passing, request flows, cross-account patterns |
+| `PipelineStrip` | Linear stage visualization | Sequential processes (middleware, CI/CD, setup steps) |
+| `ParameterPlayground` | Interactive sliders with computed output | Algorithm parameter tuning |
+| `StackDiagram` | Onion/FILO layer visualization | Middleware wrapping, interceptor stacking |
+| `FiberTimeline` | Swimlane concurrency diagram | Fork/join, parallel execution, backpressure |
+| `ArchitectureExplorer` | Expandable multi-layer diagram | Layered architectures with click-to-explore |
+| `StateMachineDiagram` | Interactive state graph | State transitions with click-to-explore |
+| `HashRingVisualizer` | Interactive SVG ring | Consistent hashing visualization |
+| `TypeChannelTracer` | Type evolution tracker | Effect-TS type channel narrowing |
+| `StateExplorer` | Toggle switches with state | Boolean traps vs tagged unions |
 
 Import from `src/components/interactive/<Name>.astro` in MDX. Full API reference: [`src/components/interactive/README.md`](../sites/docs/src/components/interactive/README.md).
 

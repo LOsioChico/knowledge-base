@@ -20,7 +20,6 @@ From any MDX page under `sites/docs/src/content/docs/`:
 
 ```mdx
 import ShellSession from '/src/components/interactive/ShellSession.astro';
-import BeforeAfter from '/src/components/interactive/BeforeAfter.astro';
 import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
 import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
@@ -227,37 +226,6 @@ interface Core {
 | Note | Purpose |
 |------|---------|
 | `nestjs/fundamentals/interceptors` | FILO execution order — 3 concentric interceptor layers wrapping the Handler |
-
----
-
-### BeforeAfter
-
-Draggable split-pane comparison. The reader drags a divider to see both sides simultaneously.
-
-**When to use:** Architectural or code comparisons where seeing both sides at once matters.
-
-**When NOT to use:** Simple "here's the new code" — use Expressive Code `ins=/del=` diff markers.
-
-#### Props
-
-| Prop | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `beforeLabel` | `string` | no | `"before"` | Left side label |
-| `afterLabel` | `string` | no | `"after"` | Right side label |
-| `title` | `string` | no | — | Optional header |
-| `split` | `number` | no | `50` | Initial split (0-100) |
-
-#### Slots
-
-| Slot | Purpose |
-|------|---------|
-| `before` | Content for the left side |
-| `after` | Content for the right side |
-
-#### Target notes
-
-- `system-design/consistent-hashing` — mod-N vs ring
-- `effect-ts/layers-vs-nestjs-di` — Effect Layers vs NestJS DI
 
 ---
 

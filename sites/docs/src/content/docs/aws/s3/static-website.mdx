@@ -8,6 +8,8 @@ related:
 > S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only: production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
 
 import { Aside } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -20,7 +22,33 @@ Before diving in, make sure you understand:
 - **S3 + CloudFront + [ACM](https://aws.amazon.com/certificate-manager/)**: production static site with HTTPS and custom domain.
 - **Amplify**: AWS's recommended managed path ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html#WebsiteHosting)).
 
+<DecisionGuide
+  title="Which S3 hosting path?"
+  steps={[
+    { id: "start", question: "Is this a production site that needs HTTPS and a custom domain?", options: [
+      { label: "No — internal, test, or ephemeral", next: "r-bare" },
+      { label: "Yes — production with custom domain", next: "managed" },
+    ]},
+    { id: "managed", question: "Do you want a fully managed build + deploy pipeline (git push → deploy)?", options: [
+      { label: "Yes — managed CI/CD for frontend", next: "r-amplify" },
+      { label: "No — I'll deploy artifacts myself", next: "r-cloudfront" },
+    ]},
+    { id: "r-bare", result: "Bare S3 website endpoint", explanation: "Enable website hosting on the bucket, set a public-read policy, and use the HTTP-only s3-website endpoint directly. Fast to set up, but no HTTPS." },
+    { id: "r-cloudfront", result: "S3 + CloudFront + ACM", explanation: "S3 stores the files, CloudFront serves them globally with HTTPS via an ACM certificate. You control caching, error pages, and geo-restrictions. Set CloudFront origin to the website endpoint so index/error documents work." },
+    { id: "r-amplify", result: "Amplify Hosting", explanation: "AWS's recommended managed path. Connect your git repo, Amplify builds and deploys on push, handles HTTPS and custom domains automatically. Less control but zero infrastructure management." },
+  ]}
+/>
+
 ## 1. Enable hosting
+
+<PipelineStrip
+  stages={[
+    { label: "Unblock public access", detail: "put-public-access-block disables all four Block Public Access toggles" },
+    { label: "Enable website", detail: "aws s3 website sets index and error documents" },
+    { label: "Apply bucket policy", detail: "put-bucket-policy grants s3:GetObject to Principal *" },
+    { label: "Verify", detail: "get-bucket-website returns the IndexDocument and ErrorDocument config" },
+  ]}
+/>
 
 Enable website hosting by allowing a public bucket policy, configuring index/error documents, and applying the policy. `put-public-access-block`, `aws s3 website`, and `put-bucket-policy` print no success body; verify with `get-bucket-website` after the policy step.
 

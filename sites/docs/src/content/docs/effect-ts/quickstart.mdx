@@ -19,6 +19,7 @@ unrelated:
 
 import { Aside, Steps } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 <Steps>
 
@@ -145,6 +146,18 @@ console.log("returned:", result);
 
 Failures belong in the type signature (see [[effect-ts/typed-errors|Typed errors]]). Wrap fallible work with `Effect.try` ([creating-effects docs](https://effect.website/docs/getting-started/creating-effects/#modeling-synchronous-effects)):
 
+<CodeWalkthrough
+  title="typed error flow"
+  steps={[
+    { lines: "1",     title: "Import Data + Effect",     body: "Data provides TaggedError for declaring error types with a discriminant _tag field. Effect provides the try/catch combinators." },
+    { lines: "3-4",   title: "Declare a typed error",     body: "TaggedError creates a class with _tag = 'ParseError'. This tag is what catchTag matches on — it's the discriminant for the error union." },
+    { lines: "6-9",   title: "Wrap fallible code",        body: "Effect.try wraps a synchronous operation that might throw. The catch callback converts the unknown exception into your typed ParseError. The return type is Effect<unknown, ParseError>." },
+    { lines: "11-12", title: "Recover with catchTag",     body: "catchTag matches on _tag = 'ParseError' and removes it from the error channel E. After recovery, the effect can't fail with ParseError anymore — the compiler enforces this." },
+    { lines: "14-15", title: "Success path",               body: "Valid JSON parses normally. The recover wrapper is a no-op because no error was thrown." },
+    { lines: "17-18", title: "Failure path",               body: "Invalid JSON throws in try, gets caught and wrapped into ParseError, then catchTag fires and returns the recovery object. No unhandled exceptions — everything is in the type system." },
+  ]}
+>
+
 ```ts twoslash title="typed-error.ts"
 import { Data, Effect } from "effect";
 
@@ -167,6 +180,8 @@ console.log(Effect.runSync(recover(parseJson('{"ok":true}'))));
 console.log(Effect.runSync(recover(parseJson("not json"))));
 // { recovered: "invalid JSON: SyntaxError: Unexpected token 'o', \"not json\" is not valid JSON" }
 ```
+
+</CodeWalkthrough>
 
 [`Effect.catchTag`](https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts#L3831-L3890) (see also [[effect-ts/typed-errors|Typed errors]]) narrows on `_tag` and **removes** the handled error from `E`; after `recover` handles `ParseError`, both examples are safe to pass to `Effect.runSync`.
 
