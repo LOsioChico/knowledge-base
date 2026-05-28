@@ -58,6 +58,11 @@ const parsedSteps = steps.map((s) => {
   {/* ── CODE (scrollable container) ── */}
   <div class="cw-code">
     <slot />
+    {/* ── INLINE ANNOTATION (bottom-right HUD) ── */}
+    <div class="cw-annotation" aria-hidden="true">
+      <span class="cw-annotation-num"></span>
+      <span class="cw-annotation-text"></span>
+    </div>
   </div>
 
   {/* ── STEP CARD (below code) ── */}
@@ -216,8 +221,56 @@ const parsedSteps = steps.map((s) => {
     to   { transform: scaleY(1); opacity: 1; }
   }
 
+  /* ═══ INLINE ANNOTATION (bottom-right HUD) ═══ */
+  .cw-annotation {
+    position: sticky;
+    bottom: 8px;
+    float: right;
+    clear: both;
+    margin-right: 12px;
+    margin-top: -36px;
+    z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--cw-text-faint);
+    background: color-mix(in srgb, var(--cw-panel) 80%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--cw-rule);
+    border-radius: 6px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
+  .code-walkthrough[data-cw-active] .cw-annotation.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
 
+  .cw-annotation-num {
+    font-weight: 700;
+    color: var(--cw-accent);
+    flex-shrink: 0;
+  }
+
+  .cw-annotation-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 640px) {
+    .cw-annotation { display: none; }
+  }
   /* ═══ CARD ═══ */
   .cw-card {
     background: var(--cw-panel);
@@ -422,6 +475,11 @@ const parsedSteps = steps.map((s) => {
       const progressSegments = comp.querySelectorAll<HTMLElement>(".cw-progress-segment");
       const progressCurrent = comp.querySelector<HTMLElement>(".cw-progress-current");
 
+      // Inline annotation HUD
+      const annotation = comp.querySelector<HTMLElement>(".cw-annotation");
+      const annotationNum = comp.querySelector<HTMLElement>(".cw-annotation-num");
+      const annotationText = comp.querySelector<HTMLElement>(".cw-annotation-text");
+
       if (!prevBtn || !nextBtn || !codePanel) return;
 
       const lineEls = Array.from(
@@ -465,6 +523,13 @@ const parsedSteps = steps.map((s) => {
 
         // Update header step title
         if (headerStep) headerStep.textContent = stepsData[index].title;
+
+        // Update inline annotation HUD
+        if (annotation && annotationNum && annotationText) {
+          annotationNum.textContent = `${index + 1}/${stepsData.length}`;
+          annotationText.textContent = stepsData[index].title;
+          annotation.classList.add("is-visible");
+        }
 
         // Navigation buttons
         prevBtn!.disabled = index === 0;
