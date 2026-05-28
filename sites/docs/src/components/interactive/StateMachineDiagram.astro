@@ -50,12 +50,13 @@ states.forEach(s => { adj[s.id] = []; });
 transitions.forEach(t => { if (adj[t.from]) adj[t.from].push(t.to); });
 
 /* ═══ BFS-layered layout ═══ */
-const NODE_W = 136;
-const NODE_H = 48;
+const NODE_W = 148;
+const NODE_H = 52;
 const GAP_X = 80;
-const GAP_Y = 64;
-const PAD = 48;
-const ARC_CLEARANCE = 40;
+const GAP_Y = 68;
+const PAD = 52;
+const ARC_CLEARANCE = 44;
+const NODE_RX = NODE_H / 2; // full pill shape
 
 type Pos = { x: number; y: number };
 
@@ -227,10 +228,22 @@ const uid = Math.random().toString(36).slice(2, 8);
             id={`ah-${uid}-${a.from}-${a.to}`}
             viewBox="0 0 10 7"
             refX="9" refY="3.5"
-            markerWidth="7" markerHeight="5"
+            markerWidth="9" markerHeight="7"
             orient="auto-start-reverse"
           >
-            <polygon points="0 0, 10 3.5, 0 7" fill={a.color} opacity="0.75" />
+            <polygon points="0 0, 10 3.5, 0 7" fill={a.color} opacity="0.9" />
+          </marker>
+        ))}
+        {/* Initial-state entry arrow marker */}
+        {states.filter(s => s.initial).map(s => (
+          <marker
+            id={`ah-${uid}-${s.id}-${s.id}`}
+            viewBox="0 0 10 7"
+            refX="9" refY="3.5"
+            markerWidth="8" markerHeight="6"
+            orient="auto-start-reverse"
+          >
+            <polygon points="0 0, 10 3.5, 0 7" fill={clr(s)} opacity="0.7" />
           </marker>
         ))}
       </defs>
@@ -242,8 +255,8 @@ const uid = Math.random().toString(36).slice(2, 8);
             <path
               d={a.d}
               stroke={a.color}
-              stroke-width="1.5"
-              stroke-opacity="0.4"
+              stroke-width="2"
+              stroke-opacity="0.5"
               fill="none"
               marker-end={`url(#ah-${uid}-${a.from}-${a.to})`}
               class="smd-edge"
@@ -251,25 +264,26 @@ const uid = Math.random().toString(36).slice(2, 8);
             {a.label && (
               <g>
                 <rect
-                  x={a.lx - a.label.length * 3.2 - 5}
-                  y={a.ly - 8}
-                  width={a.label.length * 6.4 + 10}
-                  height={16}
-                  rx="4"
+                  x={a.lx - a.label.length * 3.4 - 6}
+                  y={a.ly - 9}
+                  width={a.label.length * 6.8 + 12}
+                  height={18}
+                  rx="9"
                   fill="var(--smd-bg)"
-                  fill-opacity="0.9"
+                  fill-opacity="0.92"
                   stroke={a.color}
-                  stroke-width="0.5"
-                  stroke-opacity="0.3"
+                  stroke-width="0.75"
+                  stroke-opacity="0.35"
                 />
                 <text
                   x={a.lx}
-                  y={a.ly + 3}
+                  y={a.ly + 3.5}
                   text-anchor="middle"
-                  font-size="10"
+                  font-size="10.5"
                   font-family="var(--sl-font-mono, monospace)"
+                  font-weight="500"
                   fill={a.color}
-                  opacity="0.85"
+                  opacity="0.9"
                   class="smd-edge-label"
                 >
                   {a.label}
@@ -298,50 +312,46 @@ const uid = Math.random().toString(36).slice(2, 8);
               role="button"
               aria-label={`State: ${s.label}`}
             >
-              {/* Glow rect (shown on select) */}
+              {/* Glow ring (shown on select) */}
               <rect
                 x={p.x - hw - 5} y={p.y - hh - 5}
                 width={NODE_W + 10} height={NODE_H + 10}
-                rx="14"
+                rx={NODE_RX + 5}
                 fill="none" stroke={c} stroke-width="2.5" opacity="0"
                 class="smd-glow"
               />
-              {/* Node body */}
+              {/* Tinted fill (color-coded background) */}
               <rect
                 x={p.x - hw} y={p.y - hh}
                 width={NODE_W} height={NODE_H}
-                rx="10"
-                fill="var(--smd-surface)"
-                stroke="var(--smd-rule)"
-                stroke-width="1"
-                class="smd-body"
-              />
-              {/* Left accent bar */}
-              <rect
-                x={p.x - hw} y={p.y - hh + 6}
-                width="3" height={NODE_H - 12}
-                rx="1.5"
+                rx={NODE_RX}
                 fill={c}
-                opacity="0.8"
+                fill-opacity="0.08"
+                stroke={c}
+                stroke-width="1.5"
+                stroke-opacity="0.45"
+                class="smd-body"
               />
               {/* Label */}
               <text
-                x={p.x + 4} y={p.y + 1}
+                x={p.x} y={p.y + 1}
                 text-anchor="middle"
                 dominant-baseline="central"
-                font-size="13" font-weight="600"
-                fill="var(--smd-text)"
+                font-size="13.5" font-weight="600"
+                fill={c}
+                class="smd-label"
               >
                 {s.label}
               </text>
-              {/* Initial indicator */}
+              {/* Initial indicator: arrow from void */}
               {s.initial && (
-                <g>
-                  <circle cx={p.x - hw - 16} cy={p.y} r="4" fill={c} />
+                <g class="smd-initial">
+                  <circle cx={p.x - hw - 20} cy={p.y} r="5" fill={c} opacity="0.7" />
                   <line
-                    x1={p.x - hw - 11} y1={p.y}
+                    x1={p.x - hw - 14} y1={p.y}
                     x2={p.x - hw - 2}  y2={p.y}
-                    stroke={c} stroke-width="2"
+                    stroke={c} stroke-width="2" stroke-opacity="0.7"
+                    marker-end={`url(#ah-${uid}-${s.id}-${s.id})`}
                   />
                 </g>
               )}
@@ -429,7 +439,11 @@ const uid = Math.random().toString(36).slice(2, 8);
   }
 
   .smd-body {
-    transition: filter 200ms var(--ease), stroke 200ms var(--ease);
+    transition: fill-opacity 200ms var(--ease), stroke-opacity 200ms var(--ease), filter 200ms var(--ease);
+  }
+
+  .smd-label {
+    transition: opacity 200ms var(--ease);
   }
 
   .smd-glow {
@@ -437,8 +451,9 @@ const uid = Math.random().toString(36).slice(2, 8);
   }
 
   .smd-node:hover .smd-body {
-    filter: brightness(1.15);
-    stroke-width: 1.5;
+    fill-opacity: 0.14;
+    stroke-opacity: 0.7;
+    filter: brightness(1.1);
   }
 
   .smd-node:focus-visible .smd-glow {
@@ -446,12 +461,14 @@ const uid = Math.random().toString(36).slice(2, 8);
   }
 
   /* JS-applied states */
-  .smd-node[data-state="selected"] .smd-glow { opacity: 0.35; }
-  .smd-node[data-state="selected"] .smd-body { filter: brightness(1.2); stroke-width: 1.5; }
-  .smd-node[data-state="dimmed"]   { opacity: 0.2; pointer-events: none; }
+  .smd-node[data-state="selected"] .smd-glow { opacity: 0.3; }
+  .smd-node[data-state="selected"] .smd-body { fill-opacity: 0.16; stroke-opacity: 0.8; filter: brightness(1.15); }
+  .smd-node[data-state="selected"] .smd-label { opacity: 1; }
+  .smd-node[data-state="dimmed"]   { opacity: 0.18; pointer-events: none; }
   .smd-node[data-state="target"] .smd-body {
     stroke-dasharray: 5 3;
-    filter: brightness(1.08);
+    fill-opacity: 0.12;
+    stroke-opacity: 0.6;
   }
 
   /* ═══ Arrows ═══ */
