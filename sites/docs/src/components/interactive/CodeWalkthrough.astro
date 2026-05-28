@@ -264,11 +264,6 @@ const parsedSteps = steps.map((s) => {
     white-space: nowrap;
   }
 
-  /* Author tips get a subtle accent border */
-  .cw-tip.has-author-tip {
-    border-left: 2px solid var(--cw-accent);
-  }
-
   @media (max-width: 640px) {
     .cw-tip { display: none; }
   }
@@ -431,13 +426,6 @@ const parsedSteps = steps.map((s) => {
 </style>
 
 <script>
-  const UX_TIPS = [
-    "Use ← → arrow keys to navigate",
-    "Click the progress bar to jump to any step",
-    "Swipe left or right on mobile",
-    "Dimmed lines are outside the current step",
-  ];
-
   function initCodeWalkthrough() {
     document.querySelectorAll<HTMLElement>(".code-walkthrough:not([data-init])").forEach((comp) => {
       comp.setAttribute("data-init", "");
@@ -505,17 +493,15 @@ const parsedSteps = steps.map((s) => {
         // Update header step title
         if (headerStep) headerStep.textContent = stepsData[index].title;
 
-        // Update tips HUD
+        // Update tips HUD — only show when step has an author tip
         if (tipEl && tipText) {
           const authorTip = stepsData[index].tip;
           if (authorTip) {
             tipText.textContent = authorTip;
-            tipEl.classList.add("has-author-tip");
+            tipEl.classList.add("is-visible");
           } else {
-            tipText.textContent = UX_TIPS[index % UX_TIPS.length];
-            tipEl.classList.remove("has-author-tip");
+            tipEl.classList.remove("is-visible");
           }
-          tipEl.classList.add("is-visible");
         }
 
         // Navigation buttons
