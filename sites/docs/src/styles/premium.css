@@ -379,3 +379,115 @@ html {
   scrollbar-color: var(--sl-color-gray-4) transparent;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABS (Starlight <Tabs> component)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Tab bar container — soft frosted track */
+starlight-tabs .tablist-wrapper {
+  background: color-mix(in srgb, var(--sl-color-gray-6) 50%, transparent) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+  margin-bottom: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-gray-5) 40%, transparent) !important;
+  box-shadow: inset 0 1px 2px hsla(0, 0%, 0%, 0.08);
+}
+
+/* Tab list — stretch tabs to fill width */
+starlight-tabs .tablist-wrapper ul[role="tablist"] {
+  display: flex !important;
+  gap: 4px !important;
+  border-bottom: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove Starlight's default pseudo-element underline */
+starlight-tabs .tablist-wrapper ul[role="tablist"]::after {
+  display: none !important;
+}
+
+/* Tab items — fill equal width */
+starlight-tabs .tab {
+  flex: 1 !important;
+  border: none !important;
+  margin: 0 !important;
+}
+
+/* Individual tab link — clean pill button */
+starlight-tabs .tab a[role="tab"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  padding: 9px 20px !important;
+  border-radius: 9px !important;
+  font-size: var(--sl-text-sm) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+  color: var(--sl-color-gray-3) !important;
+  text-decoration: none !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  transition:
+    color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    background 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1) !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  position: relative !important;
+}
+
+/* Hover — soft highlight */
+starlight-tabs .tab a[role="tab"]:hover {
+  color: var(--sl-color-gray-2) !important;
+  background: color-mix(in srgb, var(--sl-color-gray-5) 25%, transparent) !important;
+}
+
+/* Active / selected tab — elevated accent pill */
+starlight-tabs .tab a[role="tab"][aria-selected="true"] {
+  color: var(--sl-color-white) !important;
+  background: color-mix(in srgb, var(--sl-color-accent-high) 18%, var(--sl-color-bg-nav)) !important;
+  border-color: color-mix(in srgb, var(--sl-color-accent-high) 30%, transparent) !important;
+  box-shadow:
+    0 1px 4px color-mix(in srgb, var(--sl-color-accent) 15%, transparent),
+    0 0 12px color-mix(in srgb, var(--sl-color-accent) 6%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 5%, transparent) !important;
+}
+
+/* Active tab hover — intensify slightly */
+starlight-tabs .tab a[role="tab"][aria-selected="true"]:hover {
+  background: color-mix(in srgb, var(--sl-color-accent-high) 24%, var(--sl-color-bg-nav)) !important;
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--sl-color-accent) 20%, transparent),
+    0 0 16px color-mix(in srgb, var(--sl-color-accent) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 6%, transparent) !important;
+}
+
+/* Press feedback on inactive tabs */
+starlight-tabs .tab a[role="tab"]:active:not([aria-selected="true"]) {
+  transform: scale(0.97) !important;
+  background: color-mix(in srgb, var(--sl-color-gray-5) 35%, transparent) !important;
+}
+
+/* Tab panels — smooth content transition */
+starlight-tabs [role="tabpanel"] {
+  animation: tab-fade-in 250ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

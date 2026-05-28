@@ -311,7 +311,7 @@ const parsedSteps = steps.map((s) => {
 
       if (!prevBtn || !nextBtn || !codePanel) return;
 
-      const lineEls = Array.from(codePanel.querySelectorAll<HTMLElement>(":scope .ec-line"));
+      const lineEls = Array.from(codePanel.querySelectorAll<HTMLElement>(":scope .ec-line:not(.twoslash-popup-container .ec-line)"));
       let current = 0;
 
       function goTo(index: number) {

@@ -71,16 +71,17 @@ Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes
 <CodeWalkthrough
   title="Global exception filter walkthrough"
   steps={[
-    { lines: "1-8", title: "Imports & constants", body: "Import pg's DatabaseError for typed access to driver fields, and define SQLSTATE codes as named constants. These 4 codes cover the most common constraint violations in Postgres." },
-    { lines: "10-12", title: "Type guard: isPgError", body: "Narrows any unknown error to QueryFailedError<DatabaseError> — confirms both the TypeORM wrapper AND the Postgres driver are involved before accessing driver-specific fields." },
-    { lines: "14-21", title: "Type guard: isUniqueViolation", body: "Builds on isPgError to check the specific SQLSTATE. The optional constraint parameter lets service-level code test by constraint name (e.g. 'users_email_key')." },
-    { lines: "23-30", title: "@Catch + catch() dispatch", body: "The filter catches only QueryFailedError. If the driver isn't Postgres (e.g. SQLite in tests), it falls through to a generic 500. Otherwise it maps via toHttp()." },
-    { lines: "31-37", title: "Logging unmapped codes", body: "Any SQLSTATE not in the switch gets logged with full stack trace before returning 500. This is your early warning for unhandled constraint types." },
-    { lines: "39-68", title: "toHttp() switch mapping", body: "Maps each SQLSTATE to an HTTP exception. Unique + FK → 409 Conflict (with constraint name). NOT NULL + CHECK → 422 Unprocessable. Unknown → 500." },
+    { lines: "1-13", title: "Imports", body: "Pull in NestJS exception types, BaseExceptionFilter for delegation, pg's DatabaseError for typed driver access, and the isPgError guard + PG SQLSTATE constants defined in the db-errors helper." },
+    { lines: "15-17", title: "@Catch + class scaffold", body: "@Catch(QueryFailedError) tells Nest to route only TypeORM query failures to this filter. Extending BaseExceptionFilter lets us call super.catch() for standard HTTP error rendering." },
+    { lines: "19-23", title: "Postgres guard", body: "If the driver error isn't Postgres (e.g. SQLite in tests), fall through to a generic 500 via super.catch(). This keeps the filter safe across different database backends." },
+    { lines: "24-31", title: "Map + log unmapped codes", body: "toHttp() converts the driver error to an HttpException. If the result is a 500 (unmapped SQLSTATE), log the raw code and detail with a full stack trace — your early warning for unhandled constraint types." },
+    { lines: "34-48", title: "toHttp(): Unique + FK → 409", body: "UNIQUE_VIOLATION and FOREIGN_KEY_VIOLATION map to 409 Conflict. The response body includes the constraint name and detail so the client knows which field collided." },
+    { lines: "49-63", title: "toHttp(): NOT NULL + CHECK → 422", body: "NOT_NULL_VIOLATION exposes the offending column; CHECK_VIOLATION exposes the constraint name. Both map to 422 Unprocessable Entity. Unknown codes fall through to 500." },
   ]}
 >
 
-```typescript title="typeorm-exception.filter.ts" collapse={1-8}
+```typescript title="typeorm-exception.filter.ts" collapse={1-13}
+import {
   ArgumentsHost,
   Catch,
   ConflictException,
