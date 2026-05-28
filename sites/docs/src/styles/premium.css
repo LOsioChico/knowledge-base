@@ -586,3 +586,237 @@ starlight-tabs [role="tabpanel"] {
 .sl-link-card-grid {
   border-radius: 10px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOMEPAGE HERO
+   ═══════════════════════════════════════════════════════════════════ */
+
+.kb-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  padding: 2.5rem 2rem 2rem;
+  margin-bottom: 2rem;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sl-color-accent) 8%, var(--sl-color-gray-6)) 0%,
+      var(--sl-color-black) 60%,
+      color-mix(in srgb, var(--sl-color-accent) 5%, var(--sl-color-black)) 100%
+    );
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 15%, transparent);
+}
+
+/* Floating accent orb */
+.kb-hero__orb {
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--sl-color-accent) 20%, transparent) 0%,
+    color-mix(in srgb, var(--sl-color-accent) 6%, transparent) 40%,
+    transparent 70%
+  );
+  filter: blur(40px);
+  animation: kb-orb-float 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes kb-orb-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-15px, 12px) scale(1.05); }
+  66% { transform: translate(10px, -8px) scale(0.97); }
+}
+
+.kb-hero__content {
+  position: relative;
+  z-index: 1;
+}
+
+.kb-hero__eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sl-color-accent-high);
+  margin: 0 0 0.5rem;
+  opacity: 0.85;
+}
+
+.kb-hero__title {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 800;
+  margin: 0 0 0.75rem;
+  background: linear-gradient(
+    135deg,
+    var(--sl-color-white) 0%,
+    color-mix(in srgb, var(--sl-color-accent-high) 70%, var(--sl-color-white)) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.kb-hero__subtitle {
+  font-size: 0.95rem;
+  color: var(--sl-color-gray-3);
+  margin: 0 0 1.5rem;
+  max-width: 540px;
+  line-height: 1.6;
+}
+
+/* Stats row */
+.kb-hero__stats {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.kb-hero__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.kb-hero__stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--sl-color-accent-high);
+  line-height: 1;
+}
+
+.kb-hero__stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sl-color-gray-3);
+  margin-top: 0.25rem;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   LEARNING PATHWAY TRACK CARDS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.kb-tracks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+
+.kb-track {
+  --track-color: var(--sl-color-accent);
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--track-color) 20%, var(--sl-color-gray-5));
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--track-color) 6%, transparent) 0%,
+      transparent 40%
+    ),
+    var(--sl-color-black);
+  padding: 1.25rem;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.kb-track:hover {
+  border-color: color-mix(in srgb, var(--track-color) 40%, transparent);
+  box-shadow:
+    0 4px 20px color-mix(in srgb, var(--track-color) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 3%, transparent);
+  transform: translateY(-2px);
+}
+
+/* Per-track accent colors */
+.kb-track--nestjs  { --track-color: #e44d26; }
+.kb-track--aws     { --track-color: #ff9900; }
+.kb-track--effect  { --track-color: #a78bfa; }
+.kb-track--systems { --track-color: #34d399; }
+
+.kb-track__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kb-track__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.kb-track__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--sl-color-white);
+}
+
+.kb-track__desc {
+  font-size: 0.8rem;
+  color: var(--sl-color-gray-3);
+  margin: 0.2rem 0 0;
+  line-height: 1.4;
+}
+
+/* Level rows */
+.kb-track__levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kb-track__level {
+  font-size: 0.85rem;
+  color: var(--sl-color-gray-2);
+  line-height: 1.5;
+  padding-left: 0.25rem;
+}
+
+/* Level badges */
+.kb-track__badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15em 0.5em;
+  border-radius: 4px;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.kb-track__badge--core {
+  background: color-mix(in srgb, #34d399 15%, transparent);
+  color: #34d399;
+  border: 1px solid color-mix(in srgb, #34d399 25%, transparent);
+}
+
+.kb-track__badge--mid {
+  background: color-mix(in srgb, #fbbf24 15%, transparent);
+  color: #fbbf24;
+  border: 1px solid color-mix(in srgb, #fbbf24 25%, transparent);
+}
+
+.kb-track__badge--adv {
+  background: color-mix(in srgb, #f87171 15%, transparent);
+  color: #f87171;
+  border: 1px solid color-mix(in srgb, #f87171 25%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kb-hero__orb {
+    animation: none;
+  }
+}
