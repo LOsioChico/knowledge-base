@@ -8,13 +8,19 @@ Operating contract for any AI agent (Copilot CLI, Claude Code, Cursor, etc.) edi
 
 When a request has plausibly different interpretations (callout severity, callout type, placement, prose vs. table, scope of a refactor, where to put a new section), name the options in one sentence and pick a default — don't commit to one silently. Cheap to ask, expensive to undo.
 
-## Session context hygiene
+## Session context hygiene & SkillOpt self-evolution
 
 For substantial new features, deep refactors, or brand new architectural guides (such as introducing a new AWS service index or a multi-file recipe):
 - **Prefer starting a fresh, clean chat session** rather than continuing a long, high-token thread. This maintains maximum reasoning precision, keeps generation speeds high, and avoids context-bloat pollution from prior tasks.
 - **Initiate the new session with an explicit bootstrap prompt** specifying the target scope and SDD configurations (Execution Mode: `interactive` vs `auto`, Artifact Store: `openspec`, and Delivery Strategy: `ask-on-risk`).
 
 This ensures high precision, clean git branches, and structured planning history.
+
+### Text-space skill self-evolution (SkillOpt)
+To keep the agent's procedural memory sharp and immune to repeated gotchas, we employ a **SkillOpt-style text-space self-evolution loop**:
+- At the end of every pair-programming session, run `bun run skills:opt` to trigger the optimizer model.
+- The optimizer analyzes the active session's transcript logs, extracts visual gotchas, and generates micro-rule proposals for the `.github/skills/` folder (such as Starlight's `not-content` sibling margin bypass or sub-pixel checkbox centerings).
+- These micro-rules are automatically validated against our quality check gates (`bun run lint:wikilinks` and `astro check`) before being applied to disk. Evolved skills are then committed directly to the repository as part of standard session work.
 
 
 ## Skills directory (MANDATORY routing)

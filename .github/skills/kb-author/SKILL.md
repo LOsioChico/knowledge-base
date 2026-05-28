@@ -218,7 +218,28 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
   interactive components carry JS weight. Load the skill for the mandatory selection framework;
   `<Steps>` or `<Tabs>` may be enough.
 
+- **Custom MDX/interactive component root missing `not-content`** → Starlight's
+  `.sl-markdown-content` sibling-margin rules (`* + *`, heading margins) inject phantom
+  vertical gaps between internal rows, legends, and group headers; timeline stacks look
+  broken inside area MOCs. Every interactive wrapper root must include `not-content`
+  (see `LearningRoadmap.astro`, `PipelineStrip.astro`; `premium.css` gates rules with
+  `:not(:where(.not-content *))`). Load [`kb-enrichment`](../kb-enrichment/SKILL.md)
+  when building or auditing components.
+- **Mixed-height flex rows using `align-items: center` or baseline alignment** →
+  fixed-size controls (e.g. 22px checkbox circles) float above or below adjacent title
+  text. Use `align-items: flex-start` on the row and `padding-top: calc(control-height / 2)`
+  on the control column (11px for a 22px button) to center against the title line; on
+  hover lift only the button (`translateY(-2px)`), not the connector pseudo-element behind it.
+- **Vertical timeline connector drawn as one absolute column across row gaps** → row
+  `gap`/`margin` leaves visible breaks in a continuous line. Draw per-row segments on
+  the checkbox column (`::before`, `width: 2px`, `left: 10px` = center of 22px column),
+  extend with `top: -4px; bottom: -4px` to overlap siblings, clip `:first-child` at
+  `top: 22px` and `:last-child` at `bottom: calc(100% - 22px)` so endpoints sit at
+  control centers; align group separators with `margin-left: 10px`. Match inline-flex
+  chip rows (prereq label + pill) to a shared `height: 20px`.
+
 ## Boundaries
+
 
 This skill is the workflow companion to the repo's `AGENTS.md`. It does NOT override AGENTS.md
 invariants — schema, vocabulary, linker rules — those win on conflict. It does NOT run the lint

@@ -28,6 +28,7 @@
     "docs:dev": "bun run --cwd sites/docs dev",
     "docs:build": "bun run --cwd sites/docs build",
     "skills:sync": "bun scripts/sync-skills.ts",
+    "skills:opt": "tsx scripts/audit-notes/skill-opt.ts",
     "vault:check": "node scripts/vault-check.mjs",
     "test": "tsx --test scripts/*.test.mjs && tsx --test scripts/*.test.ts"
   },
