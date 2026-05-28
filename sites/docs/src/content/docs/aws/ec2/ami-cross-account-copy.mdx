@@ -10,6 +10,8 @@ related:
 > Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image`: snapshot share is required.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -31,7 +33,38 @@ Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGui
 
 ## Recipe
 
-Profiles: `source` (`account-a`, AMI owner), `dest` (`account-b`, receives copy). Same convention as [[aws/account-migrations|account migrations]]; only the profile names differ here. Replace regions, AMI/snapshot IDs, `DEST_ACCOUNT_ID`.
+<FlowSimulator
+  title="Cross-account AMI copy flow"
+  nodes={[
+    { id: "source", label: "Source (A)", col: 0 },
+    { id: "ami", label: "AMI + Snapshots", col: 1 },
+    { id: "dest", label: "Destination (B)", col: 2 },
+  ]}
+  flows={[
+    {
+      label: "Share + Copy",
+      steps: [
+        { from: "source", to: "ami", message: "modify-image-attribute", description: "Grant launch permission to destination account" },
+        { from: "source", to: "ami", message: "modify-snapshot-attribute", description: "Grant create-volume permission on EACH underlying EBS snapshot" },
+        { from: "dest", to: "ami", message: "copy-image", description: "Destination runs copy-image — creates NEW AMI + snapshots owned by B" },
+        { from: "ami", to: "dest", message: "new AMI (owned)", description: "Destination now owns independent copies. Closing source account won't affect B." },
+      ],
+    },
+  ]}
+/>
+
+<ShellSession
+  vars={[
+    { name: "SOURCE_REGION", default: "us-east-1" },
+    { name: "DEST_REGION", default: "us-east-1" },
+    { name: "DEST_ACCOUNT_ID", placeholder: "222233334444" },
+    { name: "AMI_ID", placeholder: "ami-0123456789abcdef0" },
+    { name: "SNAPSHOT_ID", placeholder: "snap-0123456789abcdef0" },
+    { name: "BACKUP_TAG", placeholder: "manual-20260523-020000" },
+  ]}
+/>
+
+Profiles: `source` (`account-a`, AMI owner), `dest` (`account-b`, receives copy). Same convention as [[aws/account-migrations|account migrations]]; only the profile names differ here.
 
 ## 1. Pre-flight
 
@@ -47,8 +80,8 @@ aws sts get-caller-identity --profile dest   --output json
 Map each AMI to its root snapshot and whether encryption is on (you will share every snapshot ID in the block device mapping):
 
 ```bash
-aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
-  --filters "Name=tag:Backup,Values=BACKUP_TAG" \
+aws ec2 describe-images --profile source --region $SOURCE_REGION --owners self \
+  --filters "Name=tag:Backup,Values=$BACKUP_TAG" \
   --query 'Images[].{AMI:ImageId,Snap:BlockDeviceMappings[0].Ebs.SnapshotId,Enc:BlockDeviceMappings[0].Ebs.Encrypted}' \
   --output table
 ```
@@ -66,9 +99,9 @@ aws ec2 describe-images --profile source --region SOURCE_REGION --owners self \
 Grants destination `RunInstances` from your AMI (not sufficient for `copy-image` alone):
 
 ```bash
-aws ec2 modify-image-attribute --profile source --region SOURCE_REGION \
-  --image-id AMI_ID \
-  --launch-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+aws ec2 modify-image-attribute --profile source --region $SOURCE_REGION \
+  --image-id $AMI_ID \
+  --launch-permission "Add=[{UserId=$DEST_ACCOUNT_ID}]"
 ```
 
 ## 5. Share underlying snapshot(s)
@@ -76,9 +109,9 @@ aws ec2 modify-image-attribute --profile source --region SOURCE_REGION \
 Required for `copy-image`: repeat for every snapshot in the AMI's block device mapping:
 
 ```bash
-aws ec2 modify-snapshot-attribute --profile source --region SOURCE_REGION \
-  --snapshot-id SNAPSHOT_ID \
-  --create-volume-permission "Add=[{UserId=DEST_ACCOUNT_ID}]"
+aws ec2 modify-snapshot-attribute --profile source --region $SOURCE_REGION \
+  --snapshot-id $SNAPSHOT_ID \
+  --create-volume-permission "Add=[{UserId=$DEST_ACCOUNT_ID}]"
 ```
 
 ## 6. Copy from destination
@@ -86,13 +119,13 @@ aws ec2 modify-snapshot-attribute --profile source --region SOURCE_REGION \
 Run in account B; `copy-image` returns a new AMI ID owned by B. Wait until `available`:
 
 ```bash
-NEW_AMI=$(aws ec2 copy-image --profile dest --region DEST_REGION \
-  --source-region SOURCE_REGION \
-  --source-image-id AMI_ID \
-  --name "copied-$(date +%Y%m%d)-AMI_ID" \
+NEW_AMI=$(aws ec2 copy-image --profile dest --region $DEST_REGION \
+  --source-region $SOURCE_REGION \
+  --source-image-id $AMI_ID \
+  --name "copied-$(date +%Y%m%d)-$AMI_ID" \
   --query ImageId --output text)
 
-aws ec2 wait image-available --profile dest --region DEST_REGION --image-ids $NEW_AMI
+aws ec2 wait image-available --profile dest --region $DEST_REGION --image-ids $NEW_AMI
 ```
 
 ## 7. Re-tag AMI and snapshots
