@@ -125,6 +125,7 @@ const parsedSteps = steps.map((s) => {
     border: 1px solid var(--cw-rule);
     border-radius: 10px;
     overflow: hidden;
+    outline: none;
   }
 
   /* ═══ HEADER (dynamic step title) ═══ */
@@ -177,6 +178,12 @@ const parsedSteps = steps.map((s) => {
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+  }
+
+  /* Force long lines to wrap instead of overflowing */
+  .cw-code :global(.ec-line) {
+    white-space: pre-wrap !important;
+    word-break: break-word;
   }
 
   /* ═══ LINE DIMMING + STAGGERED ANIMATION ═══ */
