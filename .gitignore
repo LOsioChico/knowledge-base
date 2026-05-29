@@ -27,3 +27,5 @@ spikes/
 # OpenSpec specifications and changes local cache
 openspec/
 
+# Local agent environments
+.agents/
