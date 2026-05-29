@@ -11,7 +11,7 @@ prerequisites:
 > IAM policy evaluation is the authorization pass behind every AWS API call: start at deny, find every applicable allow, then let explicit denies and guardrail policies decide what survives.
 
 import { Aside } from "@astrojs/starlight/components";
-import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import PolicyEvaluator from '/src/components/interactive/PolicyEvaluator.astro';
 import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
@@ -30,17 +30,7 @@ Before diving in, make sure you understand:
 
 ## Evaluation flow
 
-<PipelineStrip
-  title="IAM evaluation gates (top → bottom)"
-  stages={[
-    { label: "Authenticate caller", color: "#60a5fa", tip: "AWS resolves the principal from the request's signing credentials (IAM user, role session, federated identity)." },
-    { label: "Collect all applicable policies", color: "#60a5fa", tip: "Gather identity-based, resource-based, permissions boundary, session, SCP, and RCP policies that apply to this principal + resource pair." },
-    { label: "Check explicit denies", color: "#ef4444", tip: "Scan every collected policy for a matching Deny statement. One explicit Deny stops evaluation immediately : the request is denied." },
-    { label: "Check for an Allow", color: "#f59e0b", tip: "If no explicit deny was found, look for at least one matching Allow. No Allow means implicit deny (request fails silently)." },
-    { label: "Apply ceilings (boundaries, SCPs, RCPs)", color: "#a78bfa", tip: "Permissions boundaries, session policies, SCPs, and RCPs are ceilings : they cannot grant access, only restrict what identity/resource policies allowed." },
-    { label: "Final decision: Allow or Deny", color: "#34d399", tip: "If the Allow survived every ceiling check, the request proceeds. Otherwise, implicit deny." },
-  ]}
-/>
+<PolicyEvaluator />
 
 AWS describes the authorization input as a request context, then evaluates identity policies, resource policies, permissions boundaries, AWS Organizations controls, and session policies to reach the final decision ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The diagram is a debugging model, not a replacement for service-specific rules.
 
