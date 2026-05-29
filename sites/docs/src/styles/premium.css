@@ -168,24 +168,34 @@
 /* First blockquote on the page (the tagline) gets a highly premium editorial look */
 .sl-markdown-content > blockquote:first-of-type {
   border: none !important;
-  background: transparent !important;
-  padding: 0 !important;
-  font-size: 1.38rem !important;
-  line-height: 1.65 !important;
-  font-style: normal !important;
-  font-weight: 300 !important;
-  color: var(--sl-color-gray-2) !important;
-  margin-top: 0.5rem !important;
+  border-inline-start: 3px solid transparent !important;
+  border-image: linear-gradient(to bottom, var(--sl-color-accent) 0%, transparent 100%) 1 !important;
+  background: 
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--sl-color-accent) 6%, transparent) 0%,
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--sl-color-accent) 1.5%, var(--sl-color-bg)) !important;
+  border-radius: 0 12px 12px 0 !important;
+  padding: 1.25rem 1.75rem !important;
+  margin-top: 1rem !important;
   margin-bottom: 2.5rem !important;
-  letter-spacing: -0.015em !important;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--sl-color-white) 4%, transparent),
+    0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
 }
 
 .sl-markdown-content > blockquote:first-of-type p {
-  font-style: normal !important;
+  font-size: 1.2rem !important;
+  line-height: 1.75 !important;
+  font-style: italic !important;
   font-weight: 300 !important;
-  color: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
+  color: var(--sl-color-gray-2) !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 !important;
 }
 
 .sl-markdown-content blockquote:not(:where(.not-content *)) p {
