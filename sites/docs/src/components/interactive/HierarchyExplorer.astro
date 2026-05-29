@@ -566,6 +566,13 @@ const { title, resources } = Astro.props;
     transform: scale(1.01);
   }
 
+  .he-card.he-card-param-focused {
+    border-color: color-mix(in srgb, var(--he-c) 65%, var(--he-rule)) !important;
+    background: color-mix(in srgb, var(--he-c) 5%, rgba(22, 22, 26, 0.98)) !important;
+    box-shadow: 0 0 16px color-mix(in srgb, var(--he-c) 25%, transparent) !important;
+    transform: scale(1.005);
+  }
+
   .he-card-header {
     display: flex;
     align-items: center;
@@ -735,6 +742,22 @@ const { title, resources } = Astro.props;
     font-size: 0.7rem;
     color: #34d399; /* Green prompt */
     line-height: 1.45;
+  }
+
+  .he-cli-highlight-param {
+    color: #f472b6; /* Soft pink for variables in terminal */
+    font-weight: 700;
+    background: rgba(244, 114, 182, 0.08);
+    padding: 1px 4px;
+    border-radius: 3px;
+    border: 1px solid rgba(244, 114, 182, 0.2);
+    transition: all 180ms ease;
+  }
+
+  .he-cli-highlight-param.active-highlight {
+    background: rgba(244, 114, 182, 0.22);
+    border-color: #f472b6;
+    box-shadow: 0 0 10px rgba(244, 114, 182, 0.35);
   }
 
   /* Motion & Print */
