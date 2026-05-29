@@ -36,6 +36,26 @@ interface Props {
 }
 
 const { title, resources } = Astro.props;
+
+// Dynamically extract parameter placeholder names from CLI commands
+const getCardParams = (cliCommand: string) => {
+  const matches = cliCommand.match(/\$\{(\w+)\}/g);
+  if (!matches) return [];
+  return [...new Set(matches.map(m => m.replace(/\$\{|\}/g, '')))].map(varName => {
+    const labels: Record<string, string> = {
+      APP_NAME: 'App Name',
+      APP_ID: 'App ID',
+      BRANCH: 'Branch',
+      DOMAIN: 'Domain',
+      REPO_URL: 'Repo URL',
+      JOB_TYPE: 'Job Type'
+    };
+    return {
+      varName,
+      label: labels[varName] || varName
+    };
+  });
+};
 ---
 
 <div class="he not-content" id="he-root">
@@ -141,6 +161,17 @@ const { title, resources } = Astro.props;
             </div>
             {/* Description is now inline for premium readability */}
             <p class="he-card-desc">{res.description}</p>
+            {(() => {
+              const cardParams = getCardParams(res.cliCommand);
+              return cardParams.length > 0 && (
+                <div class="he-card-params-list">
+                  <span class="he-card-params-label">Configures:</span>
+                  {cardParams.map(param => (
+                    <span class="he-card-param-tag" data-param-var={param.varName}>{param.label}</span>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       ))}
@@ -573,6 +604,45 @@ const { title, resources } = Astro.props;
     transform: scale(1.005);
   }
 
+  .he-card-params-list {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.05);
+    padding-left: 32px; /* Align with description */
+    flex-wrap: wrap;
+  }
+
+  .he-card-params-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--he-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .he-card-param-tag {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.58rem;
+    font-weight: 600;
+    color: var(--he-text-faint);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    transition: all 180ms ease;
+  }
+
+  /* When input is hovered/focused, highlight the specific param tag inside the card! */
+  .he-card-param-tag.active-highlight {
+    color: var(--he-c) !important;
+    border-color: var(--he-c) !important;
+    background: color-mix(in srgb, var(--he-c) 10%, transparent) !important;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--he-c) 15%, transparent) !important;
+  }
+
   .he-card-header {
     display: flex;
     align-items: center;
@@ -797,21 +867,61 @@ const { title, resources } = Astro.props;
         return vals;
       }
 
-      function resolveTemplate(template: string, values: Record<string, string>): string {
-        return template.replace(/\$\{(\w+)\}/g, (_, name) => values[name] || '');
+      function resolveTemplateHTML(template: string, values: Record<string, string>): string {
+        const escapeHTML = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const cleanTemplate = escapeHTML(template);
+        return cleanTemplate.replace(/\$\{(\w+)\}/g, (_, name) => {
+          const val = values[name] || '';
+          return `<span class="he-cli-highlight-param" data-var="${name}">${escapeHTML(val)}</span>`;
+        });
       }
 
       function updateCLIPreview() {
         if (!activeCard) return;
         const rawCli = activeCard.dataset.cli || '';
         const values = getParamValues();
-        inspectCli.textContent = resolveTemplate(rawCli, values);
+        inspectCli.innerHTML = resolveTemplateHTML(rawCli, values);
       }
 
-      // ── Bind Parameter Input Listeners ──
+      // ── Bind Parameter Input Listeners & Highlight Mappings ──
       params.forEach((param) => {
         param.addEventListener('input', updateCLIPreview);
         param.addEventListener('change', updateCLIPreview);
+
+        const varName = param.dataset.var!;
+
+        function highlightAffected() {
+          // Highlight cards in stack
+          cards.forEach((card) => {
+            const cliTemplate = card.dataset.cli || '';
+            if (cliTemplate.includes(`\${${varName}}`)) {
+              card.classList.add('he-card-param-focused');
+              
+              // Highlight specific config tag inside card
+              const tag = card.querySelector(`.he-card-param-tag[data-param-var="${varName}"]`);
+              if (tag) tag.classList.add('active-highlight');
+            }
+          });
+
+          // Highlight matching terminal token
+          const cliSpans = inspectCli.querySelectorAll(`.he-cli-highlight-param[data-var="${varName}"]`);
+          cliSpans.forEach(span => span.classList.add('active-highlight'));
+        }
+
+        function removeHighlight() {
+          cards.forEach((card) => {
+            card.classList.remove('he-card-param-focused');
+            const tags = card.querySelectorAll(`.he-card-param-tag`);
+            tags.forEach(tag => tag.classList.remove('active-highlight'));
+          });
+          const cliSpans = inspectCli.querySelectorAll(`.he-cli-highlight-param`);
+          cliSpans.forEach(span => span.classList.remove('active-highlight'));
+        }
+
+        param.addEventListener('focus', highlightAffected);
+        param.addEventListener('blur', removeHighlight);
+        param.addEventListener('mouseenter', highlightAffected);
+        param.addEventListener('mouseleave', removeHighlight);
       });
 
       // ── Inspector Hover & Selection ──
