@@ -42,6 +42,18 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
         <p class="pe-field-help">Same-account is union (Identity OR Resource); Cross-account requires BOTH sides to Allow.</p>
       </div>
 
+      {/* Preset Scenarios Buttons */}
+      <div class="pe-control-field">
+        <label class="pe-control-label">Common Scenarios Presets</label>
+        <div class="pe-presets-grid">
+          <button class="pe-preset-btn active" data-preset="same-identity" type="button" aria-label="Load Same-Account Identity Allow scenario">Same-Account Identity Allow</button>
+          <button class="pe-preset-btn" data-preset="explicit-deny" type="button" aria-label="Load Explicit Deny Wins scenario">Explicit Deny Wins</button>
+          <button class="pe-preset-btn" data-preset="cross-missing" type="button" aria-label="Load Cross-Account Missing Trust scenario">Cross-Account Missing Trust</button>
+          <button class="pe-preset-btn" data-preset="cross-success" type="button" aria-label="Load Cross-Account Handshake scenario">Cross-Account Handshake</button>
+          <button class="pe-preset-btn" data-preset="boundary-blocked" type="button" aria-label="Load Boundary Ceiling Blocked scenario">Boundary Ceiling Blocked</button>
+        </div>
+      </div>
+
       <div class="pe-divider" />
       <h4 class="pe-section-title">Policy Layers Configuration</h4>
 
@@ -293,6 +305,48 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     height: 1px;
     background: var(--pe-rule);
     margin: 4px 0;
+  }
+
+  .pe-presets-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-top: 2px;
+  }
+
+  @media (min-width: 400px) {
+    .pe-presets-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  .pe-preset-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--pe-rule);
+    border-radius: 6px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--pe-text-ghost);
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 150ms var(--ease);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pe-preset-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--pe-text);
+    border-color: color-mix(in srgb, var(--pe-accent) 40%, var(--pe-rule));
+  }
+
+  .pe-preset-btn.active {
+    background: color-mix(in srgb, var(--pe-accent) 10%, transparent);
+    border-color: var(--pe-accent);
+    color: var(--pe-text);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--pe-accent) 15%, transparent);
   }
 
   .pe-control-field {
@@ -730,6 +784,72 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
       function closeAllDropdowns() {
         dropdowns.forEach(dd => dd.setAttribute('aria-expanded', 'false'));
       }
+
+      function setControlValue(dd: HTMLElement, val: string) {
+        const valueEl = dd.querySelector<HTMLElement>('.pe-dropdown-value');
+        if (valueEl) {
+          const option = dd.querySelector<HTMLElement>(`.pe-dropdown-option[data-value="${val}"]`);
+          if (option) {
+            valueEl.textContent = option.textContent || '';
+          }
+        }
+        dd.querySelectorAll<HTMLElement>('.pe-dropdown-option').forEach((o) => {
+          const isActive = o.dataset.value === val;
+          o.classList.toggle('pe-dropdown-option--active', isActive);
+          o.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+      }
+
+      /* ── Setup Presets ── */
+      const presetButtons = comp.querySelectorAll<HTMLButtonElement>('.pe-preset-btn');
+      
+      const PRESETS: Record<string, { mode: 'same' | 'cross'; scp: 'allow'|'deny'|'none'; identity: 'allow'|'deny'|'none'; resource: 'allow'|'deny'|'none'; boundary: 'allow'|'deny'|'none' }> = {
+        'same-identity': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'allow' },
+        'explicit-deny': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'deny', boundary: 'allow' },
+        'cross-missing': { mode: 'cross', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'allow' },
+        'cross-success': { mode: 'cross', scp: 'allow', identity: 'allow', resource: 'allow', boundary: 'allow' },
+        'boundary-blocked': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'none' }
+      };
+
+      presetButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          presetButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          const preset = PRESETS[btn.dataset.preset!];
+          if (preset) {
+            // Update Active Mode toggle
+            modeButtons.forEach(b => {
+              const isActive = b.dataset.mode === preset.mode;
+              b.classList.toggle('active', isActive);
+              b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            });
+            activeMode = preset.mode;
+
+            // Update dropdown values
+            dropdowns.forEach(dd => {
+              const layerName = dd.dataset.layer!;
+              const targetVal = preset[layerName as 'scp' | 'identity' | 'resource' | 'boundary'];
+              layerStates[layerName] = targetVal;
+              setControlValue(dd, targetVal);
+            });
+
+            evaluatePolicy();
+          }
+        });
+      });
+
+      // Deactivate presets if user manually alters any individual drop-down or toggle button
+      function deactivatePresets() {
+        presetButtons.forEach(b => b.classList.remove('active'));
+      }
+
+      modeButtons.forEach(b => b.addEventListener('click', deactivatePresets));
+      dropdowns.forEach(dd => dd.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('.pe-dropdown-option')) {
+          deactivatePresets();
+        }
+      }));
 
       /* ── Setup Mode Toggle ── */
       modeButtons.forEach((btn) => {
