@@ -20,6 +20,7 @@ prerequisites: []
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -122,53 +123,36 @@ Linearizability is the strongest possible consistency guarantee. It imposes a st
 Imagine a shared Google Doc in "real-time" editing mode. If Alice edits a sentence on her screen and receives confirmation that the edit is saved, Bob (reading the same document a split second later) is guaranteed to see Alice's new sentence. He will never see the old, stale version. 
 In distributed databases, enforcing this "instant shared vision" is extremely expensive. It requires all servers to coordinate and agree before a write is confirmed to the user, ensuring no server falls behind.
 
-<Tabs>
-  <TabItem label="Linearizability Violation">
-    ```mermaid
-    sequenceDiagram
-        autonumber
-        actor C1 as Client 1 (Writer)
-        actor C2 as Client 2 (Reader)
-        participant N1 as Replica Node A
-        participant N2 as Replica Node B
-
-        C1->>N1: Write(x = 5)
-        Note over N1: Update processed locally
-        N1->>C1: Write Success
-        
-        C2->>N1: Read(x)
-        N1->>C2: Returns x = 5 (New Value)
-        
-        C2->>N2: Read(x)
-        Note over N2: Asynchronous replication lagging
-        N2->>C2: Returns x = 0 (Stale Value!)
-        Note over C2: VIOLATION: Client read stale value after reading new value!
-    ```
-  </TabItem>
-  <TabItem label="Linearizable Execution">
-    ```mermaid
-    sequenceDiagram
-        autonumber
-        actor C1 as Client 1 (Writer)
-        actor C2 as Client 2 (Reader)
-        participant N1 as Replica Node A
-        participant N2 as Replica Node B
-
-        C1->>N1: Write(x = 5)
-        Note over N1: Update processed locally
-        N1->>C1: Write Success
-        
-        C2->>N1: Read(x)
-        N1->>C2: Returns x = 5
-        
-        C2->>N2: Read(x)
-        N2->>N1: Read Quorum / Sync Check
-        N1->>N2: Returns x = 5
-        N2->>C2: Returns x = 5 (Correct Value)
-        Note over C2: COMPLIANT: Strict real-time order is enforced globally.
-    ```
-  </TabItem>
-</Tabs>
+<FlowSimulator
+  title="Linearizability: Violation vs. Compliance"
+  nodes={[
+    { id: "writer", label: "Client 1 (Writer)", col: 0 },
+    { id: "reader", label: "Client 2 (Reader)", col: 0 },
+    { id: "nodeA", label: "Replica Node A", col: 1 },
+    { id: "nodeB", label: "Replica Node B", col: 2 },
+  ]}
+  flows={[
+    { label: "Linearizability Violation", steps: [
+      { from: "writer", to: "nodeA", message: "Write(x = 5)", description: "Client 1 writes a new value x = 5 to Replica Node A." },
+      { from: "nodeA", to: "writer", message: "Write Success", description: "Replica Node A processes the write locally and acknowledges success back to Client 1." },
+      { from: "reader", to: "nodeA", message: "Read(x)", description: "Client 2 reads from Replica Node A and receives the new value x = 5." },
+      { from: "nodeA", to: "reader", message: "Returns x = 5", description: "Replica Node A responds with x = 5 (New Value)." },
+      { from: "reader", to: "nodeB", message: "Read(x)", description: "Client 2 immediately queries Replica Node B for x." },
+      { from: "nodeB", to: "reader", message: "❌ Returns x = 0 (Stale!)", description: "Because asynchronous replication is lagging, Replica Node B still holds the old value x = 0. Client 2 reads a stale value after already seeing the newer value — violating Linearizability!" },
+    ]},
+    { label: "Linearizable Execution", steps: [
+      { from: "writer", to: "nodeA", message: "Write(x = 5)", description: "Client 1 writes a new value x = 5 to Replica Node A." },
+      { from: "nodeA", to: "writer", message: "Write Success", description: "Replica Node A processes the write and acknowledges success." },
+      { from: "reader", to: "nodeA", message: "Read(x)", description: "Client 2 reads from Replica Node A." },
+      { from: "nodeA", to: "reader", message: "Returns x = 5", description: "Replica Node A returns the latest value x = 5." },
+      { from: "reader", to: "nodeB", message: "Read(x)", description: "Client 2 queries the lagging Replica Node B." },
+      { from: "nodeB", to: "nodeA", message: "Sync Check", description: "Before responding, Replica Node B triggers a synchronous quorum read or sync check against Replica Node A." },
+      { from: "nodeA", to: "nodeB", message: "x = 5 (Latest)", description: "Replica Node A shares the latest committed value x = 5." },
+      { from: "nodeB", to: "reader", message: "✅ Returns x = 5", description: "Replica Node B updates its state and returns the fresh value x = 5. Client 2 receives a compliant, real-time ordered view." },
+    ]}
+  ]}
+  speed={1400}
+/>
 
 ### 2. Sequential Consistency
 

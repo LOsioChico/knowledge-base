@@ -57,7 +57,8 @@ const columns = [...colMap.entries()].sort((a, b) => a[0] - b[0]).map(([, ns]) =
 
 /* ── Compute short initials for each node ── */
 function initials(label: string): string {
-  const words = label.replace(/[/]/g, ' ').split(/\s+/).filter(Boolean);
+  const cleanLabel = label.replace(/[()\[\]{}]/g, '');
+  const words = cleanLabel.replace(/[/]/g, ' ').split(/\s+/).filter(Boolean);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return words.map(w => w[0]).join('').toUpperCase().slice(0, 3);
 }
