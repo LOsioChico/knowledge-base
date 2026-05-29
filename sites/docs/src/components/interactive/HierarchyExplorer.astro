@@ -197,6 +197,60 @@ const getCardParams = (cliCommand: string) => {
     };
   });
 };
+
+function formatCliCommand(cliCommand: string): string {
+  if (!cliCommand) return '';
+  if (cliCommand.includes('\n') || cliCommand.includes('\\')) {
+    return cliCommand;
+  }
+
+  // 1. Format any inline single-quoted JSON strings first
+  let cmd = cliCommand.replace(/'(\{.*?\})'/g, (match, jsonStr) => {
+    try {
+      // Escape parameter variables to prevent JSON.parse failure
+      let tempStr = jsonStr.replace(/\$\{(\w+)\}/g, '___VAR_$1___');
+      const parsed = JSON.parse(tempStr);
+      const formatted = JSON.stringify(parsed, null, 2);
+      
+      // Indent each line of the formatted JSON by 4 spaces
+      const indented = formatted
+        .split('\n')
+        .map((line, idx) => idx === 0 ? line : '    ' + line)
+        .join('\n  ');
+        
+      // Restore parameter variables
+      return `'${indented.replace(/___VAR_(\w+)___/g, '${$1}')}'`;
+    } catch (e) {
+      return match;
+    }
+  });
+
+  // 2. Split option flags onto new lines, but keep subcommands + profiles on the first line
+  const headerRegex = /^(aws\s+(?:--profile\s+\S+\s+)?(?:[^-]|\S[^-]|\s[^-])+)/;
+  const match = cmd.match(headerRegex);
+  if (!match) {
+    return cmd.replace(/ --/g, ' \\\n  --');
+  }
+
+  const header = match[1].trim();
+  const rest = cmd.substring(match[1].length).trim();
+  if (!rest) return header;
+
+  const formattedRest = rest.replace(/ --/g, ' \\\n  --');
+  return `${header} \\\n  ${formattedRest}`;
+}
+
+function resolveInitialTemplateHTML(template: string): string {
+  if (!template) return '';
+  const formatted = formatCliCommand(template);
+  const escapeHTML = (str: string) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const cleanTemplate = escapeHTML(formatted);
+  return cleanTemplate.replace(/\$\{(\w+)\}/g, (_, name) => {
+    const cfg = PARAM_CONFIGS[name] || { default: '' };
+    const val = cfg.default || cfg.placeholder || '';
+    return `<span class="he-cli-highlight-param" data-var="${name}">${escapeHTML(val)}</span>`;
+  });
+}
 ---
 
 <div class="he not-content" id="he-root">
@@ -308,7 +362,7 @@ const getCardParams = (cliCommand: string) => {
             style={`--he-c: ${res.color}`}
             data-id={res.id}
             data-label={res.label}
-            data-cli={res.cliCommand}
+            data-cli={formatCliCommand(res.cliCommand)}
           >
             <div class="he-card-glow" />
             <div class="he-card-header">
@@ -345,7 +399,7 @@ const getCardParams = (cliCommand: string) => {
         <span>CLI PROMPT | <span id="he-cli-node-label" style="color: var(--he-c, var(--he-accent)); transition: color 150ms ease;">{resources[0]?.label}</span></span>
         <button class="he-cli-copy" id="he-cli-copy-btn" type="button" aria-label="Copy Command">Copy</button>
       </div>
-      <pre class="he-cli-code"><code id="he-cli-code-text">{resources[0]?.cliCommand}</code></pre>
+      <pre class="he-cli-code"><code id="he-cli-code-text" set:html={resolveInitialTemplateHTML(resources[0]?.cliCommand)} /></pre>
     </div>
   </div>
 </div>
@@ -1043,20 +1097,18 @@ const getCardParams = (cliCommand: string) => {
     line-height: 1.45;
   }
 
-  .he-cli-highlight-param {
-    color: #f472b6; /* Soft pink for variables in terminal */
-    font-weight: 700;
-    background: rgba(244, 114, 182, 0.08);
-    padding: 1px 4px;
-    border-radius: 3px;
-    border: 1px solid rgba(244, 114, 182, 0.2);
+  :global(.he-cli-highlight-param) {
+    color: var(--sl-color-accent-high, #60a5fa);
+    font-weight: 600;
+    background: transparent;
+    padding: 0 2px;
+    border-bottom: 1px dashed color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 40%, transparent);
     transition: all 180ms ease;
   }
 
-  .he-cli-highlight-param.active-highlight {
-    background: rgba(244, 114, 182, 0.22);
-    border-color: #f472b6;
-    box-shadow: 0 0 10px rgba(244, 114, 182, 0.35);
+  :global(.he-cli-highlight-param.active-highlight) {
+    background: color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 8%, transparent);
+    border-bottom: 1px solid var(--sl-color-accent-high, #60a5fa);
   }
 
   /* Motion & Print */

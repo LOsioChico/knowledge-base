@@ -22,6 +22,7 @@ import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import CapTheoremSimulator from '/src/components/interactive/CapTheoremSimulator.astro';
+import SequenceDiagram from '/src/components/interactive/SequenceDiagram.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -162,60 +163,51 @@ Imagine a threaded conversation on Slack.
 *   **Causal Relationship**: Alice asks "Do you want pizza?" and Bob replies "Yes!". Bob's reply is caused by Alice's question. Under causal consistency, every user in the workspace is guaranteed to see Alice's question before Bob's reply. It is impossible to see "Yes!" floating in isolation before the question is visible.
 *   **Concurrent (Unrelated) Events**: In a completely different channel, Dave posts "It is raining in Seattle." This post has no relationship to the pizza conversation. Causal consistency allows different users to see Dave's post and Alice's question in different orders, because they are independent events.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Alice
-    actor Bob
-    participant Replica1 as Replica A
-    participant Replica2 as Replica B
-    actor Charlie
-
-    Alice->>Replica1: Post A ("Hello!")
-    Note over Replica1: Post A stored
-    Replica1->>Replica2: Replicate Post A
-    Note over Replica2: Post A stored
-    
-    Bob->>Replica2: Read Posts (sees A)
-    Bob->>Replica2: Post B ("Hi Alice!") (Causally dependent on A)
-    
-    Charlie->>Replica1: Read Posts
-    Note over Charlie: Replica A only has A, B has not arrived
-    Replica1->>Charlie: Returns [Post A]
-    
-    Replica2->>Replica1: Replicate Post B
-    
-    Charlie->>Replica1: Read Posts
-    Replica1->>Charlie: Returns [Post A, Post B] (Causal order is preserved!)
-```
+<SequenceDiagram
+  title="Causal consistency sequence: ordered post replication"
+  actors={[
+    { id: "alice", label: "Alice", color: "#60a5fa" },
+    { id: "bob", label: "Bob", color: "#818cf8" },
+    { id: "replicaA", label: "Replica A", color: "#a78bfa" },
+    { id: "replicaB", label: "Replica B", color: "#f472b6" },
+    { id: "charlie", label: "Charlie", color: "#fbbf24" }
+  ]}
+  steps={[
+    { from: "alice", to: "replicaA", message: "Post A ('Hello!')", type: "solid", description: "Alice writes Post A ('Hello!') to Replica A." },
+    { from: "replicaA", to: "replicaB", message: "Replicate Post A", type: "solid", description: "Replica A replicates Post A to Replica B asynchronously." },
+    { from: "bob", to: "replicaB", message: "Read Posts", type: "solid", description: "Bob reads from Replica B and observes Post A." },
+    { from: "bob", to: "replicaB", message: "Post B ('Hi Alice!')", type: "solid", description: "Bob posts a reply, which is causally dependent on Post A." },
+    { from: "charlie", to: "replicaA", message: "Read Posts", type: "solid", description: "Charlie reads from Replica A." },
+    { from: "replicaA", to: "charlie", message: "Returns [Post A]", type: "dashed", description: "Replica A returns Post A. Replica B has not replicated Post B to Replica A yet, so Post B is not visible." },
+    { from: "replicaB", to: "replicaA", message: "Replicate Post B", type: "solid", description: "Replica B replicates Post B to Replica A asynchronously." },
+    { from: "charlie", to: "replicaA", message: "Read Posts", type: "solid", description: "Charlie reads from Replica A again." },
+    { from: "replicaA", to: "charlie", message: "Returns [Post A, Post B]", type: "dashed", description: "Replica A now has both posts, and Charlie receives them in the correct causal order." }
+  ]}
+/>
 
 If Dave and Eva write concurrent, independent updates, their orders do not need to match across different nodes. They are merged deterministically using strategies like Last-Write-Wins (LWW) or Conflict-Free Replicated Data Types (CRDTs).
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dave
-    actor Eva
-    participant R1 as Replica A
-    participant R2 as Replica B
-    actor Charlie
-    actor Frank
-
-    Dave->>R1: Update(Avatar = Blue) [t=100]
-    Eva->>R2: Update(Avatar = Red) [t=101]
-    
-    R1->>R2: Replicate Blue
-    R2->>R1: Replicate Red
-    
-    Charlie->>R1: Read Avatar
-    Note over R1: R1 sees Blue, then Red arrives
-    R1->>Charlie: Returns Red (converged)
-    
-    Frank->>R2: Read Avatar
-    Note over R2: R2 sees Red, then Blue arrives
-    R2->>Frank: Returns Red (converged via Last-Write-Wins t=101)
-    Note over Charlie, Frank: Concurrent updates merged deterministically.
-```
+<SequenceDiagram
+  title="Concurrent updates resolved via Last-Write-Wins"
+  actors={[
+    { id: "dave", label: "Dave", color: "#60a5fa" },
+    { id: "eva", label: "Eva", color: "#34d399" },
+    { id: "replicaA", label: "Replica A", color: "#a78bfa" },
+    { id: "replicaB", label: "Replica B", color: "#f472b6" },
+    { id: "charlie", label: "Charlie", color: "#fbbf24" },
+    { id: "frank", label: "Frank", color: "#f87171" }
+  ]}
+  steps={[
+    { from: "dave", to: "replicaA", message: "Update(Avatar = Blue)", type: "solid", description: "Dave updates his avatar to Blue on Replica A at timestamp t=100." },
+    { from: "eva", to: "replicaB", message: "Update(Avatar = Red)", type: "solid", description: "Eva updates her avatar to Red on Replica B at timestamp t=101." },
+    { from: "replicaA", to: "replicaB", message: "Replicate Blue (t=100)", type: "solid", description: "Replica A replicates Dave's write to Replica B." },
+    { from: "replicaB", to: "replicaA", message: "Replicate Red (t=101)", type: "solid", description: "Replica B replicates Eva's write to Replica A." },
+    { from: "charlie", to: "replicaA", message: "Read Avatar", type: "solid", description: "Charlie reads from Replica A." },
+    { from: "replicaA", to: "charlie", message: "Returns Red", type: "dashed", description: "Replica A returns Red because Red (t=101) won over Blue (t=100) via Last-Write-Wins." },
+    { from: "frank", to: "replicaB", message: "Read Avatar", type: "solid", description: "Frank reads from Replica B." },
+    { from: "replicaB", to: "frank", message: "Returns Red", type: "dashed", description: "Replica B returns Red as both replicas converged deterministically." }
+  ]}
+/>
 
 ### 4. Eventual Consistency
 
@@ -240,45 +232,41 @@ Imagine you update your social media bio from "Student" to "Software Engineer". 
 
 <Tabs>
   <TabItem label="Read-Your-Writes Violation">
-    ```mermaid
-    sequenceDiagram
-        autonumber
-        actor Client
-        participant Primary as Primary Node
-        participant Replica as Read Replica
-
-        Client->>Primary: UpdateProfile(Bio = "Developer")
-        Primary->>Client: Success (t=1)
-        
-        Note over Client: Refreshes page immediately
-        Client->>Replica: GetProfile()
-        Note over Replica: Asynchronous replication lagging
-        Replica->>Client: Returns Bio = "" (Old Value!)
-        Note over Client: VIOLATION: User thinks update was lost!
-    ```
+    <SequenceDiagram
+      title="Read-Your-Writes Violation"
+      actors={[
+        { id: "client", label: "Client App", color: "#60a5fa" },
+        { id: "primary", label: "Primary Node", color: "#a78bfa" },
+        { id: "replica", label: "Read Replica", color: "#f472b6" }
+      ]}
+      steps={[
+        { from: "client", to: "primary", message: "UpdateProfile(Bio = 'Developer')", type: "solid", description: "Client writes profile update to the primary node." },
+        { from: "primary", to: "client", message: "Success", type: "dashed", description: "Primary node successfully registers the update." },
+        { from: "client", to: "replica", message: "GetProfile()", type: "solid", description: "Client immediately refreshes the page and reads from a lagging read replica." },
+        { from: "replica", to: "client", message: "Returns Bio = ''", type: "dashed", color: "#f87171", description: "Because replication is lagging, the replica returns the old value, creating a violation where the user thinks their update was lost." }
+      ]}
+    />
   </TabItem>
   <TabItem label="Sticky Router Workaround">
-    ```mermaid
-    sequenceDiagram
-        autonumber
-        actor Client
-        participant Router as Session Router
-        participant Primary as Primary Node
-        participant Replica as Read Replica
-
-        Client->>Router: UpdateProfile(Bio = "Developer")
-        Router->>Primary: UpdateProfile
-        Primary->>Router: Success
-        Router->>Client: Success (Sets Client Session Cookie)
-        
-        Note over Client: Refreshes page immediately
-        Client->>Router: GetProfile() (Session Cookie Attached)
-        Note over Router: Router sticky routes client's read<br/>to the primary node
-        Router->>Primary: GetProfile()
-        Primary->>Router: Returns Bio = "Developer"
-        Router->>Client: Returns Bio = "Developer"
-        Note over Client: COMPLIANT: Client sees their own update immediately.
-    ```
+    <SequenceDiagram
+      title="Sticky router workaround for Read-Your-Writes"
+      actors={[
+        { id: "client", label: "Client App", color: "#60a5fa" },
+        { id: "router", label: "Session Router", color: "#fbbf24" },
+        { id: "primary", label: "Primary Node", color: "#a78bfa" },
+        { id: "replica", label: "Read Replica", color: "#f472b6" }
+      ]}
+      steps={[
+        { from: "client", to: "router", message: "UpdateProfile(Bio = 'Developer')", type: "solid", description: "Client sends profile update through the session router." },
+        { from: "router", to: "primary", message: "UpdateProfile", type: "solid", description: "Router forwards the write to the primary node." },
+        { from: "primary", to: "router", message: "Success", type: "dashed", description: "Primary node confirms successful write." },
+        { from: "router", to: "client", message: "Success (Set Cookie)", type: "dashed", description: "Router returns success and sets a sticky session cookie on the client." },
+        { from: "client", to: "router", message: "GetProfile()", type: "solid", description: "Client refreshes immediately, passing the sticky session cookie." },
+        { from: "router", to: "primary", message: "GetProfile()", type: "solid", description: "Router recognizes the sticky session and routes the read to the primary instead of a replica." },
+        { from: "primary", to: "router", message: "Returns Bio = 'Developer'", type: "dashed", description: "Primary returns the latest up-to-date data." },
+        { from: "router", to: "client", message: "Returns Bio = 'Developer'", type: "dashed", description: "Client receives their own write successfully." }
+      ]}
+    />
   </TabItem>
 </Tabs>
 

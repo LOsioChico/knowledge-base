@@ -11,69 +11,168 @@ prerequisites:
 > The four [[aws/amplify|Amplify Hosting]] lifecycles (app, branch, deployment, domain) plus inspection during build failures or domain moves.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since standard CLI tasks rely on correctly configured local credentials and profile targets.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "APP_ID", placeholder: "d123456789abcd" },
+    { name: "APP_NAME", placeholder: "my-amplify-app" },
+    { name: "BRANCH_NAME", placeholder: "main" },
+    { name: "JOB_ID", placeholder: "1" },
+    { name: "DOMAIN_NAME", placeholder: "example.com" },
+  ]}
+/>
+
 ## App + branch lifecycle
 
+### List all apps in a table
+Summarize app IDs, friendly names, domains, and Git repositories in a clean table format:
 ```bash
-aws amplify list-apps \
+aws amplify list-apps --profile $AWS_PROFILE --region $REGION \
   --query 'apps[].{appId:appId,name:name,defaultDomain:defaultDomain,repository:repository}' \
   --output table
+```
 
-aws amplify get-app --app-id <APP_ID>
+### Get app details
+Retrieve full configuration and metadata for a specific Amplify application:
+```bash
+aws amplify get-app --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID
+```
 
-aws amplify create-app \
-  --name <name> --platform WEB \
+### Create a new app (static)
+Provision a brand new Amplify application configured for static web platforms, setting up standard SPA rewrite rules for `index.html` fallback routing:
+```bash
+aws amplify create-app --profile $AWS_PROFILE --region $REGION \
+  --name $APP_NAME \
+  --platform WEB \
   --custom-rules '[{"source":"/<*>","target":"/index.html","status":"404-200"}]'
+```
 
-aws amplify list-branches --app-id <APP_ID> \
-  --query 'branches[].{branch:branchName,stage:stage,domain:displayName}' --output table
+### List branches for an app
+List all deployment branches configured for the application, displaying stages and associated sub-domains:
+```bash
+aws amplify list-branches --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --query 'branches[].{branch:branchName,stage:stage,domain:displayName}' \
+  --output table
+```
 
-aws amplify get-branch --app-id <APP_ID> --branch-name <branch> \
+### Get branch environment variables
+Retrieve the configured build environment variables for a specific branch:
+```bash
+aws amplify get-branch --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME \
   --query 'branch.environmentVariables'
+```
 
-aws amplify create-branch --app-id <APP_ID> --branch-name main --stage PRODUCTION
+### Create a branch
+Create a new deployment branch (e.g. `main` stage set as `PRODUCTION`):
+```bash
+aws amplify create-branch --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME \
+  --stage PRODUCTION
 ```
 
 ## Manual zip deployment (no git)
 
+### Create a manual deployment slot
+Generate an ephemeral deployment slot and a pre-signed S3 ZIP upload URL:
 ```bash
-aws amplify create-deployment --app-id <APP_ID> --branch-name main
+aws amplify create-deployment --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME
 # → { "zipUploadUrl": "...", "jobId": "..." }
+```
 
+### Upload compile bundle ZIP
+Upload your local production build ZIP file directly using the generated pre-signed URL:
+```bash
 curl --upload-file ./build.zip "$ZIP_UPLOAD_URL"
+```
 
-aws amplify start-deployment --app-id <APP_ID> --branch-name main --job-id <JOB_ID>
+### Trigger deployment job
+Trigger the Amplify Hosting deployment step to ingest and extract the uploaded ZIP bundle:
+```bash
+aws amplify start-deployment --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME \
+  --job-id $JOB_ID
+```
 
-aws amplify get-job --app-id <APP_ID> --branch-name main --job-id <JOB_ID> \
+### Check deployment status
+Poll and audit the details, logs, and success state of the active deployment job ID:
+```bash
+aws amplify get-job --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME \
+  --job-id $JOB_ID \
   --query 'job.{summary:summary,steps:steps[].{stepName:stepName,status:status,statusReason:statusReason,logUrl:logUrl}}'
 ```
 
 ## Git-connected build
 
+### Manually trigger build job
+Trigger a new build and deployment run for a Git-connected repository branch (such as manual release deployments):
 ```bash
-aws amplify start-job --app-id <APP_ID> --branch-name main --job-type RELEASE
+aws amplify start-job --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --branch-name $BRANCH_NAME \
+  --job-type RELEASE
 ```
 
 ## Domains
 
+### List active domain associations
+List all custom domain associations and SSL certificate states linked with your Amplify app:
 ```bash
-aws amplify list-domain-associations  --app-id <APP_ID>
-aws amplify get-domain-association    --app-id <APP_ID> --domain-name <domain>
+aws amplify list-domain-associations --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID
+```
 
-aws amplify create-domain-association \
-  --app-id <APP_ID> --domain-name <domain> \
-  --sub-domain-settings prefix=app,branchName=main
+### Inspect specific domain configuration
+Retrieve deep DNS configuration details, verification tokens, and sub-domain routing mappings for a specific domain name:
+```bash
+aws amplify get-domain-association --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --domain-name $DOMAIN_NAME
+```
 
-aws amplify update-domain-association \
-  --app-id <APP_ID> --domain-name <domain> \
-  --sub-domain-settings prefix=app,branchName=main
+### Associate a custom domain
+Create a new custom domain association and configure the sub-domain settings (e.g. mapping `app.example.com` to your branch):
+```bash
+aws amplify create-domain-association --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --domain-name $DOMAIN_NAME \
+  --sub-domain-settings prefix=app,branchName=$BRANCH_NAME
+```
 
-aws amplify delete-domain-association --app-id <APP_ID> --domain-name <domain>
+### Update custom domain mappings
+Modify existing sub-domain routing structures or add new prefix rules to your active domain association:
+```bash
+aws amplify update-domain-association --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --domain-name $DOMAIN_NAME \
+  --sub-domain-settings prefix=app,branchName=$BRANCH_NAME
+```
+
+### Remove a custom domain association
+Delete the custom domain mapping to clean up domain references and release CNAME bindings:
+```bash
+aws amplify delete-domain-association --profile $AWS_PROFILE --region $REGION \
+  --app-id $APP_ID \
+  --domain-name $DOMAIN_NAME
 ```
 
 ## Tips

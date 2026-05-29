@@ -25,6 +25,7 @@ prerequisites:
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import SequenceDiagram from '/src/components/interactive/SequenceDiagram.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -57,20 +58,19 @@ Messages are delivered zero or one times. The sender makes a single attempt and 
 1. **Producer side**: The producer sends a message without waiting for an acknowledgment (Kafka `acks=0`) or fires-and-forgets. If the network drops the message, there is no retry.
 2. **Consumer side**: The consumer commits its read offset *before* processing the message. If the consumer crashes after committing but before finishing, the message is skipped permanently.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant P as Producer
-    participant B as Broker
-    participant C as Consumer
-
-    P->>B: Send message (fire-and-forget)
-    Note over B: Store message
-    B->>C: Deliver message
-    Note over B: Delete immediately
-    Note over C: ⚠ Crash during processing
-    Note over B: Message gone forever
-```
+<SequenceDiagram
+  title="At-Most-Once delivery message loss sequence"
+  actors={[
+    { id: "producer", label: "Producer", color: "#60a5fa" },
+    { id: "broker", label: "Broker", color: "#a78bfa" },
+    { id: "consumer", label: "Consumer", color: "#f472b6" }
+  ]}
+  steps={[
+    { from: "producer", to: "broker", message: "Send (fire-and-forget)", type: "solid", description: "Producer sends the message without waiting for an acknowledgment." },
+    { from: "broker", to: "consumer", message: "Deliver & Delete", type: "solid", description: "Broker delivers the message and deletes it from storage immediately." },
+    { from: "consumer", to: "consumer", message: "Consumer Crashes", type: "solid", color: "#f87171", description: "The consumer crashes during processing. Because the message has already been deleted from the broker, it is lost forever." }
+  ]}
+/>
 
 ### When to use
 
@@ -88,22 +88,21 @@ Messages are guaranteed to be delivered one or more times. The broker keeps retr
 
 The fundamental problem is that the broker cannot distinguish between a consumer crash and a lost acknowledgment:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant B as Message Broker
-    participant C as Consumer
-    participant DB as Database
-
-    B->>C: Deliver Message A (ID: 101)
-    C->>DB: Process & save
-    DB-->>C: Success
-    C-->>B: Send ACK
-    Note over B,C: ⚠ Network fails — ACK lost!
-    Note over B: Visibility timeout expires
-    B->>C: Redeliver Message A (ID: 101)
-    Note over C: Duplicate! Was it already processed?
-```
+<SequenceDiagram
+  title="The Broker's Dilemma: lost acknowledgements create duplicates"
+  actors={[
+    { id: "broker", label: "Message Broker", color: "#a78bfa" },
+    { id: "consumer", label: "Consumer", color: "#60a5fa" },
+    { id: "db", label: "Database", color: "#34d399" }
+  ]}
+  steps={[
+    { from: "broker", to: "consumer", message: "Deliver Msg A (ID: 101)", type: "solid", description: "Broker delivers Message A to the consumer and starts a visibility timeout." },
+    { from: "consumer", to: "db", message: "Process & save", type: "solid", description: "Consumer processes the message and writes the state to the database." },
+    { from: "db", to: "consumer", message: "Success", type: "dashed", description: "Database acknowledges successful write." },
+    { from: "consumer", to: "broker", message: "Send ACK (lost!)", type: "dashed", color: "#f87171", description: "Consumer sends an ACK to delete the message from the queue, but the network drops it." },
+    { from: "broker", to: "consumer", message: "Redeliver Msg A (ID: 101)", type: "solid", color: "#fbbf24", description: "Visibility timeout expires. The broker assumes the consumer failed and redelivers the message, creating a duplicate." }
+  ]}
+/>
 
 The broker sees only silence. Was the consumer dead, or did the ACK get lost? To guarantee no data loss, the broker **must retry** : accepting that duplicates will occur.
 

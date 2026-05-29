@@ -14,61 +14,126 @@ prerequisites:
 > Read + snapshot + restore for [[aws/rds|RDS]]. The snapshot family is the entire migration surface; the rest is inventory.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since managing database clusters and instances requires profile-based CLI requests.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "DB_INSTANCE_ID", placeholder: "my-db-instance" },
+    { name: "SNAPSHOT_ID", placeholder: "my-db-snapshot" },
+    { name: "TARGET_ACCOUNT_ID", placeholder: "123456789012" },
+    { name: "KMS_KEY_ID", placeholder: "arn:aws:kms:us-east-1:123456789012:key/1234abcd-..." },
+  ]}
+/>
+
 ## Inventory + state
 
+### Describe specific database instance
+Retrieve detailed metadata about a single database instance to check its endpoint, size, engine, and status:
 ```bash
-aws rds describe-db-instances        --db-instance-identifier <id>
-aws rds describe-db-snapshots        --db-snapshot-identifier <id>
-aws rds describe-db-snapshot-attributes --db-snapshot-identifier <id>
+aws rds describe-db-instances --profile $AWS_PROFILE --region $REGION \
+  --db-instance-identifier $DB_INSTANCE_ID
+```
 
-aws rds describe-db-instances \
+### Describe specific snapshot
+Retrieve metadata for a specific database snapshot, including its engine type, allocation, and lifecycle state:
+```bash
+aws rds describe-db-snapshots --profile $AWS_PROFILE --region $REGION \
+  --db-snapshot-identifier $SNAPSHOT_ID
+```
+
+### Inspect snapshot access attributes
+Inspect who has permission to restore a database snapshot (e.g. public vs. shared with specific account IDs):
+```bash
+aws rds describe-db-snapshot-attributes --profile $AWS_PROFILE --region $REGION \
+  --db-snapshot-identifier $SNAPSHOT_ID
+```
+
+### List all instances in a table
+Summarize all active database instances, their configurations, engine types, and statuses in a clean table format:
+```bash
+aws rds describe-db-instances --profile $AWS_PROFILE --region $REGION \
   --query 'DBInstances[].{Id:DBInstanceIdentifier,Status:DBInstanceStatus,Engine:Engine,Class:DBInstanceClass,MultiAZ:MultiAZ}' \
   --output table
 ```
 
 ## Snapshot lifecycle
 
+### Create a manual snapshot
+Trigger an instant, manual cold backup of a target database instance:
 ```bash
-aws rds create-db-snapshot \
-  --db-instance-identifier <id> \
-  --db-snapshot-identifier <name>
+aws rds create-db-snapshot --profile $AWS_PROFILE --region $REGION \
+  --db-instance-identifier $DB_INSTANCE_ID \
+  --db-snapshot-identifier $SNAPSHOT_ID
+```
 
-aws rds copy-db-snapshot \
-  --source-db-snapshot-identifier <src> \
-  --target-db-snapshot-identifier <dst> \
-  [--kms-key-id <key>] [--source-region <region>]
+### Copy a snapshot (optionally encrypting it)
+Copy a snapshot to a new ID, enabling you to re-encrypt it using a custom KMS key or copy it across regions:
+```bash
+aws rds copy-db-snapshot --profile $AWS_PROFILE --region $REGION \
+  --source-db-snapshot-identifier $SNAPSHOT_ID \
+  --target-db-snapshot-identifier $SNAPSHOT_ID-copy \
+  [--kms-key-id $KMS_KEY_ID] [--source-region $REGION]
+```
 
-aws rds modify-db-snapshot-attribute \
-  --db-snapshot-identifier <name> \
+### Share snapshot with target account
+Modify snapshot attributes to grant restore permissions to a different, target AWS account:
+```bash
+aws rds modify-db-snapshot-attribute --profile $AWS_PROFILE --region $REGION \
+  --db-snapshot-identifier $SNAPSHOT_ID \
   --attribute-name restore \
-  --values-to-add <ACCOUNT_ID>
+  --values-to-add $TARGET_ACCOUNT_ID
+```
 
-aws rds delete-db-snapshot --db-snapshot-identifier <name>
+### Delete a snapshot
+Permanently delete a database snapshot to clean up backup storage:
+```bash
+aws rds delete-db-snapshot --profile $AWS_PROFILE --region $REGION \
+  --db-snapshot-identifier $SNAPSHOT_ID
 ```
 
 ## Restore
 
+### Restore instance from snapshot
+Create a new database instance directly from an existing backup snapshot:
 ```bash
-aws rds restore-db-instance-from-db-snapshot \
-  --db-instance-identifier <new-id> \
-  --db-snapshot-identifier <snap> \
+aws rds restore-db-instance-from-db-snapshot --profile $AWS_PROFILE --region $REGION \
+  --db-instance-identifier $DB_INSTANCE_ID-restored \
+  --db-snapshot-identifier $SNAPSHOT_ID \
   [--db-instance-class db.t4g.medium] \
-  [--db-subnet-group-name <subnet-group>] \
-  [--vpc-security-group-ids sg-xxxx]
+  [--db-subnet-group-name default] \
+  [--vpc-security-group-ids sg-default]
 ```
 
 ## Wait for state transitions
 
+### Wait for snapshot readiness
+Pause script execution until a newly created or copied database snapshot becomes fully available:
 ```bash
-aws rds wait db-snapshot-available  --db-snapshot-identifier <name>
-aws rds wait db-instance-available  --db-instance-identifier <id>
-aws rds wait db-instance-deleted    --db-instance-identifier <id>
+aws rds wait db-snapshot-available --profile $AWS_PROFILE --region $REGION \
+  --db-snapshot-identifier $SNAPSHOT_ID
+```
+
+### Wait for instance readiness
+Pause script execution until a newly launched or restored database instance completes provisioning:
+```bash
+aws rds wait db-instance-available --profile $AWS_PROFILE --region $REGION \
+  --db-instance-identifier $DB_INSTANCE_ID
+```
+
+### Wait for instance deletion
+Pause execution until a deleted database instance is completely torn down:
+```bash
+aws rds wait db-instance-deleted --profile $AWS_PROFILE --region $REGION \
+  --db-instance-identifier $DB_INSTANCE_ID
 ```
 
 ## Tips

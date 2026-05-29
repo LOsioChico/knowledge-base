@@ -6,6 +6,10 @@ related:
   - "[[aws/cli/query-and-output]]"
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/s3/quickstart]]"
+  - "[[aws/s3/lifecycle-rules]]"
+unrelated:
+  - "[[aws/amplify/cli]]"
+  - "[[aws/rds/cli]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
 ---
@@ -13,53 +17,176 @@ prerequisites:
 > Two CLIs: `aws s3` is high-level `cp`/`ls`/`sync`; `aws s3api` maps REST. Use `s3api` for bucket configuration; `s3` for moving bytes.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since managing S3 buckets and objects requires profile-based CLI requests.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "BUCKET_NAME", placeholder: "my-s3-bucket" },
+    { name: "PREFIX", placeholder: "my-prefix/" },
+    { name: "SRC_BUCKET", placeholder: "source-bucket" },
+    { name: "DST_BUCKET", placeholder: "destination-bucket" },
+    { name: "OBJECT_KEY", placeholder: "path/to/file.txt" },
+  ]}
+/>
+
 ## Inventory
 
+### List all buckets in a table
+Summarize all bucket names and creation dates in a clean table format:
 ```bash
-aws s3api list-buckets --query 'Buckets[].{Name:Name,Created:CreationDate}' --output table
-aws s3api head-bucket --bucket <name>
-aws s3api get-bucket-location --bucket <name>
-aws s3api list-objects-v2 --bucket <name> --max-items 5
-aws s3api list-objects-v2 --bucket <name> --query 'KeyCount' --output text
+aws s3api list-buckets --profile $AWS_PROFILE \
+  --query 'Buckets[].{Name:Name,Created:CreationDate}' \
+  --output table
+```
+
+### Ping head of bucket
+Ping the bucket's metadata to check if the bucket exists and if your credentials have permission to read it:
+```bash
+aws s3api head-bucket --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Retrieve bucket location
+Get the specific AWS Region where the S3 bucket was created:
+```bash
+aws s3api get-bucket-location --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### List first 5 objects
+Retrieve basic key parameters for the first 5 objects in the bucket:
+```bash
+aws s3api list-objects-v2 --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
+  --max-items 5
+```
+
+### Count objects in bucket
+Extract the total object count of a bucket directly using query extraction:
+```bash
+aws s3api list-objects-v2 --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
+  --query 'KeyCount' \
+  --output text
 ```
 
 ## Configuration inspection
 
+### Get bucket policy
+Retrieve the custom JSON bucket-level access control policy:
 ```bash
-aws s3api get-bucket-policy        --bucket <name>
-aws s3api get-bucket-encryption    --bucket <name>
-aws s3api get-bucket-versioning    --bucket <name>
-aws s3api get-public-access-block  --bucket <name>
-aws s3api get-bucket-ownership-controls --bucket <name>
-aws s3api get-bucket-lifecycle-configuration --bucket <name>
+aws s3api get-bucket-policy --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Get default encryption state
+Retrieve the server-side encryption (SSE) configuration applied to incoming bucket objects:
+```bash
+aws s3api get-bucket-encryption --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Get versioning status
+Check if the S3 bucket has object versioning enabled, suspended, or unconfigured:
+```bash
+aws s3api get-bucket-versioning --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Get Public Access Block state
+Inspect the Public Access Block configuration to confirm if public reads or writes are completely blocked:
+```bash
+aws s3api get-public-access-block --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Get Object Ownership rules
+Check the active ownership controls (e.g. BucketOwnerEnforced to disable bucket ACLs):
+```bash
+aws s3api get-bucket-ownership-controls --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
+```
+
+### Get lifecycle rules
+Retrieve configured object [[aws/s3/lifecycle-rules|lifecycle rules]] (such as transition to deep archive or auto-expire days):
+```bash
+aws s3api get-bucket-lifecycle-configuration --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME
 ```
 
 ## Create + safe defaults
 
+### Create a bucket
+Create a new S3 bucket in a target Region, specifying a LocationConstraint config if creating outside `us-east-1`:
 ```bash
-aws s3api create-bucket --bucket <name> --region <region> \
-  [--create-bucket-configuration LocationConstraint=<region>]
+aws s3api create-bucket --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
+  --region $REGION \
+  [--create-bucket-configuration LocationConstraint=$REGION]
+```
 
-aws s3api put-public-access-block --bucket <name> \
+### Enable strict Public Access Block
+Apply a robust Public Access Block to secure your bucket from any accidental public exposures:
+```bash
+aws s3api put-public-access-block --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
   --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-aws s3api put-bucket-versioning --bucket <name> --versioning-configuration Status=Enabled
-aws s3api put-bucket-encryption --bucket <name> \
+```
+
+### Enable versioning
+Turn on object versioning to protect against accidental deletes and preserve full change history:
+```bash
+aws s3api put-bucket-versioning --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
+  --versioning-configuration Status=Enabled
+```
+
+### Apply default SSE encryption
+Enforce default server-side encryption using standard AES256 for all objects written to the bucket:
+```bash
+aws s3api put-bucket-encryption --profile $AWS_PROFILE \
+  --bucket $BUCKET_NAME \
   --server-side-encryption-configuration '{"Rules":[{"ApplyServerSideEncryptionByDefault":{"SSEAlgorithm":"AES256"}}]}'
 ```
 
 ## Moving bytes
 
+### List contents of a bucket path
+List files under a friendly folder path prefix using the high-level `s3` command:
 ```bash
-aws s3 ls s3://<bucket>/<prefix>/
-aws s3 cp s3://<src>/<key> s3://<dst>/<key>
-aws s3 sync s3://<src-bucket> s3://<dst-bucket>
-aws s3 sync ./build/ s3://<bucket>/static/ --delete
+aws s3 ls s3://$BUCKET_NAME/$PREFIX \
+  --profile $AWS_PROFILE
+```
+
+### Copy object between buckets
+Perform a fast server-side object copy directly between source and target buckets:
+```bash
+aws s3 cp s3://$SRC_BUCKET/$OBJECT_KEY s3://$DST_BUCKET/$OBJECT_KEY \
+  --profile $AWS_PROFILE
+```
+
+### Sync two buckets
+Synchronize entire bucket structures directly in AWS:
+```bash
+aws s3 sync s3://$SRC_BUCKET s3://$DST_BUCKET \
+  --profile $AWS_PROFILE
+```
+
+### Deploy a local folder to S3
+Upload local build assets to a target S3 bucket, deleting any stale files not present in your local source:
+```bash
+aws s3 sync ./build/ s3://$BUCKET_NAME/static/ \
+  --delete \
+  --profile $AWS_PROFILE
 ```
 
 Cross-account `sync` needs source bucket policy granting target `s3:GetObject` + `s3:ListBucket`: [[aws/s3/cross-account-migration|cross-account migration]].

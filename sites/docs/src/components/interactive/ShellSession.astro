@@ -58,6 +58,9 @@ const resolvedVars = vars.map((v) => {
   }
   return v;
 });
+
+const inputVars = resolvedVars.filter(v => !v.template);
+const computedVars = resolvedVars.filter(v => v.template);
 ---
 
 <div
@@ -84,23 +87,12 @@ const resolvedVars = vars.map((v) => {
   </div>
 
   <div class="ss-fields">
-    {resolvedVars.map((v) => (
+    {inputVars.map((v) => (
       <div class="ss-field" data-ss-name={v.name}>
         <label class="ss-label">
           <span class="ss-var-name">${v.name}</span>
         </label>
-        {v.template ? (
-          <input
-            type="text"
-            class="ss-input ss-input--computed"
-            data-ss-input={v.name}
-            data-ss-template={v.template}
-            value=""
-            readonly
-            tabindex="-1"
-            aria-label={`${v.name} (computed)`}
-          />
-        ) : v.type === 'select' ? (
+        {v.type === 'select' ? (
           <div class="ss-dropdown" data-ss-input={v.name} tabindex="0" role="combobox" aria-label={v.name} aria-expanded="false">
             <span class="ss-dropdown-value">{v.default || (v.options?.[0]?.value ?? '')}</span>
             <svg class="ss-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -132,6 +124,34 @@ const resolvedVars = vars.map((v) => {
       </div>
     ))}
   </div>
+
+  {computedVars.length > 0 && (
+    <div class="ss-computed-section">
+      <div class="ss-computed-fields">
+        <div class="ss-computed-label-row">
+          <svg class="ss-computed-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M13 2L3 14M8 2h5v5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="ss-computed-title">Computed</span>
+        </div>
+        {computedVars.map((v) => (
+          <div class="ss-computed-field" data-ss-name={v.name}>
+            <span class="ss-var-name">${v.name}</span>
+            <input
+              type="text"
+              class="ss-input ss-input--computed"
+              data-ss-input={v.name}
+              data-ss-template={v.template}
+              value=""
+              readonly
+              tabindex="-1"
+              aria-label={`${v.name} (computed)`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
 </div>
 
 <style>
@@ -221,8 +241,61 @@ const resolvedVars = vars.map((v) => {
     border-right: none;
   }
 
-  .ss-field:has(.ss-input--computed) {
-    grid-column: 1 / -1;
+  /* ===== Computed Section ===== */
+  .ss-computed-section {
+    border-top: 1px dashed var(--ss-rule);
+    background: rgba(0, 0, 0, 0.12);
+    padding: 18px 20px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+
+  .ss-computed-fields {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .ss-computed-label-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .ss-computed-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ss-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .ss-computed-icon {
+    width: 12px;
+    height: 12px;
+    color: #4ade80;
+    flex-shrink: 0;
+  }
+
+  .ss-computed-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ss-computed-field .ss-var-name {
+    width: 140px;
+    font-size: 11px;
+    color: var(--ss-text-ghost);
+    flex-shrink: 0;
+  }
+
+  .ss-computed-field .ss-input--computed {
+    flex-grow: 1;
+    height: 34px;
+    padding: 6px 12px;
   }
 
   .ss-label {
@@ -263,15 +336,15 @@ const resolvedVars = vars.map((v) => {
 
   .ss-input--computed {
     background: rgba(74, 222, 128, 0.04);
-    border-style: dashed;
-    color: var(--ss-green);
+    border: 1px dashed rgba(74, 222, 128, 0.25);
+    color: #4ade80;
     cursor: default;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .ss-input--computed:focus {
-    border-color: var(--ss-green);
+    border-color: rgba(74, 222, 128, 0.5);
     box-shadow: none;
   }
 
@@ -370,10 +443,49 @@ const resolvedVars = vars.map((v) => {
     .ss-field {
       border-right: none;
     }
+
+    .ss-computed-field {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+    }
+
+    .ss-computed-field .ss-var-name {
+      width: auto;
+    }
   }
 
   @media print {
     .ss-reset { display: none; }
+  }
+
+  :global(.he-cli-highlight-param) {
+    display: inline;
+    font-family: inherit;
+    font-weight: 600;
+    color: var(--sl-color-accent-high, #60a5fa);
+    background: transparent;
+    border-bottom: 1px dashed color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 12%, transparent);
+    padding: 0;
+    margin: 0;
+    transition: all 160ms ease;
+    cursor: pointer;
+  }
+
+  :global(.he-cli-highlight-param:hover) {
+    background: color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 6%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 45%, transparent);
+  }
+
+  :global(.he-cli-highlight-param.active-highlight) {
+    background: transparent;
+    border-bottom: 1px solid color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 25%, transparent);
+    border-radius: 0;
+  }
+
+  :global(.he-cli-highlight-param.active-highlight:hover) {
+    background: color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 10%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--sl-color-accent-high, #60a5fa) 65%, transparent);
   }
 </style>
 
@@ -475,8 +587,8 @@ const resolvedVars = vars.map((v) => {
 
       const blocks: BlockData[] = [];
 
-      // Store original text nodes per .ec-line
-      const lineOriginals = new Map<HTMLElement, { node: Text; original: string }[]>();
+      // Store original innerHTML per .ec-line
+      const lineOriginals = new Map<HTMLElement, string>();
 
       function findShellBlocks() {
         const scope = root.closest('main') || document.body;
@@ -503,16 +615,10 @@ const resolvedVars = vars.map((v) => {
 
           blocks.push({ codeEl, copyBtn, originalDataCode: dataCode });
 
-          // Walk each .ec-line and snapshot every Text node
+          // Store original HTML of each .ec-line
           const lineEls = codeEl.querySelectorAll<HTMLElement>('.ec-line');
           lineEls.forEach((line) => {
-            const textNodes: { node: Text; original: string }[] = [];
-            const walker = document.createTreeWalker(line, NodeFilter.SHOW_TEXT);
-            let n: Text | null;
-            while ((n = walker.nextNode() as Text | null)) {
-              textNodes.push({ node: n, original: n.nodeValue || '' });
-            }
-            lineOriginals.set(line, textNodes);
+            lineOriginals.set(line, line.innerHTML);
           });
         });
       }
@@ -567,7 +673,11 @@ const resolvedVars = vars.map((v) => {
           const name = (el as HTMLElement).dataset.ssInput!;
           const def = varDefs.find((v) => v.name === name);
           if (!def?.template) {
-            vals[name] = getControlValue(el);
+            let val = getControlValue(el);
+            if (!val) {
+              val = el.getAttribute('placeholder') || def?.placeholder || def?.default || '';
+            }
+            vals[name] = val;
           }
         });
         // Second pass: resolve templates
@@ -593,7 +703,23 @@ const resolvedVars = vars.map((v) => {
         return result;
       }
 
-      /* ── Update code blocks (simple text-node replacement) ── */
+      function escapeHTML(str: string): string {
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      /* ── Replace variables with dynamic spans inside HTML ── */
+      function replaceVarsHTML(html: string, values: Record<string, string>): string {
+        let result = html;
+        for (const [name, value] of Object.entries(values)) {
+          if (!value) continue;
+          const highlightSpan = `<span class="he-cli-highlight-param active-highlight" data-var="${name}">${escapeHTML(value)}</span>`;
+          result = result.replace(new RegExp(`\\$\\{${name}\\}`, 'g'), highlightSpan);
+          result = result.replace(new RegExp(`\\$${name}(?=[^A-Za-z0-9_]|$)`, 'g'), highlightSpan);
+        }
+        return result;
+      }
+
+      /* ── Update code blocks (using original innerHTML to support dynamic spans) ── */
       function updateBlocks() {
         const values = gatherValues();
         const hasAnyValue = Object.values(values).some((v) => v.length > 0);
@@ -602,18 +728,14 @@ const resolvedVars = vars.map((v) => {
           const lineEls = codeEl.querySelectorAll<HTMLElement>('.ec-line');
 
           lineEls.forEach((line) => {
-            const originals = lineOriginals.get(line);
-            if (!originals) return;
+            const originalHTML = lineOriginals.get(line);
+            if (originalHTML === undefined) return;
 
-            originals.forEach(({ node, original }) => {
-              if (!hasAnyValue) {
-                // Restore original text
-                node.nodeValue = original;
-              } else {
-                // Replace vars in this text node's original value
-                node.nodeValue = replaceVars(original, values);
-              }
-            });
+            if (!hasAnyValue) {
+              line.innerHTML = originalHTML;
+            } else {
+              line.innerHTML = replaceVarsHTML(originalHTML, values);
+            }
           });
 
           // Update copy button data-code
@@ -634,6 +756,27 @@ const resolvedVars = vars.map((v) => {
       /* ── Initialize ── */
       requestAnimationFrame(() => {
         findShellBlocks();
+
+        // Click delegation to smoothly scroll and focus input when clicking dynamic variables in code blocks
+        const scope = root.closest('main') || document.body;
+        scope.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const highlight = target.closest<HTMLElement>('.he-cli-highlight-param');
+          if (!highlight) return;
+
+          const varName = highlight.dataset.var;
+          if (!varName) return;
+
+          const controlEl = root.querySelector<HTMLElement>(`[data-ss-input="${varName}"]`);
+          if (controlEl) {
+            e.preventDefault();
+            root.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            controlEl.focus();
+            if (controlEl instanceof HTMLInputElement) {
+              controlEl.select();
+            }
+          }
+        });
 
         // Load saved values
         controls.forEach((el) => {

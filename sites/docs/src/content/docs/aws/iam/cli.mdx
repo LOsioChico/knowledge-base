@@ -12,62 +12,165 @@ prerequisites:
 > Read-only [[aws/iam|IAM]] commands for unexpected `AccessDenied`. Start with "who is the caller?" and "what policies attach?" before destructive changes.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since managing IAM roles and policies requires authenticating administration calls.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "USER_NAME", placeholder: "john-doe" },
+    { name: "ROLE_NAME", placeholder: "my-iam-role" },
+    { name: "GROUP_NAME", placeholder: "my-iam-group" },
+    { name: "POLICY_ARN", placeholder: "arn:aws:iam::aws:policy/AdministratorAccess" },
+    { name: "EXTERNAL_ID", placeholder: "my-external-id" },
+    { name: "ACCOUNT_ID", placeholder: "123456789012" },
+    { name: "ACCESS_KEY_ID", placeholder: "AKIAIOSFODNN7EXAMPLE" },
+  ]}
+/>
+
 ## Identity
 
+### Check active identity
+Identify the currently authenticated IAM principal, parent AWS account, and canonical user ID. Use this as your step-zero pre-flight check to verify that your active shell profile points to the correct credentials:
 ```bash
-aws sts get-caller-identity --profile <profile>
+aws sts get-caller-identity --profile $AWS_PROFILE
+```
 
-aws sts assume-role \
-  --role-arn arn:aws:iam::ACCOUNT_ID:role/<role> \
+### Assume a role
+Acquire temporary security credentials for an IAM role. Enforce a strict `ExternalId` confused-deputy defense when assuming a role across trust boundaries:
+```bash
+aws sts assume-role --profile $AWS_PROFILE \
+  --role-arn arn:aws:iam::$ACCOUNT_ID:role/$ROLE_NAME \
   --role-session-name dbg \
-  --external-id <ExternalId>
+  --external-id $EXTERNAL_ID
 ```
 
 ## What policies attach to a principal?
 
+### List managed policies attached to a user
+Retrieve standalone managed policies directly attached to an IAM user (both AWS-managed and customer-managed):
 ```bash
-aws iam list-attached-user-policies --user-name <user>
-aws iam list-user-policies          --user-name <user>
-aws iam list-groups-for-user        --user-name <user>
-aws iam list-attached-group-policies --group-name <group>
+aws iam list-attached-user-policies --profile $AWS_PROFILE \
+  --user-name $USER_NAME
+```
 
-aws iam list-attached-role-policies --role-name <role>
-aws iam list-role-policies          --role-name <role>
-aws iam get-role                    --role-name <role> --query Role.AssumeRolePolicyDocument
+### List inline policies embedded in a user
+Retrieve custom inline policies defined directly on the user principal itself:
+```bash
+aws iam list-user-policies --profile $AWS_PROFILE \
+  --user-name $USER_NAME
+```
+
+### List groups the user belongs to
+Identify the user's group memberships to determine inherited group-level permissions:
+```bash
+aws iam list-groups-for-user --profile $AWS_PROFILE \
+  --user-name $USER_NAME
+```
+
+### List policies attached to a group
+List the standalone managed policies attached to a user group to audit permissions inherited by its members:
+```bash
+aws iam list-attached-group-policies --profile $AWS_PROFILE \
+  --group-name $GROUP_NAME
+```
+
+### List managed policies attached to a role
+Identify standalone managed policies attached directly to an IAM role:
+```bash
+aws iam list-attached-role-policies --profile $AWS_PROFILE \
+  --role-name $ROLE_NAME
+```
+
+### List inline policies embedded in a role
+Identify inline custom policies embedded directly inside the IAM role:
+```bash
+aws iam list-role-policies --profile $AWS_PROFILE \
+  --role-name $ROLE_NAME
+```
+
+### Inspect the role trust policy (AssumeRolePolicyDocument)
+Retrieve the trust relationship policy document of a role to see which principals (users, services, or external accounts) are authorized to assume it:
+```bash
+aws iam get-role --profile $AWS_PROFILE \
+  --role-name $ROLE_NAME \
+  --query Role.AssumeRolePolicyDocument
 ```
 
 ## What does a managed policy allow?
 
+### Get policy metadata
+Retrieve metadata for a specific managed policy, including its default version ID and path:
 ```bash
-aws iam get-policy         --policy-arn <arn>
-aws iam get-policy-version --policy-arn <arn> --version-id v1
-aws iam list-entities-for-policy --policy-arn <arn>
+aws iam get-policy --profile $AWS_PROFILE \
+  --policy-arn $POLICY_ARN
+```
+
+### Get the policy version document
+Retrieve the actual JSON policy document associated with a specific version of a managed policy:
+```bash
+aws iam get-policy-version --profile $AWS_PROFILE \
+  --policy-arn $POLICY_ARN \
+  --version-id v1
+```
+
+### Find who is using a policy
+List all IAM users, groups, and roles currently attached to a managed policy:
+```bash
+aws iam list-entities-for-policy --profile $AWS_PROFILE \
+  --policy-arn $POLICY_ARN
 ```
 
 ## Will this principal be allowed?
 
+### Simulate policy evaluation
+Test whether an IAM user has permission to execute specific API actions on a target resource. This checks identity policies, resource policies, SCPs, and boundaries without making the actual API call:
 ```bash
-aws iam simulate-principal-policy \
-  --policy-source-arn <principal-arn> \
-  --action-names <service:Action> \
-  --resource-arns <resource-arn>
+aws iam simulate-principal-policy --profile $AWS_PROFILE \
+  --policy-source-arn arn:aws:iam::$ACCOUNT_ID:user/$USER_NAME \
+  --action-names s3:GetObject \
+  --resource-arns arn:aws:s3:::my-bucket/*
 ```
 
 Output names the matched statement: enough to spot missing allow or unexpected deny. For the full decision tree and simulator limits, see [[aws/iam/policy-evaluation|IAM policy evaluation]].
 
 ## Access-key hygiene
 
+### List active access keys
+List the access key IDs associated with an IAM user to audit active keys:
 ```bash
-aws iam list-access-keys           --user-name <user>
-aws iam get-access-key-last-used   --access-key-id <AKIA...>
-aws iam update-access-key          --user-name <user> --access-key-id <AKIA...> --status Inactive
-aws iam delete-access-key          --user-name <user> --access-key-id <AKIA...>
+aws iam list-access-keys --profile $AWS_PROFILE \
+  --user-name $USER_NAME
+```
+
+### Check key last used status
+Retrieve the timestamp and calling service/Region for an access key's last API request. Always verify this to confirm the key is completely unused before deactivating it:
+```bash
+aws iam get-access-key-last-used --profile $AWS_PROFILE \
+  --access-key-id $ACCESS_KEY_ID
+```
+
+### Deactivate an access key
+Change the access key's status to `Inactive`. This is a crucial safety step to test for silent dependencies before permanent deletion:
+```bash
+aws iam update-access-key --profile $AWS_PROFILE \
+  --user-name $USER_NAME \
+  --access-key-id $ACCESS_KEY_ID \
+  --status Inactive
+```
+
+### Permanently delete an access key
+Permanently remove the access key once you have confirmed no production workloads depend on it:
+```bash
+aws iam delete-access-key --profile $AWS_PROFILE \
+  --user-name $USER_NAME \
+  --access-key-id $ACCESS_KEY_ID
 ```
 
 ## Tips

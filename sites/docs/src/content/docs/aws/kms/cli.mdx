@@ -13,60 +13,139 @@ prerequisites:
 > Key creation, aliasing, policy edits, and deletion. Most [[aws/kms|KMS]] work is inspection plus occasional cross-account policy edits: services call `encrypt`/`decrypt` for you.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since KMS key generation and management operations are driven by local CLI credentials.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "KEY_ID", placeholder: "1234abcd-12ab-34cd-56ef-1234567890ab" },
+    { name: "ALIAS_NAME", placeholder: "my-key-alias" },
+    { name: "KEY_PURPOSE", default: "app-key" },
+  ]}
+/>
+
 ## Create + label
 
+### Create a customer-managed key (CMK)
+Generate a custom, editable KMS key with a description and extract the resulting key ID:
 ```bash
-aws kms create-key --description "<purpose>" --query KeyMetadata.KeyId --output text
-aws kms create-alias --alias-name alias/<name> --target-key-id <KEY_ID>
-aws kms list-aliases --key-id <KEY_ID> --query 'Aliases[].AliasName' --output json
+aws kms create-key --profile $AWS_PROFILE --region $REGION \
+  --description "$KEY_PURPOSE" \
+  --query KeyMetadata.KeyId \
+  --output text
+```
+
+### Create a friendly alias
+Associate a human-readable alias prefix with the key ID for cleaner code configuration and access:
+```bash
+aws kms create-alias --profile $AWS_PROFILE --region $REGION \
+  --alias-name alias/$ALIAS_NAME \
+  --target-key-id $KEY_ID
+```
+
+### List aliases for a key
+List all friendly aliases associated with your key ID to verify successful label bindings:
+```bash
+aws kms list-aliases --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
+  --query 'Aliases[].AliasName' \
+  --output json
 ```
 
 ## Inspect
 
+### Describe key metadata
+Inspect core properties of the key, such as its lifecycle state, owner manager (`CUSTOMER` vs `AWS`), and usage description:
 ```bash
-aws kms describe-key --key-id <KEY_ID> \
+aws kms describe-key --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
   --query 'KeyMetadata.{Arn:Arn,KeyManager:KeyManager,KeyState:KeyState,Description:Description}' \
   --output json
-
-aws kms get-key-policy --key-id <KEY_ID> --policy-name default
-
-aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<KEY_ARN> \
-  --max-results 20
 ```
 
 `KeyManager` distinguishes `CUSTOMER` (editable, shareable) from `AWS` (locked).
 
+### Get the active key policy
+Retrieve the current default key policy document to check who has administrative or decryption rights:
+```bash
+aws kms get-key-policy --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
+  --policy-name default
+```
+
+### Lookup API usage events
+Query recent CloudTrail API events involving this specific KMS key to audit its encryption/decryption activity:
+```bash
+aws cloudtrail lookup-events --profile $AWS_PROFILE --region $REGION \
+  --lookup-attributes AttributeKey=ResourceName,AttributeValue=arn:aws:kms:$REGION:ACCOUNT_ID:key/$KEY_ID \
+  --max-results 20
+```
+
 ## Edit the key policy
 
+### Export default key policy
+Download the current key policy document to a local JSON file:
 ```bash
-aws kms get-key-policy --key-id <KEY_ID> --policy-name default \
-  --query Policy --output text > cmk-policy.json
+aws kms get-key-policy --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
+  --policy-name default \
+  --query Policy \
+  --output text > cmk-policy.json
+```
+
+### Apply updated key policy
+Upload your modified local policy JSON back to AWS KMS (note: this acts as a complete drop-in replacement):
+```bash
 # Edit cmk-policy.json (e.g. add Account B Decrypt)
-aws kms put-key-policy --key-id <KEY_ID> --policy-name default --policy file://cmk-policy.json
+aws kms put-key-policy --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
+  --policy-name default \
+  --policy file://cmk-policy.json
 ```
 
 `put-key-policy` is read-modify-write with no concurrency token: coordinate manually.
 
 ## Cleanup
 
+### Schedule key deletion
+Set a pending deletion timeline (between 7 and 30 days) to permanently destroy the key:
 ```bash
-aws kms schedule-key-deletion --key-id <KEY_ID> --pending-window-in-days 7
-aws kms cancel-key-deletion   --key-id <KEY_ID>
-aws kms disable-key --key-id <KEY_ID>
-aws kms enable-key  --key-id <KEY_ID>
+aws kms schedule-key-deletion --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID \
+  --pending-window-in-days 7
+```
+
+### Cancel pending key deletion
+Cancel a pending scheduled key deletion to restore the key back to an active state:
+```bash
+aws kms cancel-key-deletion --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID
+```
+
+### Disable a key
+Immediately revoke all encryption/decryption access to the key. This is a highly recommended intermediate safety step before deletion:
+```bash
+aws kms disable-key --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID
+```
+
+### Enable a key
+Re-enable a disabled key to instantly restore full cryptographic operations:
+```bash
+aws kms enable-key --profile $AWS_PROFILE --region $REGION \
+  --key-id $KEY_ID
 ```
 
 <Aside type="caution" title="Deletion is permanent">
-
 There's no undo after the pending window. Anything encrypted with that key becomes undecryptable. Prefer `disable-key` when you might need recovery.
-
 </Aside>
 
 ## Tips

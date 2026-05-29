@@ -12,35 +12,87 @@ prerequisites:
 > Distribution discovery, invalidation, and alias inspection. Most [[aws/cloudfront|CloudFront]] work is "find which distribution serves this hostname".
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since administering CloudFront distributions requires authenticating requests via the AWS CLI.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "DISTRIBUTION_ID", placeholder: "E123456789ABCD" },
+    { name: "HOSTNAME", placeholder: "example.com" },
+    { name: "INVALIDATION_ID", placeholder: "I123456789ABCD" },
+  ]}
+/>
+
 ## Find a distribution
 
+### List all distributions in a table
+Summarize IDs, domain names, hostnames, and statuses for all CloudFront distributions in a clean table format:
 ```bash
-aws cloudfront list-distributions \
+aws cloudfront list-distributions --profile $AWS_PROFILE \
   --query 'DistributionList.Items[].{Id:Id,Domain:DomainName,Aliases:Aliases.Items,Status:Status}' \
   --output table
+```
 
-aws cloudfront list-distributions \
-  --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, '<hostname>')].{Id:Id,Domain:DomainName}" \
+### Find distribution by hostname
+Find the exact distribution ID and DNS domain name that serves a specific alternate domain name (CNAME):
+```bash
+aws cloudfront list-distributions --profile $AWS_PROFILE \
+  --query "DistributionList.Items[?Aliases.Items != null && contains(Aliases.Items, '$HOSTNAME')].{Id:Id,Domain:DomainName}" \
   --output table
+```
 
-aws cloudfront get-distribution        --id <ID>
-aws cloudfront get-distribution-config --id <ID>
+### Get distribution details
+Retrieve full details and status of a specific CloudFront distribution:
+```bash
+aws cloudfront get-distribution --profile $AWS_PROFILE \
+  --id $DISTRIBUTION_ID
+```
+
+### Get distribution configuration
+Retrieve only the configuration properties (origins, behaviors, caching rules) without the full read status payload:
+```bash
+aws cloudfront get-distribution-config --profile $AWS_PROFILE \
+  --id $DISTRIBUTION_ID
 ```
 
 ## Invalidate the CDN
 
+### Invalidate all paths
+Flush the entire CDN cache instantly by invalidating the root wildcard path:
 ```bash
-aws cloudfront create-invalidation --distribution-id <ID> --paths '/*'
-aws cloudfront create-invalidation --distribution-id <ID> --paths '/index.html' '/static/css/*'
+aws cloudfront create-invalidation --profile $AWS_PROFILE \
+  --distribution-id $DISTRIBUTION_ID \
+  --paths '/*'
+```
 
-aws cloudfront list-invalidations --distribution-id <ID>
-aws cloudfront get-invalidation   --distribution-id <ID> --id <INVALIDATION_ID>
+### Invalidate specific files
+Flush specific static asset files and file paths from the cache:
+```bash
+aws cloudfront create-invalidation --profile $AWS_PROFILE \
+  --distribution-id $DISTRIBUTION_ID \
+  --paths '/index.html' '/static/css/*'
+```
+
+### List recent invalidations
+List the status and ID of recent invalidation jobs to track progress:
+```bash
+aws cloudfront list-invalidations --profile $AWS_PROFILE \
+  --distribution-id $DISTRIBUTION_ID
+```
+
+### Inspect specific invalidation progress
+Check the status (`InProgress` vs `Completed`) of a specific invalidation job ID:
+```bash
+aws cloudfront get-invalidation --profile $AWS_PROFILE \
+  --distribution-id $DISTRIBUTION_ID \
+  --id $INVALIDATION_ID
 ```
 
 First 1,000 paths/month free; wildcards count as one path.
@@ -49,13 +101,32 @@ First 1,000 paths/month free; wildcards count as one path.
 
 Read-modify-write with optimistic concurrency:
 
+### Download configuration and tag ETag
+Download the current configuration payload and save it:
 ```bash
-aws cloudfront get-distribution-config --id <ID> > dist.json
+aws cloudfront get-distribution-config --profile $AWS_PROFILE \
+  --id $DISTRIBUTION_ID > dist.json
+```
+
+### Extract ETag header
+Extract the unique ETag version token to send with your update call to prevent concurrent overwrite clashes:
+```bash
 ETAG=$(jq -r .ETag dist.json)
+```
+
+### Extract editable configuration chunk
+Filter only the editable config sub-object into a separate clean JSON file:
+```bash
 jq .DistributionConfig dist.json > dist-config.json
-# Edit dist-config.json
+```
+
+### Apply updated configuration
+Submit the modified configuration JSON file back to CloudFront along with the correct ETag version token:
+```bash
+# Edit dist-config.json (e.g. modify origins or CNAMEs)
 aws cloudfront update-distribution \
-  --id <ID> \
+  --profile $AWS_PROFILE \
+  --id $DISTRIBUTION_ID \
   --distribution-config file://dist-config.json \
   --if-match "$ETAG"
 ```

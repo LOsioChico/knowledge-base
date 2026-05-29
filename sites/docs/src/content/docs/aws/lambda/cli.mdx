@@ -11,51 +11,105 @@ prerequisites:
 > Function lifecycle, invoke, and inspection commands for triage. Expand as [[aws/lambda|Lambda]] recipes land.
 
 import { Aside } from "@astrojs/starlight/components";
+import ShellSession from '/src/components/interactive/ShellSession.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since managing Lambda function resources requires active CLI profile sessions.
 </Aside>
 
+## Before you start
+
+<ShellSession
+  vars={[
+    { name: "AWS_PROFILE", placeholder: "your-profile" },
+    { name: "REGION", preset: "aws-region", default: "us-east-1" },
+    { name: "FUNCTION_NAME", placeholder: "my-lambda-function" },
+    { name: "ROLE_ARN", placeholder: "arn:aws:iam::123456789012:role/my-lambda-role" },
+  ]}
+/>
+
 ## Inventory
 
+### List all functions in a table
+Summarize all functions in the current account/Region in a clean table format:
 ```bash
-aws lambda list-functions \
+aws lambda list-functions --profile $AWS_PROFILE --region $REGION \
   --query 'Functions[].{Name:FunctionName,Runtime:Runtime,Last:LastModified}' \
   --output table
+```
 
-aws lambda get-function          --function-name <name>
-aws lambda get-function-configuration --function-name <name>
-aws lambda get-account-settings
+### Get function detail
+Retrieve full metadata and download URL for a function's compiled code package:
+```bash
+aws lambda get-function --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME
+```
+
+### Get function configuration
+Retrieve only the configuration metadata (environment variables, timeout, role) without the code download bundle:
+```bash
+aws lambda get-function-configuration --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME
+```
+
+### Get account limits
+Retrieve account-level resource usage and limits (e.g. concurrent execution limits, total code storage size):
+```bash
+aws lambda get-account-settings --profile $AWS_PROFILE --region $REGION
 ```
 
 ## Create + update + delete
 
+### Create a function
+Provision a brand new Lambda function with basic parameters, handler, and code ZIP package:
 ```bash
-aws lambda create-function \
-  --function-name <name> \
+aws lambda create-function --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME \
   --runtime nodejs20.x \
-  --role <role-arn> \
+  --role $ROLE_ARN \
   --handler index.handler \
   --zip-file fileb://function.zip
+```
 
-aws lambda update-function-code \
-  --function-name <name> --zip-file fileb://function.zip
+### Update function code
+Upload an updated ZIP package to refresh the function's deployment code:
+```bash
+aws lambda update-function-code --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME \
+  --zip-file fileb://function.zip
+```
 
-aws lambda update-function-configuration \
-  --function-name <name> --environment 'Variables={KEY=value}'
+### Update function configuration
+Modify runtime settings like environment variables, memory size, or timeouts:
+```bash
+aws lambda update-function-configuration --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME \
+  --environment 'Variables={KEY=value}'
+```
 
-aws lambda delete-function --function-name <name>
+### Delete a function
+Delete the Lambda function and all its associated version/alias configurations:
+```bash
+aws lambda delete-function --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME
 ```
 
 ## Invoke
 
+### Invoke function synchronously
+Execute the function synchronously (`RequestResponse`) and save the resulting payload:
 ```bash
-aws lambda invoke \
-  --function-name <name> \
+aws lambda invoke --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME \
   --payload '{"k":"v"}' \
   --cli-binary-format raw-in-base64-out \
   /tmp/out.json
+```
+
+### Print invocation output
+View the function's execution result from `/tmp/out.json`:
+```bash
 cat /tmp/out.json
 ```
 
@@ -63,14 +117,28 @@ cat /tmp/out.json
 
 ## Versions + aliases
 
+### Publish a immutable version
+Publish a snapshot version from the active `$LATEST` function code and configuration:
 ```bash
-aws lambda publish-version --function-name <name>
+aws lambda publish-version --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME
+```
 
-aws lambda update-alias \
-  --function-name <name> --name prod --function-version 7 \
+### Update alias with traffic weights
+Update or create an alias to point to a specific version, optionally routing a percentage of traffic to a different version for canary releases:
+```bash
+aws lambda update-alias --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME \
+  --name prod \
+  --function-version 7 \
   --routing-config 'AdditionalVersionWeights={"8"=0.10}'
+```
 
-aws lambda list-aliases --function-name <name>
+### List all aliases
+List all custom aliases configured for the Lambda function:
+```bash
+aws lambda list-aliases --profile $AWS_PROFILE --region $REGION \
+  --function-name $FUNCTION_NAME
 ```
 
 ## Tips
