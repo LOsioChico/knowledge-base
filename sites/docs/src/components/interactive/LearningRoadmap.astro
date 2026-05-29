@@ -424,17 +424,10 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
 
   /* Card content hover states */
   .lr__row.is-hovered .lr__row-content {
-    transform: translateY(-2px);
     background: rgba(30, 41, 59, 0.45);
     border-color: rgba(255, 255, 255, 0.1);
     border-left-color: var(--rc);
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 0 15px color-mix(in srgb, var(--rc) 15%, transparent);
-  }
-  .lr__row.is-hovered .lr__cb {
-    transform: translateY(-2px) !important;
-  }
-  .lr__row.is-hovered .lr__cb:hover {
-    transform: translateY(-2px) scale(1.05) !important;
   }
   .lr__row.is-hovered .lr__row-checkbox::before {
     background: rgba(255, 255, 255, 0.16);
