@@ -12,8 +12,7 @@ prerequisites:
 
 import { Aside } from "@astrojs/starlight/components";
 import PolicyEvaluator from '/src/components/interactive/PolicyEvaluator.astro';
-import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
-import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
+import AccessDeniedTriage from '/src/components/interactive/AccessDeniedTriage.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -42,45 +41,18 @@ The union/intersection rules are the starting point, but resource policies have 
 
 ## Policy layers
 
-<ArchitectureExplorer
-  title="IAM policy layers"
-  layers={[
-    { id: "identity", label: "Identity-based policy", color: "#60a5fa", description: "Attached to a user, group, or role. Can allow and can explicitly deny. Inspect first when the error says no identity-based policy allows the action.", items: ["Managed policies (AWS or customer)", "Inline policies embedded in the principal", "Explicit Deny overrides any Allow"] },
-    { id: "resource", label: "Resource-based policy", color: "#34d399", description: "Attached to a resource such as an S3 bucket, SQS queue, KMS key, or role trust policy. Can allow and can explicitly deny. The resource owner controls access, especially cross-account.", items: ["S3 bucket policies", "KMS key policies", "SQS/SNS access policies", "Same-account: union with identity policies", "Cross-account: both sides must Allow"] },
-    { id: "boundary", label: "Permissions boundary", color: "#f59e0b", description: "A managed policy attached as a maximum-permissions ceiling on an IAM user or role. Cannot grant permissions : only limits what identity policies can grant. Effective permissions = intersection of identity policy and boundary.", items: ["Ceiling, not a grant", "Effective = identity ∩ boundary", "Check when identity allows but principal still cannot act"] },
-    { id: "session", label: "Session policy", color: "#a78bfa", description: "Inline or managed policy passed when creating temporary credentials via STS AssumeRole, GetFederationToken, etc. Cannot grant permissions : only restricts what the role's identity policies allow for this session.", items: ["Passed as Policy or PolicyArns to STS", "Scopes a single session, not the role itself"] },
-    { id: "scp", label: "Service control policy (SCP)", color: "#f87171", description: "AWS Organizations guardrail on an account or organizational unit. Cannot grant permissions : sets the maximum available permissions for every principal in the account.", items: ["Applies to entire accounts/OUs", "Ceiling only : does not grant", "Check when all principals in an account are blocked"] },
-    { id: "rcp", label: "Resource control policy (RCP)", color: "#fb923c", description: "AWS Organizations resource guardrail. Cannot grant permissions : limits what resource-based policies can grant. Check when the denial is tied to an Organizations resource guardrail.", items: ["Applies to resources, not principals", "Ceiling only : does not grant"] },
-    { id: "trust", label: "Trust policy", color: "#818cf8", description: "A resource-based policy on an IAM role that defines who can assume it. Can allow sts:AssumeRole only. If AssumeRole fails, the caller never reaches the target service.", items: ["Attached to the role itself", "Names trusted principals and conditions", "Cross-account: both caller permission + trust policy required"] },
-  ]}
-/>
+Understanding how individual policy types interact is key to debugging permissions issues. The table below simplifies the 5 main layers that evaluate in sequence:
 
-<FlowSimulator
-  title="Same-account vs cross-account evaluation"
-  nodes={[
-    { id: "Principal", label: "Principal" },
-    { id: "IAM", label: "IAM" },
-    { id: "Service", label: "Service" },
-    { id: "Account B", label: "Account B" },
-    { id: "STS", label: "STS" },
-  ]}
-  flows={[
-    { label: "Same-account", steps: [
-      { from: "Principal", to: "IAM", message: "API call with signing credentials" },
-      { from: "IAM", to: "IAM", message: "Collect identity + resource policies (union)" },
-      { from: "IAM", to: "IAM", message: "Check explicit denies : any Deny stops here" },
-      { from: "IAM", to: "IAM", message: "Apply ceilings (boundary, SCP, session)" },
-      { from: "IAM", to: "Service", message: "Allow or implicit deny" },
-    ]},
-    { label: "Cross-account", steps: [
-      { from: "Account B", to: "STS", message: "AssumeRole on Account A's role" },
-      { from: "STS", to: "STS", message: "Account B: caller must have sts:AssumeRole" },
-      { from: "STS", to: "STS", message: "Account A: trust policy must name Account B" },
-      { from: "STS", to: "Account B", message: "Temporary credentials (both sides allowed)" },
-      { from: "Account B", to: "Service", message: "Use credentials : role's identity policies apply" },
-    ]},
-  ]}
-/>
+| Layer | Applied To | Logic Type | Plain-English Role |
+| :--- | :--- | :--- | :--- |
+| **1. Organization SCP** | AWS Account or OU | **Ceiling (Guardrail)** | Blocks specific services across your entire AWS account (defaults to allowing all). |
+| **2. Explicit Deny Check** | Any active policy | **Ultimate Veto** | One matching `Deny` statement anywhere immediately overrides all allows. |
+| **3. Core Access Grants** | Principal / Resource | **Grant (Allow)** | Same-account is a **union** (either allows); cross-account requires **both** sides. |
+| **4. Permissions Boundary** | IAM User or Role | **Ceiling (Ceiling)** | Limits the maximum access that identity-based policies can grant. |
+| **5. Session Policy** | Temporary STS Session | **Ceiling (Ceiling)** | Restricts temporary credentials (passed when assuming a role or federating). |
+
+For same-account access, resource-based policies generally bypass the permissions boundary and session policy ceilings, meaning direct resource allow grants can succeed even if blocked by a boundary. However, in cross-account operations, both sides are evaluated as separate accounts, requiring a strict intersection.
+
 
 ## Worked examples
 
@@ -247,6 +219,8 @@ The simulator has documented gaps. It does not perform the API call, resource-ba
 ## AccessDenied triage
 
 Start with the caller, then the exact action and resource. Do not edit policies until you know which layer denied the request.
+
+<AccessDeniedTriage />
 
 ### 1. Confirm the caller
 

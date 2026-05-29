@@ -1,0 +1,624 @@
+---
+/**
+ * AccessDeniedTriage.astro
+ * ────────────────────────
+ * An ultra-simple, developer-friendly AWS AccessDenied triage guide.
+ * Shows a horizontal diagnostic path (SCP -> Deny -> Grants -> Boundary)
+ * that highlights exactly where the error occurred and how to fix it in plain English.
+ */
+
+interface Props {
+  title?: string;
+}
+
+const { title = "AWS AccessDenied Triage Terminal" } = Astro.props;
+---
+
+<div class="adt not-content" id="adt-root">
+  <div class="adt-header">
+    <div class="adt-header-title">
+      <span class="adt-header-dot" />
+      <span class="adt-title">{title}</span>
+    </div>
+    <span class="adt-badge">🔬 Friendly Debugger</span>
+  </div>
+
+  <div class="adt-layout">
+    {/* 1. Selector Area */}
+    <div class="adt-selector-panel">
+      <label class="adt-label" for="adt-error-select">What error message are you seeing?</label>
+      <div class="adt-select-wrapper">
+        <select id="adt-error-select" class="adt-select">
+          <option value="none">-- Select an AccessDenied error message --</option>
+          <option value="err-implicit">AccessDenied: "... because no identity-based policy allows GetObject"</option>
+          <option value="err-explicit-deny">AccessDenied: "... because an explicit deny statement was matched"</option>
+          <option value="err-cross-trust">AccessDenied: "... because no resource-based policy allows cross-account access"</option>
+          <option value="err-boundary">AccessDenied: "... because a permissions boundary does not allow GetObject"</option>
+          <option value="err-scp">AccessDenied: "... because an organization control policy blocks GetObject"</option>
+        </select>
+      </div>
+      <p class="adt-help-text">Select your error to instantly trace where the evaluation engine blocked it.</p>
+    </div>
+
+    {/* 2. Horizontal Flow Line */}
+    <div class="adt-flow-container">
+      <h4 class="adt-section-title">Evaluation Pathway</h4>
+      <div class="adt-flow-bar">
+        {/* Node 1: SCP */}
+        <div class="adt-flow-node" id="adt-node-scp">
+          <div class="adt-node-circle">1</div>
+          <span class="adt-node-label">Organization SCP</span>
+        </div>
+        <div class="adt-flow-line" id="adt-line-scp"></div>
+
+        {/* Node 2: Deny Check */}
+        <div class="adt-flow-node" id="adt-node-deny">
+          <div class="adt-node-circle">2</div>
+          <span class="adt-node-label">Explicit Deny Check</span>
+        </div>
+        <div class="adt-flow-line" id="adt-line-deny"></div>
+
+        {/* Node 3: Access Grants */}
+        <div class="adt-flow-node" id="adt-node-auth">
+          <div class="adt-node-circle">3</div>
+          <span class="adt-node-label">Core Access Grants</span>
+        </div>
+        <div class="adt-flow-line" id="adt-line-auth"></div>
+
+        {/* Node 4: Boundary */}
+        <div class="adt-flow-node" id="adt-node-boundary">
+          <div class="adt-node-circle">4</div>
+          <span class="adt-node-label">Permissions Boundary</span>
+        </div>
+      </div>
+    </div>
+
+    {/* 3. Friendly Report Panel */}
+    <div class="adt-report-panel" id="adt-report-panel">
+      <div class="adt-report-card">
+        <h4 class="adt-report-section-title">🔍 Diagnostic Report</h4>
+        
+        <div class="adt-report-group">
+          <h5 class="adt-report-subtitle">💡 What is happening?</h5>
+          <p class="adt-report-text" id="adt-res-story">Please select an error message above to identify the issue in plain English.</p>
+        </div>
+
+        <div class="adt-report-group" id="adt-fix-section">
+          <h5 class="adt-report-subtitle">🛠️ How to fix it</h5>
+          <p class="adt-report-text" id="adt-res-fix-desc">Remediation steps will appear here.</p>
+          <div class="adt-code-header">Recommended Remediation Code</div>
+          <pre class="adt-code-block" id="adt-res-code"><code>/* Code blocks will show here */</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .adt {
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --adt-text:       var(--sl-color-text);
+    --adt-text-faint: var(--sl-color-gray-2);
+    --adt-text-ghost: var(--sl-color-gray-3);
+    --adt-rule:       var(--sl-color-hairline-shade);
+    --adt-accent:     var(--sl-color-accent-high);
+    --adt-panel:      rgba(20, 20, 23, 0.5);
+
+    margin: 2rem 0;
+    background: var(--adt-panel);
+    border: 1px solid var(--adt-rule);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .adt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--adt-rule);
+    background: rgba(10, 10, 12, 0.45);
+  }
+
+  .adt-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .adt-header-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--adt-accent);
+    box-shadow: 0 0 10px var(--adt-accent);
+  }
+
+  .adt-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--adt-text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .adt-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--adt-accent);
+    background: color-mix(in srgb, var(--adt-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--adt-accent) 25%, transparent);
+    padding: 0.35rem 0.8rem;
+    border-radius: 99px;
+  }
+
+  .adt-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 24px;
+  }
+
+  /* Selector Area */
+  .adt-selector-panel {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--adt-rule);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+
+  .adt-label {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--adt-text);
+    margin-bottom: 12px;
+  }
+
+  .adt-select-wrapper {
+    position: relative;
+    width: 100%;
+  }
+
+  .adt-select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--adt-rule);
+    border-radius: 6px;
+    padding: 12px 40px 12px 16px;
+    font-size: 0.92rem;
+    color: var(--adt-text);
+    cursor: pointer;
+    appearance: none;
+    outline: none;
+    font-family: inherit;
+    transition: all 150ms var(--ease);
+  }
+
+  .adt-select:focus {
+    border-color: var(--adt-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--adt-accent) 20%, transparent);
+  }
+
+  .adt-select-wrapper::after {
+    content: "▼";
+    font-size: 0.7rem;
+    color: var(--adt-text-ghost);
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .adt-help-text {
+    font-size: 0.85rem;
+    color: var(--adt-text-ghost);
+    margin: 8px 0 0 0;
+    line-height: 1.5;
+  }
+
+  /* Evaluation Pathway Line */
+  .adt-flow-container {
+    background: rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--adt-rule);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .adt-section-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--adt-text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 20px 0;
+    border-left: 3px solid var(--adt-accent);
+    padding-left: 8px;
+  }
+
+  .adt-flow-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    padding: 10px 0;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  @media (min-width: 600px) {
+    .adt-flow-bar {
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+  }
+
+  .adt-flow-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    z-index: 10;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .adt-node-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid var(--adt-rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--adt-text-ghost);
+    transition: all 250ms var(--ease);
+  }
+
+  .adt-node-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--adt-text-ghost);
+    white-space: nowrap;
+    transition: all 250ms var(--ease);
+  }
+
+  .adt-flow-line {
+    display: none;
+    height: 2px;
+    background: var(--adt-rule);
+    flex-grow: 1;
+    margin: 0 -12px;
+    align-self: center;
+    margin-bottom: 24px; /* Align with center of circle */
+    transition: all 250ms var(--ease);
+  }
+
+  @media (min-width: 600px) {
+    .adt-flow-line {
+      display: block;
+    }
+  }
+
+  /* Node States styling */
+  .adt-flow-node.state-pass .adt-node-circle {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #34d399;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  }
+  .adt-flow-node.state-pass .adt-node-label {
+    color: #34d399;
+    font-weight: 800;
+  }
+
+  .adt-flow-node.state-blocked .adt-node-circle {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #f87171;
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.3);
+    transform: scale(1.1);
+    animation: adt-node-bounce 0.8s infinite alternate;
+  }
+  .adt-flow-node.state-blocked .adt-node-label {
+    color: #f87171;
+    font-weight: 800;
+  }
+
+  .adt-flow-node.state-skipped {
+    opacity: 0.4;
+  }
+
+  .adt-flow-line.line-pass {
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+  }
+
+  @keyframes adt-node-bounce {
+    from { transform: scale(1.05); }
+    to { transform: scale(1.15); }
+  }
+
+  /* Diagnostic Report Card */
+  .adt-report-panel {
+    width: 100%;
+  }
+
+  .adt-report-card {
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid var(--adt-rule);
+    background: rgba(10, 10, 12, 0.85);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .adt-report-section-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--adt-text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0 0 16px 0;
+    border-bottom: 1px solid var(--adt-rule);
+    padding-bottom: 8px;
+  }
+
+  .adt-report-group {
+    margin-bottom: 20px;
+  }
+
+  .adt-report-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .adt-report-subtitle {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--adt-accent);
+    margin: 0 0 8px 0;
+  }
+
+  .adt-report-text {
+    font-size: 0.9rem;
+    color: var(--adt-text-faint);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .adt-code-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--adt-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 14px;
+    margin-bottom: 6px;
+  }
+
+  .adt-code-block {
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--adt-rule);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 0;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+
+  #adt-fix-section {
+    display: none;
+  }
+</style>
+
+<script>
+  function initAccessDeniedTriage() {
+    document.querySelectorAll<HTMLElement>('.adt:not([data-init])').forEach((comp) => {
+      comp.setAttribute('data-init', '');
+
+      const selectEl = comp.querySelector<HTMLSelectElement>('#adt-error-select')!;
+      
+      const nodeScp = comp.querySelector<HTMLElement>('#adt-node-scp')!;
+      const nodeDeny = comp.querySelector<HTMLElement>('#adt-node-deny')!;
+      const nodeAuth = comp.querySelector<HTMLElement>('#adt-node-auth')!;
+      const nodeBoundary = comp.querySelector<HTMLElement>('#adt-node-boundary')!;
+
+      const lineScp = comp.querySelector<HTMLElement>('#adt-line-scp')!;
+      const lineDeny = comp.querySelector<HTMLElement>('#adt-line-deny')!;
+      const lineAuth = comp.querySelector<HTMLElement>('#adt-line-auth')!;
+
+      const resStory = comp.querySelector<HTMLElement>('#adt-res-story')!;
+      const resFixDesc = comp.querySelector<HTMLElement>('#adt-res-fix-desc')!;
+      const resCode = comp.querySelector<HTMLElement>('#adt-res-code')!;
+      const fixSection = comp.querySelector<HTMLElement>('#adt-fix-section')!;
+
+      const DIAGNOSTICS: Record<string, {
+        story: string;
+        fix: string;
+        code: string;
+        gates: Record<string, 'pass' | 'blocked' | 'skipped'>;
+        connectors: Record<string, 'pass' | 'skipped'>;
+        icons: Record<string, string>;
+      }> = {
+        'err-implicit': {
+          story: "An IAM role inside Account A is trying to fetch an S3 object. However, neither the role's identity policy nor the bucket's resource policy allows it. By default, AWS denies everything unless explicitly allowed.",
+          fix: "Attach an identity policy to the IAM role that explicitly permits the s3:GetObject action on your bucket resource.",
+          code: `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowS3ReadAccess",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::example-reports/*"
+    }
+  ]
+}`,
+          gates: { scp: 'pass', deny: 'pass', auth: 'blocked', boundary: 'skipped' },
+          connectors: { scp: 'pass', deny: 'pass', auth: 'skipped' },
+          icons: { scp: '✓', deny: '✓', auth: '💥', boundary: '-' }
+        },
+        'err-explicit-deny': {
+          story: "The IAM role has valid Allow permissions, but an explicit Deny statement is matched in the S3 Bucket Policy (e.g. blocking operations outside a specific VPC endpoint or IP address). A Deny statement ALWAYS wins over any Allows.",
+          fix: "Locate the S3 bucket policy and adjust or remove the Deny statement. Check if your VPC endpoint or IP satisfies the policy's whitelist condition.",
+          code: `# Example of a bucket policy that denies all traffic outside a specific VPCE:
+{
+  "Effect": "Deny",
+  "Principal": "*",
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::example-reports/*",
+  "Condition": {
+    "StringNotEquals": {
+      "aws:sourceVpce": "vpce-1a2b3c4d"
+    }
+  }
+}`,
+          gates: { scp: 'pass', deny: 'blocked', auth: 'skipped', boundary: 'skipped' },
+          connectors: { scp: 'pass', deny: 'skipped', auth: 'skipped' },
+          icons: { scp: '✓', deny: '💥', auth: '-', boundary: '-' }
+        },
+        'err-cross-trust': {
+          story: "A role in Account A is trying to fetch an S3 object in Account B. In cross-account calls, BOTH accounts must agree: the caller's account (identity policy) AND the bucket's account (bucket resource policy). Here, the S3 bucket policy is missing an Allow block trusting Account A.",
+          fix: "Add an Allow block to the S3 Bucket Policy in Account B that explicitly trusts the IAM role from Account A.",
+          code: `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TrustAccountAAppRole",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:role/AppRole"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::example-reports/*"
+    }
+  ]
+}`,
+          gates: { scp: 'pass', deny: 'pass', auth: 'blocked', boundary: 'skipped' },
+          connectors: { scp: 'pass', deny: 'pass', auth: 'skipped' },
+          icons: { scp: '✓', deny: '✓', auth: '💥', boundary: '-' }
+        },
+        'err-boundary': {
+          story: "The identity policy allows object reads, but a Permissions Boundary is attached to the role that limits its maximum permissions. The boundary only allows s3:ListBucket and s3:PutObject, blocking GetObject.",
+          fix: "Edit the Permissions Boundary policy attached to the role and add s3:GetObject to the list of permitted actions.",
+          code: `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "IncludeS3ReadInBoundary",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetObject"
+      ],
+      "Resource": "*"
+    }
+  ]
+}`,
+          gates: { scp: 'pass', deny: 'pass', auth: 'pass', boundary: 'blocked' },
+          connectors: { scp: 'pass', deny: 'pass', auth: 'pass' },
+          icons: { scp: '✓', deny: '✓', auth: '✓', boundary: '💥' }
+        },
+        'err-scp': {
+          story: "An AWS Organizations Service Control Policy (SCP) is attached to the account or Organizational Unit (OU) and limits maximum permissions. S3 actions have been disabled by your organization administrator.",
+          fix: "Contact your AWS Organizations administrator to add s3:GetObject permissions to the SCP or move the account to a less restrictive OU.",
+          code: `# Example of an SCP restricting actions across the member account:
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowCoreServicesOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:*",
+        "rds:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}`,
+          gates: { scp: 'blocked', deny: 'skipped', auth: 'skipped', boundary: 'skipped' },
+          connectors: { scp: 'skipped', deny: 'skipped', auth: 'skipped' },
+          icons: { scp: '💥', deny: '-', auth: '-', boundary: '-' }
+        }
+      };
+
+      function setNodeState(nodeEl: HTMLElement, state: 'pass' | 'blocked' | 'skipped', iconText: string) {
+        nodeEl.classList.remove('state-pass', 'state-blocked', 'state-skipped');
+        nodeEl.classList.add('state-' + state);
+        nodeEl.querySelector('.adt-node-circle')!.textContent = iconText;
+      }
+
+      function setLineState(lineEl: HTMLElement, state: 'pass' | 'skipped') {
+        lineEl.classList.remove('line-pass');
+        if (state === 'pass') {
+          lineEl.classList.add('line-pass');
+        }
+      }
+
+      function evaluateTriage() {
+        const errKey = selectEl.value;
+        if (errKey === 'none') {
+          // Reset all nodes to idle
+          setNodeState(nodeScp, 'pass', '1');
+          setNodeState(nodeDeny, 'pass', '2');
+          setNodeState(nodeAuth, 'pass', '3');
+          setNodeState(nodeBoundary, 'pass', '4');
+
+          setLineState(lineScp, 'skipped');
+          setLineState(lineDeny, 'skipped');
+          setLineState(lineAuth, 'skipped');
+
+          resStory.textContent = "Please select an error message above to identify the issue in plain English.";
+          resFixDesc.textContent = "Remediation steps will appear here.";
+          resCode.textContent = "/* Remediation instructions will render here */";
+          fixSection.style.display = 'none';
+          return;
+        }
+
+        const data = DIAGNOSTICS[errKey];
+        if (data) {
+          // Update Nodes
+          setNodeState(nodeScp, data.gates.scp, data.icons.scp);
+          setNodeState(nodeDeny, data.gates.deny, data.icons.deny);
+          setNodeState(nodeAuth, data.gates.auth, data.icons.auth);
+          setNodeState(nodeBoundary, data.gates.boundary, data.icons.boundary);
+
+          // Update Lines
+          setLineState(lineScp, data.connectors.scp);
+          setLineState(lineDeny, data.connectors.deny);
+          setLineState(lineAuth, data.connectors.auth);
+
+          // Update Diagnostic Card
+          resStory.textContent = data.story;
+          resFixDesc.textContent = data.fix;
+          resCode.textContent = data.code;
+          fixSection.style.display = 'block';
+        }
+      }
+
+      selectEl.addEventListener('change', evaluateTriage);
+
+      // Initialize
+      evaluateTriage();
+    });
+  }
+
+  initAccessDeniedTriage();
+  document.addEventListener('astro:page-load', initAccessDeniedTriage);
+</script>

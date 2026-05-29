@@ -5,6 +5,8 @@
  * A premium interactive AWS IAM Policy Evaluation Logic simulator.
  * Allows users to toggle policy layers (SCP, Identity, Resource, Permissions Boundary)
  * and mode (Same-Account vs. Cross-Account) to visually trace authorization decisions.
+ * Stacked in a space-efficient, single-column vertical layout with educational descriptions
+ * and a brand-new Guided Concept Tour mode to make AWS evaluation instantly graspable.
  */
 
 interface Props {
@@ -24,11 +26,41 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   </div>
 
   <div class="pe-layout">
-    {/* 1. Left Panel - Configuration Controls */}
+    {/* 0. Guided Interactive Concept Tour */}
+    <div class="pe-tour" id="pe-tour-container">
+      <div class="pe-tour-header">
+        <div class="pe-tour-title-block">
+          <span class="pe-tour-icon">🎓</span>
+          <span class="pe-tour-step-indicator" id="pe-tour-step">Step 1 of 5: Default Deny</span>
+        </div>
+        <div class="pe-tour-nav">
+          <button class="pe-tour-nav-btn" id="pe-tour-prev" type="button" disabled>← Prev</button>
+          <button class="pe-tour-nav-btn pe-tour-nav-btn--next" id="pe-tour-next" type="button">Next Step →</button>
+        </div>
+      </div>
+      <p class="pe-tour-text" id="pe-tour-desc">
+        AWS blocks everything by default. Without an explicit Allow statement in any of your policies, the request is implicitly denied at Gate 3.
+      </p>
+    </div>
+
+    {/* 1. Configuration Controls Dashboard */}
     <div class="pe-controls">
-      <h4 class="pe-section-title">Evaluation Context</h4>
-      
-      {/* Account Mode Selector */}
+      {/* Common Scenarios Presets (Now in its own spacious full-width row!) */}
+      <div class="pe-control-field">
+        <label class="pe-control-label">Common Scenarios Presets</label>
+        <div class="pe-presets-grid">
+          <button class="pe-preset-btn active" data-preset="same-identity" type="button" aria-label="Load Same-Account Identity Allow scenario">Same-Account Identity Allow</button>
+          <button class="pe-preset-btn" data-preset="explicit-deny" type="button" aria-label="Load Explicit Deny Wins scenario">Explicit Deny Wins</button>
+          <button class="pe-preset-btn" data-preset="cross-missing" type="button" aria-label="Load Cross-Account Missing Trust scenario">Cross-Account Missing Trust</button>
+          <button class="pe-preset-btn" data-preset="cross-success" type="button" aria-label="Load Cross-Account Handshake scenario">Cross-Account Handshake</button>
+          <button class="pe-preset-btn" data-preset="boundary-blocked" type="button" aria-label="Load Boundary Ceiling Blocked scenario">Boundary Ceiling Blocked</button>
+          <button class="pe-preset-btn" data-preset="scp-blocked" type="button" aria-label="Load Organizations SCP Blocked scenario">Organizations SCP Blocked</button>
+        </div>
+      </div>
+
+      <div class="pe-divider" />
+
+      {/* Account Boundary Selection */}
       <div class="pe-control-field">
         <label class="pe-control-label">Account Boundary</label>
         <div class="pe-toggle-group" id="pe-mode-toggle" role="radiogroup" aria-label="Account Boundary">
@@ -42,145 +74,166 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
         <p class="pe-field-help">Same-account is union (Identity OR Resource); Cross-account requires BOTH sides to Allow.</p>
       </div>
 
-      {/* Preset Scenarios Buttons */}
-      <div class="pe-control-field">
-        <label class="pe-control-label">Common Scenarios Presets</label>
-        <div class="pe-presets-grid">
-          <button class="pe-preset-btn active" data-preset="same-identity" type="button" aria-label="Load Same-Account Identity Allow scenario">Same-Account Identity Allow</button>
-          <button class="pe-preset-btn" data-preset="explicit-deny" type="button" aria-label="Load Explicit Deny Wins scenario">Explicit Deny Wins</button>
-          <button class="pe-preset-btn" data-preset="cross-missing" type="button" aria-label="Load Cross-Account Missing Trust scenario">Cross-Account Missing Trust</button>
-          <button class="pe-preset-btn" data-preset="cross-success" type="button" aria-label="Load Cross-Account Handshake scenario">Cross-Account Handshake</button>
-          <button class="pe-preset-btn" data-preset="boundary-blocked" type="button" aria-label="Load Boundary Ceiling Blocked scenario">Boundary Ceiling Blocked</button>
-        </div>
-      </div>
-
       <div class="pe-divider" />
       <h4 class="pe-section-title">Policy Layers Configuration</h4>
 
-      {/* SCP Dropdown */}
-      <div class="pe-control-field">
-        <label class="pe-control-label">Service Control Policy (SCP)</label>
-        <div class="pe-dropdown" data-layer="scp" tabindex="0" role="combobox" aria-label="SCP Configuration" aria-expanded="false">
-          <span class="pe-dropdown-value">Allow (Default FullAccess)</span>
-          <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" />
-          </svg>
-          <div class="pe-dropdown-menu" role="listbox">
-            <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow (Default FullAccess)</div>
-            <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
-            <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+      <div class="pe-layers-grid">
+        {/* SCP Dropdown */}
+        <div class="pe-control-field">
+          <label class="pe-control-label">Service Control Policy (SCP)</label>
+          <div class="pe-dropdown" data-layer="scp" tabindex="0" role="combobox" aria-label="SCP Configuration" aria-expanded="false">
+            <span class="pe-dropdown-value">Allow (Default FullAccess)</span>
+            <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" />
+            </svg>
+            <div class="pe-dropdown-menu" role="listbox">
+              <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow (Default FullAccess)</div>
+              <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
+              <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Identity Policy */}
-      <div class="pe-control-field">
-        <label class="pe-control-label">Identity-Based Policy</label>
-        <div class="pe-dropdown" data-layer="identity" tabindex="0" role="combobox" aria-label="Identity Policy Configuration" aria-expanded="false">
-          <span class="pe-dropdown-value">Allow</span>
-          <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" />
-          </svg>
-          <div class="pe-dropdown-menu" role="listbox">
-            <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow</div>
-            <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
-            <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+        {/* Identity Policy */}
+        <div class="pe-control-field">
+          <label class="pe-control-label">Identity-Based Policy</label>
+          <div class="pe-dropdown" data-layer="identity" tabindex="0" role="combobox" aria-label="Identity Policy Configuration" aria-expanded="false">
+            <span class="pe-dropdown-value">Allow</span>
+            <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" />
+            </svg>
+            <div class="pe-dropdown-menu" role="listbox">
+              <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow</div>
+              <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
+              <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Resource Policy */}
-      <div class="pe-control-field">
-        <label class="pe-control-label">Resource-Based Policy (e.g. Bucket)</label>
-        <div class="pe-dropdown" data-layer="resource" tabindex="0" role="combobox" aria-label="Resource Policy Configuration" aria-expanded="false">
-          <span class="pe-dropdown-value">None (Not Set)</span>
-          <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" />
-          </svg>
-          <div class="pe-dropdown-menu" role="listbox">
-            <div class="pe-dropdown-option" data-value="allow" role="option" aria-selected="false">Allow</div>
-            <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
-            <div class="pe-dropdown-option pe-dropdown-option--active" data-value="none" role="option" aria-selected="true">None (Not Set)</div>
+        {/* Resource Policy */}
+        <div class="pe-control-field">
+          <label class="pe-control-label">Resource-Based Policy</label>
+          <div class="pe-dropdown" data-layer="resource" tabindex="0" role="combobox" aria-label="Resource Policy Configuration" aria-expanded="false">
+            <span class="pe-dropdown-value">None (Not Set)</span>
+            <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" />
+            </svg>
+            <div class="pe-dropdown-menu" role="listbox">
+              <div class="pe-dropdown-option" data-value="allow" role="option" aria-selected="false">Allow</div>
+              <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
+              <div class="pe-dropdown-option pe-dropdown-option--active" data-value="none" role="option" aria-selected="true">None (Not Set)</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Permissions Boundary */}
-      <div class="pe-control-field">
-        <label class="pe-control-label">Permissions Boundary</label>
-        <div class="pe-dropdown" data-layer="boundary" tabindex="0" role="combobox" aria-label="Permissions Boundary Configuration" aria-expanded="false">
-          <span class="pe-dropdown-value">Allow (Default)</span>
-          <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" />
-          </svg>
-          <div class="pe-dropdown-menu" role="listbox">
-            <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow (Default)</div>
-            <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
-            <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+        {/* Permissions Boundary */}
+        <div class="pe-control-field">
+          <label class="pe-control-label">Permissions Boundary</label>
+          <div class="pe-dropdown" data-layer="boundary" tabindex="0" role="combobox" aria-label="Permissions Boundary Configuration" aria-expanded="false">
+            <span class="pe-dropdown-value">Allow (Default)</span>
+            <svg class="pe-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" />
+            </svg>
+            <div class="pe-dropdown-menu" role="listbox">
+              <div class="pe-dropdown-option pe-dropdown-option--active" data-value="allow" role="option" aria-selected="true">Allow (Default)</div>
+              <div class="pe-dropdown-option" data-value="deny" role="option" aria-selected="false">Explicit Deny</div>
+              <div class="pe-dropdown-option" data-value="none" role="option" aria-selected="false">None (Implicit Deny)</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    {/* 2. Right Panel - Evaluation Gate Tracker */}
+    {/* 2. Visualizer Panel (Stacked Below Controls) */}
     <div class="pe-visualizer">
-      <h4 class="pe-section-title">Authorization Gate Pipeline</h4>
+      <h4 class="pe-section-title">Visual Authorization Journey</h4>
       
-      <div class="pe-gates">
-        {/* Gate 1: Organizations SCP */}
-        <div class="pe-gate-card" id="gate-scp" data-gate-name="SCP Ingestion">
-          <div class="pe-gate-status-line"></div>
-          <div class="pe-gate-header">
-            <span class="pe-gate-num">1</span>
-            <div class="pe-gate-title-block">
+      <div class="pe-pipeline-container">
+        {/* Dynamic glowing vertical track */}
+        <div class="pe-track-bg"></div>
+        <div class="pe-track-active" id="pe-track-line"></div>
+
+        {/* Step 1: Organizations SCP */}
+        <div class="pe-pipeline-step" id="gate-scp" data-gate-name="SCP Ingestion">
+          <div class="pe-step-node">
+            <span class="pe-step-circle">1</span>
+          </div>
+          <div class="pe-step-content">
+            <div class="pe-step-header">
               <span class="pe-gate-badge">AWS Organizations</span>
-              <h5 class="pe-gate-title">Service Control Policy (SCP)</h5>
+              <h5 class="pe-step-title">Organization Guardrail (SCP)</h5>
+              <span class="pe-gate-status" id="status-scp">Pass</span>
             </div>
-            <span class="pe-gate-status" id="status-scp">Pass</span>
+            <p class="pe-step-description" id="desc-scp">Validating Org boundaries. Allows general AWS resource actions by default.</p>
           </div>
-          <p class="pe-gate-description" id="desc-scp">Validating Org boundaries. Allows general AWS resource actions by default.</p>
         </div>
 
-        {/* Gate 2: Explicit Deny Scan */}
-        <div class="pe-gate-card" id="gate-deny" data-gate-name="Explicit Deny Scan">
-          <div class="pe-gate-status-line"></div>
-          <div class="pe-gate-header">
-            <span class="pe-gate-num">2</span>
-            <div class="pe-gate-title-block">
+        {/* Step 2: Explicit Deny Scan */}
+        <div class="pe-pipeline-step" id="gate-deny" data-gate-name="Explicit Deny Scan">
+          <div class="pe-step-node">
+            <span class="pe-step-circle">2</span>
+          </div>
+          <div class="pe-step-content">
+            <div class="pe-step-header">
               <span class="pe-gate-badge">Pre-Flight Guard</span>
-              <h5 class="pe-gate-title">Explicit Deny Check</h5>
+              <h5 class="pe-step-title">Explicit Deny Check</h5>
+              <span class="pe-gate-status" id="status-deny">Pass</span>
             </div>
-            <span class="pe-gate-status" id="status-deny">Pass</span>
+            <p class="pe-step-description" id="desc-deny">Scanning all active policies. If any policy statement explicitly denies, authorization is terminated immediately.</p>
           </div>
-          <p class="pe-gate-description" id="desc-deny">Scanning all active policies. If any policy statement explicitly denies, authorization is terminated immediately.</p>
         </div>
 
-        {/* Gate 3: Core Authorization Access */}
-        <div class="pe-gate-card" id="gate-auth" data-gate-name="Access Grants Evaluation">
-          <div class="pe-gate-status-line"></div>
-          <div class="pe-gate-header">
-            <span class="pe-gate-num">3</span>
-            <div class="pe-gate-title-block">
+        {/* Step 3: Core Authorization Access */}
+        <div class="pe-pipeline-step" id="gate-auth" data-gate-name="Access Grants Evaluation">
+          <div class="pe-step-node">
+            <span class="pe-step-circle">3</span>
+          </div>
+          <div class="pe-step-content">
+            <div class="pe-step-header">
               <span class="pe-gate-badge" id="badge-auth-mode">Same-Account Union</span>
-              <h5 class="pe-gate-title" id="title-auth">Identity & Resource Union</h5>
+              <h5 class="pe-step-title" id="title-auth">Core Access Grants</h5>
+              <span class="pe-gate-status" id="status-auth">Pass</span>
             </div>
-            <span class="pe-gate-status" id="status-auth">Pass</span>
+            <p class="pe-step-description" id="desc-auth">Same-account operations are a union: either identity policy OR S3 bucket policy must allow access.</p>
+            
+            {/* Visual Union / Intersection Sub-Branch */}
+            <div class="pe-branch-visual" id="pe-branch-container">
+              <div class="pe-branch-nodes">
+                <div class="pe-branch-item" id="pe-branch-identity">
+                  <div class="pe-branch-dot" id="pe-dot-identity"></div>
+                  <div class="pe-branch-label-wrapper">
+                    <span class="pe-branch-label">Identity Policy</span>
+                    <span class="pe-branch-state-badge" id="pe-badge-identity">Allow</span>
+                  </div>
+                </div>
+                <div class="pe-branch-operator-container">
+                  <span class="pe-branch-operator op-or" id="pe-branch-op">OR</span>
+                </div>
+                <div class="pe-branch-item" id="pe-branch-resource">
+                  <div class="pe-branch-dot" id="pe-dot-resource"></div>
+                  <div class="pe-branch-label-wrapper">
+                    <span class="pe-branch-label">Resource Policy</span>
+                    <span class="pe-branch-state-badge" id="pe-badge-resource">None</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <p class="pe-gate-description" id="desc-auth">Same-account operations are a union : either identity policy OR S3 bucket policy must allow access.</p>
         </div>
 
-        {/* Gate 4: Permissions Boundary Ceiling */}
-        <div class="pe-gate-card" id="gate-boundary" data-gate-name="Permissions Ceiling Check">
-          <div class="pe-gate-status-line"></div>
-          <div class="pe-gate-header">
-            <span class="pe-gate-num">4</span>
-            <div class="pe-gate-title-block">
-              <span class="pe-gate-badge">Identity Ceiling</span>
-              <h5 class="pe-gate-title">Permissions Boundary</h5>
-            </div>
-            <span class="pe-gate-status" id="status-boundary">Pass</span>
+        {/* Step 4: Permissions Boundary Ceiling */}
+        <div class="pe-pipeline-step" id="gate-boundary" data-gate-name="Permissions Ceiling Check">
+          <div class="pe-step-node">
+            <span class="pe-step-circle">4</span>
           </div>
-          <p class="pe-gate-description" id="desc-boundary">Evaluating permissions boundaries on the IAM principal. Limits the maximum available access.</p>
+          <div class="pe-step-content">
+            <div class="pe-step-header">
+              <span class="pe-gate-badge">Identity Ceiling</span>
+              <h5 class="pe-step-title">Permissions Boundary</h5>
+              <span class="pe-gate-status" id="status-boundary">Pass</span>
+            </div>
+            <p class="pe-step-description" id="desc-boundary">Evaluating permissions boundaries on the IAM principal. Limits the maximum available access.</p>
+          </div>
         </div>
       </div>
 
@@ -199,6 +252,22 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
           </p>
         </div>
       </div>
+
+      {/* 4. Live JSON Policy Inspector */}
+      <div class="pe-json-container">
+        <div class="pe-json-header">
+          <span class="pe-json-title">Inspect IAM Policy Code</span>
+          <div class="pe-json-tabs" role="tablist" aria-label="JSON Policies">
+            <button class="pe-json-tab active" data-tab="scp" role="tab" aria-selected="true">SCP</button>
+            <button class="pe-json-tab" data-tab="identity" role="tab" aria-selected="false">Identity</button>
+            <button class="pe-json-tab" data-tab="resource" role="tab" aria-selected="false">Resource</button>
+            <button class="pe-json-tab" data-tab="boundary" role="tab" aria-selected="false">Boundary</button>
+          </div>
+        </div>
+        <div class="pe-json-body">
+          <pre class="pe-json-code" id="pe-json-code"><code>...</code></pre>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -207,8 +276,8 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   .pe {
     --ease: cubic-bezier(0.23, 1, 0.32, 1);
     --pe-text:       var(--sl-color-text);
-    --pe-text-faint: var(--sl-color-gray-3);
-    --pe-text-ghost: var(--sl-color-gray-4);
+    --pe-text-faint: var(--sl-color-gray-2);
+    --pe-text-ghost: var(--sl-color-gray-3);
     --pe-rule:       var(--sl-color-hairline-shade);
     --pe-accent:     var(--sl-color-accent-high);
     --pe-panel:      rgba(20, 20, 23, 0.5);
@@ -226,7 +295,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 20px;
+    padding: 12px 20px;
     border-bottom: 1px solid var(--pe-rule);
     background: rgba(10, 10, 12, 0.45);
   }
@@ -246,9 +315,9 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-title {
-    font-size: var(--sl-text-xs);
+    font-size: 0.8rem;
     font-weight: 700;
-    color: var(--pe-text-faint);
+    color: var(--pe-text);
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -256,7 +325,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   .pe-badge {
     display: inline-flex;
     align-items: center;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -267,21 +336,100 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     border-radius: 99px;
   }
 
+  /* Single Column Flow */
   .pe-layout {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 24px;
-    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
   }
 
-  @media (min-width: 768px) {
-    .pe-layout {
-      grid-template-columns: 0.95fr 1.05fr;
-      align-items: start;
-    }
+  /* ═══ Guided Concept Tour Box ═══ */
+  .pe-tour {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(167, 139, 250, 0.04));
+    border: 1px solid color-mix(in srgb, var(--pe-accent) 25%, var(--pe-rule));
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    transition: all 300ms var(--ease);
   }
 
-  /* ═══ Left Panel (Controls) ═══ */
+  .pe-tour-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    padding-bottom: 8px;
+  }
+
+  .pe-tour-title-block {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pe-tour-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .pe-tour-step-indicator {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--pe-text);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .pe-tour-nav {
+    display: flex;
+    gap: 6px;
+  }
+
+  .pe-tour-nav-btn {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--pe-rule);
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--pe-text-faint);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 120ms var(--ease);
+  }
+
+  .pe-tour-nav-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--pe-text);
+    border-color: var(--pe-accent);
+  }
+
+  .pe-tour-nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .pe-tour-nav-btn--next {
+    background: color-mix(in srgb, var(--pe-accent) 15%, transparent);
+    border-color: var(--pe-accent);
+    color: var(--pe-text);
+  }
+
+  .pe-tour-nav-btn--next:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--pe-accent) 25%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--pe-accent) 20%, transparent);
+  }
+
+  .pe-tour-text {
+    font-size: 0.86rem;
+    color: var(--pe-text-faint);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* ═══ Controls Dashboard ═══ */
   .pe-controls {
     display: flex;
     flex-direction: column;
@@ -289,51 +437,37 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     background: rgba(0, 0, 0, 0.15);
     border: 1px solid var(--pe-rule);
     border-radius: 12px;
-    padding: 20px;
-  }
-
-  .pe-section-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--pe-text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 0 0 4px 0;
-  }
-
-  .pe-divider {
-    height: 1px;
-    background: var(--pe-rule);
-    margin: 4px 0;
+    padding: 16px;
   }
 
   .pe-presets-grid {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 6px;
-    margin-top: 2px;
-  }
-
-  @media (min-width: 400px) {
-    .pe-presets-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    margin-top: 4px;
   }
 
   .pe-preset-btn {
+    flex: 1 1 calc(50% - 6px);
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--pe-rule);
     border-radius: 6px;
-    font-size: 0.58rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    color: var(--pe-text-ghost);
-    padding: 6px 8px;
+    color: var(--pe-text-faint);
+    padding: 6px 10px;
     cursor: pointer;
     transition: all 150ms var(--ease);
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.25;
+  }
+
+  @media (min-width: 768px) {
+    .pe-preset-btn {
+      flex: 1 1 calc(33.333% - 6px);
+    }
   }
 
   .pe-preset-btn:hover {
@@ -356,7 +490,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-control-label {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--pe-text-ghost);
     text-transform: uppercase;
@@ -364,9 +498,9 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-field-help {
-    font-size: 0.58rem;
+    font-size: 0.7rem;
     color: var(--pe-text-ghost);
-    line-height: 1.45;
+    line-height: 1.4;
     margin: 0;
   }
 
@@ -384,10 +518,10 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     flex: 1;
     background: transparent;
     border: none;
-    font-size: 0.68rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--pe-text-ghost);
-    padding: 6px 12px;
+    padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
     transition: all 180ms var(--ease);
@@ -400,6 +534,19 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.15);
   }
 
+  /* Premium 2-Column Dropdowns to prevent label wrapping/squishing */
+  .pe-layers-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (min-width: 600px) {
+    .pe-layers-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
   /* Custom Select Dropdowns */
   .pe-dropdown {
     position: relative;
@@ -407,14 +554,15 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     cursor: pointer;
     display: flex;
     align-items: center;
-    min-height: 28px;
-    padding: 4px 28px 4px 10px;
+    min-height: 38px;
+    padding: 6px 32px 6px 12px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--pe-rule);
     border-radius: 6px;
     color: var(--pe-text);
-    font-size: 0.72rem;
-    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.82rem;
+    font-family: inherit;
+    font-weight: 500;
     outline: none;
     transition: border-color 150ms ease, box-shadow 150ms ease;
   }
@@ -433,11 +581,11 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
   .pe-dropdown-arrow {
     position: absolute;
-    right: 8px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     color: var(--pe-text-ghost);
     pointer-events: none;
     transition: transform 200ms ease;
@@ -460,7 +608,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     z-index: 100;
     max-height: 200px;
     overflow-y: auto;
-    padding: 4px;
+    padding: 6px;
   }
 
   .pe-dropdown[aria-expanded="true"] .pe-dropdown-menu {
@@ -468,10 +616,10 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-dropdown-option {
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.68rem;
+    font-size: 0.8rem;
     color: var(--pe-text);
     transition: background 120ms ease;
     white-space: nowrap;
@@ -487,7 +635,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     background: color-mix(in srgb, var(--pe-accent) 8%, transparent);
   }
 
-  /* ═══ Right Panel (Visualizer) ═══ */
+  /* ═══ Visualizer Panel ═══ */
   .pe-visualizer {
     display: flex;
     flex-direction: column;
@@ -495,96 +643,125 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     width: 100%;
   }
 
-  .pe-gates {
+  .pe-pipeline-container {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 20px;
     position: relative;
     width: 100%;
+    padding: 8px 0;
   }
 
-  /* Gate Card Primitive */
-  .pe-gate-card {
-    --gate-color: var(--pe-accent);
+  /* The dynamic vertical track lines */
+  .pe-track-bg {
+    position: absolute;
+    left: 28px;
+    top: 20px;
+    bottom: 20px;
+    width: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    z-index: 1;
+  }
+
+  .pe-track-active {
+    position: absolute;
+    left: 28px;
+    top: 20px;
+    width: 4px;
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    border-radius: 2px;
+    z-index: 2;
+    height: 0;
+    transition: height 400ms var(--ease), background 400ms var(--ease);
+  }
+
+  /* When pipeline state is failed, the track is colored red up to that point */
+  .pe-track-active.track-failed {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Pipeline Step */
+  .pe-pipeline-step {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    z-index: 3;
+    transition: opacity 300ms var(--ease);
+  }
+
+  .pe-step-node {
+    width: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 10px;
+    margin-left: 18px;
+  }
+
+  .pe-step-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #17171a;
+    border: 2px solid var(--pe-rule);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--pe-text-ghost);
+    box-shadow: 0 0 0 4px #17171a;
+    transition: all 300ms var(--ease);
+  }
+
+  .pe-step-content {
+    flex-grow: 1;
     background: rgba(22, 22, 26, 0.75);
     border: 1px solid var(--pe-rule);
-    border-left: 3px solid var(--gate-color);
-    border-radius: 8px;
-    padding: 10px 14px;
-    position: relative;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 250ms var(--ease);
-    overflow: hidden;
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 300ms var(--ease);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
 
-  .pe-gate-status-line {
-    position: absolute;
-    bottom: -18px;
-    left: 14px;
-    width: 1.5px;
-    height: 18px;
-    background: rgba(255, 255, 255, 0.05);
-    z-index: 10;
-    transition: background 250ms ease;
-  }
-
-  .pe-gate-card:last-child .pe-gate-status-line {
-    display: none;
-  }
-
-  .pe-gate-header {
+  .pe-step-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 4px;
-  }
-
-  .pe-gate-num {
-    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
-    font-size: 0.6rem;
-    font-weight: 700;
-    color: var(--gate-color);
-    background: color-mix(in srgb, var(--gate-color) 12%, transparent);
-    width: 18px;
-    height: 18px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    flex-shrink: 0;
-  }
-
-  .pe-gate-title-block {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
   }
 
   .pe-gate-badge {
-    font-size: 0.52rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: var(--pe-text-ghost);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     line-height: 1.1;
   }
 
-  .pe-gate-title {
-    font-size: 0.72rem;
+  .pe-step-title {
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--pe-text);
     margin: 0;
-    line-height: 1.35;
+    line-height: 1.25;
+    flex-grow: 1;
   }
 
   .pe-gate-status {
     font-family: var(--sl-font-system-mono, ui-monospace, monospace);
-    font-size: 0.55rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 1px 6px;
+    padding: 2px 8px;
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -592,66 +769,198 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     transition: all 250ms ease;
   }
 
-  .pe-gate-description {
-    font-size: 0.65rem;
+  .pe-step-description {
+    font-size: 0.82rem;
     color: var(--pe-text-faint);
-    line-height: 1.45;
+    line-height: 1.5;
     margin: 0;
-    padding-left: 28px; /* Align with title */
+    transition: color 250ms ease;
   }
 
-  /* ═══ Gate card state classes ═══ */
-  .pe-gate-card.gate-pass {
-    background: color-mix(in srgb, #10b981 1.5%, rgba(22, 22, 26, 0.95));
-    border-color: rgba(16, 185, 129, 0.2);
-    border-left-color: #10b981;
+  /* ═══ Pipeline Step States ═══ */
+  .pe-pipeline-step.gate-pass .pe-step-circle {
+    border-color: #10b981;
+    color: #34d399;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3), 0 0 0 4px #17171a;
   }
-  .pe-gate-card.gate-pass .pe-gate-status {
+  
+  .pe-pipeline-step.gate-pass .pe-step-content {
+    border-color: rgba(16, 185, 129, 0.25);
+    background: color-mix(in srgb, #10b981 1.5%, rgba(22, 22, 26, 0.85));
+  }
+
+  .pe-pipeline-step.gate-pass .pe-gate-status {
     color: #34d399;
     background: rgba(16, 185, 129, 0.08);
     border-color: rgba(16, 185, 129, 0.25);
   }
-  .pe-gate-card.gate-pass .pe-gate-num {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.12);
-  }
-  .pe-gate-card.gate-pass .pe-gate-status-line {
-    background: #10b981;
+
+  .pe-pipeline-step.gate-blocked .pe-step-circle {
+    border-color: #ef4444;
+    color: #f87171;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), 0 0 0 4px #17171a;
+    animation: pe-node-bounce 0.8s infinite alternate;
   }
 
-  .pe-gate-card.gate-blocked {
-    background: color-mix(in srgb, #ef4444 2.5%, rgba(22, 22, 26, 0.98));
-    border-color: rgba(239, 68, 68, 0.35);
-    border-left-color: #ef4444;
-    transform: scale(1.005);
-    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.1), 0 0 10px rgba(239, 68, 68, 0.05);
+  @keyframes pe-node-bounce {
+    from { transform: scale(0.95); }
+    to { transform: scale(1.08); }
   }
-  .pe-gate-card.gate-blocked .pe-gate-status {
+
+  .pe-pipeline-step.gate-blocked .pe-step-content {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: color-mix(in srgb, #ef4444 2.5%, rgba(22, 22, 26, 0.9));
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.15);
+  }
+
+  .pe-pipeline-step.gate-blocked .pe-gate-status {
     color: #f87171;
     background: rgba(239, 68, 68, 0.08);
     border-color: rgba(239, 68, 68, 0.25);
     animation: pe-btn-glow 0.8s infinite alternate;
   }
-  .pe-gate-card.gate-blocked .pe-gate-num {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.12);
-  }
-  .pe-gate-card.gate-blocked .pe-gate-status-line {
-    background: rgba(239, 68, 68, 0.15);
+
+  .pe-pipeline-step.gate-skipped {
+    opacity: 0.4;
   }
 
-  .pe-gate-card.gate-skipped {
-    opacity: 0.45;
-    background: rgba(22, 22, 26, 0.35);
-    border-color: var(--pe-rule);
-    border-left-color: var(--pe-text-ghost);
+  .pe-pipeline-step.gate-skipped .pe-step-content {
+    background: rgba(22, 22, 26, 0.3);
+    box-shadow: none;
   }
-  .pe-gate-card.gate-skipped .pe-gate-status {
+
+  /* ═══ Union vs Intersection Visual Sub-Branch ═══ */
+  .pe-branch-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--pe-rule);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 10px;
+    transition: all 300ms var(--ease);
+  }
+
+  .pe-branch-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+  }
+
+  .pe-branch-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.015);
+    border: 1px solid transparent;
+    transition: all 200ms ease;
+  }
+
+  .pe-branch-item.active-allow {
+    background: rgba(16, 185, 129, 0.03);
+    border-color: rgba(16, 185, 129, 0.1);
+  }
+
+  .pe-branch-item.active-deny {
+    background: rgba(239, 68, 68, 0.03);
+    border-color: rgba(239, 68, 68, 0.15);
+  }
+
+  .pe-branch-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pe-text-ghost);
+    transition: all 250ms ease;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.02);
+  }
+
+  .pe-branch-item.active-allow .pe-branch-dot {
+    background: #34d399;
+    box-shadow: 0 0 8px #34d399, 0 0 0 2px rgba(52, 211, 153, 0.1);
+  }
+
+  .pe-branch-item.active-deny .pe-branch-dot {
+    background: #f87171;
+    box-shadow: 0 0 8px #f87171, 0 0 0 2px rgba(248, 113, 113, 0.1);
+  }
+
+  .pe-branch-label-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-grow: 1;
+  }
+
+  .pe-branch-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--pe-text-faint);
+  }
+
+  .pe-branch-state-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
     color: var(--pe-text-ghost);
   }
-  .pe-gate-card.gate-skipped .pe-gate-num {
-    color: var(--pe-text-ghost);
+
+  .pe-branch-item.active-allow .pe-branch-state-badge {
+    color: #34d399;
+  }
+
+  .pe-branch-item.active-deny .pe-branch-state-badge {
+    color: #f87171;
+  }
+
+  .pe-branch-operator-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2px 0;
+    position: relative;
+  }
+
+  .pe-branch-operator-container::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
     background: rgba(255, 255, 255, 0.04);
+    z-index: 1;
+  }
+
+  .pe-branch-operator {
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(23, 23, 26, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    color: var(--pe-text-ghost);
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    z-index: 2;
+    transition: all 200ms ease;
+  }
+
+  .pe-branch-operator.op-or {
+    color: #fb923c;
+    border-color: rgba(251, 146, 60, 0.25);
+    background: color-mix(in srgb, #fb923c 6%, #17171a);
+  }
+
+  .pe-branch-operator.op-and {
+    color: #60a5fa;
+    border-color: rgba(96, 165, 250, 0.25);
+    background: color-mix(in srgb, #60a5fa 6%, #17171a);
   }
 
   @keyframes pe-btn-glow {
@@ -661,12 +970,11 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
   /* ═══ Verdict Result Banner ═══ */
   .pe-result-container {
-    margin-top: 6px;
     width: 100%;
   }
 
   .pe-result-banner {
-    padding: 16px 20px;
+    padding: 14px 20px;
     border-radius: 12px;
     border: 1px solid var(--pe-rule);
     background: rgba(10, 10, 12, 0.85);
@@ -690,7 +998,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .pe-result-icon {
@@ -704,7 +1012,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-result-badge {
-    font-size: 0.52rem;
+    font-size: 0.65rem;
     font-weight: 700;
     color: var(--pe-text-ghost);
     text-transform: uppercase;
@@ -712,7 +1020,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-result-title {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 800;
     margin: 0;
     letter-spacing: 0.04em;
@@ -730,10 +1038,102 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   }
 
   .pe-result-reason {
-    font-size: 0.72rem;
+    font-size: 0.85rem;
     color: var(--pe-text-faint);
     line-height: 1.5;
     margin: 0;
+  }
+
+  /* ═══ Code Inspector ═══ */
+  .pe-json-container {
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--pe-rule);
+    border-radius: 12px;
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .pe-json-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--pe-rule);
+    padding-bottom: 8px;
+  }
+
+  .pe-json-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--pe-text);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .pe-json-tabs {
+    display: flex;
+    gap: 6px;
+  }
+
+  .pe-json-tab {
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--pe-text-ghost);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all 120ms var(--ease);
+  }
+
+  .pe-json-tab:hover {
+    color: var(--pe-text);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .pe-json-tab.active {
+    color: var(--pe-accent);
+    background: color-mix(in srgb, var(--pe-accent) 8%, transparent);
+    border-color: color-mix(in srgb, var(--pe-accent) 20%, transparent);
+  }
+
+  .pe-json-body {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--pe-rule);
+    border-radius: 8px;
+    padding: 12px 16px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .pe-json-code {
+    margin: 0;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+  }
+
+  .pe-json-code .j-key {
+    color: #a78bfa;
+  }
+
+  .pe-json-code .j-str {
+    color: #93c5fd;
+  }
+
+  .pe-json-code .j-kw-allow {
+    color: #34d399;
+    font-weight: 700;
+  }
+
+  .pe-json-code .j-kw-deny {
+    color: #f87171;
+    font-weight: 700;
   }
 </style>
 
@@ -741,6 +1141,12 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
   function initPolicyEvaluator() {
     document.querySelectorAll<HTMLElement>('.pe:not([data-init])').forEach((comp) => {
       comp.setAttribute('data-init', '');
+
+      // Concept Tour Guide Elements
+      const tourPrev = comp.querySelector<HTMLButtonElement>('#pe-tour-prev')!;
+      const tourNext = comp.querySelector<HTMLButtonElement>('#pe-tour-next')!;
+      const tourStepIndicator = comp.querySelector<HTMLElement>('#pe-tour-step')!;
+      const tourDesc = comp.querySelector<HTMLElement>('#pe-tour-desc')!;
 
       // Controls
       const modeButtons = comp.querySelectorAll<HTMLButtonElement>('#pe-mode-toggle button');
@@ -758,11 +1164,20 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
       const statusAuth = comp.querySelector<HTMLElement>('#status-auth')!;
       const statusBoundary = comp.querySelector<HTMLElement>('#status-boundary')!;
 
-      // Visual Gate Descriptions
+      // Visual Gate Description Elements
       const descScp = comp.querySelector<HTMLElement>('#desc-scp')!;
       const descDeny = comp.querySelector<HTMLElement>('#desc-deny')!;
       const descAuth = comp.querySelector<HTMLElement>('#desc-auth')!;
       const descBoundary = comp.querySelector<HTMLElement>('#desc-boundary')!;
+
+      // Dynamic pipeline track and branch components
+      const trackLine = comp.querySelector<HTMLElement>('#pe-track-line')!;
+      const branchContainer = comp.querySelector<HTMLElement>('#pe-branch-container')!;
+      const branchIdentity = comp.querySelector<HTMLElement>('#pe-branch-identity')!;
+      const branchResource = comp.querySelector<HTMLElement>('#pe-branch-resource')!;
+      const badgeIdentity = comp.querySelector<HTMLElement>('#pe-badge-identity')!;
+      const badgeResource = comp.querySelector<HTMLElement>('#pe-badge-resource')!;
+      const branchOp = comp.querySelector<HTMLElement>('#pe-branch-op')!;
 
       // Result Box
       const resultBanner = comp.querySelector<HTMLElement>('#pe-result-banner')!;
@@ -808,13 +1223,291 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
         'explicit-deny': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'deny', boundary: 'allow' },
         'cross-missing': { mode: 'cross', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'allow' },
         'cross-success': { mode: 'cross', scp: 'allow', identity: 'allow', resource: 'allow', boundary: 'allow' },
-        'boundary-blocked': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'none' }
+        'boundary-blocked': { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'none' },
+        'scp-blocked': { mode: 'same', scp: 'deny', identity: 'allow', resource: 'none', boundary: 'allow' }
       };
 
+      let activeTab: 'scp' | 'identity' | 'resource' | 'boundary' = 'scp';
+      
+      const jsonTabs = comp.querySelectorAll<HTMLButtonElement>('.pe-json-tab');
+      const jsonCode = comp.querySelector<HTMLElement>('#pe-json-code code')!;
+
+      // Dynamic JSON Template Generators
+      function generateJson(layer: 'scp' | 'identity' | 'resource' | 'boundary', state: 'allow' | 'deny' | 'none') {
+        if (layer === 'scp') {
+          if (state === 'allow') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAllActions",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    }
+  ]
+}`;
+          } else if (state === 'deny') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyS3ReadInThisAccount",
+      "Effect": "Deny",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::company-records/*"
+    }
+  ]
+}`;
+          } else {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": []
+}`;
+          }
+        } else if (layer === 'identity') {
+          if (state === 'allow') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowIdentityS3Read",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::company-records/*"
+    }
+  ]
+}`;
+          } else if (state === 'deny') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyIdentityS3Read",
+      "Effect": "Deny",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::company-records/*"
+    }
+  ]
+}`;
+          } else {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": []
+}`;
+          }
+        } else if (layer === 'resource') {
+          if (state === 'allow') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowBucketCrossAccountRead",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:role/AppRole"
+      },
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::company-records/*"
+    }
+  ]
+}`;
+          } else if (state === 'deny') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyBucketAllRead",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::company-records/*"
+    }
+  ]
+}`;
+          } else {
+            return `/* No S3 bucket policy is attached */
+{}`;
+          }
+        } else if (layer === 'boundary') {
+          if (state === 'allow') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAllActionsCeiling",
+      "Effect": "Allow",
+      "Action": "*",
+      "Resource": "*"
+    }
+  ]
+}`;
+          } else if (state === 'none') {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RestrictToNonReadS3",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:PutObject"
+      ],
+      "Resource": "*"
+    }
+  ]
+}`;
+          } else {
+            return `{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ExplicitDenyCeiling",
+      "Effect": "Deny",
+      "Action": "s3:GetObject",
+      "Resource": "*"
+    }
+  ]
+}`;
+          }
+        }
+        return '{}';
+      }
+
+      function syntaxHighlightJson(jsonStr: string) {
+        let escaped = jsonStr
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        
+        return escaped.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|(-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?|true|false|null)/g, (match, stringVal, _escInner, isKey) => {
+          if (stringVal) {
+            if (isKey) {
+              return `<span class="j-key">${stringVal}</span>${isKey}`;
+            } else {
+              if (stringVal === '"Allow"') {
+                return '<span class="j-kw-allow">"Allow"</span>';
+              } else if (stringVal === '"Deny"') {
+                return '<span class="j-kw-deny">"Deny"</span>';
+              }
+              return `<span class="j-str">${stringVal}</span>`;
+            }
+          }
+          return match;
+        });
+      }
+
+      function renderActiveJson() {
+        const rawVal = layerStates[activeTab];
+        const json = generateJson(activeTab, rawVal);
+        jsonCode.innerHTML = syntaxHighlightJson(json);
+      }
+
+      // Tab selector listeners
+      jsonTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          jsonTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          activeTab = tab.dataset.tab as 'scp' | 'identity' | 'resource' | 'boundary';
+          renderActiveJson();
+        });
+      });
+
+      // Guided Concept Tour Definitions
+      const TOUR_STEPS = [
+        {
+          title: "1 of 5: Default Deny",
+          desc: "AWS blocks everything by default. Without an explicit Allow statement in any of your policies, the request is implicitly denied at Gate 3.",
+          state: { mode: 'same', scp: 'allow', identity: 'none', resource: 'none', boundary: 'allow' }
+        },
+        {
+          title: "2 of 5: Explicit Deny Wins",
+          desc: "An Explicit Deny statement ALWAYS wins over any Allows. Here, although Identity allows GetObject, S3 bucket resource policy explicitly denies it, halting evaluation immediately at Gate 2.",
+          state: { mode: 'same', scp: 'allow', identity: 'allow', resource: 'deny', boundary: 'allow' }
+        },
+        {
+          title: "3 of 5: Same-Account Union",
+          desc: "For requests inside the same AWS account, identity policies and resource policies form a Union. You only need an Allow from EITHER side to pass Gate 3 successfully!",
+          state: { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'allow' }
+        },
+        {
+          title: "4 of 5: Cross-Account Intersection",
+          desc: "Across accounts, both accounts must agree. The source account must allow the role to act, AND the target bucket policy must trust/allow the caller. It is an Intersection!",
+          state: { mode: 'cross', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'allow' }
+        },
+        {
+          title: "5 of 5: Permissions Boundary Ceiling",
+          desc: "A Permissions Boundary limits the maximum access a principal can have. Since GetObject is not allowed in the boundary, the request is blocked at Gate 4, even though Identity policy allowed it.",
+          state: { mode: 'same', scp: 'allow', identity: 'allow', resource: 'none', boundary: 'none' }
+        }
+      ];
+
+      let currentStep = 0;
+
+      function renderTourStep(stepIndex: number) {
+        currentStep = stepIndex;
+        const step = TOUR_STEPS[currentStep];
+
+        // Update Nav Buttons
+        tourPrev.disabled = currentStep === 0;
+        tourNext.textContent = currentStep === TOUR_STEPS.length - 1 ? "Restart ↺" : "Next Step →";
+
+        // Update Text
+        tourStepIndicator.textContent = `Step ${step.title}`;
+        tourDesc.textContent = step.desc;
+
+        // Apply Configuration
+        activeMode = step.state.mode as 'same' | 'cross';
+        
+        // Update Account Mode toggle buttons visually
+        modeButtons.forEach(b => {
+          const isActive = b.dataset.mode === activeMode;
+          b.classList.toggle('active', isActive);
+          b.setAttribute('aria-checked', isActive ? 'true' : 'false');
+        });
+
+        // Update dropdown layer states
+        Object.entries(step.state).forEach(([layer, val]) => {
+          if (layer !== 'mode') {
+            layerStates[layer] = val as 'allow' | 'deny' | 'none';
+            const dd = comp.querySelector<HTMLElement>(`.pe-dropdown[data-layer="${layer}"]`)!;
+            setControlValue(dd, val);
+          }
+        });
+
+        // Run evaluation
+        evaluatePolicy();
+      }
+
+      tourPrev.addEventListener('click', () => {
+        if (currentStep > 0) {
+          renderTourStep(currentStep - 1);
+        }
+      });
+
+      tourNext.addEventListener('click', () => {
+        if (currentStep < TOUR_STEPS.length - 1) {
+          renderTourStep(currentStep + 1);
+        } else {
+          renderTourStep(0); // Restart
+        }
+      });
+
+      // Pause tour indicator if user manual clicks presets or dials
+      function pauseTour() {
+        tourStepIndicator.textContent = "Sandbox Play Mode 🎮";
+        tourDesc.textContent = "You are actively playing with the manual dials. Click 'Restart Tour 🎓' or use the Prev/Next buttons to resume the guided concept tour!";
+        tourPrev.disabled = true;
+        tourNext.textContent = "Restart Tour 🎓";
+        currentStep = TOUR_STEPS.length;
+      }
+
+      // Preset button listener setup
       presetButtons.forEach(btn => {
         btn.addEventListener('click', () => {
           presetButtons.forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
+          pauseTour();
 
           const preset = PRESETS[btn.dataset.preset!];
           if (preset) {
@@ -842,6 +1535,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
       // Deactivate presets if user manually alters any individual drop-down or toggle button
       function deactivatePresets() {
         presetButtons.forEach(b => b.classList.remove('active'));
+        pauseTour();
       }
 
       modeButtons.forEach(b => b.addEventListener('click', deactivatePresets));
@@ -935,6 +1629,8 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
         const resource = layerStates.resource;
         const boundary = layerStates.boundary;
 
+        let failedGateId: 'scp' | 'deny' | 'auth' | 'boundary' | null = null;
+
         // Reset gates default
         setGateState(gateScp, statusScp, 'pass', 'Pass');
         setGateState(gateDeny, statusDeny, 'pass', 'Pass');
@@ -947,13 +1643,20 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
         if (activeMode === 'same') {
           badgeAuthMode.textContent = "Same-Account Union";
-          titleAuth.textContent = "Identity & Resource Union";
-          descAuth.textContent = "Same-account operations are a union : either identity policy OR S3 bucket policy must allow access.";
+          titleAuth.textContent = "Core Access Grants";
+          descAuth.textContent = "Same-account operations are a union: either identity policy OR S3 bucket policy must allow access.";
+          branchOp.textContent = 'OR';
+          branchOp.className = 'pe-branch-operator op-or';
         } else {
           badgeAuthMode.textContent = "Cross-Account Intersection";
-          titleAuth.textContent = "Identity & Resource Intersection";
+          titleAuth.textContent = "Core Access Grants";
           descAuth.textContent = "Cross-account access requires an explicit Allow on BOTH the caller side (Identity) and target side (Resource policy).";
+          branchOp.textContent = 'AND';
+          branchOp.className = 'pe-branch-operator op-and';
         }
+
+        // Render active tab JSON policy code
+        renderActiveJson();
 
         // ════ GATE 1: SCP Ingestion Check ════
         if (scp === 'deny') {
@@ -962,7 +1665,10 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
           setGateState(gateAuth, statusAuth, 'skipped', 'Skipped');
           setGateState(gateBoundary, statusBoundary, 'skipped', 'Skipped');
           
+          descScp.textContent = "Organizations SCP explicitly denied the action. Organizations guardrails override all account permissions.";
           setVerdict(false, "Explicit Deny in SCP", "Service Control Policy (SCP) explicitly denied the action. Organizations guardrails override all accounts permissions.");
+          failedGateId = 'scp';
+          updatePipelineLayout(failedGateId);
           return;
         } else if (scp === 'none') {
           setGateState(gateScp, statusScp, 'blocked', 'Blocked');
@@ -970,7 +1676,10 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
           setGateState(gateAuth, statusAuth, 'skipped', 'Skipped');
           setGateState(gateBoundary, statusBoundary, 'skipped', 'Skipped');
 
+          descScp.textContent = "Organizations SCP does not contain a matching Allow statement (default FullAWSAccess was modified). Denied by default Org ceiling.";
           setVerdict(false, "Implicit Deny in SCP", "Organizations SCP does not contain a matching Allow statement (default FullAWSAccess was modified). Denied by default Org ceiling.");
+          failedGateId = 'scp';
+          updatePipelineLayout(failedGateId);
           return;
         }
 
@@ -988,6 +1697,8 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
           descDeny.textContent = `Scanned policies. Found an explicit Deny statement inside the ${source}. Evaluation halts immediately.`;
           setVerdict(false, `Explicit Deny in ${source}`, `One matching Deny statement overrides any number of matching Allow statements. Denied by ${source}.`);
+          failedGateId = 'deny';
+          updatePipelineLayout(failedGateId);
           return;
         }
 
@@ -1002,12 +1713,14 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
             descAuth.textContent = "Same-account Union: Checked both Identity policy and Resource policy. Neither contains an Allow statement.";
             setVerdict(false, "Implicit Deny", "No matching Allow statement was found in either the Identity-based policy or the Resource-based policy. Default is deny.");
+            failedGateId = 'auth';
+            updatePipelineLayout(failedGateId);
             return;
           } else {
             const byIdentity = identity === 'allow';
             const byResource = resource === 'allow';
             if (byIdentity && byResource) {
-              descAuth.textContent = "Access allowed by both Identity policy and Resource bucket policy (Union matched on both).";
+              descAuth.textContent = "Access allowed by both Identity policy and Resource bucket policy (Union succeeded).";
             } else if (byIdentity) {
               descAuth.textContent = "Access allowed by Identity policy (Resource policy was not configured). Same-account union succeeded.";
             } else {
@@ -1033,16 +1746,15 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
               descAuth.textContent = "Cross-account Intersection: Source account allowed the caller, but the target resource-based policy does not trust or allow the caller.";
               setVerdict(false, "Missing Resource Trust", "Denied. The caller has identity permissions, but the target resource-based policy (e.g. S3 bucket) does not trust/allow the principal.");
             }
+            failedGateId = 'auth';
+            updatePipelineLayout(failedGateId);
             return;
           } else {
-            descAuth.textContent = "Access successfully allowed on both sides: Identity policy allows, and Resource-based policy trusts caller (Intersection matched).";
+            descAuth.textContent = "Access successfully allowed on both sides: Identity policy allows, and Resource-based policy trusts caller (Intersection succeeded).";
           }
         }
 
         // ════ GATE 4: Permissions Boundary Check ════
-        // Note: Permissions boundary only limits the identity-based policy. 
-        // If same-account and allowed solely by resource-based policy, boundary does not restrict it.
-        // Let's model general principal restriction.
         const allowedOnlyByResource = (activeMode === 'same' && resource === 'allow' && identity !== 'allow');
 
         if (allowedOnlyByResource) {
@@ -1053,6 +1765,8 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
             setGateState(gateBoundary, statusBoundary, 'blocked', 'Blocked');
             descBoundary.textContent = "Permissions boundary is active but does not contain a matching Allow statement. The maximum permissions ceiling is empty.";
             setVerdict(false, "Blocked by Boundary", "Permissions Boundary ceiling restricts the identity allow. Since the boundary did not allow the action, the intersection is empty.");
+            failedGateId = 'boundary';
+            updatePipelineLayout(failedGateId);
             return;
           } else {
             descBoundary.textContent = "Permissions boundary allows the action. The identity policy allow successfully passes the ceiling intersection.";
@@ -1061,6 +1775,65 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
         // ════ FINAL VERDICT: ALLOW ════
         setVerdict(true, "ALLOWED", "No explicit deny was matched, and at least one policy layers granted permissions successfully!");
+        updatePipelineLayout(null);
+      }
+
+      /* ── Update Visual sub-branches and dynamic track line height ── */
+      function updatePipelineLayout(failedGateId: 'scp' | 'deny' | 'auth' | 'boundary' | null) {
+        // 1. Render Branch Visual under Gate 3
+        const isAuthSkipped = gateAuth.classList.contains('gate-skipped');
+        if (isAuthSkipped) {
+          branchContainer.style.display = 'none';
+        } else {
+          branchContainer.style.display = 'block';
+
+          // Update Identity Node
+          const identity = layerStates.identity;
+          branchIdentity.className = 'pe-branch-item';
+          if (identity === 'allow') {
+            branchIdentity.classList.add('active-allow');
+            badgeIdentity.textContent = 'Allow';
+          } else if (identity === 'deny') {
+            branchIdentity.classList.add('active-deny');
+            badgeIdentity.textContent = 'Deny';
+          } else {
+            badgeIdentity.textContent = 'None';
+          }
+
+          // Update Resource Node
+          const resource = layerStates.resource;
+          branchResource.className = 'pe-branch-item';
+          if (resource === 'allow') {
+            branchResource.classList.add('active-allow');
+            badgeResource.textContent = 'Allow';
+          } else if (resource === 'deny') {
+            branchResource.classList.add('active-deny');
+            badgeResource.textContent = 'Deny';
+          } else {
+            badgeResource.textContent = 'None';
+          }
+        }
+
+        // 2. Measure & stretch dynamic track line
+        requestAnimationFrame(() => {
+          const containerRect = comp.querySelector<HTMLElement>('.pe-pipeline-container')!.getBoundingClientRect();
+          
+          if (failedGateId) {
+            trackLine.classList.add('track-failed');
+            const activeStepEl = comp.querySelector<HTMLElement>(`#gate-${failedGateId}`)!;
+            const circleEl = activeStepEl.querySelector('.pe-step-circle')!;
+            const activeNodeRect = circleEl.getBoundingClientRect();
+            const trackTop = activeNodeRect.top - containerRect.top + 12; // center of 24px circle
+            trackLine.style.height = `${trackTop}px`;
+          } else {
+            trackLine.classList.remove('track-failed');
+            const lastStepEl = comp.querySelector<HTMLElement>('#gate-boundary')!;
+            const circleEl = lastStepEl.querySelector('.pe-step-circle')!;
+            const lastNodeRect = circleEl.getBoundingClientRect();
+            const trackTop = lastNodeRect.top - containerRect.top + 12;
+            trackLine.style.height = `${trackTop}px`;
+          }
+        });
       }
 
       function setVerdict(allowed: boolean, titleText: string, reasonText: string) {
@@ -1077,8 +1850,8 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
         verdictReason.textContent = reasonText;
       }
 
-      // First run
-      evaluatePolicy();
+      // Start automatically at Step 1 of the guided concept tour!
+      renderTourStep(0);
     });
   }
 
