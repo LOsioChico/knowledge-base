@@ -1,6 +1,6 @@
 ---
 title: Scoped resources
-description: acquireRelease, acquireUseRelease, addFinalizer, and ensuring — cleanup on success, failure, and interruption.
+description: "acquireRelease, acquireUseRelease, addFinalizer, and ensuring - cleanup on success, failure, and interruption."
 related:
   - "[[effect-ts/concurrency]]"
   - "[[effect-ts/streams]]"
@@ -21,6 +21,7 @@ prerequisites:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import SequenceDiagram from '/src/components/interactive/SequenceDiagram.astro';
 
 <Steps>
 
@@ -271,15 +272,21 @@ Connection 1 cleanly closed.
 
 The finalizer safety is represented in the sequence below:
 
-```text
-[ Client ] ────── SELECT * FROM products ──────► [ Database ]
-[ Client ] ◄────────── Success Response ──────── [ Database ]
-
-[ Client ] ─── UPDATE inventory SET stock = 10 ──► [ Database ] (Fails!)
-
-[ Client ] ────────── (Query Failure) ──────────► [ Database ]
-[ Runtime ] ─────── CLOSE Connection 1 ─────────► [ Database ] (Guaranteed!)
-```
+<SequenceDiagram
+  title="Scoped database connection failure sequence"
+  actors={[
+    { id: "client", label: "Client App", color: "#60a5fa" },
+    { id: "runtime", label: "Effect Runtime", color: "#fbbf24" },
+    { id: "db", label: "Database Server", color: "#f87171" }
+  ]}
+  steps={[
+    { from: "client", to: "db", message: "SELECT * FROM products", type: "solid", description: "The client issues a successful SELECT query over Connection 1." },
+    { from: "db", to: "client", message: "Success Payload", type: "dashed", description: "Database successfully returns the requested products payload." },
+    { from: "client", to: "db", message: "UPDATE inventory", type: "solid", description: "Client issues an UPDATE query that encounters a database lock error or timeout." },
+    { from: "db", to: "client", message: "Transaction Fails!", type: "dashed", color: "#f87171", description: "Database reports query failure, interrupting the active execution fiber." },
+    { from: "runtime", to: "db", message: "CLOSE Connection 1", type: "solid", color: "#fbbf24", description: "Effect runtime catches the failure, closes the scope context, and guarantees connection cleanup runs uninterruptibly." }
+  ]}
+/>
 
 ## Finalizer ordering
 

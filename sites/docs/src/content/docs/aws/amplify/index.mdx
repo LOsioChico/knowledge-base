@@ -32,7 +32,7 @@ import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.ast
       color: "#60a5fa",
       badge: "App Container",
       description: "The top-level container for your web application. Encapsulates service settings, git repository connections, social previews, and environment variables.",
-      cliCommand: `aws amplify create-app --name \${APP_NAME} --repository \${REPO_URL}`
+      cliCommand: `aws --profile \${AWS_PROFILE} amplify create-app --name \${APP_NAME} --repository \${REPO_URL}`
     },
     {
       id: "branch",
@@ -40,7 +40,7 @@ import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.ast
       color: "#34d399",
       badge: "Branch Environment",
       description: "Represents an isolated pipeline mapped to a specific git branch (e.g., main, staging). Supports features like password protection, pull request previews, and automatic builds.",
-      cliCommand: `aws amplify create-branch --app-id \${APP_ID} --branch-name \${BRANCH} --stage PRODUCTION`
+      cliCommand: `aws --profile \${AWS_PROFILE} amplify create-branch --app-id \${APP_ID} --branch-name \${BRANCH} --stage PRODUCTION`
     },
     {
       id: "domain",
@@ -48,7 +48,7 @@ import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.ast
       color: "#f472b6",
       badge: "DNS Routing",
       description: "Associates a custom domain with your branch environment. Automatically provisions an SSL certificate via ACM and creates Route 53 DNS records under the hood.",
-      cliCommand: `aws amplify create-domain-association --app-id \${APP_ID} --domain-name \${DOMAIN} --sub-domain-settings prefix=www,branchName=\${BRANCH}`
+      cliCommand: `aws --profile \${AWS_PROFILE} amplify create-domain-association --app-id \${APP_ID} --domain-name \${DOMAIN} --sub-domain-settings prefix=www,branchName=\${BRANCH}`
     },
     {
       id: "job",
@@ -56,7 +56,7 @@ import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.ast
       color: "#a78bfa",
       badge: "CodeBuild Job",
       description: "A single, isolated build execution executing compile tasks (e.g., npm run build), generating static distribution folders, and packaging zip files.",
-      cliCommand: `aws amplify start-job --app-id \${APP_ID} --branch-name \${BRANCH} --job-type \${JOB_TYPE}`
+      cliCommand: `aws --profile \${AWS_PROFILE} amplify start-job --app-id \${APP_ID} --branch-name \${BRANCH} --job-type \${JOB_TYPE}`
     }
   ]}
 />

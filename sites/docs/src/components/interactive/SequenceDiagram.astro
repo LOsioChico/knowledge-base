@@ -1,0 +1,638 @@
+---
+/**
+ * SequenceDiagram.astro
+ *
+ * Interactive Sequence Diagram Component showing chronological messages exchanges between actors.
+ * Actors are placed horizontally as vertical swimlanes.
+ * Message arrows and glassmorphic labels are drawn dynamically on the client side,
+ * ensuring responsiveness and perfect coordinate alignment across screen resizes.
+ */
+
+interface Actor {
+  id: string;
+  label: string;
+  color?: string;
+}
+
+interface Step {
+  from: string;
+  to: string;
+  message: string;
+  type?: "solid" | "dashed";
+  color?: string;
+  description?: string;
+}
+
+interface Props {
+  actors: Actor[];
+  steps: Step[];
+  title?: string;
+}
+
+const { actors, steps, title } = Astro.props;
+---
+
+<div
+  class="seq not-content"
+  data-actors={JSON.stringify(actors)}
+  data-steps={JSON.stringify(steps)}
+>
+  {title && (
+    <div class="seq-header">
+      <span class="seq-title">{title}</span>
+      <span class="seq-badge">⬡ Sequence Map</span>
+    </div>
+  )}
+
+  <div class="seq-workspace">
+    {/* Columns representing Actor Lanes */}
+    <div class="seq-lanes">
+      {actors.map((actor) => (
+        <div
+          class="seq-lane"
+          data-actor-id={actor.id}
+          style={actor.color ? `--seq-actor-accent: ${actor.color}` : ""}
+        >
+          <div class="seq-actor-card">
+            <span class="seq-actor-initials">
+              {actor.label.replace(/[()\[\]{}]/g, '').split(/\s+/).filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+            </span>
+            <span class="seq-actor-label">{actor.label}</span>
+          </div>
+          <div class="seq-lifeline-line" />
+        </div>
+      ))}
+    </div>
+
+    {/* Vertical Spacer for Steps */}
+    <div class="seq-steps">
+      {steps.map((step, idx) => (
+        <div
+          class="seq-step-row"
+          data-step-idx={idx}
+          style={step.color ? `--seq-step-accent: ${step.color}` : ""}
+        >
+          <div class="seq-step-content">
+            {step.description && (
+              <div class="seq-tooltip">
+                <span class="seq-tooltip-title">Step {idx + 1}: {step.message}</span>
+                <p class="seq-tooltip-desc">{step.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* SVG Arrows and Labels Container */}
+    <div class="seq-connections">
+      <svg class="seq-svg" preserveAspectRatio="none" />
+      <div class="seq-labels" />
+    </div>
+  </div>
+</div>
+
+<style>
+  .seq {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --seq-text:       var(--sl-color-text);
+    --seq-text-faint: var(--sl-color-gray-3);
+    --seq-text-ghost: var(--sl-color-gray-4);
+    --seq-rule:       var(--sl-color-hairline-shade);
+    --seq-accent:     var(--sl-color-accent-high);
+    --seq-panel:      rgba(20, 20, 23, 0.5);
+    --seq-actor-accent: var(--seq-accent);
+    margin: 2rem 0;
+    background: var(--seq-panel);
+    border: 1px solid var(--seq-rule);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .seq-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--seq-rule);
+    background: rgba(10, 10, 12, 0.4);
+  }
+
+  .seq-title {
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    color: var(--seq-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .seq-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--seq-accent);
+    background: color-mix(in srgb, var(--seq-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--seq-accent) 25%, transparent);
+    padding: 0.25rem 0.65rem;
+    border-radius: 99px;
+  }
+
+  .seq-workspace {
+    position: relative;
+    padding: 40px 20px;
+    overflow: visible;
+  }
+
+  /* Swimlanes Layout */
+  .seq-lanes {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    position: absolute;
+    inset: 40px 20px;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .seq-lane {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 30%;
+    transition: opacity 300ms var(--ease-out);
+  }
+
+  .seq-workspace.has-hover .seq-lane:not(.is-active) {
+    opacity: 0.25;
+  }
+
+  /* Actor Cards */
+  .seq-actor-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px 8px 10px;
+    border-radius: 16px;
+    background: rgba(22, 22, 26, 0.9);
+    border: 1.5px solid var(--seq-rule);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    min-width: 120px;
+    max-width: 180px;
+    z-index: 3;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: border-color 250ms var(--ease-out),
+                background 250ms var(--ease-out),
+                box-shadow 250ms var(--ease-out),
+                transform 200ms var(--ease-out);
+  }
+
+  .seq-lane:hover .seq-actor-card,
+  .seq-lane.is-active .seq-actor-card {
+    border-color: var(--seq-actor-accent);
+    background: color-mix(in srgb, var(--seq-actor-accent) 6%, rgba(22, 22, 26, 0.98));
+    box-shadow: 0 0 14px color-mix(in srgb, var(--seq-actor-accent) 20%, transparent);
+    transform: scale(1.02);
+  }
+
+  .seq-actor-initials {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--seq-actor-accent) 12%, rgba(255, 255, 255, 0.04));
+    border: 1.5px solid color-mix(in srgb, var(--seq-actor-accent) 35%, var(--seq-rule));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    color: var(--seq-actor-accent);
+    flex-shrink: 0;
+  }
+
+  .seq-actor-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--seq-text-faint);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .seq-lane:hover .seq-actor-label,
+  .seq-lane.is-active .seq-actor-label {
+    color: var(--seq-text);
+  }
+
+  /* Lifelines */
+  .seq-lifeline-line {
+    width: 2px;
+    flex-grow: 1;
+    border-left: 2px dashed var(--seq-rule);
+    margin-top: 12px;
+    z-index: 1;
+    transition: border-color 250ms var(--ease-out);
+  }
+
+  .seq-lane:hover .seq-lifeline-line,
+  .seq-lane.is-active .seq-lifeline-line {
+    border-left-color: var(--seq-actor-accent);
+    border-left-style: solid;
+  }
+
+  /* Chronological Steps rows */
+  .seq-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 65px;
+    margin-top: 60px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .seq-step-row {
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .seq-step-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Popover Tooltips */
+  .seq-tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    width: 220px;
+    background: rgba(15, 15, 18, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1.5px solid var(--seq-step-accent, var(--seq-accent));
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+    z-index: 10;
+  }
+
+  .seq-step-row:hover .seq-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .seq-tooltip-title {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--seq-step-accent, var(--seq-accent));
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding-bottom: 4px;
+  }
+
+  .seq-tooltip-desc {
+    font-size: 0.65rem;
+    color: var(--seq-text-faint);
+    line-height: 1.45;
+    margin: 0;
+  }
+
+  /* Connections overlay */
+  .seq-connections {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .seq-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .seq-labels {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: auto;
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /* GLOBAL STYLES FOR DYNAMIC CONNECTORS                                       */
+  /* -------------------------------------------------------------------------- */
+
+  :global(.seq-path) {
+    fill: none !important;
+    stroke-width: 1.5;
+    transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
+                stroke-width 200ms cubic-bezier(0.23, 1, 0.32, 1),
+                filter 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  :global(.seq-workspace.has-hover .seq-path:not(.is-active)) {
+    opacity: 0.1 !important;
+  }
+
+  @keyframes seq-flow {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+
+  :global(.seq-path.is-active) {
+    stroke-width: 2.5 !important;
+    filter: drop-shadow(0 0 4px color-mix(in srgb, currentColor 55%, transparent));
+    stroke-dasharray: 6 4;
+    animation: seq-flow 1.2s linear infinite;
+  }
+
+  :global(.seq-arrow) {
+    transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
+                fill 250ms cubic-bezier(0.23, 1, 0.32, 1),
+                filter 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  :global(.seq-workspace.has-hover .seq-arrow:not(.is-active)) {
+    opacity: 0.1 !important;
+  }
+
+  :global(.seq-arrow.is-active) {
+    filter: drop-shadow(0 0 3px color-mix(in srgb, currentColor 55%, transparent));
+  }
+
+  :global(.seq-edge-label) {
+    position: absolute;
+    font-size: 0.6rem;
+    font-weight: 700;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    color: var(--seq-text-ghost);
+    background: rgba(14, 14, 17, 0.9);
+    backdrop-filter: blur(4px);
+    border: 1px solid var(--seq-rule);
+    padding: 3px 6px;
+    border-radius: 5px;
+    white-space: nowrap;
+    z-index: 3;
+    pointer-events: auto;
+    transition: opacity 300ms cubic-bezier(0.23, 1, 0.32, 1),
+                border-color 250ms cubic-bezier(0.23, 1, 0.32, 1),
+                color 250ms cubic-bezier(0.23, 1, 0.32, 1),
+                box-shadow 250ms cubic-bezier(0.23, 1, 0.32, 1),
+                transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+    cursor: pointer;
+  }
+
+  :global(.seq-edge-label:hover),
+  :global(.seq-edge-label.is-active) {
+    border-color: var(--seq-accent) !important;
+    color: var(--seq-text) !important;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--seq-accent) 25%, transparent) !important;
+    transform: translate(-50%, -50%) scale(1.05) !important;
+  }
+
+  :global(.seq-workspace.has-hover .seq-edge-label:not(.is-active)) {
+    opacity: 0.18 !important;
+  }
+
+  /* Motion & Print */
+  @media (prefers-reduced-motion: reduce) {
+    .seq-lane, .seq-actor-card, .seq-lifeline-line, .seq-step-row, .seq-tooltip {
+      transition-duration: 0.01ms !important;
+    }
+    :global(.seq-path), :global(.seq-arrow), :global(.seq-edge-label) {
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media print {
+    .seq-actor-card { background: #fff !important; color: #000 !important; }
+    :global(.seq-path) { stroke: #000 !important; }
+    :global(.seq-edge-label) { color: #000 !important; border-color: #333 !important; }
+    .seq-tooltip { display: none; }
+  }
+</style>
+
+<script>
+  function initSequenceDiagram() {
+    document.querySelectorAll<HTMLElement>(".seq:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const actors: { id: string; label: string }[] = JSON.parse(comp.dataset.actors || "[]");
+      const steps: { from: string; to: string; message: string; type?: string; color?: string }[] =
+        JSON.parse(comp.dataset.steps || "[]");
+
+      if (actors.length === 0 || steps.length === 0) return;
+
+      const workspace = comp.querySelector<HTMLElement>(".seq-workspace")!;
+      const laneEls = comp.querySelectorAll<HTMLElement>(".seq-lane");
+      const stepEls = comp.querySelectorAll<HTMLElement>(".seq-step-row");
+      const svg = comp.querySelector<SVGSVGElement>(".seq-svg")!;
+      const labelsContainer = comp.querySelector<HTMLElement>(".seq-labels")!;
+      const NS = "http://www.w3.org/2000/svg";
+
+      /* Lane X Lookup */
+      function getLaneCenterX(actorId: string): number {
+        const idx = actors.findIndex(a => a.id === actorId);
+        if (idx < 0) return 0;
+        const laneLine = laneEls[idx]?.querySelector(".seq-lifeline-line");
+        if (!laneLine) return 0;
+        const svgRect = svg.getBoundingClientRect();
+        const lineRect = laneLine.getBoundingClientRect();
+        return lineRect.left + lineRect.width / 2 - svgRect.left;
+      }
+
+      /* Step Y Lookup */
+      function getStepRowY(stepIdx: number): number {
+        const stepRow = stepEls[stepIdx];
+        if (!stepRow) return 0;
+        const svgRect = svg.getBoundingClientRect();
+        const stepRect = stepRow.getBoundingClientRect();
+        return stepRect.top + stepRect.height / 2 - svgRect.top;
+      }
+
+      /* Draw Sequence Hops */
+      function drawHops() {
+        svg.innerHTML = "";
+        labelsContainer.innerHTML = "";
+
+        steps.forEach((step, stepIdx) => {
+          const x1 = getLaneCenterX(step.from);
+          const x2 = getLaneCenterX(step.to);
+          const y = getStepRowY(stepIdx);
+          if (x1 === 0 || x2 === 0 || y === 0) return;
+
+          const dx = x2 - x1;
+          const isRight = dx > 0;
+          const len = Math.abs(dx);
+          
+          const pad = 12; // Gap from the lifeline
+          const x1_draw = x1 + (isRight ? pad : -pad);
+          const x2_draw = x2 - (isRight ? pad : -pad);
+
+          const edgeColor = step.color || "var(--seq-accent)";
+          const isDashed = step.type === "dashed";
+
+          // Render horizontal line
+          const path = document.createElementNS(NS, "path");
+          path.setAttribute("d", `M ${x1_draw},${y} L ${x2_draw},${y}`);
+          path.setAttribute("class", "seq-path");
+          path.setAttribute("stroke", edgeColor);
+          path.setAttribute("stroke-width", "1.5");
+          path.setAttribute("fill", "none");
+          if (isDashed) path.setAttribute("stroke-dasharray", "5 3");
+          path.setAttribute("data-step-idx", String(stepIdx));
+          svg.appendChild(path);
+
+          // Render Arrowhead pointing in message direction
+          const as = 6.5; // arrow size
+          const arrowTipX = x2_draw;
+          const arrowBaseX = x2_draw - (isRight ? as : -as);
+          const arrowTopY = y - as / 1.7;
+          const arrowBottomY = y + as / 1.7;
+
+          const arrow = document.createElementNS(NS, "polygon");
+          arrow.setAttribute("points", `${arrowTipX},${y} ${arrowBaseX},${arrowTopY} ${arrowBaseX},${arrowBottomY}`);
+          arrow.setAttribute("class", "seq-arrow");
+          arrow.setAttribute("fill", edgeColor);
+          arrow.setAttribute("data-step-idx", String(stepIdx));
+          svg.appendChild(arrow);
+
+          // Render Label glassmorphic box centered over path
+          const labelEl = document.createElement("div");
+          labelEl.className = "seq-edge-label";
+          labelEl.textContent = step.message;
+          labelEl.style.left = `${(x1_draw + x2_draw) / 2}px`;
+          labelEl.style.top = `${y}px`;
+          labelEl.style.transform = "translate(-50%, -50%)";
+          labelEl.setAttribute("data-step-idx", String(stepIdx));
+          labelsContainer.appendChild(labelEl);
+
+          // Listeners for step labels
+          labelEl.addEventListener("mouseenter", () => highlightStep(stepIdx));
+          labelEl.addEventListener("mouseleave", clearHighlights);
+        });
+      }
+
+      /* Hover Interactivity */
+      function highlightStep(stepIdx: number) {
+        workspace.classList.add("has-hover");
+        const step = steps[stepIdx];
+
+        laneEls.forEach(el => {
+          const aid = el.dataset.actorId!;
+          el.classList.toggle("is-active", aid === step.from || aid === step.to);
+        });
+
+        stepEls.forEach((el, idx) => {
+          el.classList.toggle("is-active", idx === stepIdx);
+        });
+
+        comp.querySelectorAll<SVGElement>(".seq-path, .seq-arrow").forEach(el => {
+          const idx = Number(el.getAttribute("data-step-idx"));
+          el.classList.toggle("is-active", idx === stepIdx);
+        });
+
+        comp.querySelectorAll<HTMLElement>(".seq-edge-label").forEach(el => {
+          const idx = Number(el.getAttribute("data-step-idx"));
+          el.classList.toggle("is-active", idx === stepIdx);
+        });
+      }
+
+      function highlightLane(actorId: string) {
+        workspace.classList.add("has-hover");
+        
+        // Highlight lane itself
+        const activeLaneIdx = actors.findIndex(a => a.id === actorId);
+        if (activeLaneIdx >= 0) laneEls[activeLaneIdx].classList.add("is-active");
+
+        // Highlight any steps outgoing from this actor
+        const activeStepIdxs = steps
+          .map((s, i) => (s.from === actorId) ? i : -1)
+          .filter(i => i >= 0);
+
+        const targetActors = new Set<string>();
+        activeStepIdxs.forEach(idx => {
+          targetActors.add(steps[idx].to);
+        });
+
+        laneEls.forEach(el => {
+          const aid = el.dataset.actorId!;
+          if (targetActors.has(aid)) el.classList.add("is-active");
+        });
+
+        comp.querySelectorAll<SVGElement>(".seq-path, .seq-arrow, .seq-edge-label").forEach(el => {
+          const idx = Number(el.getAttribute("data-step-idx"));
+          el.classList.toggle("is-active", activeStepIdxs.includes(idx));
+        });
+      }
+
+      function clearHighlights() {
+        workspace.classList.remove("has-hover");
+        laneEls.forEach(el => el.classList.remove("is-active"));
+        stepEls.forEach(el => el.classList.remove("is-active"));
+        comp.querySelectorAll<SVGElement>(".seq-path, .seq-arrow, .seq-edge-label").forEach(el => {
+          el.classList.remove("is-active");
+        });
+      }
+
+      /* Hover Listeners for Actor Cards */
+      laneEls.forEach((el) => {
+        const card = el.querySelector(".seq-actor-card");
+        if (card) {
+          card.addEventListener("mouseenter", () => highlightLane(el.dataset.actorId!));
+          card.addEventListener("mouseleave", clearHighlights);
+        }
+      });
+
+      /* Hover Listeners for Step Rows */
+      stepEls.forEach((el, idx) => {
+        el.addEventListener("mouseenter", () => highlightStep(idx));
+        el.addEventListener("mouseleave", clearHighlights);
+      });
+
+      // Initial draw
+      drawHops();
+
+      // Resize listeners
+      let resizeTimer: any;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(drawHops, 60);
+      });
+    });
+  }
+
+  // Bind on load and Astro page transitions
+  initSequenceDiagram();
+  document.addEventListener("astro:page-load", initSequenceDiagram);
+</script>

@@ -242,6 +242,10 @@ Don't wait for the user to ask. The skill grew Audits H, I, and J this way.
 - **Fence `title=` must match later import paths** → Titling a helper stub `typeorm-exception.filter.ts` when the walkthrough does `import { isPgError, PG } from "./db-errors"` sends readers to the wrong file; name `title=` after the file that owns the exports (Audit S5 + J).
 - **CodeWalkthrough on `ts twoslash` fences needs dev-server click-through before editing `lines`** → Misaligned highlights on twoslash blocks were caused by nested popup `.ec-line` DOM (fixed in `CodeWalkthrough.astro`), not wrong ranges — `quickstart.mdx` and `pipes.mdx` originals were correct; always click every step locally before changing step `lines`.
 
+- **Em-dash→colon in frontmatter `description` must stay double-quoted** → Replacing `—` with `:` in YAML frontmatter (e.g. `aws/eventbridge/index.mdx`) yields `description: Amazon EventBridge: Serverless...`; YAML treats the second colon as a mapping key (`incomplete explicit mapping pair`). Wrap the full value: `description: "Amazon EventBridge: Serverless..."`. Re-run `bun run lint:wikilinks` (frontmatter-schema) after every frontmatter em-dash fix.
+- **S6 handoff requires `docs:build`, not `astro check` alone** → Agent declared the session complete after `astro check` and documented a successful production build without running `bun run docs:build`; user immediately reported compile failure. `astro check` does not run twoslash export or full MDX compilation. Finish every touched-MDX session with `bun run lint:docs && bun run docs:build` exit 0 in the same turn before handoff.
+- **Dense multi-branch ASCII beats FlowSimulator for capstone pipelines** → Replacing the fault-tolerant-ingestion ASCII block with `<FlowSimulator>` split a one-glance topology (concurrency boundary, fail-fast exits, retry loop) into tabbed replay steps. Keep static ASCII or mermaid when all branches must be scannable without clicking; reserve FlowSimulator for separate-actor message hops per kb-enrichment Q4 (Audit S4).
+
 ## Boundaries
 
 

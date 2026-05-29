@@ -518,13 +518,22 @@ const resolvedVars = vars.map((v) => {
       }
 
       /* ── localStorage persistence ── */
-      function loadSaved(): Record<string, string> {
+      function getSavedValue(name: string, fallbackDefault: string): string {
         try {
+          const globalVal = localStorage.getItem(`kb-param-${name}`);
+          if (globalVal !== null) return globalVal;
+
           const raw = localStorage.getItem(`ss:${storageKey}`);
-          return raw ? JSON.parse(raw) : {};
+          if (raw) {
+            const pageVals = JSON.parse(raw);
+            if (pageVals && pageVals[name] !== undefined) {
+              return pageVals[name];
+            }
+          }
         } catch {
-          return {};
+          // ignore
         }
+        return fallbackDefault;
       }
 
       function saveCurrent() {
@@ -535,6 +544,9 @@ const resolvedVars = vars.map((v) => {
           const val = getControlValue(el);
           if (!def?.template && val) {
             vals[name] = val;
+            try {
+              localStorage.setItem(`kb-param-${name}`, val);
+            } catch { /* ignore */ }
           }
         });
         try {
@@ -624,12 +636,12 @@ const resolvedVars = vars.map((v) => {
         findShellBlocks();
 
         // Load saved values
-        const saved = loadSaved();
         controls.forEach((el) => {
           const name = (el as HTMLElement).dataset.ssInput!;
           const def = varDefs.find((v) => v.name === name);
-          if (!def?.template && saved[name]) {
-            setControlValue(el, saved[name]);
+          if (!def?.template) {
+            const val = getSavedValue(name, def?.default || '');
+            setControlValue(el, val);
           }
         });
 
@@ -659,6 +671,9 @@ const resolvedVars = vars.map((v) => {
               setControlValue(el, '');
             } else {
               setControlValue(el, def?.default || '');
+              try {
+                localStorage.removeItem(`kb-param-${name}`);
+              } catch { /* ignore */ }
             }
           });
           updateBlocks();

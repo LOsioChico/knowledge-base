@@ -37,22 +37,163 @@ interface Props {
 
 const { title, resources } = Astro.props;
 
+// Dynamically collect all unique parameter variables referenced across all resources
+const allParamsSet = new Set<string>();
+resources.forEach((res) => {
+  const matches = res.cliCommand.match(/\$\{(\w+)\}/g);
+  if (matches) {
+    matches.forEach(m => {
+      const varName = m.replace(/\$\{|\}/g, '');
+      allParamsSet.add(varName);
+    });
+  }
+});
+const uniqueParamNames = [...allParamsSet];
+
+interface ParamConfig {
+  label: string;
+  type: 'text' | 'select';
+  default: string;
+  placeholder?: string;
+  options?: { label: string; value: string }[];
+  span?: number;
+}
+
+const PARAM_CONFIGS: Record<string, ParamConfig> = {
+  AWS_PROFILE: {
+    label: 'AWS Profile',
+    type: 'text',
+    default: 'default',
+    placeholder: 'default'
+  },
+  REGION: {
+    label: 'Region',
+    type: 'select',
+    default: 'us-east-1',
+    options: [
+      { label: 'us-east-1 (N. Virginia)', value: 'us-east-1' },
+      { label: 'us-east-2 (Ohio)', value: 'us-east-2' },
+      { label: 'us-west-2 (Oregon)', value: 'us-west-2' },
+      { label: 'eu-west-1 (Ireland)', value: 'eu-west-1' },
+      { label: 'ap-southeast-1 (Singapore)', value: 'ap-southeast-1' },
+    ]
+  },
+  ACCOUNT_ID: {
+    label: 'Account ID',
+    type: 'text',
+    default: '',
+    placeholder: '111122223333'
+  },
+  APP_NAME: {
+    label: 'App Name',
+    type: 'text',
+    default: 'my-amplify-app',
+    placeholder: 'my-amplify-app'
+  },
+  APP_ID: {
+    label: 'App ID',
+    type: 'text',
+    default: 'd123456abcdef',
+    placeholder: 'd123456abcdef'
+  },
+  BRANCH: {
+    label: 'Branch',
+    type: 'text',
+    default: 'main',
+    placeholder: 'main'
+  },
+  DOMAIN: {
+    label: 'Domain',
+    type: 'text',
+    default: 'example.com',
+    placeholder: 'example.com'
+  },
+  REPO_URL: {
+    label: 'Repo URL',
+    type: 'text',
+    default: 'https://github.com/user/my-repo',
+    placeholder: 'https://github.com/user/my-repo',
+    span: 2
+  },
+  JOB_TYPE: {
+    label: 'Job Type',
+    type: 'select',
+    default: 'RELEASE',
+    options: [
+      { label: 'RELEASE', value: 'RELEASE' },
+      { label: 'RETRY', value: 'RETRY' },
+      { label: 'WEB_HOOK', value: 'WEB_HOOK' },
+    ]
+  },
+  ROLE_NAME: {
+    label: 'Role Name',
+    type: 'text',
+    default: 'my-lambda-role',
+    placeholder: 'my-lambda-role'
+  },
+  ROLE_ARN: {
+    label: 'Role ARN',
+    type: 'text',
+    default: 'arn:aws:iam::123456789012:role/my-lambda-role',
+    placeholder: 'arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME'
+  },
+  FUNCTION_NAME: {
+    label: 'Function Name',
+    type: 'text',
+    default: 'my-function',
+    placeholder: 'my-function'
+  },
+  BUCKET_NAME: {
+    label: 'Bucket Name',
+    type: 'text',
+    default: 'my-bucket-website',
+    placeholder: 'my-bucket-website'
+  },
+  EVENT_BUS_NAME: {
+    label: 'Event Bus Name',
+    type: 'text',
+    default: 'my-custom-bus',
+    placeholder: 'my-custom-bus'
+  },
+  RULE_NAME: {
+    label: 'Rule Name',
+    type: 'text',
+    default: 'my-json-rule',
+    placeholder: 'my-json-rule'
+  },
+  TARGET_QUEUE_NAME: {
+    label: 'Target Queue Name',
+    type: 'text',
+    default: 'my-target-queue',
+    placeholder: 'my-target-queue'
+  }
+};
+
+function getParamConfig(varName: string): ParamConfig {
+  if (PARAM_CONFIGS[varName]) {
+    return PARAM_CONFIGS[varName];
+  }
+  const label = varName
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+  return {
+    label,
+    type: 'text',
+    default: '',
+    placeholder: label.toLowerCase()
+  };
+}
+
 // Dynamically extract parameter placeholder names from CLI commands
 const getCardParams = (cliCommand: string) => {
   const matches = cliCommand.match(/\$\{(\w+)\}/g);
   if (!matches) return [];
   return [...new Set(matches.map(m => m.replace(/\$\{|\}/g, '')))].map(varName => {
-    const labels: Record<string, string> = {
-      APP_NAME: 'App Name',
-      APP_ID: 'App ID',
-      BRANCH: 'Branch',
-      DOMAIN: 'Domain',
-      REPO_URL: 'Repo URL',
-      JOB_TYPE: 'Job Type'
-    };
+    const cfg = getParamConfig(varName);
     return {
       varName,
-      label: labels[varName] || varName
+      label: cfg.label
     };
   });
 };
@@ -93,39 +234,60 @@ const getCardParams = (cliCommand: string) => {
     </div>
 
     {/* 1b. Parameter Inputs Bar */}
-    <div class="he-params-bar">
-      <div class="he-param-field">
-        <label class="he-param-label">App Name</label>
-        <input class="he-param-input" type="text" data-var="APP_NAME" value="my-amplify-app" placeholder="my-amplify-app" aria-label="App Name Parameter" />
+    {uniqueParamNames.length > 0 && (
+      <div class="he-params-bar">
+        {uniqueParamNames.map((varName) => {
+          const cfg = getParamConfig(varName);
+          const isSelect = cfg.type === 'select';
+          const gridStyle = cfg.span ? `grid-column: span ${cfg.span};` : '';
+          
+          return (
+            <div class="he-param-field" style={gridStyle}>
+              {isSelect ? (
+                <>
+                  <div class="he-param-label-row">
+                    <label class="he-param-label">{cfg.label}</label>
+                    {varName === 'JOB_TYPE' && (
+                      <a href="#job-types" class="he-param-help-link" title="Explain Job Types">?</a>
+                    )}
+                  </div>
+                  <div class="he-param-input he-dropdown" data-var={varName} tabindex="0" role="combobox" aria-label={`${cfg.label} Parameter`} aria-expanded="false">
+                    <span class="he-dropdown-value">{cfg.default}</span>
+                    <svg class="he-dropdown-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 4.5L6 7.5L9 4.5" />
+                    </svg>
+                    <div class="he-dropdown-menu" role="listbox">
+                      {(cfg.options || []).map((opt, oIdx) => (
+                        <div 
+                          class={`he-dropdown-option${oIdx === 0 ? ' he-dropdown-option--active' : ''}`} 
+                          data-value={opt.value} 
+                          role="option" 
+                          aria-selected={oIdx === 0 ? 'true' : 'false'}
+                        >
+                          {opt.label}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label class="he-param-label">{cfg.label}</label>
+                  <input 
+                    class="he-param-input" 
+                    type="text" 
+                    data-var={varName} 
+                    value={cfg.default} 
+                    placeholder={cfg.placeholder || ''} 
+                    aria-label={`${cfg.label} Parameter`} 
+                  />
+                </>
+              )}
+            </div>
+          );
+        })}
       </div>
-      <div class="he-param-field">
-        <label class="he-param-label">App ID</label>
-        <input class="he-param-input" type="text" data-var="APP_ID" value="d123456abcdef" placeholder="d123456abcdef" aria-label="App ID Parameter" />
-      </div>
-      <div class="he-param-field">
-        <label class="he-param-label">Branch</label>
-        <input class="he-param-input" type="text" data-var="BRANCH" value="main" placeholder="main" aria-label="Branch Parameter" />
-      </div>
-      <div class="he-param-field">
-        <label class="he-param-label">Domain</label>
-        <input class="he-param-input" type="text" data-var="DOMAIN" value="example.com" placeholder="example.com" aria-label="Domain Parameter" />
-      </div>
-      <div class="he-param-field">
-        <div class="he-param-label-row">
-          <label class="he-param-label">Job Type</label>
-          <a href="#job-types" class="he-param-help-link" title="Explain Job Types">?</a>
-        </div>
-        <select class="he-param-input he-param-select" data-var="JOB_TYPE" aria-label="Job Type Parameter">
-          <option value="RELEASE" selected>RELEASE</option>
-          <option value="RETRY">RETRY</option>
-          <option value="WEB_HOOK">WEB_HOOK</option>
-        </select>
-      </div>
-      <div class="he-param-field" style="grid-column: span 2;">
-        <label class="he-param-label">Repo URL</label>
-        <input class="he-param-input" type="text" data-var="REPO_URL" value="https://github.com/user/my-repo" placeholder="https://github.com/user/my-repo" aria-label="Repo URL Parameter" />
-      </div>
-    </div>
+    )}
 
     {/* 2. The Steps Blocks (Cards Stack) */}
     <div class="he-nodes">
@@ -462,20 +624,85 @@ const getCardParams = (cliCommand: string) => {
     color: white;
   }
 
-  .he-param-select {
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 8px center;
-    background-size: 10px;
-    padding-right: 24px !important; /* Make room for arrow icon */
+  /* Custom Dropdown styling */
+  .he-dropdown {
+    position: relative;
+    user-select: none;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding-right: 24px !important; /* Room for arrow */
   }
 
-  .he-param-select option {
-    background: #16161a;
-    color: var(--he-text);
+  .he-dropdown:focus,
+  .he-dropdown[aria-expanded="true"] {
+    border-color: var(--he-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--he-accent) 25%, transparent);
   }
+
+  .he-dropdown-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .he-dropdown-arrow {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    color: var(--he-text-ghost);
+    pointer-events: none;
+    transition: transform 200ms ease;
+  }
+
+  .he-dropdown[aria-expanded="true"] .he-dropdown-arrow {
+    transform: translateY(-50%) rotate(180deg);
+  }
+
+  .he-dropdown-menu {
+    display: none;
+    position: absolute;
+    left: -1px;
+    right: -1px;
+    top: calc(100% + 4px);
+    background: #16161a;
+    border: 1px solid var(--he-rule);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .he-dropdown[aria-expanded="true"] .he-dropdown-menu {
+    display: block;
+  }
+
+  .he-dropdown-option {
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: var(--he-text);
+    transition: background 120ms ease;
+    white-space: nowrap;
+  }
+
+  .he-dropdown-option:hover {
+    background: color-mix(in srgb, var(--he-accent) 15%, transparent);
+  }
+
+  .he-dropdown-option--active {
+    color: var(--he-accent);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--he-accent) 8%, transparent);
+  }
+
 
   /* ═══ Cards Stack ═══ */
   .he-nodes {
@@ -807,7 +1034,9 @@ const getCardParams = (cliCommand: string) => {
   .he-cli-code {
     margin: 0;
     padding: 12px 16px;
-    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     font-family: var(--sl-font-system-mono, ui-monospace, monospace);
     font-size: 0.7rem;
     color: #34d399; /* Green prompt */
@@ -852,7 +1081,79 @@ const getCardParams = (cliCommand: string) => {
       const btnFail = comp.querySelector<HTMLButtonElement>('#he-btn-fail')!;
       const simStatus = comp.querySelector<HTMLElement>('#he-sim-status')!;
       const simStatusText = comp.querySelector<HTMLElement>('#he-sim-status .he-sim-status-text')!;
-      const params = comp.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.he-param-input');
+      const params = comp.querySelectorAll<HTMLElement>('.he-param-input');
+
+      // Helper to get/set values for inputs and custom dropdowns
+      function getControlValue(el: HTMLElement): string {
+        if (el.classList.contains('he-dropdown')) {
+          return el.querySelector<HTMLElement>('.he-dropdown-value')?.textContent || '';
+        }
+        return (el as HTMLInputElement).value;
+      }
+
+      function setControlValue(el: HTMLElement, val: string) {
+        if (el.classList.contains('he-dropdown')) {
+          const valueEl = el.querySelector<HTMLElement>('.he-dropdown-value');
+          if (valueEl) valueEl.textContent = val;
+          el.querySelectorAll<HTMLElement>('.he-dropdown-option').forEach((o) => {
+            const isActive = o.dataset.value === val;
+            o.classList.toggle('he-dropdown-option--active', isActive);
+            o.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          });
+        } else {
+          (el as HTMLInputElement).value = val;
+        }
+      }
+
+      /* ── Custom dropdown setup ── */
+      comp.querySelectorAll<HTMLElement>('.he-dropdown').forEach((dd) => {
+        const valueEl = dd.querySelector<HTMLElement>('.he-dropdown-value')!;
+        const optionEls = dd.querySelectorAll<HTMLElement>('.he-dropdown-option');
+
+        dd.addEventListener('click', (e) => {
+          const target = e.target as HTMLElement;
+          const option = target.closest<HTMLElement>('.he-dropdown-option');
+          if (option) {
+            const val = option.dataset.value || '';
+            valueEl.textContent = val;
+            optionEls.forEach((o) => {
+              o.classList.toggle('he-dropdown-option--active', o === option);
+              o.setAttribute('aria-selected', o === option ? 'true' : 'false');
+            });
+            dd.setAttribute('aria-expanded', 'false');
+            dd.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            const open = dd.getAttribute('aria-expanded') === 'true';
+            dd.setAttribute('aria-expanded', open ? 'false' : 'true');
+          }
+        });
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+          if (!dd.contains(e.target as Node)) {
+            dd.setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        // Keyboard navigation
+        dd.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') dd.setAttribute('aria-expanded', 'false');
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const open = dd.getAttribute('aria-expanded') === 'true';
+            dd.setAttribute('aria-expanded', open ? 'false' : 'true');
+          }
+        });
+      });
+
+      // Load values from localStorage if available
+      params.forEach((param) => {
+        const varName = param.dataset.var!;
+        const savedVal = localStorage.getItem(`kb-param-${varName}`);
+        if (savedVal !== null) {
+          setControlValue(param, savedVal);
+        }
+      });
 
       // Keep active state
       let activeCard = cards[0];
@@ -862,7 +1163,7 @@ const getCardParams = (cliCommand: string) => {
         const vals: Record<string, string> = {};
         params.forEach((input) => {
           const varName = input.dataset.var!;
-          vals[varName] = input.value || input.getAttribute('placeholder') || '';
+          vals[varName] = getControlValue(input) || input.getAttribute('placeholder') || '';
         });
         return vals;
       }
@@ -878,17 +1179,23 @@ const getCardParams = (cliCommand: string) => {
 
       function updateCLIPreview() {
         if (!activeCard) return;
-        const rawCli = activeCard.dataset.cli || '';
+        const raw = activeCard.dataset.cli || '';
         const values = getParamValues();
-        inspectCli.innerHTML = resolveTemplateHTML(rawCli, values);
+        inspectCli.innerHTML = resolveTemplateHTML(raw, values);
       }
 
       // ── Bind Parameter Input Listeners & Highlight Mappings ──
       params.forEach((param) => {
-        param.addEventListener('input', updateCLIPreview);
-        param.addEventListener('change', updateCLIPreview);
-
         const varName = param.dataset.var!;
+
+        const handleInput = () => {
+          const val = getControlValue(param);
+          localStorage.setItem(`kb-param-${varName}`, val);
+          updateCLIPreview();
+        };
+
+        const eventName = param.classList.contains('he-dropdown') ? 'change' : 'input';
+        param.addEventListener(eventName, handleInput);
 
         function highlightAffected() {
           // Highlight cards in stack
@@ -987,23 +1294,28 @@ const getCardParams = (cliCommand: string) => {
           c.classList.remove('active-ring', 'failed-ring');
         });
 
-        // App -> Branch -> Domain always succeed in pipeline initiation
-        const timeline = [
-          { id: 'app', action: () => setNodeStatus('app', 'active', 'Success') },
-          { id: 'pulse-1', action: () => triggerPulse(1) },
-          { id: 'branch', action: () => setNodeStatus('branch', 'active', 'Success') },
-          { id: 'pulse-2', action: () => triggerPulse(2) },
-          { id: 'domain', action: () => setNodeStatus('domain', 'active', 'Success') },
-          { id: 'pulse-3', action: () => triggerPulse(3) },
-          { id: 'job', action: () => setNodeStatus('job', 'active', 'Building', 'status-building') }
-        ];
+        // Dynamically build simulation timeline from resource IDs
+        const resourceIds = Array.from(cards).map(c => c.dataset.id!);
+        const lastId = resourceIds[resourceIds.length - 1];
+
+        const timeline: { id: string; action: () => void }[] = [];
+        resourceIds.forEach((id, idx) => {
+          if (idx > 0) {
+            timeline.push({ id: `pulse-${idx}`, action: () => triggerPulse(idx) });
+          }
+          if (idx === resourceIds.length - 1) {
+            timeline.push({ id, action: () => setNodeStatus(id, 'active', 'Building', 'status-building') });
+          } else {
+            timeline.push({ id, action: () => setNodeStatus(id, 'active', 'Success') });
+          }
+        });
 
         let currentStep = 0;
         function runNextStep() {
           if (currentStep >= timeline.length) {
-            // Reached CodeBuild evaluation
+            // Reached evaluation stage
             if (isSuccess) {
-              setNodeStatus('job', 'active', 'Success', 'status-success');
+              setNodeStatus(lastId, 'active', 'Success', 'status-success');
               
               setTimeout(() => {
                 simStatusText.textContent = 'ACTIVE / DEPLOYED';
@@ -1019,9 +1331,9 @@ const getCardParams = (cliCommand: string) => {
                 }, 1200);
               }, 600);
             } else {
-              setNodeStatus('job', 'inactive', 'Failed', 'status-failed');
-              const jobCard = comp.querySelector<HTMLElement>('#he-card-job')!;
-              jobCard.classList.add('failed-ring');
+              setNodeStatus(lastId, 'inactive', 'Failed', 'status-failed');
+              const lastCard = comp.querySelector<HTMLElement>(`#he-card-${lastId}`)!;
+              lastCard.classList.add('failed-ring');
 
               setTimeout(() => {
                 simStatusText.textContent = 'FAILED / ROLLING BACK...';
@@ -1031,11 +1343,13 @@ const getCardParams = (cliCommand: string) => {
                 // Simulate reverse rollback pulse
                 setTimeout(() => {
                   simStatusText.textContent = 'ROLLBACK COMPLETE / STABLE BUILD ACTIVE';
-                  triggerPulse(3);
+                  if (resourceIds.length > 1) {
+                    triggerPulse(resourceIds.length - 1);
+                  }
 
                   setTimeout(() => {
-                    setNodeStatus('job', 'inactive', 'Idle');
-                    jobCard.classList.remove('failed-ring');
+                    setNodeStatus(lastId, 'inactive', 'Idle');
+                    lastCard.classList.remove('failed-ring');
                     
                     isSimulating = false;
                     btnSuccess.disabled = false;
@@ -1058,7 +1372,7 @@ const getCardParams = (cliCommand: string) => {
 
           // Standard delay between actions
           let delay = 650;
-          if (step.id === 'job') {
+          if (step.id === lastId) {
             delay = 1800; // Let "Building" stay visible longer to simulate compiler compile execution!
           } else if (step.id.startsWith('pulse')) {
             delay = 550; // Connector pulse timing

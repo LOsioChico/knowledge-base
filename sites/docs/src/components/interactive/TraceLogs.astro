@@ -1,0 +1,440 @@
+---
+/**
+ * TraceLogs.astro
+ * ───────────────
+ * A premium, interactive terminal log window simulator.
+ * Renders execution traces, backoffs, or retry steps inside a polished,
+ * dark-mode terminal window with standard macOS-style titlebar controls.
+ *
+ * Features:
+ *   - "Play Output" animation that prints log lines sequentially with customizable delays.
+ *   - Neon-styled status color-coding (Success, Error, Warning, System, Info).
+ *   - "Copy Logs" clipboard integration.
+ *   - Clean, ultra-readable monospaced styling.
+ *
+ * Props:
+ *   title      – Optional header title (defaults to "runtime-trace.log")
+ *   lines      – Array of log line objects
+ *   autoPlay   – Whether to run the printing animation automatically when in view (default: false)
+ *   delayMs    – Time between printing lines during playback (default: 400)
+ */
+
+interface LogLine {
+  timestamp?: string;
+  type?: 'info' | 'error' | 'warning' | 'success' | 'system';
+  emoji?: string;
+  message: string;
+}
+
+interface Props {
+  title?: string;
+  lines: LogLine[];
+  autoPlay?: boolean;
+  delayMs?: number;
+}
+
+const {
+  title = "runtime-trace.log",
+  lines,
+  autoPlay = false,
+  delayMs = 600,
+} = Astro.props;
+
+// Convert lines to a clean format for raw copy text
+const rawLogsText = lines
+  .map(l => {
+    const parts = [];
+    if (l.timestamp) parts.push(l.timestamp);
+    if (l.emoji) parts.push(l.emoji);
+    parts.push(l.message);
+    return parts.join(" ");
+  })
+  .join("\n");
+---
+
+<div
+  class="tl not-content"
+  data-lines={JSON.stringify(lines)}
+  data-autoplay={String(autoPlay)}
+  data-delay={String(delayMs)}
+>
+  {/* Terminal Header / Window Controls */}
+  <div class="tl-header">
+    <div class="tl-controls">
+      <span class="tl-dot tl-dot--red"></span>
+      <span class="tl-dot tl-dot--yellow"></span>
+      <span class="tl-dot tl-dot--green"></span>
+    </div>
+    <span class="tl-title">{title}</span>
+    <div class="tl-actions">
+      <button class="tl-btn tl-btn-play" type="button" aria-label="Play Logs">
+        <svg viewBox="0 0 16 16" fill="currentColor" class="tl-icon">
+          <path d="M4 2.68v10.64a.75.75 0 0 0 1.13.65l8-5.32a.75.75 0 0 0 0-1.3l-8-5.32A.75.75 0 0 0 4 2.68Z"/>
+        </svg>
+        <span>Play</span>
+      </button>
+      <button class="tl-btn tl-btn-copy" type="button" aria-label="Copy Logs" data-raw={rawLogsText}>
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" class="tl-icon">
+          <rect x="2" y="2" width="8" height="8" rx="1.5" />
+          <path d="M6 6h6v6H6z" />
+          <path d="M12 6.5V12a1.5 1.5 0 0 1-1.5 1.5H6" />
+        </svg>
+        <span>Copy</span>
+      </button>
+    </div>
+  </div>
+
+  {/* Terminal Body / Console Output */}
+  <div class="tl-console">
+    <div class="tl-lines-container">
+      {lines.map((line, idx) => (
+        <div
+          class={`tl-line tl-line--${line.type || 'info'} is-hidden`}
+          data-idx={idx}
+        >
+          {line.timestamp && (
+            <span class="tl-timestamp">{line.timestamp}</span>
+          )}
+          {line.emoji && (
+            <span class="tl-emoji">{line.emoji}</span>
+          )}
+          <span class="tl-message">{line.message}</span>
+        </div>
+      ))}
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .tl {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --tl-bg: #09090b;
+    --tl-border: var(--sl-color-hairline-shade);
+    --tl-text: #f4f4f5;
+    --tl-text-muted: var(--sl-color-gray-3);
+    
+    /* Type channel colors */
+    --tl-color-info: #e4e4e7;
+    --tl-color-success: #4ade80;
+    --tl-color-warning: #fbbf24;
+    --tl-color-error: #f87171;
+    --tl-color-system: #60a5fa;
+
+    margin: 2rem 0;
+    background: var(--tl-bg);
+    border: 1px solid var(--tl-border);
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    line-height: 1.5;
+  }
+
+  /* ═══ Header Bar ═══ */
+  .tl-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: rgba(18, 18, 22, 0.85);
+    border-bottom: 1px solid var(--tl-border);
+    user-select: none;
+  }
+
+  .tl-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 80px;
+  }
+
+  .tl-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .tl-dot--red { background: #ff5f56; }
+  .tl-dot--yellow { background: #ffbd2e; }
+  .tl-dot--green { background: #27c93f; }
+
+  .tl-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--tl-text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    flex-grow: 1;
+  }
+
+  .tl-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+    width: 140px;
+  }
+
+  .tl-btn {
+    all: unset;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--tl-text-muted);
+    cursor: pointer;
+    transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out), color 150ms var(--ease-out);
+  }
+
+  .tl-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--tl-text);
+  }
+
+  .tl-btn:active {
+    transform: scale(0.97);
+  }
+
+  .tl-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ═══ Terminal Screen ═══ */
+  .tl-console {
+    padding: 16px 20px;
+    max-height: 380px;
+    overflow-y: auto;
+    background: #09090b;
+  }
+
+  .tl-lines-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .tl-line {
+    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: opacity 250ms var(--ease-out), transform 200ms var(--ease-out);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .tl-line.is-hidden {
+    opacity: 0;
+    transform: translateY(4px);
+    pointer-events: none;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* Status Colors */
+  .tl-line--info { color: var(--tl-color-info); }
+  .tl-line--success { color: var(--tl-color-success); }
+  .tl-line--warning { color: var(--tl-color-warning); }
+  .tl-line--error { color: var(--tl-color-error); }
+  .tl-line--system { color: var(--tl-color-system); }
+
+  .tl-timestamp {
+    color: var(--sl-color-gray-4);
+    font-weight: 500;
+    padding-right: 2px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+
+  .tl-emoji {
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .tl-message {
+    flex-grow: 1;
+  }
+
+  /* Blinking Typing Cursor when playing */
+  .tl-console::after {
+    content: "▋";
+    font-size: 12px;
+    color: var(--sl-color-accent-high);
+    animation: tl-blink 1s steps(2, start) infinite;
+    display: inline-block;
+    margin-left: 2px;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+
+  .tl.is-playing .tl-console::after {
+    opacity: 1;
+  }
+
+  @keyframes tl-blink {
+    to { visibility: hidden; }
+  }
+
+  /* Responsive Adjustments */
+  @media (max-width: 600px) {
+    .tl-header {
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+    }
+    .tl-controls { display: none; }
+    .tl-actions { width: auto; justify-content: center; }
+    .tl-title { order: -1; margin-bottom: 2px; }
+  }
+</style>
+
+<script>
+  function initTraceLogs() {
+    document.querySelectorAll<HTMLElement>(".tl:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const delay = parseInt(comp.dataset.delay || "300", 10);
+      const lines = comp.querySelectorAll<HTMLElement>(".tl-line");
+      const playBtn = comp.querySelector<HTMLButtonElement>(".tl-btn-play")!;
+      const playBtnSpan = playBtn.querySelector<HTMLElement>("span")!;
+      const playBtnIcon = playBtn.querySelector<SVGElement>("svg")!;
+      const copyBtn = comp.querySelector<HTMLButtonElement>(".tl-btn-copy")!;
+
+      const container = comp.querySelector<HTMLElement>(".tl-console")!;
+
+      // Measure natural height with all lines visible to prevent layout jumps
+      lines.forEach((line) => line.classList.remove("is-hidden"));
+      const naturalHeight = container.getBoundingClientRect().height;
+      container.style.height = `${naturalHeight}px`;
+
+      let playbackTimer: number | null = null;
+      let currentIdx = 0;
+      let isPlaying = false;
+
+      // Initialize: show all lines if autoplay is false
+      const autoplay = comp.dataset.autoplay === "true";
+      if (!autoplay) {
+        showAll();
+      } else {
+        hideAll();
+        startPlayback();
+      }
+
+      function showAll() {
+        stopPlayback();
+        lines.forEach((line) => {
+          line.classList.remove("is-hidden");
+        });
+        currentIdx = lines.length;
+        updatePlayButtonState();
+      }
+
+      function hideAll() {
+        lines.forEach((line) => {
+          line.classList.add("is-hidden");
+        });
+        currentIdx = 0;
+      }
+
+      function updatePlayButtonState() {
+        if (isPlaying) {
+          comp.classList.add("is-playing");
+          playBtnSpan.textContent = "Pause";
+          // Change icon to pause
+          playBtnIcon.innerHTML = `<path d="M5.75 3a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5A.75.75 0 0 1 5.75 3zm4.5 0a.75.75 0 0 1 .75.75v8.5a.75.75 0 0 1-1.5 0v-8.5a.75.75 0 0 1 .75-.75z"/>`;
+        } else {
+          comp.classList.remove("is-playing");
+          if (currentIdx >= lines.length) {
+            playBtnSpan.textContent = "Replay";
+            playBtnIcon.innerHTML = `<path d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/><path d="M8 4.414V.586a.25.25 0 0 0-.427-.177L5.746 2.236a.25.25 0 0 0 0 .354l1.827 1.827A.25.25 0 0 0 8 4.414z"/>`;
+          } else {
+            playBtnSpan.textContent = "Play";
+            playBtnIcon.innerHTML = `<path d="M4 2.68v10.64a.75.75 0 0 0 1.13.65l8-5.32a.75.75 0 0 0 0-1.3l-8-5.32A.75.75 0 0 0 4 2.68Z"/>`;
+          }
+        }
+      }
+
+      function startPlayback() {
+        if (playbackTimer) return;
+        isPlaying = true;
+        comp.classList.add("is-playing");
+
+        if (currentIdx >= lines.length) {
+          hideAll();
+        }
+
+        updatePlayButtonState();
+
+        const container = comp.querySelector<HTMLElement>(".tl-console")!;
+
+        function printNextLine() {
+          if (currentIdx < lines.length) {
+            const line = lines[currentIdx];
+            line.classList.remove("is-hidden");
+            
+            // Scroll container to bottom
+            container.scrollTop = container.scrollHeight;
+
+            currentIdx++;
+            playbackTimer = window.setTimeout(printNextLine, delay);
+          } else {
+            stopPlayback();
+          }
+        }
+
+        printNextLine();
+      }
+
+      function stopPlayback() {
+        if (playbackTimer) {
+          clearTimeout(playbackTimer);
+          playbackTimer = null;
+        }
+        isPlaying = false;
+        comp.classList.remove("is-playing");
+        updatePlayButtonState();
+      }
+
+      playBtn.addEventListener("click", () => {
+        if (isPlaying) {
+          stopPlayback();
+        } else {
+          startPlayback();
+        }
+      });
+
+      // Clipboard copy action
+      copyBtn.addEventListener("click", () => {
+        const text = copyBtn.dataset.raw || "";
+        navigator.clipboard.writeText(text).then(() => {
+          const btnSpan = copyBtn.querySelector("span")!;
+          const originalText = btnSpan.textContent;
+          btnSpan.textContent = "Copied!";
+          copyBtn.style.borderColor = "var(--tl-color-success)";
+          copyBtn.style.color = "var(--tl-color-success)";
+          setTimeout(() => {
+            btnSpan.textContent = originalText;
+            copyBtn.style.borderColor = "";
+            copyBtn.style.color = "";
+          }, 1500);
+        });
+      });
+    });
+  }
+
+  // Bind init functions
+  initTraceLogs();
+  document.addEventListener("astro:page-load", initTraceLogs);
+</script>

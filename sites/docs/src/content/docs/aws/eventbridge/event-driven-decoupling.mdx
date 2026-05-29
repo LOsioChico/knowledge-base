@@ -331,18 +331,23 @@ Re-validating event payloads at multiple internal hops wastes CPU cycles and haz
 
 A powerful architectural pattern in enterprise systems is forwarding events from Account A (Source) to Account B (Target) to coordinate business domains across separate AWS accounts.
 
-```
- [ Account A (Source) ]                    [ Account B (Target) ]
-  ┌─────────────────┐                       ┌─────────────────┐
-  │   Event Bus     │                       │ Target Event Bus│
-  └────────┬────────┘                       └────────▲────────┘
-           │ (Matches Pattern)                       │
-      ┌────▼────┐                                    │
-      │  Rule   │                                    │
-      └────┬────┘                                    │
-           │ (IAM Role Assumed)                      │
-           └────────────────── PutEvents ────────────┘
-```
+<FlowSimulator
+  title="Secure cross-account event routing"
+  nodes={[
+    { id: "AccountABus", label: "Event Bus (Account A)", col: 0 },
+    { id: "AccountARule", label: "Routing Rule (Account A)", col: 0 },
+    { id: "AccountBBus", label: "Target Event Bus (Account B)", col: 1 },
+  ]}
+  flows={[
+    {
+      label: "Cross-account routing",
+      steps: [
+        { from: "AccountABus", to: "AccountARule", message: "Evaluates Event Pattern", description: "Rule filters match the inbound event, matching the destination pattern." },
+        { from: "AccountARule", to: "AccountBBus", message: "PutEvents with Assumed IAM Role", description: "Rule assumes a cross-account IAM role and publishes events directly to Account B's bus." },
+      ],
+    },
+  ]}
+/>
 
 ### 1. Configure Target Account B Policy
 In the Target Account (Account B), configure the custom event bus's resource policy to allow Account A to publish events to it:

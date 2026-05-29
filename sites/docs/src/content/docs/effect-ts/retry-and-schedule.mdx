@@ -1,6 +1,6 @@
 ---
 title: Retry and Schedule
-description: Effect.retry with Schedule — capped exponential backoff, jitter, and tag-specific while predicates.
+description: "Effect.retry with Schedule - capped exponential backoff, jitter, and tag-specific while predicates."
 source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Schedule.ts
@@ -20,6 +20,9 @@ prerequisites:
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import FiberTimeline from '/src/components/interactive/FiberTimeline.astro';
+import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
+import TraceLogs from '/src/components/interactive/TraceLogs.astro';
 
 > Prerequisite: [[effect-ts/layers-and-di|Layers & DI]]
 
@@ -63,18 +66,21 @@ console.log(Effect.runSync(program));
 
 Here is the step-by-step visual execution trace of the synchronous runtime execution:
 
-```text
-[22:50:00.000] ▶️ [Sync Execution] Starting flaky program...
-[22:50:00.001] 💥 Attempt #1 starting... count = 1
-[22:50:00.002] ⚠️ Attempt #1 failed with: "attempt 1 failed" (retrying...)
-[22:50:00.003] 💥 Attempt #2 starting... count = 2
-[22:50:00.004] ⚠️ Attempt #2 failed with: "attempt 2 failed" (retrying...)
-[22:50:00.005] 💥 Attempt #3 starting... count = 3
-[22:50:00.006] ⚠️ Attempt #3 failed with: "attempt 3 failed" (retrying...)
-[22:50:00.007] 💥 Attempt #4 starting... count = 4
-[22:50:00.008] ✅ Attempt #4 succeeded! Returning "ok on attempt 4"
-[22:50:00.009] 💾 Output: "ok on attempt 4"
-```
+<TraceLogs
+  title="sync-retry-trace.log"
+  lines={[
+    { timestamp: "[22:50:00.000]", emoji: "▶️", type: "system", message: "[Sync Execution] Starting flaky program..." },
+    { timestamp: "[22:50:00.001]", emoji: "💥", type: "info", message: "Attempt #1 starting... count = 1" },
+    { timestamp: "[22:50:00.002]", emoji: "⚠️", type: "warning", message: "Attempt #1 failed with: \"attempt 1 failed\" (retrying...)" },
+    { timestamp: "[22:50:00.003]", emoji: "💥", type: "info", message: "Attempt #2 starting... count = 2" },
+    { timestamp: "[22:50:00.004]", emoji: "⚠️", type: "warning", message: "Attempt #2 failed with: \"attempt 2 failed\" (retrying...)" },
+    { timestamp: "[22:50:00.005]", emoji: "💥", type: "info", message: "Attempt #3 starting... count = 3" },
+    { timestamp: "[22:50:00.006]", emoji: "⚠️", type: "warning", message: "Attempt #3 failed with: \"attempt 3 failed\" (retrying...)" },
+    { timestamp: "[22:50:00.007]", emoji: "💥", type: "info", message: "Attempt #4 starting... count = 4" },
+    { timestamp: "[22:50:00.008]", emoji: "✅", type: "success", message: "Attempt #4 succeeded! Returning \"ok on attempt 4\"" },
+    { timestamp: "[22:50:00.009]", emoji: "💾", type: "system", message: "Output: \"ok on attempt 4\"" }
+  ]}
+/>
 
 `{ times: 3 }` means three **extra** attempts after the first (four tries total) ([retrying docs](https://effect.website/docs/error-management/retrying/#retry)).
 
@@ -106,28 +112,71 @@ Effect.runPromise(program).then((n) => console.log(`succeeded after ${n} attempt
 
 Here is the step-by-step visual execution trace illustrating the exponential backoff timeline delays:
 
-```text
-[22:50:00.000] ▶️ [Promise Execution] Starting backoff program...
-[22:50:00.001] 💥 Attempt #1 failed with: "fail 1"
-[22:50:00.002] ⏳ Schedule: Delaying for 10ms (exponential backoff)
-[22:50:00.013] 💥 Attempt #2 failed with: "fail 2"
-[22:50:00.014] ⏳ Schedule: Delaying for 20ms (exponential backoff factor = 2)
-[22:50:00.035] 💥 Attempt #3 failed with: "fail 3"
-[22:50:00.036] ⏳ Schedule: Delaying for 40ms (exponential backoff factor = 2)
-[22:50:00.077] 🎉 Attempt #4 succeeded! Value = 4
-[22:50:00.078] 💾 Output: "succeeded after 4 attempts"
-```
+<FiberTimeline
+  title="Exponential Backoff Retry Timeline"
+  steps={7}
+  lanes={[
+    { id: "app", label: "App Gen", color: "#60a5fa" },
+    { id: "endpoint", label: "Flaky Endpoint", color: "#f472b6" },
+    { id: "schedule", label: "Schedule", color: "#a78bfa" }
+  ]}
+  segments={[
+    // t0 - Attempt 1
+    { lane: "app", start: 0, end: 0, state: "active", label: "Run #1", tip: "App initiates gen execution block." },
+    { lane: "endpoint", start: 0, end: 0, state: "active", label: "Fail #1", tip: "Endpoint query fails with transient exception." },
+    { lane: "schedule", start: 0, end: 0, state: "idle", label: "Idle" },
+
+    // t1 - Backoff 1
+    { lane: "app", start: 1, end: 1, state: "blocked", label: "Wait 10ms", tip: "Runtime suspends execution based on retry schedule." },
+    { lane: "endpoint", start: 1, end: 1, state: "idle", label: "Idle" },
+    { lane: "schedule", start: 1, end: 1, state: "active", label: "Delay 10ms", tip: "Schedule registers first retry and calculates a 10ms delay." },
+
+    // t2 - Attempt 2
+    { lane: "app", start: 2, end: 2, state: "active", label: "Run #2", tip: "App resumes and retries query after 10ms delay." },
+    { lane: "endpoint", start: 2, end: 2, state: "active", label: "Fail #2", tip: "Endpoint query fails again." },
+    { lane: "schedule", start: 2, end: 2, state: "idle", label: "Idle" },
+
+    // t3 - Backoff 2
+    { lane: "app", start: 3, end: 3, state: "blocked", label: "Wait 20ms", tip: "Runtime suspends execution. Exponential factor doubles the delay." },
+    { lane: "endpoint", start: 3, end: 3, state: "idle", label: "Idle" },
+    { lane: "schedule", start: 3, end: 3, state: "active", label: "Delay 20ms", tip: "Schedule calculates next exponential delay: 10ms * 2 = 20ms." },
+
+    // t4 - Attempt 3
+    { lane: "app", start: 4, end: 4, state: "active", label: "Run #3", tip: "App retries third time after 20ms delay." },
+    { lane: "endpoint", start: 4, end: 4, state: "active", label: "Fail #3", tip: "Endpoint query fails a third time." },
+    { lane: "schedule", start: 4, end: 4, state: "idle", label: "Idle" },
+
+    // t5 - Backoff 3
+    { lane: "app", start: 5, end: 5, state: "blocked", label: "Wait 40ms", tip: "Runtime suspends execution once more." },
+    { lane: "endpoint", start: 5, end: 5, state: "idle", label: "Idle" },
+    { lane: "schedule", start: 5, end: 5, state: "active", label: "Delay 40ms", tip: "Delay doubles again: 20ms * 2 = 40ms backoff." },
+
+    // t6 - Attempt 4 (Success)
+    { lane: "app", start: 6, end: 6, state: "active", label: "Success", tip: "Fourth attempt runs after 40ms. Query succeeds!" },
+    { lane: "endpoint", start: 6, end: 6, state: "active", label: "Succeed", tip: "Endpoint processes request and returns success response." },
+    { lane: "schedule", start: 6, end: 6, state: "idle", label: "Idle" }
+  ]}
+  events={[
+    { time: 0, from: "app", to: "endpoint", label: "Request 1" },
+    { time: 2, from: "app", to: "endpoint", label: "Request 2" },
+    { time: 4, from: "app", to: "endpoint", label: "Request 3" },
+    { time: 6, from: "app", to: "endpoint", label: "Request 4" }
+  ]}
+/>
 
 `Schedule.exponential` alone recurs **forever** ([built-in schedules](https://effect.website/docs/scheduling/built-in-schedules/#exponential)). Always intersect with `Schedule.recurs(n)` or use `times` / `until`. If you do not limit it, the retry loop continues infinitely with ever-growing delays:
 
-```text
-[22:50:00.000] Attempt #1 failed. Delaying 10ms...
-[22:50:00.010] Attempt #2 failed. Delaying 20ms...
-[22:50:00.030] Attempt #3 failed. Delaying 40ms...
-[22:50:00.070] Attempt #4 failed. Delaying 80ms...
-...
-[22:55:00.000] Attempt #15 failed. Delaying 163.84s... (Loops forever!)
-```
+<TraceLogs
+  title="infinite-retry-backoff.log"
+  lines={[
+    { timestamp: "[22:50:00.000]", emoji: "⚠️", type: "warning", message: "Attempt #1 failed. Delaying 10ms..." },
+    { timestamp: "[22:50:00.010]", emoji: "⚠️", type: "warning", message: "Attempt #2 failed. Delaying 20ms..." },
+    { timestamp: "[22:50:00.030]", emoji: "⚠️", type: "warning", message: "Attempt #3 failed. Delaying 40ms..." },
+    { timestamp: "[22:50:00.070]", emoji: "⚠️", type: "warning", message: "Attempt #4 failed. Delaying 80ms..." },
+    { timestamp: "...", emoji: "⏳", type: "info", message: "Additional retries executing in background..." },
+    { timestamp: "[22:55:00.000]", emoji: "💥", type: "error", message: "Attempt #15 failed. Delaying 163.84s... (Loops forever!)" }
+  ]}
+/>
 
 ## 3. Jitter
 
@@ -141,15 +190,27 @@ const policy = Schedule.intersect(
 // Each delay is ~80%–120% of the nominal value.
 ```
 
-```text
-// Nominal delays: 100ms, 200ms, 400ms, 800ms, 1600ms
-// Execution trace with jitter (randomized between 80% and 120% of nominal):
-[08:00:00.000] Attempt #1 failed. Nominal delay: 100ms. Actual delay: 92ms.
-[08:00:00.092] Attempt #2 failed. Nominal delay: 200ms. Actual delay: 218ms.
-[08:00:00.310] Attempt #3 failed. Nominal delay: 400ms. Actual delay: 382ms.
-[08:00:00.692] Attempt #4 failed. Nominal delay: 800ms. Actual delay: 840ms.
-[08:00:01.532] Attempt #5 failed. Nominal delay: 1600ms. Actual delay: 1320ms.
-```
+<ParameterPlayground
+  title="Interactive Backoff Jitter Simulator"
+  params={[
+    { name: "baseDelay", label: "Base Backoff Delay", type: "range", min: 50, max: 1000, step: 50, default: 100, suffix: "ms" },
+    { name: "attempt", label: "Retry Attempt Number", type: "range", min: 1, max: 5, step: 1, default: 2 },
+    { name: "factor", label: "Exponential Factor", type: "range", min: 1.5, max: 3.0, step: 0.5, default: 2.0 }
+  ]}
+  outputs={[
+    { name: "nominal", label: "Nominal Delay (Base × Factor^(Attempt-1))", format: "number" },
+    { name: "minDelay", label: "Minimum delay (80% Jitter limit)", format: "number" },
+    { name: "maxDelay", label: "Maximum delay (120% Jitter limit)", format: "number" },
+    { name: "simulated", label: "Simulated Randomized Actual Delay", format: "number", good: "high" }
+  ]}
+  compute={`
+    var nominal = params.baseDelay * Math.pow(params.factor, params.attempt - 1);
+    var minDelay = Math.round(nominal * 0.8);
+    var maxDelay = Math.round(nominal * 1.2);
+    var simulated = Math.round(nominal * (0.8 + Math.random() * 0.4));
+    return { nominal: nominal, minDelay: minDelay, maxDelay: maxDelay, simulated: simulated };
+  `}
+/>
 
 Use when many clients can fail together (thundering herd). See [[effect-ts/fault-tolerant-ingestion|fault-tolerant ingestion]] for a full pipeline.
 
@@ -175,20 +236,45 @@ const program = Effect.gen(function* () {
 
 n = 0;
 Effect.runPromiseExit(program).then((exit) => console.log(exit._tag));
-// Failure — FatalError on attempt 2, not retried
+// Failure - FatalError on attempt 2, not retried
 ```
 
 Here is the step-by-step visual execution trace illustrating the conditional error filtering predicate:
 
-```text
-[22:50:00.000] ▶️ [Exit Execution] Starting predicate filter program...
-[22:50:00.001] 💥 Attempt #1 failed with: TransientError
-[22:50:00.002] 🔍 Predicate check: error tag matches "TransientError" (while = true). Retrying...
-[22:50:00.003] 💥 Attempt #2 failed with: FatalError
-[22:50:00.004] 🔍 Predicate check: error tag "FatalError" does NOT match "TransientError" (while = false).
-[22:50:00.005] 🚫 Halting retry flow. Propagating fatal error upward.
-[22:50:00.006] 💾 Output Exit Status: Failure
-```
+<FiberTimeline
+  title="Predicate-Filtered Retry Loop Timeline"
+  steps={5}
+  lanes={[
+    { id: "app", label: "App Gen", color: "#60a5fa" },
+    { id: "pred", label: "while() Filter", color: "#a78bfa" },
+    { id: "schedule", label: "Schedule", color: "#fbbf24" }
+  ]}
+  segments={[
+    // t0 - Attempt 1 fails transiently
+    { lane: "app", start: 0, end: 0, state: "active", label: "Run #1", tip: "App executes database block and raises an error." },
+    { lane: "pred", start: 0, end: 0, state: "active", label: "Matches", tip: "Filter checks TransientError. Tag matches, returns true." },
+    { lane: "schedule", start: 0, end: 0, state: "idle", label: "Idle" },
+
+    // t1 - Delay
+    { lane: "app", start: 1, end: 1, state: "blocked", label: "Wait", tip: "App blocks waiting for transient recovery." },
+    { lane: "pred", start: 1, end: 1, state: "idle", label: "Idle" },
+    { lane: "schedule", start: 1, end: 1, state: "active", label: "Delaying", tip: "Schedule executes backing delay before retry." },
+
+    // t2 - Attempt 2 encounters FatalError
+    { lane: "app", start: 2, end: 2, state: "active", label: "Run #2", tip: "App wakes up and retries database block." },
+    { lane: "pred", start: 2, end: 2, state: "active", label: "Fatal!", tip: "Filter checks FatalError. Tag does NOT match, returns false." },
+    { lane: "schedule", start: 2, end: 2, state: "idle", label: "Idle" },
+
+    // t3 - Loop Halted
+    { lane: "app", start: 3, end: 4, state: "idle", label: "Aborted", tip: "Retry loop halts immediately due to filter rejection." },
+    { lane: "pred", start: 3, end: 4, state: "idle", label: "Idle" },
+    { lane: "schedule", start: 3, end: 4, state: "idle", label: "Idle" }
+  ]}
+  events={[
+    { time: 0, from: "app", to: "pred", label: "TransientError" },
+    { time: 2, from: "app", to: "pred", label: "FatalError" }
+  ]}
+/>
 
 Pair with [[effect-ts/typed-errors|typed errors]] so `while` can discriminate on `_tag`.
 

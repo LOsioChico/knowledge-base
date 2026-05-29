@@ -1,6 +1,6 @@
 ---
 title: Layers and dependency injection
-description: Context.Tag, Layer, and Effect.provide — the R channel as a typed dependency graph with compile-time checks.
+description: "Context.Tag, Layer, and Effect.provide - the R channel as a typed dependency graph with compile-time checks."
 source:
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Effect.ts
   - https://github.com/Effect-TS/effect/blob/main/packages/effect/src/Layer.ts
@@ -22,6 +22,7 @@ prerequisites:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import StackDiagram from '/src/components/interactive/StackDiagram.astro';
 
 <Steps>
 
@@ -268,25 +269,18 @@ Release runs at program end, including on interruption.
 
 [`Effect.provide`](https://effect.website/docs/requirements-management/services/) removes the layer's outputs from `R`:
 
-```text
-                  ┌────────────────────────┐
-                  │ Effect<A, E, L | C>    │ (needs Logger AND Config)
-                  └───────────┬────────────┘
-                              │
-                    [Effect.provide(LoggerLive)]
-                              │
-                              ▼
-                  ┌────────────────────────┐
-                  │   Effect<A, E, Config> │ (needs only Config)
-                  └───────────┬────────────┘
-                              │
-                    [Effect.provide(ConfigLive)]
-                              │
-                              ▼
-                  ┌────────────────────────┐
-                  │   Effect<A, E, never>  │ (runnable!)
-                  └────────────────────────┘
-```
+<StackDiagram
+  title="Layer provision concentric dependency wrap"
+  layers={[
+    { label: "LoggerLive", color: "#60a5fa", pre: "provide(LoggerLive) wraps the effect", post: "Satisfies and removes Context.Tag(\"Logger\") from requirements" },
+    { label: "ConfigLive", color: "#fbbf24", pre: "provide(ConfigLive) wraps the inner scope", post: "Satisfies and removes Context.Tag(\"Config\") from requirements" }
+  ]}
+  core={{
+    label: "Effect<A, E, never>",
+    color: "#4ade80",
+    tip: "Runnable core (all environment requirements satisfied)"
+  }}
+/>
 
 ```ts twoslash title="scoped-layer-demo.ts"
 import { Context, Effect, Layer } from "effect";
@@ -458,7 +452,7 @@ const makeLogger = (level: string) =>
 
 const a = makeLogger("INFO");
 const b = makeLogger("INFO");
-// a !== b — two layers, two builds if both are provided
+// a !== b - two layers, two builds if both are provided
 ```
 
 Call the factory once and reuse the resulting `Layer` value.

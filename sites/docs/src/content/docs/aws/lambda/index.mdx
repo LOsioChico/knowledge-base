@@ -1,7 +1,17 @@
 ---
 title: Lambda
-description: AWS Lambda — functions, execution roles, triggers, versions/aliases, and scale-to-zero pricing.
+description: "AWS Lambda: functions, execution roles, triggers, versions/aliases, and scale-to-zero pricing."
+area: aws
+status: evergreen
+related:
+  - "[[aws/lambda/quickstart]]"
+  - "[[aws/lambda/cli]]"
+  - "[[aws/lambda-vs-ec2]]"
+source:
+  - https://docs.aws.amazon.com/lambda/latest/dg/welcome.html
 ---
+
+import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.astro';
 
 > AWS Lambda is on-demand compute: ship code + handler + runtime, AWS scales execution environments per request, you pay per invocation + GB-second.
 
@@ -20,12 +30,35 @@ description: AWS Lambda — functions, execution roles, triggers, versions/alias
 
 ## Mental model
 
-| Piece | What it controls |
-| --- | --- |
-| **Function** | Runtime, handler, code, env vars (see [quickstart](/knowledge-base/aws/lambda/quickstart/)) |
-| **Execution role** | IAM identity for AWS API calls (see [quickstart](/knowledge-base/aws/lambda/quickstart/)) |
-| **Triggers** | What invokes the function |
-| **Versions + aliases** | Immutable snapshots vs re-pointable names |
+<HierarchyExplorer
+  title="Lambda Execution Topology"
+  resources={[
+    {
+      id: "role",
+      label: "Execution Role",
+      color: "#f472b6",
+      badge: "IAM Role",
+      description: "The IAM role assumed by the Lambda function during execution. Defines what AWS APIs the handler function has permissions to invoke (e.g. read S3, write DynamoDB).",
+      cliCommand: `aws --profile \${AWS_PROFILE} iam create-role --role-name \${ROLE_NAME} --assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'`
+    },
+    {
+      id: "function",
+      label: "Lambda Function",
+      color: "#60a5fa",
+      badge: "Compute Function",
+      description: "The core computational resource holding the application handler, selected runtime version, memory configuration, environment variables, and compressed deployment packages.",
+      cliCommand: `aws --profile \${AWS_PROFILE} lambda create-function --function-name \${FUNCTION_NAME} --runtime nodejs22.x --role \${ROLE_ARN} --handler index.handler --zip-file fileb://function.zip`
+    },
+    {
+      id: "trigger",
+      label: "Invocation Trigger",
+      color: "#34d399",
+      badge: "HTTPS / Event Trigger",
+      description: "Creates a dedicated direct invocation endpoint (Function URL) with public access, bypassing the need for an API Gateway integration layer.",
+      cliCommand: `aws --profile \${AWS_PROFILE} lambda create-function-url-config --function-name \${FUNCTION_NAME} --auth-type NONE`
+    }
+  ]}
+/>
 
 ## Pending notes
 

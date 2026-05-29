@@ -17,6 +17,7 @@ prerequisites: []
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
+import DirectoryTree from '/src/components/interactive/DirectoryTree.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving into monorepo setup, make sure you understand:
@@ -42,7 +43,7 @@ A standard high-performance NestJS monorepo uses the following structure:
 
 <ArchitectureExplorer
   title="Workspace layers"
-  direction="down"
+  badge="Dependency Stack ↓"
   layers={[
     { id: "root", label: "Root workspace", color: "#60a5fa", description: "Shared tsconfig, turbo.json pipeline, pnpm-workspace.yaml. No application code lives here : only configuration that all packages and apps inherit.", items: ["turbo.json", "pnpm-workspace.yaml", "tsconfig.json", "package.json"] },
     { id: "apps", label: "Applications (apps/)", color: "#34d399", description: "Independent NestJS applications, each with its own package.json, dependencies, and entry point. Turborepo builds them in topological order after their workspace dependencies.", items: ["apps/api", "apps/worker"] },
@@ -50,34 +51,36 @@ A standard high-performance NestJS monorepo uses the following structure:
   ]}
 />
 
-```text
-.
-├── apps/
-│   ├── api/                            # NestJS REST/GraphQL Application
-│   │   ├── src/
-│   │   │   ├── app.module.ts
-│   │   │   └── main.ts
-│   │   ├── package.json
-│   │   └── tsconfig.json
-│   └── worker/                         # NestJS Background Worker
-│       ├── src/
-│       │   ├── worker.module.ts
-│       │   └── main.ts
-│       ├── package.json
-│       └── tsconfig.json
-├── packages/                           # Shared Workspace Libraries
-│   └── logger/                         # NestJS Shared Logging Module
-│       ├── src/
-│       │   ├── logger.module.ts
-│       │   ├── logger.service.ts
-│       │   └── index.ts
-│       ├── package.json
-│       └── tsconfig.json
-├── pnpm-workspace.yaml                 # Defines workspace packages
-├── turbo.json                          # Turborepo task pipeline configuration
-├── package.json                        # Root monorepo manifest
-└── tsconfig.json                       # Shared base TypeScript configuration
-```
+<DirectoryTree
+  title="NestJS / Turborepo Monorepo structure"
+  nodes={[
+    { path: "apps", type: "folder", color: "#34d399", desc: "Contains independent NestJS applications, each with its own package.json, dependencies, and configuration." },
+    { path: "apps/api", type: "folder", desc: "Main REST/GraphQL API gateway NestJS application serving customer requests." },
+    { path: "apps/api/src/app.module.ts", type: "file", desc: "Root NestJS module for the API application, importing core shared services." },
+    { path: "apps/api/src/main.ts", type: "file", desc: "Bootstrap file that initializes the API NestJS application instance." },
+    { path: "apps/api/package.json", type: "file", desc: "Explicit dependencies manifest for the API application." },
+    { path: "apps/api/tsconfig.json", type: "file", desc: "TypeScript configuration for the API app, extending the root configuration." },
+    
+    { path: "apps/worker", type: "folder", desc: "Background worker service executing asynchronous jobs, queue consumption, or scheduled tasks." },
+    { path: "apps/worker/src/worker.module.ts", type: "file", desc: "Root NestJS module for the background worker service." },
+    { path: "apps/worker/src/main.ts", type: "file", desc: "Bootstrap file initializing the background worker application." },
+    { path: "apps/worker/package.json", type: "file", desc: "Explicit dependencies manifest for the background worker." },
+    { path: "apps/worker/tsconfig.json", type: "file", desc: "TypeScript configuration for the background worker." },
+
+    { path: "packages", type: "folder", color: "#a78bfa", desc: "Houses reusable local modules and shared libraries compiled and linked across the workspace." },
+    { path: "packages/logger", type: "folder", desc: "Shared workspace logging package, providing structured JSON logs to all services." },
+    { path: "packages/logger/src/logger.module.ts", type: "file", desc: "Shared NestJS Module wrapping and exporting the LoggerService." },
+    { path: "packages/logger/src/logger.service.ts", type: "file", desc: "Core logging service wrapping a production logging library (like Winston)." },
+    { path: "packages/logger/src/index.ts", type: "file", desc: "Canonical public export index for the logger package." },
+    { path: "packages/logger/package.json", type: "file", desc: "Dependencies manifest for the logger package, including logging utilities." },
+    { path: "packages/logger/tsconfig.json", type: "file", desc: "TypeScript configuration for compilation of the shared logger package." },
+
+    { path: "pnpm-workspace.yaml", type: "file", color: "#60a5fa", desc: "Workspace configuration mapping the apps and packages directories for pnpm link resolution." },
+    { path: "turbo.json", type: "file", color: "#60a5fa", desc: "Turbo pipeline configuration coordinating caching, builds, tests, and task dependencies." },
+    { path: "package.json", type: "file", color: "#60a5fa", desc: "Root manifest defining workspace devDependencies, global tooling, and script shortcuts." },
+    { path: "tsconfig.json", type: "file", color: "#60a5fa", desc: "Shared base TypeScript configuration extended by all applications and packages." }
+  ]}
+/>
 
 ---
 

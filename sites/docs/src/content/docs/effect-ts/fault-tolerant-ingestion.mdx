@@ -24,6 +24,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
 import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
+import VisualFlow from '/src/components/interactive/VisualFlow.astro';
 
 ---
 
@@ -31,33 +32,31 @@ import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 The following workflow diagram illustrates how elements are batched, fetched, parsed, timed out, and retried. Transient exceptions trigger backoffs, while structural [[effect-ts/schema|schema]] or HTTP violations fail fast.
 
-```text
-           [ Array of Inputs (e.g., IDs: 1, 2, 3) ]
-                              │
-               [ Effect.forEach (concurrency: n) ]
-                              │
-                              ▼
-                       ┌─────────────┐
-                       │  fetchRaw   │ ──(HttpError: status >= 400)──► FAIL FAST
-                       └──────┬──────┘
-                              │ (res.ok)
-                              ▼
-                       ┌─────────────┐
-                       │  parseTodo  │ ──(ParseFailure: bad JSON)────► FAIL FAST
-                       └──────┬──────┘
-                              │ (valid Todo)
-                              ▼
-                       ┌─────────────┐
-                       │   Timeout   │ ──(TimeoutException)──────────┐
-                       └──────┬──────┘                               │
-                              │ (within 5s)                          ▼
-                              ▼                              [ selectiveRetry ]
-                       ┌─────────────┐                       (recurs 3 times,
-                       │ Ingested OK │                       jittered backoff)
-                       └─────────────┘                               │
-                              ▲                                      │
-                              └───────(Success on retry)─────────────┴──► FAIL (after 3)
-```
+<VisualFlow
+  title="Ingestion pipeline data flow"
+  nodes={[
+    { id: "inputs", label: "Inputs (e.g., IDs: 1, 2, 3)", col: 0, row: 0, icon: "input", description: "Raw array of data records, queue payloads, or identifiers passed into the execution loop." },
+    { id: "foreach", label: "Effect.forEach (concurrency: n)", col: 0, row: 1, icon: "loop", description: "Concurrent execution wrapper that spawns parallel fibers to process inputs simultaneously." },
+    { id: "fetch", label: "fetchRaw (HTTP request)", col: 0, row: 2, icon: "network", description: "Fetches the raw JSON payload from the flaky external endpoint. Fails fast on HttpError (>= 400)." },
+    { id: "parse", label: "parseTodo (JSON parsing)", col: 0, row: 3, icon: "schema", description: "Validates raw JSON against the Schema struct. Fails fast on ParseFailure (bad/invalid JSON)." },
+    { id: "timeout", label: "Timeout (5s limit)", col: 0, row: 4, icon: "timer", description: "Races the validation task against a 5-second timeout window. Triggers TimeoutException on breach." },
+    { id: "success", label: "Ingested OK", col: 0, row: 5, icon: "success", color: "#4ade80", description: "Successful ingestion terminal [[effect-ts/state|state]]. Validated record is written to database." },
+    { id: "retry", label: "selectiveRetry (3 attempts)", col: 2, row: 4, icon: "retry", color: "#fbbf24", description: "Catches TimeoutExceptions and transient failures to trigger jittered exponential backoffs." },
+    { id: "fail", label: "FAIL FAST", col: 2, row: 2, icon: "fail", color: "#f87171", description: "Terminal failure state. Aborts the pipeline immediately on structural errors or exhausted retries." },
+  ]}
+  edges={[
+    { from: "inputs", to: "foreach", style: "solid" },
+    { from: "foreach", to: "fetch", style: "solid" },
+    { from: "fetch", to: "parse", label: "(res.ok)", style: "solid" },
+    { from: "fetch", to: "fail", label: "(HttpError)", color: "#f87171", style: "dashed" },
+    { from: "parse", to: "timeout", label: "(valid Todo)", style: "solid" },
+    { from: "parse", to: "fail", label: "(ParseFailure)", color: "#f87171", style: "dashed" },
+    { from: "timeout", to: "success", label: "(within 5s)", color: "#4ade80", style: "solid" },
+    { from: "timeout", to: "retry", label: "(TimeoutException)", color: "#fbbf24", style: "solid" },
+    { from: "retry", to: "fetch", label: "(Success on retry)", color: "#4ade80", style: "solid", type: "curved" },
+    { from: "retry", to: "fail", label: "(Failed after 3)", color: "#f87171", style: "solid" },
+  ]}
+/>
 
 <TypeChannelTracer
   title="Error channel through the ingestion pipeline"

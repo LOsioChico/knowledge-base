@@ -1,0 +1,73 @@
+---
+/**
+ * DirectoryNode.astro
+ * ───────────────────
+ * Recursive node renderer helper component for DirectoryTree.
+ * Uses Astro.self to natively render nested directories recursively.
+ */
+
+interface TreeNode {
+  name: string;
+  type: 'file' | 'folder';
+  desc?: string;
+  color?: string;
+  children?: TreeNode[];
+  fullPath: string;
+}
+
+interface Props {
+  node: TreeNode;
+  depth: number;
+}
+
+const { node, depth } = Astro.props;
+
+if (!node) return null;
+const isFolder = node.type === 'folder';
+const hasChildren = isFolder && node.children && node.children.length > 0;
+const paddingLeft = `${depth * 18 + 12}px`;
+---
+
+<div 
+  class={`dt-node dt-node--${node.type} ${hasChildren ? 'dt-node--collapsible' : ''}`}
+  style={node.color ? `--node-color: ${node.color}` : ''}
+  data-path={node.fullPath}
+  data-type={node.type}
+  data-name={node.name}
+  data-desc={node.desc || ''}
+>
+  <div class="dt-node-row" style={`padding-left: ${paddingLeft}`}>
+    {isFolder && hasChildren && (
+      <span class="dt-folder-arrow">
+        <svg viewBox="0 0 24 24" width="10" height="10">
+          <path fill="currentColor" d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
+        </svg>
+      </span>
+    )}
+    {!hasChildren && isFolder && <span class="dt-folder-spacer" />}
+    
+    {/* Custom Node SVGs */}
+    {isFolder ? (
+      <svg class="dt-node-icon dt-node-icon--folder" viewBox="0 0 24 24" width="16" height="16">
+        <path fill="currentColor" d="M10 4H4c-1.11 0-2 .89-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+      </svg>
+    ) : (
+      <svg class="dt-node-icon dt-node-icon--file" viewBox="0 0 24 24" width="16" height="16">
+        <path fill="currentColor" d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+      </svg>
+    )}
+    
+    <span class="dt-node-name">{node.name}</span>
+    {node.desc && <span class="dt-node-dot-indicator" />}
+  </div>
+  
+  {isFolder && hasChildren && (
+    <div class="dt-node-children">
+      <div class="dt-node-children-inner">
+        {node.children && node.children.map((child) => (
+          child ? <Astro.self node={child} depth={depth + 1} /> : null
+        ))}
+      </div>
+    </div>
+  )}
+</div>

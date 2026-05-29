@@ -1,15 +1,15 @@
 ---
 /**
  * ArchitectureExplorer.astro
- *
- * Stacked horizontal layers representing an architecture pipeline.
+ * ──────────────────────────
+ * Premium stacked horizontal layers representing architectural structures.
  * Click any layer to expand and see its description + sub-items.
- * Layers are numbered, have flow direction indicators, and feature
- * a polished expanded state with glow effects.
+ * Features ultra-smooth CSS Grid auto-height transitions, customizable flow arrows,
+ * glowing numeric badges, and a matching glassmorphic design system.
  *
  * Props:
- *   layers – ordered from bottom (infrastructure) to top (application)
- *   title  – optional heading
+ *   layers    – ordered list of layers
+ *   title     – optional heading
  *   direction – "down" (default, request flows top-to-bottom) or "up"
  */
 
@@ -19,7 +19,6 @@ interface Layer {
   color?: string;
   description: string;
   items?: string[];
-  /** Link target for the layer label */
   href?: string;
 }
 
@@ -27,17 +26,17 @@ interface Props {
   layers: Layer[];
   title?: string;
   direction?: "down" | "up";
+  badge?: string;
 }
 
-const { layers, title, direction = "down" } = Astro.props;
-const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+const { layers, title, direction = "down", badge } = Astro.props;
 ---
 
 <div class="ae not-content" data-layers={JSON.stringify(layers)}>
   {title && (
     <div class="ae-header">
       <span class="ae-title">{title}</span>
-      <span class="ae-direction">{direction === "down" ? "Request ↓" : "Response ↑"}</span>
+      <span class="ae-badge">⬡ {badge || (direction === "down" ? "Request Flow ↓" : "Response Flow ↑")}</span>
     </div>
   )}
 
@@ -50,36 +49,39 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
       >
         <div class="ae-layer-bar">
           <div class="ae-layer-left">
-            <span class="ae-layer-num">{circled[idx] || idx + 1}</span>
+            <span class="ae-layer-num-badge">
+              {idx + 1}
+            </span>
             {layer.href ? (
               <a class="ae-layer-label ae-layer-link" href={layer.href}>{layer.label}</a>
             ) : (
               <span class="ae-layer-label">{layer.label}</span>
             )}
           </div>
-          <svg class="ae-layer-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6l4 4 4-4" />
+          <svg class="ae-layer-chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 6l4 4 4-4" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
+        
         <div class="ae-layer-detail">
-          <p class="ae-layer-desc">{layer.description}</p>
-          {layer.items && layer.items.length > 0 && (
-            <div class="ae-layer-items">
-              {layer.items.map((item) => (
-                <span class="ae-layer-item">{item}</span>
-              ))}
-            </div>
-          )}
+          <div class="ae-layer-detail-inner">
+            <p class="ae-layer-desc">{layer.description}</p>
+            {layer.items && layer.items.length > 0 && (
+              <div class="ae-layer-items">
+                {layer.items.map((item) => (
+                  <span class="ae-layer-item">{item}</span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        {idx < layers.length - 1 && (
-          <div class="ae-flow-arrow">{direction === "down" ? "↓" : "↑"}</div>
-        )}
+
       </div>
     ))}
   </div>
 </div>
 
-<style>
+<style is:global>
   .ae {
     --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --ae-text:       var(--sl-color-text);
@@ -87,35 +89,46 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     --ae-text-ghost: var(--sl-color-gray-4);
     --ae-rule:       var(--sl-color-hairline-shade);
     --ae-accent:     var(--sl-color-accent-high);
-    --ae-accent-low: var(--sl-color-accent-low);
-    --ae-panel:      var(--sl-color-bg-nav);
-    margin: 1.5rem 0;
+    --ae-panel:      rgba(20, 20, 23, 0.4);
+    
+    margin: 2rem 0;
     background: var(--ae-panel);
     border: 1px solid var(--ae-rule);
-    border-radius: 10px;
+    border-radius: 16px;
     overflow: hidden;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .ae-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--ae-rule);
+    background: rgba(10, 10, 12, 0.5);
   }
 
   .ae-title {
-    font-size: var(--sl-text-sm);
-    font-weight: 600;
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
     color: var(--ae-text-faint);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
 
-  .ae-direction {
-    font-size: 11px;
-    color: var(--ae-text-ghost);
-    font-style: italic;
+  .ae-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ae-accent);
+    background: color-mix(in srgb, var(--ae-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ae-accent) 25%, transparent);
+    padding: 0.25rem 0.65rem;
+    border-radius: 99px;
   }
 
   /* ═══ LAYER STACK ═══ */
@@ -133,15 +146,17 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     cursor: pointer;
   }
 
-  .ae-layer:last-child { border-bottom: none; }
+  .ae-layer:last-child { 
+    border-bottom: none; 
+  }
 
-  /* When any layer is expanded, dim the others */
+  /* When any layer is expanded, dim the others slightly for premium focus */
   .ae-stack.has-focus .ae-layer:not(.is-expanded) {
-    opacity: 0.4;
+    opacity: 0.45;
   }
 
   .ae-stack.has-focus .ae-layer:not(.is-expanded):hover {
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   /* ── Bar (always visible) ── */
@@ -149,49 +164,63 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    padding: 16px 20px;
     border-left: 3px solid var(--ae-layer-color);
     transition: background 160ms var(--ease-out), border-left-width 200ms var(--ease-out);
   }
 
   .ae-layer:hover .ae-layer-bar {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .ae-layer.is-expanded .ae-layer-bar {
-    background: rgba(255, 255, 255, 0.03);
-    border-left-width: 4px;
-    box-shadow: inset 4px 0 12px -4px color-mix(in srgb, var(--ae-layer-color) 20%, transparent);
+    background: rgba(255, 255, 255, 0.04);
+    border-left-width: 5px;
+    box-shadow: inset 4px 0 16px -6px color-mix(in srgb, var(--ae-layer-color) 25%, transparent);
   }
 
   .ae-layer-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
   }
 
-  .ae-layer-num {
-    font-size: var(--sl-text-sm);
+  /* Glowing numeric badge */
+  .ae-layer-num-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    font-weight: 700;
     color: var(--ae-layer-color);
-    opacity: 0.6;
+    background: color-mix(in srgb, var(--ae-layer-color) 10%, rgba(255, 255, 255, 0.02));
+    border: 1px solid color-mix(in srgb, var(--ae-layer-color) 30%, rgba(255, 255, 255, 0.05));
+    box-shadow: 0 0 8px color-mix(in srgb, var(--ae-layer-color) 12%, transparent);
+    transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
     flex-shrink: 0;
-    width: 18px;
-    text-align: center;
   }
 
-  .ae-layer.is-expanded .ae-layer-num {
-    opacity: 1;
+  .ae-layer.is-expanded .ae-layer-num-badge {
+    background: var(--ae-layer-color);
+    color: rgba(10, 10, 12, 0.95);
+    border-color: var(--ae-layer-color);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--ae-layer-color) 40%, transparent);
+    transform: scale(1.05);
   }
 
   .ae-layer-label {
     font-size: var(--sl-text-sm);
     font-weight: 600;
     color: var(--ae-text);
-    transition: color 160ms var(--ease-out);
+    transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
   }
 
   .ae-layer.is-expanded .ae-layer-label {
     color: var(--ae-layer-color);
+    transform: translateX(2px);
   }
 
   a.ae-layer-link {
@@ -222,7 +251,7 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     width: 14px;
     height: 14px;
     color: var(--ae-text-ghost);
-    transition: transform 200ms var(--ease-out), color 200ms var(--ease-out);
+    transition: transform 220ms var(--ease-out), color 200ms var(--ease-out);
     flex-shrink: 0;
   }
 
@@ -231,31 +260,37 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     color: var(--ae-layer-color);
   }
 
-  /* ── Detail panel (collapsed by default) ── */
+  /* ── Detail Panel (Auto-height transition using CSS Grid) ── */
   .ae-layer-detail {
-    max-height: 0;
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 250ms var(--ease-out), opacity 200ms ease;
+    opacity: 0;
     overflow: hidden;
-    transition: max-height 300ms var(--ease-out);
-    padding: 0 20px 0 51px; /* 20px + 3px border + 10px gap + 18px badge */
   }
 
   .ae-layer.is-expanded .ae-layer-detail {
-    max-height: 300px;
-    padding-bottom: 14px;
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .ae-layer-detail-inner {
+    min-height: 0;
+    padding: 4px 20px 16px 54px; /* Align description text with label */
   }
 
   .ae-layer-desc {
     font-size: var(--sl-text-sm);
     color: var(--ae-text-faint);
     line-height: 1.6;
-    margin: 8px 0 0;
+    margin: 0;
   }
 
   .ae-layer-items {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 10px;
+    margin-top: 12px;
   }
 
   .ae-layer-item {
@@ -263,25 +298,14 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
     font-size: 11px;
     color: var(--ae-layer-color);
     background: rgba(255, 255, 255, 0.04);
-    border: 1px solid color-mix(in srgb, var(--ae-layer-color) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ae-layer-color) 20%, transparent);
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: background 160ms var(--ease-out);
   }
 
   .ae-layer.is-expanded .ae-layer-item {
     background: color-mix(in srgb, var(--ae-layer-color) 8%, transparent);
-  }
-
-  /* ── Flow arrow between layers ── */
-  .ae-flow-arrow {
-    position: absolute;
-    left: 30px;
-    bottom: -8px;
-    font-size: 10px;
-    color: var(--ae-text-ghost);
-    z-index: 1;
-    opacity: 0.5;
   }
 
   /* ═══ REDUCED MOTION & PRINT ═══ */
@@ -292,10 +316,10 @@ const circled = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", 
   }
 
   @media print {
-    .ae-layer-detail { max-height: none !important; padding-bottom: 14px !important; }
+    .ae-layer-detail { grid-template-rows: 1fr !important; opacity: 1 !important; }
+    .ae-layer-detail-inner { padding-bottom: 16px !important; }
     .ae-layer { opacity: 1 !important; }
     .ae-layer-chevron { display: none; }
-    .ae-flow-arrow { display: none; }
   }
 </style>
 

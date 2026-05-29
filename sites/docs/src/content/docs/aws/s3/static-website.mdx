@@ -1,17 +1,21 @@
 ---
 title: S3 static website hosting
-description: Serve a bucket as a public HTTP website — index documents, HTTPS gap, and CloudFront or Amplify front-ends.
+description: "Serve a bucket as a public HTTP website: index documents, HTTPS gap, and CloudFront or Amplify front-ends."
+area: aws
+status: evergreen
 related:
   - "[[aws/s3/quickstart]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html
 ---
 
 > S3 serves bucket objects as a public website at a Region-specific **website endpoint**. Bare endpoint is HTTP-only: production sites need [[aws/cloudfront|CloudFront]] or [[aws/amplify|Amplify Hosting]] for HTTPS and custom domains.
 
 import { Aside } from "@astrojs/starlight/components";
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
-import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.astro';
 
 <Aside type="tip" title="Prerequisites">
 Before diving in, make sure you understand:
@@ -43,28 +47,43 @@ Before diving in, make sure you understand:
 
 ## 1. Enable hosting
 
-<PipelineStrip
-  stages={[
-    { label: "Unblock public access", detail: "put-public-access-block disables all four Block Public Access toggles" },
-    { label: "Enable website", detail: "aws s3 website sets index and error documents" },
-    { label: "Apply bucket policy", detail: "put-bucket-policy grants s3:GetObject to Principal *" },
-    { label: "Verify", detail: "get-bucket-website returns the IndexDocument and ErrorDocument config" },
+<HierarchyExplorer
+  title="S3 Website Provisioning Stack"
+  resources={[
+    {
+      id: "bpa",
+      label: "BPA Configuration",
+      color: "#60a5fa",
+      badge: "Block Public Access",
+      description: "Disables all four Block Public Access settings on the bucket. This is required before AWS S3 will let you apply any public-read bucket policies.",
+      cliCommand: `aws --profile \${AWS_PROFILE} s3api put-public-access-block --bucket \${BUCKET_NAME} --public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false`
+    },
+    {
+      id: "website",
+      label: "Website Configuration",
+      color: "#a78bfa",
+      badge: "Website Suffixes",
+      description: "Enables static website hosting mode on the bucket, registering index.html as the home index and error.html for routing failure paths.",
+      cliCommand: `aws --profile \${AWS_PROFILE} s3 website s3://\${BUCKET_NAME}/ --index-document index.html --error-document error.html`
+    },
+    {
+      id: "policy",
+      label: "Bucket Policy",
+      color: "#f472b6",
+      badge: "IAM Bucket Policy",
+      description: "Applies a bucket policy granting anonymous public s3:GetObject read permissions to all objects in the bucket path.",
+      cliCommand: `aws --profile \${AWS_PROFILE} s3api put-bucket-policy --bucket \${BUCKET_NAME} --policy '{"Version":"2012-10-17","Statement":[{"Sid":"PublicReadGetObject","Effect":"Allow","Principal":"*","Action":"s3:GetObject","Resource":"arn:aws:s3:::\${BUCKET_NAME}/*"}]}'`
+    },
+    {
+      id: "verify",
+      label: "Get Verification",
+      color: "#34d399",
+      badge: "Endpoint Status",
+      description: "Queries the bucket website configuration from the S3 API to verify that both the index and error documents are correctly registered.",
+      cliCommand: `aws --profile \${AWS_PROFILE} s3api get-bucket-website --bucket \${BUCKET_NAME}`
+    }
   ]}
 />
-
-Enable website hosting by allowing a public bucket policy, configuring index/error documents, and applying the policy. `put-public-access-block`, `aws s3 website`, and `put-bucket-policy` print no success body; verify with `get-bucket-website` after the policy step.
-
-```bash
-aws s3api put-public-access-block \
---bucket my-site \
---public-access-block-configuration BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false
-
-aws s3 website s3://my-site/ \
---index-document index.html \
---error-document error.html
-
-aws s3api put-bucket-policy --bucket my-site --policy file://policy.json
-```
 
 Terminal verification session showing empty stdout setup responses and get-bucket-website JSON:
 

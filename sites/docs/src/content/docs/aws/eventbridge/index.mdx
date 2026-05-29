@@ -1,6 +1,6 @@
 ---
 title: EventBridge
-description: Amazon EventBridge — Serverless event bus for decoupling distributed systems, matching JSON patterns, and routing events.
+description: "Amazon EventBridge: Serverless event bus for decoupling distributed systems, matching JSON patterns, and routing events."
 tags: [type/moc, tech/aws, tech/eventbridge]
 area: aws
 status: seed
@@ -13,6 +13,7 @@ source:
 ---
 
 import { Card, CardGrid } from "@astrojs/starlight/components";
+import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.astro';
 
 > Amazon EventBridge is a serverless event bus that ingests events from your own applications, SaaS applications, and AWS services, routing them to targets based on declarative JSON filter patterns.
 
@@ -39,23 +40,35 @@ import { Card, CardGrid } from "@astrojs/starlight/components";
 
 EventBridge decouples publishers from consumers using an asynchronous **Bus -> Rule -> Target** routing pipeline:
 
-```
-[ Event Source ]
-       │  (PutEvents / AWS Event)
-       ▼
- ┌───────────────┐
- │   Event Bus   │  (Central ingestion endpoint)
- └───────┬───────┘
-         │
-    ┌────┴────┐
-    │  Rules  │     (Declarative JSON filters)
-    └────┬────┘
-         │  (Matches Pattern)
-         ▼
-    ┌─────────┐
-    │ Targets │     (Lambda, SQS, SNS, or API Destinations)
-    └─────────┘
-```
+<HierarchyExplorer
+  title="EventBridge Ingestion Pipeline"
+  resources={[
+    {
+      id: "bus",
+      label: "Custom Event Bus",
+      color: "#60a5fa",
+      badge: "Event Bus",
+      description: "An isolated ingestion channel for your application domains. Receives incoming JSON event payloads and manages Account-wide subscriptions.",
+      cliCommand: `aws --profile \${AWS_PROFILE} events create-event-bus --name \${EVENT_BUS_NAME}`
+    },
+    {
+      id: "rule",
+      label: "Ingestion Rule",
+      color: "#a78bfa",
+      badge: "Filter Pattern",
+      description: "Matches incoming event properties against declarative JSON filter patterns. Forwards events to target systems only when the payload structure matches.",
+      cliCommand: `aws --profile \${AWS_PROFILE} events put-rule --name \${RULE_NAME} --event-bus-name \${EVENT_BUS_NAME} --event-pattern '{"source":["my-app"],"detail-type":["UserCreated"]}'`
+    },
+    {
+      id: "target",
+      label: "Decoupled Target",
+      color: "#f472b6",
+      badge: "SQS Target Queue",
+      description: "Binds a resource (like an SQS queue, Lambda function, or API Destination) to the rule. EventBridge handles delivery retry policies and DLQ routing.",
+      cliCommand: `aws --profile \${AWS_PROFILE} events put-targets --rule \${RULE_NAME} --event-bus-name \${EVENT_BUS_NAME} --targets '{"Id":"1","Arn":"arn:aws:sqs:us-east-1:123456789012:\${TARGET_QUEUE_NAME}"}'`
+    }
+  ]}
+/>
 
 ## Pending notes
 
