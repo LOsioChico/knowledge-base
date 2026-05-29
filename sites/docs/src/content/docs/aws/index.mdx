@@ -6,6 +6,7 @@ related:
 ---
 
 import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import LearningRoadmap from '/src/components/interactive/LearningRoadmap.astro';
 
 > Map of content for AWS. Each service lives in `aws/<service>/`: `index` is the concept note, `cli` is the cheatsheet, and deep-dives or recipes sit alongside. Cross-cutting recipes live under [[aws/recipes|AWS recipes]]; CLI fundamentals under [[aws/cli|AWS CLI]].
 
@@ -16,43 +17,33 @@ import { Aside, Card, CardGrid, Steps, Tabs, TabItem } from "@astrojs/starlight/
 - [[aws/account-migrations|Account migrations]]: [[aws/account-migrations|playbook]] stitches per-service recipes into one ordered cutover.
 - **Compute choice**: [[aws/lambda-vs-ec2|Lambda vs EC2 vs Fargate]]: workload shape, not "serverless good".
 
-## Learning Pathway Sequence
+## Learning Roadmap
 
-A highly structured roadmap designed to take you from foundational cloud credentials up to advanced, decoupled event-driven queues.
-
-```mermaid
-flowchart TD
-    CLI["1. CLI Credentials (Entry)"] --> QRY["2. Query & Output"]
-    QRY --> IAM["3. IAM Policies"]
-    IAM --> S3QS["4. S3 Quickstart"]
-    S3QS --> S3SC["S3 Storage Classes"]
-    S3SC --> S3LC["S3 Lifecycles"]
-    S3QS --> S3PS["Presigned URLs"]
-    IAM --> XACCT["Cross-Account Roles"]
-    XACCT --> RDS["RDS Snapshots"]
-    XACCT --> KMS["KMS Keys"]
-    S3LC --> EB["EventBridge Decoupling"]
-    EB --> SQS["SQS Queues"]
-    EB --> SNS["SNS Fan-out"]
-    IAM --> LAM["Lambda Quickstart"]
-    LAM --> EC2["EC2 & VPC"]
-
-    click CLI "/knowledge-base/aws/cli/profiles-and-credentials/"
-    click QRY "/knowledge-base/aws/cli/query-and-output/"
-    click IAM "/knowledge-base/aws/iam/"
-    click S3QS "/knowledge-base/aws/s3/quickstart/"
-    click S3SC "/knowledge-base/aws/s3/storage-classes/"
-    click S3LC "/knowledge-base/aws/s3/lifecycle-rules/"
-    click S3PS "/knowledge-base/aws/s3/presigned-urls/"
-    click XACCT "/knowledge-base/aws/recipes/cross-account-role-pattern/"
-    click RDS "/knowledge-base/aws/rds/"
-    click KMS "/knowledge-base/aws/kms/"
-    click EB "/knowledge-base/aws/eventbridge/event-driven-decoupling/"
-    click SQS "/knowledge-base/aws/sqs/"
-    click SNS "/knowledge-base/aws/sns/"
-    click LAM "/knowledge-base/aws/lambda/quickstart/"
-    click EC2 "/knowledge-base/aws/ec2/"
-```
+<LearningRoadmap
+  trackId="aws"
+  title="AWS Learning Path"
+  nodes={[
+    { id: "cli", label: "1. CLI Credentials", href: "/knowledge-base/aws/cli/profiles-and-credentials/", description: "Profile setup, session credentials, and SSO integration", category: "required", group: "Foundations" },
+    { id: "qry", label: "2. Query & Output", href: "/knowledge-base/aws/cli/query-and-output/", description: "Filtering, queries, and projection parameters", category: "required", group: "Foundations", prereqs: ["cli"] },
+    { id: "iam", label: "3. IAM Policies", href: "/knowledge-base/aws/iam/", description: "Identities, policies, boundaries, and evaluation logic", category: "required", group: "Foundations", prereqs: ["qry"] },
+    
+    { id: "s3qs", label: "4. S3 Quickstart", href: "/knowledge-base/aws/s3/quickstart/", description: "Simple S3 uploads and standard controls", category: "required", group: "Storage (S3)", prereqs: ["iam"] },
+    { id: "s3sc", label: "S3 Storage Classes", href: "/knowledge-base/aws/s3/storage-classes/", description: "Standard, IA, Glacier, Intelligent-Tiering, and lifecycle costs", category: "required", group: "Storage (S3)", prereqs: ["s3qs"] },
+    { id: "s3lc", label: "S3 Lifecycles", href: "/knowledge-base/aws/s3/lifecycle-rules/", description: "Bucket rules, transition timelines, and object expiration", category: "required", group: "Storage (S3)", prereqs: ["s3sc"] },
+    { id: "s3ps", label: "Presigned URLs", href: "/knowledge-base/aws/s3/presigned-urls/", description: "Secure, time-limited read/write access without public policies", category: "optional", group: "Storage (S3)", prereqs: ["s3qs"] },
+    
+    { id: "xacct", label: "Cross-Account Roles", href: "/knowledge-base/aws/recipes/cross-account-role-pattern/", description: "AssumeRole patterns, external IDs, and resource policies", category: "required", group: "Security & Data", prereqs: ["iam"] },
+    { id: "rds", label: "RDS Snapshots", href: "/knowledge-base/aws/rds/", description: "RDS architecture and cross-account snapshots", category: "optional", group: "Security & Data", prereqs: ["xacct"] },
+    { id: "kms", label: "KMS Keys", href: "/knowledge-base/aws/kms/", description: "Key types, key policies, grant patterns, and envelope encryption", category: "required", group: "Security & Data", prereqs: ["xacct"] },
+    
+    { id: "lam", label: "Lambda Quickstart", href: "/knowledge-base/aws/lambda/quickstart/", description: "Build, invoke, package, and expose serverless functions", category: "required", group: "Compute", prereqs: ["iam"] },
+    { id: "ec2", label: "EC2 & VPC", href: "/knowledge-base/aws/ec2/", description: "Virtual servers, subnets, routing, security groups, and AMIs", category: "required", group: "Compute", prereqs: ["iam"] },
+    
+    { id: "eb", label: "EventBridge Decoupling", href: "/knowledge-base/aws/eventbridge/event-driven-decoupling/", description: "Event-driven buses, schemas, targets, and cross-account routing", category: "required", group: "Messaging & Decoupling", prereqs: ["s3lc"] },
+    { id: "sqs", label: "SQS Queues", href: "/knowledge-base/aws/sqs/", description: "Message queues, visibility timeouts, and dead-letter pipelines", category: "required", group: "Messaging & Decoupling", prereqs: ["eb"] },
+    { id: "sns", label: "SNS Fan-out", href: "/knowledge-base/aws/sns/", description: "Pub/sub topics, message filtering, and multi-consumer delivery", category: "required", group: "Messaging & Decoupling", prereqs: ["eb"] }
+  ]}
+/>
 
 ## Services
 
