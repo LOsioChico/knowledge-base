@@ -213,11 +213,11 @@ export class HttpExceptionFilter implements ExceptionFilter<HttpException> {
 Every other layer: **global → controller → route**. Filters: **route → controller → global**. First `@Catch()` match wins: siblings do not chain.
 
 <PipelineStrip
-  title="Filter resolution — first @Catch() match wins"
+  title="Filter resolution : first @Catch() match wins"
   stages={[
-    { label: "Route Filters", color: "#f87171", tip: "@UseFilters() on @Get()/@Post() — most specific scope, tried first." },
-    { label: "Controller Filters", color: "#fb923c", tip: "@UseFilters() on @Controller() — tried only if no route filter matched." },
-    { label: "Global Filters", color: "#a78bfa", tip: "APP_FILTER or useGlobalFilters() — last resort, catches anything unmatched above." },
+    { label: "Route Filters", color: "#f87171", tip: "@UseFilters() on @Get()/@Post() : most specific scope, tried first." },
+    { label: "Controller Filters", color: "#fb923c", tip: "@UseFilters() on @Controller() : tried only if no route filter matched." },
+    { label: "Global Filters", color: "#a78bfa", tip: "APP_FILTER or useGlobalFilters() : last resort, catches anything unmatched above." },
   ]}
 />
 

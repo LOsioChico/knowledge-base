@@ -51,7 +51,7 @@ One destination per configuration; must be **same Region** as bucket. Destinatio
     { label: "Recursion trap (Lambda)", steps: [
       { from: "bucket", to: "lambda", message: "s3:ObjectCreated:*", description: "Notification fires on any object creation. No prefix filter means the trigger matches everything." },
       { from: "lambda", to: "bucket", message: "PutObject output.json", description: "Lambda writes a result back to the SAME bucket. This fires another s3:ObjectCreated event." },
-      { from: "bucket", to: "lambda", message: "s3:ObjectCreated:* ♻️", description: "The new object triggers Lambda again. Infinite loop — billed by the millisecond. Fix: use disjoint prefixes (in/ → out/) or separate buckets." },
+      { from: "bucket", to: "lambda", message: "s3:ObjectCreated:* ♻️", description: "The new object triggers Lambda again. Infinite loop : billed by the millisecond. Fix: use disjoint prefixes (in/ → out/) or separate buckets." },
     ]},
   ]}
   speed={1400}

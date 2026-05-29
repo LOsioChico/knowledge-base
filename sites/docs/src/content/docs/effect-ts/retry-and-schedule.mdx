@@ -254,8 +254,8 @@ Use `intersect` to cap backoff (`exponential ∩ recurs(5)`). `Schedule.compose`
   title="Which retry / repeat combinator?"
   steps={[
     { id: "start", question: "Does the effect fail or succeed?", options: [
-      { label: "It fails — I want to retry on failure", next: "q-fallback" },
-      { label: "It succeeds — I want to repeat on success", next: "r-repeat" },
+      { label: "It fails : I want to retry on failure", next: "q-fallback" },
+      { label: "It succeeds : I want to repeat on success", next: "r-repeat" },
     ]},
     { id: "q-fallback", question: "What should happen when the retry policy is exhausted?", options: [
       { label: "Let the error propagate", next: "q-filter" },

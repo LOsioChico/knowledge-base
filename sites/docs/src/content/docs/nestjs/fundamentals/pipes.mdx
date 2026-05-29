@@ -96,8 +96,8 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
   steps={[
     { lines: "1", title: "Imports", body: "NestJS decorators and built-in pipes. ParseIntPipe coerces strings to numbers; DefaultValuePipe provides fallbacks." },
     { lines: "3-4", title: "Controller + route", body: "Standard GET /orders/:id. Nest will run pipes on each parameter before calling the handler." },
-    { lines: "7", title: "@Param pipe", body: "ParseIntPipe coerces the ':id' URL segment from string to number. If 'abc' is passed, it throws 400 immediately.", tip: "ParseIntPipe uses parseInt(value, 10) — '3.14' becomes 3, not NaN." },
-    { lines: "8", title: "Chained @Query pipes", body: "DefaultValuePipe runs first: if ?page is missing, it becomes 1. Then ParseIntPipe coerces to number. Order matters — reversing them would give NaN on a missing page.", tip: "Pipe order is left-to-right: Default fills the gap, then Parse coerces." },
+    { lines: "7", title: "@Param pipe", body: "ParseIntPipe coerces the ':id' URL segment from string to number. If 'abc' is passed, it throws 400 immediately.", tip: "ParseIntPipe uses parseInt(value, 10) : '3.14' becomes 3, not NaN." },
+    { lines: "8", title: "Chained @Query pipes", body: "DefaultValuePipe runs first: if ?page is missing, it becomes 1. Then ParseIntPipe coerces to number. Order matters : reversing them would give NaN on a missing page.", tip: "Pipe order is left-to-right: Default fills the gap, then Parse coerces." },
   ]}
 >
 

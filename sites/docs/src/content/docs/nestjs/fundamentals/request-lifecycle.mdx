@@ -59,7 +59,7 @@ Boot and shutdown (`OnModuleInit`, `enableShutdownHooks`) are **process** lifeti
   zone={{ start: 1, end: 5, label: "Exception zone", tip: "If any layer here throws, Exception Filters catch it and short-circuit to an error response.", href: "/knowledge-base/nestjs/fundamentals/exception-filters/" }}
   stages={[
     { label: "Middleware", color: "#a78bfa", href: "/knowledge-base/nestjs/fundamentals/middleware/", tip: "Runs outside Nest's exception zone. Logging, CORS, body parsing." },
-    { label: "Guards", color: "#f59e0b", href: "/knowledge-base/nestjs/fundamentals/guards/", tip: "canActivate() — returns false → 403 before handler runs." },
+    { label: "Guards", color: "#f59e0b", href: "/knowledge-base/nestjs/fundamentals/guards/", tip: "canActivate() : returns false → 403 before handler runs." },
     { label: "Interceptors ⟨pre⟩", color: "#60a5fa", href: "/knowledge-base/nestjs/fundamentals/interceptors/", tip: "Code before next.handle(): timer, logging, cache check." },
     { label: "Pipes", color: "#34d399", href: "/knowledge-base/nestjs/fundamentals/pipes/", tip: "Transform & validate @Body/@Param/@Query. Bad input → 400." },
     { label: "Controller", color: "#f472b6", tip: "Your @Get()/@Post() method. All inputs validated, user authorized." },
@@ -168,7 +168,7 @@ Decorators on a single handler show **where** each layer attaches (Express adapt
   title="CatsController Enhancer Ordering"
   steps={[
     { lines: "15-28", title: "Standalone Enhancers", body: "We mock AuthGuard, AdminGuard, and LoggingInterceptor to keep the example copy-pasteable. In standard apps, these are separate classes decorated with @Injectable()." },
-    { lines: "30-33", title: "Controller Scope", body: "The controller prefix is /cats. Enhancers applied here — @UseGuards(AuthGuard) and @UseInterceptors(LoggingInterceptor) — wrap every handler method within this class." },
+    { lines: "30-33", title: "Controller Scope", body: "The controller prefix is /cats. Enhancers applied here : @UseGuards(AuthGuard) and @UseInterceptors(LoggingInterceptor) : wrap every handler method within this class." },
     { lines: "34-35", title: "Route Scope", body: "@Get(':id') mounts the GET endpoint. @UseGuards(AdminGuard) attaches AdminGuard specifically to this handler, executing after the controller-level guards." },
     { lines: "36-38", title: "Parameter Pipe", body: "The @Param('id', ParseIntPipe) decorator extracts the 'id' parameter. ParseIntPipe runs after guards and before-interceptors, transforming the string input into a number or throwing a 400 error if invalid." },
     { lines: "39-41", title: "Controller Handler", body: "This is Step 6 (the method body). By this point, all validation has succeeded and authorization is complete. We simply return the parsed id." }

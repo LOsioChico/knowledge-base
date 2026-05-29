@@ -172,21 +172,21 @@ Per [`Effect.acquireRelease` JSDoc](https://github.com/Effect-TS/effect/blob/mai
   title="Pick the right resource primitive"
   steps={[
     { id: "start", question: "Do you have a resource value that needs cleanup (handle, connection, file)?", options: [
-      { label: "Yes — I acquire something and must release it", next: "q-lifetime" },
-      { label: "No — I just need a side-effect to run on close", next: "q-exit" },
+      { label: "Yes : I acquire something and must release it", next: "q-lifetime" },
+      { label: "No : I just need a side-effect to run on close", next: "q-exit" },
     ]},
     { id: "q-lifetime", question: "Is the resource used in one expression, or shared across multiple steps?", options: [
-      { label: "One expression — acquire, use, done", next: "r-aur" },
-      { label: "Multiple steps — need the resource across a gen block", next: "r-ar" },
+      { label: "One expression : acquire, use, done", next: "r-aur" },
+      { label: "Multiple steps : need the resource across a gen block", next: "r-ar" },
     ]},
     { id: "q-exit", question: "Does your cleanup need to know whether the scope succeeded or failed?", options: [
-      { label: "Yes — different behavior on success vs failure", next: "r-finalizer" },
-      { label: "No — always run the same cleanup", next: "r-ensuring" },
+      { label: "Yes : different behavior on success vs failure", next: "r-finalizer" },
+      { label: "No : always run the same cleanup", next: "r-ensuring" },
     ]},
     { id: "r-aur", result: "acquireUseRelease", explanation: "Acquire → use → release in a single expression. R stays never (no Scope needed). Best for one-shot resources like a page scrape or a temporary file." },
     { id: "r-ar", result: "acquireRelease + Effect.scoped", explanation: "Resource lives until Scope closes. Use yield* to get the value in a gen block. Pair with Layer.scoped for app-lifetime resources like DB pools." },
-    { id: "r-finalizer", result: "addFinalizer", explanation: "Register cleanup that sees the Exit value — committed on success, rolled back on failure. Requires Scope in R." },
-    { id: "r-ensuring", result: "ensuring", explanation: "Always-run cleanup with no Scope requirement. Like try/finally but interruption-safe. No resource value — just a side-effect." },
+    { id: "r-finalizer", result: "addFinalizer", explanation: "Register cleanup that sees the Exit value : committed on success, rolled back on failure. Requires Scope in R." },
+    { id: "r-ensuring", result: "ensuring", explanation: "Always-run cleanup with no Scope requirement. Like try/finally but interruption-safe. No resource value : just a side-effect." },
   ]}
 />
 

@@ -118,8 +118,8 @@ Lambda cost is linear in requests × memory × duration; EC2 is flat per hour. U
       id: "start",
       question: "Is your workload triggered by discrete events (S3 upload, SQS message, cron schedule)?",
       options: [
-        { label: "Yes — event-driven bursts", next: "duration" },
-        { label: "No — sustained HTTP API or long-running process", next: "sustained" },
+        { label: "Yes : event-driven bursts", next: "duration" },
+        { label: "No : sustained HTTP API or long-running process", next: "sustained" },
       ],
     },
     {
@@ -127,8 +127,8 @@ Lambda cost is linear in requests × memory × duration; EC2 is flat per hour. U
       question: "Does a single invocation finish within 15 minutes?",
       note: "Lambda has a hard 900-second timeout.",
       options: [
-        { label: "Yes — under 15 minutes", next: "traffic" },
-        { label: "No — needs hours or indefinite runtime", next: "r-fargate-long" },
+        { label: "Yes : under 15 minutes", next: "traffic" },
+        { label: "No : needs hours or indefinite runtime", next: "r-fargate-long" },
       ],
     },
     {
@@ -144,16 +144,16 @@ Lambda cost is linear in requests × memory × duration; EC2 is flat per hour. U
       id: "sustained",
       question: "Do you need WebSockets, persistent DB connections, or > 6 MB responses?",
       options: [
-        { label: "Yes — long-lived connections required", next: "ops" },
-        { label: "No — standard request/response", next: "traffic" },
+        { label: "Yes : long-lived connections required", next: "ops" },
+        { label: "No : standard request/response", next: "traffic" },
       ],
     },
     {
       id: "ops",
       question: "Do you want to manage EC2 instances directly?",
       options: [
-        { label: "No — just give me containers", next: "r-fargate" },
-        { label: "Yes — I need GPUs, custom kernels, or max cost control", next: "r-ec2" },
+        { label: "No : just give me containers", next: "r-fargate" },
+        { label: "Yes : I need GPUs, custom kernels, or max cost control", next: "r-ec2" },
       ],
     },
     { id: "r-lambda", result: "Lambda", explanation: "Scale-to-zero, pay-per-request. Ideal for event glue, webhooks, low-duty cron, and per-tenant isolation." },

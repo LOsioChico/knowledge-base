@@ -418,12 +418,12 @@ export class AppModule {}
       { label: "Multiple Nest providers or modules", next: "q-validation" },
     ]},
     { id: "q-validation", question: "Should the app refuse to start on bad or missing env?", options: [
-      { label: "Yes — fail fast at boot", next: "r-schema" },
-      { label: "No — just inject values", next: "q-reuse" },
+      { label: "Yes : fail fast at boot", next: "r-schema" },
+      { label: "No : just inject values", next: "q-reuse" },
     ]},
     { id: "q-reuse", question: "Are you reading the same parsed config in multiple places?", options: [
-      { label: "Yes — same DB/Redis/S3 config reused", next: "r-registerAs" },
-      { label: "No — just a few keys", next: "r-configService" },
+      { label: "Yes : same DB/Redis/S3 config reused", next: "r-registerAs" },
+      { label: "No : just a few keys", next: "r-configService" },
     ]},
     { id: "q-secrets", question: "How are secrets provided to the container?", options: [
       { label: "Orchestrator injects env vars at runtime (ECS task def, K8s Secret)", next: "r-envInjection" },

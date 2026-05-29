@@ -93,7 +93,7 @@ The application handles both the cache and the database directly. The cache acts
       label: "Cache Miss",
       steps: [
         { from: "app", to: "cache", message: "GET key" },
-        { from: "cache", to: "app", message: "MISS — key not found" },
+        { from: "cache", to: "app", message: "MISS: key not found" },
         { from: "app", to: "db", message: "SELECT … WHERE key = ?" },
         { from: "db", to: "app", message: "Result row returned" },
         { from: "app", to: "cache", message: "SET key → warm the cache" },

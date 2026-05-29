@@ -34,7 +34,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before stud
 
 </Aside>
 
-In a perfect network, a message is sent once and processed once. In reality, distributed systems run across unreliable networks where packets can be lost, duplicated, or delayed indefinitely. **Delivery semantics** define the contract between a messaging system and its users about how many times a message will be delivered — and each tier makes a different trade-off between reliability, performance, and complexity.
+In a perfect network, a message is sent once and processed once. In reality, distributed systems run across unreliable networks where packets can be lost, duplicated, or delayed indefinitely. **Delivery semantics** define the contract between a messaging system and its users about how many times a message will be delivered : and each tier makes a different trade-off between reliability, performance, and complexity.
 
 ---
 
@@ -50,7 +50,7 @@ In a perfect network, a message is sent once and processed once. In reality, dis
 
 ## At-Most-Once Delivery
 
-Messages are delivered zero or one times. The sender makes a single attempt and never retries on failure. This is the simplest semantic — and the only one that guarantees zero duplicates — but it accepts that messages may be lost.
+Messages are delivered zero or one times. The sender makes a single attempt and never retries on failure. This is the simplest semantic : and the only one that guarantees zero duplicates : but it accepts that messages may be lost.
 
 ### How it works
 
@@ -74,7 +74,7 @@ sequenceDiagram
 
 ### When to use
 
-*   **Ephemeral telemetry**: Sensor readings, real-time metrics, live game state — where the next reading replaces the current one.
+*   **Ephemeral telemetry**: Sensor readings, real-time metrics, live game state : where the next reading replaces the current one.
 *   **High-throughput logging**: Application log streams where occasional gaps are acceptable.
 *   **Streaming media**: Video or audio frames where retransmission would arrive too late to be useful.
 
@@ -105,7 +105,7 @@ sequenceDiagram
     Note over C: Duplicate! Was it already processed?
 ```
 
-The broker sees only silence. Was the consumer dead, or did the ACK get lost? To guarantee no data loss, the broker **must retry** — accepting that duplicates will occur.
+The broker sees only silence. Was the consumer dead, or did the ACK get lost? To guarantee no data loss, the broker **must retry** : accepting that duplicates will occur.
 
 In [Amazon SQS](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html), this retry mechanism uses a **visibility timeout**: after a consumer receives a message, the message becomes invisible to other consumers for a configurable period (default: 30 seconds). If the consumer doesn't delete the message before the timeout expires, the message becomes visible again for redelivery.
 
@@ -125,7 +125,7 @@ Because network retries can redeliver previously processed messages, **every con
 
 ## Exactly-Once Processing
 
-Messages are guaranteed to produce their effect exactly once — zero data loss and zero duplicate side effects. This is the most desirable guarantee but also the most expensive to achieve.
+Messages are guaranteed to produce their effect exactly once : zero data loss and zero duplicate side effects. This is the most desirable guarantee but also the most expensive to achieve.
 
 ### Why true exactly-once delivery is impossible
 
@@ -152,12 +152,12 @@ Most practical systems achieve exactly-once *processing* rather than exactly-onc
 
 2. **Transactional Writes**: A producer can write atomically across multiple partitions within a single transaction. Either all writes in the transaction are committed and become visible, or all are rolled back.
 
-3. **Consume-Transform-Produce in a Transaction**: The consumer reads from input partitions, processes the data, writes to output partitions, and commits its consumer offsets — all inside a single atomic transaction. If any step fails, the entire transaction rolls back: no partial writes, no orphaned offset commits.
+3. **Consume-Transform-Produce in a Transaction**: The consumer reads from input partitions, processes the data, writes to output partitions, and commits its consumer offsets : all inside a single atomic transaction. If any step fails, the entire transaction rolls back: no partial writes, no orphaned offset commits.
 
 </Steps>
 
 <Aside type="caution" title="Exactly-once boundary">
-Kafka's exactly-once guarantee applies **only within the Kafka ecosystem** — between Kafka producers, brokers, and consumers. The moment a consumer writes to an external system (a database, an HTTP API, a third-party payment provider), the guarantee breaks because the external system is not part of Kafka's transaction boundary. For external systems, design [[system-design/delivery-semantics#idempotency-strategies|idempotent consumers]] instead.
+Kafka's exactly-once guarantee applies **only within the Kafka ecosystem** : between Kafka producers, brokers, and consumers. The moment a consumer writes to an external system (a database, an HTTP API, a third-party payment provider), the guarantee breaks because the external system is not part of Kafka's transaction boundary. For external systems, design [[system-design/delivery-semantics#idempotency-strategies|idempotent consumers]] instead.
 </Aside>
 
 ### When to use
@@ -176,8 +176,8 @@ Because most distributed systems rely on at-least-once delivery, the downstream 
 
 Design write operations to set absolute states rather than apply relative updates:
 
-*   **Non-idempotent**: `UPDATE accounts SET balance = balance + 100 WHERE id = 5` — delivered twice, the balance increases by 200.
-*   **Idempotent**: `UPDATE orders SET status = 'SHIPPED' WHERE id = 12` — no matter how many times this runs, the status remains `SHIPPED`.
+*   **Non-idempotent**: `UPDATE accounts SET balance = balance + 100 WHERE id = 5` : delivered twice, the balance increases by 200.
+*   **Idempotent**: `UPDATE orders SET status = 'SHIPPED' WHERE id = 12` : no matter how many times this runs, the status remains `SHIPPED`.
 
 ### 2. Unique database constraints
 
@@ -263,7 +263,7 @@ The key insight is the **lock lifecycle**: a transient failure releases the lock
   flows={[
     { label: "At-Most-Once (message lost)", steps: [
       { from: "broker", to: "consumer", message: "Deliver Msg A", description: "Broker sends Message A to the consumer and immediately deletes it from the queue. There is no retry mechanism." },
-      { from: "consumer", to: "db", message: "Process...", description: "Consumer begins processing but crashes mid-way. Because the broker already deleted the message, it cannot be redelivered. Message A is lost forever — at-most-once accepts this trade-off for simplicity and speed." },
+      { from: "consumer", to: "db", message: "Process...", description: "Consumer begins processing but crashes mid-way. Because the broker already deleted the message, it cannot be redelivered. Message A is lost forever : at-most-once accepts this trade-off for simplicity and speed." },
     ]},
     { label: "At-Least-Once (duplicate delivered)", steps: [
       { from: "broker", to: "consumer", message: "Deliver Msg A", description: "Broker delivers Message A and starts a visibility timeout. The message is hidden from other consumers but not deleted." },
@@ -279,14 +279,14 @@ The key insight is the **lock lifecycle**: a transient failure releases the lock
   title="Which delivery semantic?"
   steps={[
     { id: "start", question: "Is it acceptable to lose some messages?", options: [
-      { label: "Yes — speed matters more than reliability", next: "r-at-most-once" },
-      { label: "No — every message must be processed", next: "dup-check" },
+      { label: "Yes: speed matters more than reliability", next: "r-at-most-once" },
+      { label: "No: every message must be processed", next: "dup-check" },
     ]},
     { id: "dup-check", question: "Can your consumers handle duplicate messages safely (idempotent processing)?", options: [
-      { label: "Yes — we can design for idempotency", next: "r-at-least-once" },
-      { label: "No — duplicates are catastrophic and we control the full pipeline", next: "r-exactly-once" },
+      { label: "Yes: we can design for idempotency", next: "r-at-least-once" },
+      { label: "No: duplicates are catastrophic and we control the full pipeline", next: "r-exactly-once" },
     ]},
-    { id: "r-at-most-once", result: "At-Most-Once", explanation: "Fire and forget. Simplest, fastest, no duplicates — but messages may be lost. Use for telemetry, metrics, live streaming, and sensor data where the next reading replaces the current one.", link: "#at-most-once-delivery" },
+    { id: "r-at-most-once", result: "At-Most-Once", explanation: "Fire and forget. Simplest, fastest, no duplicates: but messages may be lost. Use for telemetry, metrics, live streaming, and sensor data where the next reading replaces the current one.", link: "#at-most-once-delivery" },
     { id: "r-at-least-once", result: "At-Least-Once + Idempotent Consumers", explanation: "The practical default for most business systems. No data loss, but consumers must handle duplicates via natural idempotency, unique constraints, or deduplication stores.", link: "#idempotency-strategies" },
     { id: "r-exactly-once", result: "Exactly-Once Processing", explanation: "Highest complexity and cost. Requires transactional coordination across the full pipeline (e.g., Kafka transactions). Use for financial ledgers, inventory systems, and regulatory audit trails.", link: "#exactly-once-processing" },
   ]}
@@ -296,9 +296,9 @@ The key insight is the **lock lifecycle**: a transient failure releases the lock
 
 ## See Also
 
-*   [[system-design/message-queues|Asynchronous Message Queues]] — Parent note covering broker architecture and messaging paradigms.
-*   [[system-design/messaging-patterns|Messaging Patterns]] — Competing consumers, fan-out, and consumer group distribution models.
-*   [[system-design/dead-letter-queues|Dead Letter Queues]] — What happens when retries are exhausted: DLQ pipelines and recovery workflows.
-*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] — Coordinating atomic multi-service updates with compensating workflows.
-*   [Apache Kafka Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics) — Official Kafka docs on idempotent producers and transactional exactly-once.
-*   [Amazon SQS Visibility Timeout](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html) — Official AWS docs on at-least-once retry mechanics.
+*   [[system-design/message-queues|Asynchronous Message Queues]] : Parent note covering broker architecture and messaging paradigms.
+*   [[system-design/messaging-patterns|Messaging Patterns]] : Competing consumers, fan-out, and consumer group distribution models.
+*   [[system-design/dead-letter-queues|Dead Letter Queues]] : What happens when retries are exhausted: DLQ pipelines and recovery workflows.
+*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] : Coordinating atomic multi-service updates with compensating workflows.
+*   [Apache Kafka Message Delivery Semantics](https://kafka.apache.org/documentation/#semantics) : Official Kafka docs on idempotent producers and transactional exactly-once.
+*   [Amazon SQS Visibility Timeout](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html) : Official AWS docs on at-least-once retry mechanics.

@@ -105,9 +105,9 @@ flowchart TD
   flows={[
     { label: "Point-to-Point", steps: [
       { from: "producer", to: "queue", message: "Push Message A", description: "Producer sends Message A into the queue. The queue stores it and waits until a consumer is free to pick it up." },
-      { from: "queue", to: "consumer1", message: "Deliver A (locked)", description: "Queue delivers Message A to Consumer 1 and locks it — no other consumer can see or process this message. This guarantees exactly-once delivery." },
+      { from: "queue", to: "consumer1", message: "Deliver A (locked)", description: "Queue delivers Message A to Consumer 1 and locks it: no other consumer can see or process this message. This guarantees exactly-once delivery." },
       { from: "producer", to: "queue", message: "Push Message B", description: "Producer sends a second message. The queue picks the next available consumer (rotating through them one by one, called round-robin) so work is spread evenly." },
-      { from: "queue", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2 because Consumer 1 is still busy. Each message is handled by exactly one consumer — multiple consumers share the load but never duplicate work." },
+      { from: "queue", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2 because Consumer 1 is still busy. Each message is handled by exactly one consumer: multiple consumers share the load but never duplicate work." },
     ]},
     { label: "Pub/Sub Fanout", steps: [
       { from: "producer", to: "queue", message: "Publish OrderPlaced", description: "Publisher broadcasts an OrderPlaced event to the Topic. The topic will clone it to every subscription." },
@@ -198,7 +198,7 @@ Consumers actively poll the broker for batches of messages when they have availa
 
 ## Delivery Semantics and the Two Generals Limit
 
-Distributed messaging must navigate the **Two Generals' Problem** — the impossibility of coordinating state perfectly over an unreliable channel. Messaging platforms offer three tiers of delivery guarantees, each trading off reliability, performance, and complexity:
+Distributed messaging must navigate the **Two Generals' Problem**: the impossibility of coordinating state perfectly over an unreliable channel. Messaging platforms offer three tiers of delivery guarantees, each trading off reliability, performance, and complexity:
 
 | Semantic | Guarantee | Key trade-off |
 | :--- | :--- | :--- |
@@ -209,16 +209,16 @@ Distributed messaging must navigate the **Two Generals' Problem** — the imposs
 Most business-critical systems use **at-least-once delivery** paired with **idempotent consumers** to prevent data loss while safely handling duplicates.
 
 <Aside type="tip" title="Deep dive">
-For the full treatment — the Broker's Dilemma, Kafka's transactional exactly-once, and three idempotency engineering patterns — see [[system-design/delivery-semantics|Delivery Semantics]].
+For the full treatment of the Broker's Dilemma, Kafka's transactional exactly-once, and three idempotency engineering patterns, see [[system-design/delivery-semantics|Delivery Semantics]].
 </Aside>
 
 ---
 
 ## Poison Pills & Dead Letter Queues
 
-When a message repeatedly fails to process, it cannot remain at the head of the queue — doing so blocks all subsequent messages, a problem called **head-of-line blocking**. These unprocessable messages are called **poison pills**.
+When a message repeatedly fails to process, it cannot remain at the head of the queue: doing so blocks all subsequent messages, a problem called **head-of-line blocking**. These unprocessable messages are called **poison pills**.
 
-To maintain throughput, systems route poison pills to a **[[system-design/dead-letter-queues|Dead Letter Queue (DLQ)]]** — a dedicated holding queue for failed messages. The broker counts delivery attempts and, once a configured `maxReceiveCount` is exceeded, automatically moves the message to the DLQ.
+To maintain throughput, systems route poison pills to a **[[system-design/dead-letter-queues|Dead Letter Queue (DLQ)]]**: a dedicated holding queue for failed messages. The broker counts delivery attempts and, once a configured `maxReceiveCount` is exceeded, automatically moves the message to the DLQ.
 
 <FlowSimulator
   title="Poison Pill & Dead Letter Queue Routing"
@@ -247,16 +247,16 @@ To maintain throughput, systems route poison pills to a **[[system-design/dead-l
 />
 
 <Aside type="tip" title="Deep dive">
-For the full treatment — retry strategies (exponential backoff with jitter), DLQ metadata envelopes, per-queue vs shared DLQs, recovery workflows, and monitoring best practices — see [[system-design/dead-letter-queues|Dead Letter Queues]].
+For the full treatment of retry strategies (exponential backoff with jitter), DLQ metadata envelopes, per-queue vs shared DLQs, recovery workflows, and monitoring best practices, see [[system-design/dead-letter-queues|Dead Letter Queues]].
 </Aside>
 
 ---
 
 ## See Also
-*   [[system-design/messaging-patterns|Messaging Patterns]] — Competing consumers, fan-out, consumer groups, and shared subscription models.
-*   [[system-design/delivery-semantics|Delivery Semantics]] — At-most-once, at-least-once, exactly-once guarantees and idempotency strategies.
-*   [[system-design/dead-letter-queues|Dead Letter Queues]] — DLQ architecture, retry strategies, and recovery workflows.
-*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] — Coordinating multi-service state changes.
+*   [[system-design/messaging-patterns|Messaging Patterns]] : Competing consumers, fan-out, consumer groups, and shared subscription models.
+*   [[system-design/delivery-semantics|Delivery Semantics]] : At-most-once, at-least-once, exactly-once guarantees and idempotency strategies.
+*   [[system-design/dead-letter-queues|Dead Letter Queues]] : DLQ architecture, retry strategies, and recovery workflows.
+*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] : Coordinating multi-service state changes.
 *   [[system-design/back-of-the-envelope-estimation|Back-of-the-Envelope Estimation Primitives]]
 *   [[system-design/distributed-caching|Distributed Caching & Invalidation]]
 *   [[system-design/consistency-models|CAP Theorem & Consistency Models]]

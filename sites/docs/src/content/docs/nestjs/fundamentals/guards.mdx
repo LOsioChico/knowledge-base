@@ -123,9 +123,9 @@ export class AuthGuard implements CanActivate {
     <PipelineStrip
       title="Guard execution chain (first false → 403)"
       stages={[
-        { label: "Global Guards", color: "#f59e0b", tip: "APP_GUARD providers — run on every route, registration order." },
-        { label: "Controller Guards", color: "#f59e0b", tip: "@UseGuards() on the class — left to right in the decorator." },
-        { label: "Route Guards", color: "#f59e0b", tip: "@UseGuards() on the method — left to right. All passed → handler runs." },
+        { label: "Global Guards", color: "#f59e0b", tip: "APP_GUARD providers : run on every route, registration order." },
+        { label: "Controller Guards", color: "#f59e0b", tip: "@UseGuards() on the class : left to right in the decorator." },
+        { label: "Route Guards", color: "#f59e0b", tip: "@UseGuards() on the method : left to right. All passed → handler runs." },
       ]}
     />
 

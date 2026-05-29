@@ -241,9 +241,9 @@ const result = Effect.runSyncExit(parseTodo(badInput));
   title="E through a Schema validation pipeline"
   steps={[
     { op: "Schema.decodeUnknown(Todo)(input)", a: "Todo", e: "ParseError", note: "Parses unknown input; if the shape is wrong, E is ParseError" },
-    { op: ".pipe(Effect.mapError(toParseFailure))", a: "Todo", e: "ParseFailure", note: "mapError replaces ParseError with your domain error — E narrows" },
-    { op: "Effect.flatMap(todo, validateBiz)", a: "ValidTodo", e: "ParseFailure | BizError", note: "flatMap adds BizError from a business rule check — E widens" },
-    { op: "Effect.catchTag('BizError', recover)", a: "ValidTodo | Fallback", e: "ParseFailure", note: "catchTag removes BizError — E narrows back to ParseFailure only" },
+    { op: ".pipe(Effect.mapError(toParseFailure))", a: "Todo", e: "ParseFailure", note: "mapError replaces ParseError with your domain error : E narrows" },
+    { op: "Effect.flatMap(todo, validateBiz)", a: "ValidTodo", e: "ParseFailure | BizError", note: "flatMap adds BizError from a business rule check : E widens" },
+    { op: "Effect.catchTag('BizError', recover)", a: "ValidTodo | Fallback", e: "ParseFailure", note: "catchTag removes BizError : E narrows back to ParseFailure only" },
   ]}
 />
 
@@ -259,8 +259,8 @@ const result = Effect.runSyncExit(parseTodo(badInput));
       { label: "A single primitive value", next: "r-primitive" },
     ]},
     { id: "q-transform", question: "Does the wire format differ from your domain type?", options: [
-      { label: "Yes — fields need parsing (e.g., string → number)", next: "r-transform" },
-      { label: "No — the shape matches exactly", next: "r-struct" },
+      { label: "Yes : fields need parsing (e.g., string → number)", next: "r-transform" },
+      { label: "No : the shape matches exactly", next: "r-struct" },
     ]},
     { id: "r-struct", result: "Schema.Struct", explanation: "Use Schema.Struct({ field: Schema.Type }) for objects whose wire and domain shapes match. Combine with Schema.optional for nullable fields." },
     { id: "r-transform", result: "Schema.Struct + transform fields", explanation: "Use built-in transforms like Schema.NumberFromString for individual fields, or Schema.transform() for custom bidirectional mappings. The Encoded type preserves the wire shape." },

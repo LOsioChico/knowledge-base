@@ -65,16 +65,16 @@ Before diving into testing recipes, make sure you understand:
       question: "Does the behavior depend on the HTTP pipeline (guards, pipes, interceptors)?",
       note: "If the failure would only show up inside one method body, a unit test is enough.",
       options: [
-        { label: "No — it's pure method logic", next: "r-unit" },
-        { label: "Yes — route metadata or global enhancers affect the result", next: "http-behavior" },
+        { label: "No : it's pure method logic", next: "r-unit" },
+        { label: "Yes : route metadata or global enhancers affect the result", next: "http-behavior" },
       ],
     },
     {
       id: "http-behavior",
       question: "Do you need the full production module graph?",
       options: [
-        { label: "No — one feature module is enough", next: "r-integration" },
-        { label: "Yes — cross-module interactions matter", next: "r-e2e" },
+        { label: "No : one feature module is enough", next: "r-integration" },
+        { label: "Yes : cross-module interactions matter", next: "r-e2e" },
       ],
     },
     { id: "r-unit", result: "Unit test (compile only)", explanation: "Use Test.createTestingModule().compile(). Mock collaborators, retrieve the provider with get(), test method return values and thrown errors. No HTTP server needed." },

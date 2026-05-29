@@ -46,12 +46,12 @@ Before diving into global enhancers, make sure you understand:
   title="APP_* token or useGlobalX()?"
   steps={[
     { id: "start", question: "Does the constructor need DI (ConfigService, repos, loggers), config injection, or REQUEST scope?", note: "If the enhancer calls any injected dependency, it must live inside the DI container.", options: [
-      { label: "Yes — it injects dependencies", next: "r-app-token" },
-      { label: "No — it's fully self-contained", next: "q-hybrid" },
+      { label: "Yes : it injects dependencies", next: "r-app-token" },
+      { label: "No : it's fully self-contained", next: "q-hybrid" },
     ]},
     { id: "q-hybrid", question: "Is this a hybrid app with microservices or WebSocket gateways?", note: "useGlobalX() only covers the HTTP layer. Microservice listeners and WS gateways stay uncovered unless you pass inheritAppConfig: true.", options: [
-      { label: "Yes — hybrid app", next: "r-app-token" },
-      { label: "No — HTTP only", next: "r-useglobal" },
+      { label: "Yes : hybrid app", next: "r-app-token" },
+      { label: "No : HTTP only", next: "r-useglobal" },
     ]},
     { id: "r-app-token", result: "Use APP_* in a module providers[]", explanation: "Register via { provide: APP_PIPE, useClass: T } (or useValue / useFactory). Nest builds the instance inside the DI container, so constructor injection, request scope, and multi-transport coverage all work. See the worked examples below." },
     { id: "r-useglobal", result: "useGlobalX(new …) in main.ts is fine", explanation: "A simple app.useGlobalPipes(new ValidationPipe({ whitelist: true })) in main.ts is the lightest option when the enhancer needs no injected deps and you're not running a hybrid app." },

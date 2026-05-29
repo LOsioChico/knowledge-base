@@ -214,24 +214,24 @@ Read the first `AccessDenied`: it names the exact ARN checked.
   title="Do you need cross-account AssumeRole?"
   steps={[
     { id: "start", question: "Is the resource in a different AWS account from your compute?", options: [
-      { label: "Yes — compute in account B, resource in account A", next: "can-migrate" },
-      { label: "No — same account", next: "r-no" },
+      { label: "Yes : compute in account B, resource in account A", next: "can-migrate" },
+      { label: "No : same account", next: "r-no" },
     ]},
     { id: "can-migrate", question: "Can you migrate the resource to account B?", options: [
-      { label: "No — regulatory lock, vendor approval, sandbox, or shared resource", next: "resource-policy" },
-      { label: "Yes — nothing blocking migration", next: "r-migrate" },
+      { label: "No : regulatory lock, vendor approval, sandbox, or shared resource", next: "resource-policy" },
+      { label: "Yes : nothing blocking migration", next: "r-migrate" },
     ]},
     { id: "resource-policy", question: "Does the resource support resource-based policies (S3, SQS, SNS, KMS)?", options: [
-      { label: "Yes — the resource accepts cross-account access via its own policy", next: "r-resource-policy" },
-      { label: "No — the service requires IAM credentials (SES, Bedrock, etc.)", next: "throughput" },
+      { label: "Yes : the resource accepts cross-account access via its own policy", next: "r-resource-policy" },
+      { label: "No : the service requires IAM credentials (SES, Bedrock, etc.)", next: "throughput" },
     ]},
     { id: "throughput", question: "How frequently does your compute call the resource?", options: [
-      { label: "Moderate — credential refresh hourly or less is fine", next: "r-assume-role" },
-      { label: "High throughput — refreshing credentials would add latency", next: "r-federation" },
+      { label: "Moderate : credential refresh hourly or less is fine", next: "r-assume-role" },
+      { label: "High throughput : refreshing credentials would add latency", next: "r-federation" },
     ]},
     { id: "r-no", result: "No cross-account pattern needed", explanation: "Your compute and resource are in the same account. Use standard IAM roles and policies." },
     { id: "r-migrate", result: "Migrate the resource instead", explanation: "If nothing blocks moving the resource to account B, migration is simpler than maintaining a cross-account bridge. Eliminate the hop entirely.", link: "#when-not-to-use" },
-    { id: "r-resource-policy", result: "Use a resource-based policy", explanation: "S3 bucket policies, SQS queue policies, SNS topic policies, and KMS key policies can grant cross-account access directly — no intermediate role needed. Simpler to audit and rotate.", link: "#when-not-to-use" },
+    { id: "r-resource-policy", result: "Use a resource-based policy", explanation: "S3 bucket policies, SQS queue policies, SNS topic policies, and KMS key policies can grant cross-account access directly : no intermediate role needed. Simpler to audit and rotate.", link: "#when-not-to-use" },
     { id: "r-assume-role", result: "Use AssumeRole with ExternalId ✅", explanation: "The cross-account assume-role pattern is the right fit. Follow the recipe on this page: create the role in account A, grant sts:AssumeRole in account B, and always set an ExternalId.", link: "#recipe" },
     { id: "r-federation", result: "Consider IAM Identity Center or federation", explanation: "For high-throughput callers that would churn through temporary credentials, IAM Identity Center (SSO) or SAML/OIDC federation provides longer-lived session tokens with less operational overhead.", link: "#when-not-to-use" },
   ]}

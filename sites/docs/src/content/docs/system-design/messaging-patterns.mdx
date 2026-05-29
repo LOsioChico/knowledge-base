@@ -73,7 +73,7 @@ When multiple consumers pull from a single queue, **global message ordering is n
 
 ### When to use
 
-*   **Task distribution**: Video transcoding, image resizing, PDF generation — work that can be parallelized across stateless workers.
+*   **Task distribution**: Video transcoding, image resizing, PDF generation: work that can be parallelized across stateless workers.
 *   **Load leveling**: Absorbing traffic spikes by queuing requests and processing at a steady rate.
 *   **Background jobs**: Email sending, report generation, webhook delivery.
 
@@ -81,7 +81,7 @@ When multiple consumers pull from a single queue, **global message ordering is n
 
 ## Fan-Out
 
-In the fan-out pattern, a publisher broadcasts a message to a **topic**, and every subscription attached to that topic receives its own independent copy. No message is shared — each subscriber processes the full stream.
+In the fan-out pattern, a publisher broadcasts a message to a **topic**, and every subscription attached to that topic receives its own independent copy. No message is shared: each subscriber processes the full stream.
 
 ```mermaid
 flowchart TD
@@ -99,13 +99,13 @@ flowchart TD
 
 1. A publisher sends a message to a named topic.
 2. The topic clones the message and delivers a copy to every registered subscription.
-3. Each subscription processes its copy independently — one subscription's failure does not affect the others.
+3. Each subscription processes its copy independently: one subscription's failure does not affect the others.
 
 ### Filtered fan-out
 
 Not every subscriber needs every message. Most pub/sub systems support **subscription filters** that route only matching messages:
 
-*   **[Amazon SNS](https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html)**: Message attribute-based filter policies on each subscription. The filter is evaluated at the SNS layer — non-matching messages are never delivered to the subscriber's queue.
+*   **[Amazon SNS](https://docs.aws.amazon.com/sns/latest/dg/sns-message-filtering.html)**: Message attribute-based filter policies on each subscription. The filter is evaluated at the SNS layer: non-matching messages are never delivered to the subscriber's queue.
 *   **[Apache Kafka](https://kafka.apache.org/documentation/)**: Filtering is consumer-side. Kafka does not filter at the broker; consumers receive all messages from their assigned partitions and discard non-matching ones in application code.
 *   **RabbitMQ**: Exchange types (`direct`, `topic`, `headers`) provide broker-side routing. A `topic` exchange matches routing keys with wildcard patterns like `orders.*` or `#.shipped`.
 
@@ -142,7 +142,7 @@ This combines two patterns: fan-out (SNS broadcasts to all subscriptions) plus c
 
 ## Consumer Groups
 
-Consumer groups solve the problem of scaling pub/sub consumers while preserving ordering. A consumer group is a set of consumer instances that **share** the partitions of a topic. Within a group, each partition is assigned to exactly one consumer — but different groups each receive the full stream independently.
+Consumer groups solve the problem of scaling pub/sub consumers while preserving ordering. A consumer group is a set of consumer instances that **share** the partitions of a topic. Within a group, each partition is assigned to exactly one consumer: but different groups each receive the full stream independently.
 
 ```mermaid
 flowchart TD
@@ -180,14 +180,14 @@ In [Apache Kafka](https://kafka.apache.org/documentation/#consumerconfigs), a si
 
 ### Partition assignment strategies
 
-When consumers join or leave a group, the group **rebalances** — partitions are redistributed. Kafka supports several [partition assignment strategies](https://kafka.apache.org/documentation/#consumerconfigs):
+When consumers join or leave a group, the group **rebalances**: partitions are redistributed. Kafka supports several [partition assignment strategies](https://kafka.apache.org/documentation/#consumerconfigs):
 
 | Strategy | Behavior |
 | :--- | :--- |
 | **Range** | Partitions assigned to consumers in contiguous ranges. Consumer 1 gets partitions 0–2, Consumer 2 gets 3–5. |
 | **Round-robin** | Partitions distributed one by one across consumers in rotation. |
 | **Sticky** | Minimizes partition movement during rebalancing by keeping existing assignments stable. |
-| **Cooperative Sticky** | Incremental rebalancing — only reassigns partitions that must move, avoiding stop-the-world pauses. |
+| **Cooperative Sticky** | Incremental rebalancing: only reassigns partitions that must move, avoiding stop-the-world pauses. |
 
 ### Consumer groups as a unifying model
 
@@ -199,7 +199,7 @@ Consumer groups unify the competing consumers and fan-out patterns:
 ### When to use
 
 *   **Ordered processing at scale**: Financial event streams, audit logs, user activity tracking where per-key ordering matters.
-*   **Multi-team consumption**: Team A's consumer group processes for analytics while Team B's consumer group processes for billing — same topic, independent consumption.
+*   **Multi-team consumption**: Team A's consumer group processes for analytics while Team B's consumer group processes for billing: same topic, independent consumption.
 
 ---
 
@@ -254,15 +254,15 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
   flows={[
     { label: "Competing Consumers", steps: [
       { from: "producer", to: "broker", message: "Push Message A", description: "Producer sends Message A into the queue. The broker stores it until a consumer is available." },
-      { from: "broker", to: "consumer1", message: "Deliver A (locked)", description: "Broker delivers Message A to Consumer 1 and locks it. No other consumer can see or process this message — this is the competing consumers guarantee." },
+      { from: "broker", to: "consumer1", message: "Deliver A (locked)", description: "Broker delivers Message A to Consumer 1 and locks it. No other consumer can see or process this message: this is the competing consumers guarantee." },
       { from: "producer", to: "broker", message: "Push Message B", description: "Producer sends Message B. The broker picks the next available consumer using round-robin or prefetch-based dispatch." },
-      { from: "broker", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2. Each message is handled by exactly one consumer — multiple consumers share the load but never duplicate work." },
+      { from: "broker", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2. Each message is handled by exactly one consumer: multiple consumers share the load but never duplicate work." },
     ]},
     { label: "Fan-Out", steps: [
       { from: "producer", to: "broker", message: "Publish OrderPlaced", description: "Publisher broadcasts an OrderPlaced event to the Topic. The topic will clone the message to every subscription." },
       { from: "broker", to: "consumer1", message: "Copy → Inventory", description: "Subscription A (Inventory) receives its own copy. It will process the event independently.", group: 1 },
       { from: "broker", to: "consumer2", message: "Copy → Billing", description: "Subscription B (Billing) receives the same event. All subscriptions process the same event in parallel.", group: 1 },
-      { from: "broker", to: "consumer3", message: "Copy → Email", description: "Subscription C (Email) receives the event too. Each subscription is fully independent — one failure doesn't affect the others.", group: 1 },
+      { from: "broker", to: "consumer3", message: "Copy → Email", description: "Subscription C (Email) receives the event too. Each subscription is fully independent: one failure doesn't affect the others.", group: 1 },
     ]},
     { label: "Consumer Group", steps: [
       { from: "producer", to: "broker", message: "Write to Partition 0", description: "Producer writes an event with key 'user-42' to the topic. The partition is determined by hash(key) % numPartitions." },
@@ -278,16 +278,16 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
   title="Which messaging pattern?"
   steps={[
     { id: "start", question: "Does each message need to reach multiple independent services?", options: [
-      { label: "Yes — multiple services must react to the same event", next: "fanout-scale" },
-      { label: "No — each message should be processed by exactly one worker", next: "r-competing" },
+      { label: "Yes: multiple services must react to the same event", next: "fanout-scale" },
+      { label: "No: each message should be processed by exactly one worker", next: "r-competing" },
     ]},
     { id: "fanout-scale", question: "Does each service run multiple replicas that need to share the work within their subscription?", options: [
-      { label: "Yes — each service has a worker pool that should load-balance", next: "ordering" },
-      { label: "No — each service has one consumer instance", next: "r-fanout" },
+      { label: "Yes: each service has a worker pool that should load-balance", next: "ordering" },
+      { label: "No: each service has one consumer instance", next: "r-fanout" },
     ]},
     { id: "ordering", question: "Do you need strict per-key ordering within each service's consumption?", options: [
-      { label: "Yes — messages with the same key must be processed in order", next: "r-consumer-group" },
-      { label: "No — ordering doesn't matter, just distribute work evenly", next: "r-shared-sub" },
+      { label: "Yes: messages with the same key must be processed in order", next: "r-consumer-group" },
+      { label: "No: ordering doesn't matter, just distribute work evenly", next: "r-shared-sub" },
     ]},
     { id: "r-competing", result: "Competing Consumers", explanation: "Use a simple queue with multiple workers pulling messages. Each message is delivered to exactly one consumer. Best for task queues, background jobs, and load leveling.", link: "#competing-consumers" },
     { id: "r-fanout", result: "Fan-Out (Pub/Sub)", explanation: "Use a topic with one subscription per service. Each subscription receives the full stream. Best for event-driven architectures where multiple decoupled services react to a single business event.", link: "#fan-out" },
@@ -300,9 +300,9 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
 
 ## See Also
 
-*   [[system-design/message-queues|Asynchronous Message Queues]] — Parent note covering broker vs log architecture and push vs pull delivery.
-*   [[system-design/delivery-semantics|Delivery Semantics]] — At-most-once, at-least-once, exactly-once guarantees and idempotency strategies.
-*   [[system-design/dead-letter-queues|Dead Letter Queues]] — DLQ patterns, retry strategies, and poison pill recovery.
-*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] — Coordinating multi-service state changes using compensating workflows.
-*   [Apache Kafka Consumer Configuration](https://kafka.apache.org/documentation/#consumerconfigs) — Official Kafka docs on consumer groups, partition assignment, and rebalancing.
-*   [Amazon SQS Visibility Timeout](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html) — Official AWS docs on message locking mechanics.
+*   [[system-design/message-queues|Asynchronous Message Queues]] : Parent note covering broker vs log architecture and push vs pull delivery.
+*   [[system-design/delivery-semantics|Delivery Semantics]] : At-most-once, at-least-once, exactly-once guarantees and idempotency strategies.
+*   [[system-design/dead-letter-queues|Dead Letter Queues]] : DLQ patterns, retry strategies, and poison pill recovery.
+*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] : Coordinating multi-service state changes using compensating workflows.
+*   [Apache Kafka Consumer Configuration](https://kafka.apache.org/documentation/#consumerconfigs) : Official Kafka docs on consumer groups, partition assignment, and rebalancing.
+*   [Amazon SQS Visibility Timeout](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html) : Official AWS docs on message locking mechanics.

@@ -47,7 +47,7 @@ By coding against the abstract types of `@effect/platform`, you write 100% envir
   layers={[
     { id: "runtime", label: "Runtime Engine", color: "#94a3b8", description: "The concrete JavaScript runtime that executes your code. Each has its own native APIs for I/O, networking, and file access.", items: ["Node.js", "Bun", "Deno", "Browser / Web Worker", "Cloudflare Workers"] },
     { id: "adapters", label: "Platform Adapters", color: "#f472b6", description: "Thin bridge packages that implement the abstract service interfaces using runtime-native APIs. Import only at your entrypoint.", items: ["@effect/platform-node", "@effect/platform-bun", "@effect/platform-browser"] },
-    { id: "services", label: "Abstract Services (@effect/platform)", color: "#a78bfa", description: "Runtime-agnostic service interfaces. Your business logic depends on these — never on concrete adapters.", items: ["FileSystem", "HttpClient", "HttpRouter", "Terminal", "Path", "Command"] },
+    { id: "services", label: "Abstract Services (@effect/platform)", color: "#a78bfa", description: "Runtime-agnostic service interfaces. Your business logic depends on these : never on concrete adapters.", items: ["FileSystem", "HttpClient", "HttpRouter", "Terminal", "Path", "Command"] },
     { id: "business", label: "Business Logic", color: "#34d399", description: "Your application code. Uses yield* FileSystem, yield* HttpClient, etc. Zero imports from any concrete runtime. Portable across all platforms.", items: ["Domain services", "Route handlers", "Ingestion pipelines", "CLI commands"] },
   ]}
 />

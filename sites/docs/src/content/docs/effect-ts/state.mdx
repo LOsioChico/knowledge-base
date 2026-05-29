@@ -176,12 +176,12 @@ Effect.runPromise(program);
       { label: "Multiple variables atomically", next: "r-stm" },
     ]},
     { id: "q-reactive", question: "Do other fibers need to observe changes as a stream?", options: [
-      { label: "Yes — subscribers react to every change", next: "r-subref" },
-      { label: "No — just atomic read/write/update", next: "r-ref" },
+      { label: "Yes : subscribers react to every change", next: "r-subref" },
+      { label: "No : just atomic read/write/update", next: "r-ref" },
     ]},
-    { id: "r-ref", result: "Ref", explanation: "Lock-free atomic reference for single-value state. All operations (get, set, update) are guaranteed atomic. Cheapest primitive — use as default." },
+    { id: "r-ref", result: "Ref", explanation: "Lock-free atomic reference for single-value state. All operations (get, set, update) are guaranteed atomic. Cheapest primitive : use as default." },
     { id: "r-subref", result: "SubscriptionRef", explanation: "A Ref that exposes .changes as a Stream. Subscribers see every state transition. Use for reactive UIs, status dashboards, progress tracking." },
-    { id: "r-stm", result: "STM + TRef", explanation: "Software Transactional Memory. Wrap multi-variable operations in STM.gen and commit atomically. The runtime retries on collision — no deadlocks. Use for bank transfers, inventory reservations." },
+    { id: "r-stm", result: "STM + TRef", explanation: "Software Transactional Memory. Wrap multi-variable operations in STM.gen and commit atomically. The runtime retries on collision : no deadlocks. Use for bank transfers, inventory reservations." },
   ]}
 />
 
@@ -195,21 +195,21 @@ Effect.runPromise(program);
     { id: "b", label: "Fiber B ($20)", color: "#f472b6" },
   ]}
   segments={[
-    // t0 — both fibers read from STM
+    // t0 : both fibers read from STM
     { lane: "a", start: 0, end: 0, state: "active", label: "read", tip: "Fiber A reads Alice's TRef. STM snapshots version v1." },
     { lane: "rt", start: 0, end: 0, state: "active", label: "Alice $100" },
     { lane: "b", start: 0, end: 0, state: "active", label: "read", tip: "Fiber B reads the same TRef. Also gets version v1 and $100." },
-    // t1 — both fibers compute locally
+    // t1 : both fibers compute locally
     { lane: "a", start: 1, end: 1, state: "active", label: "debit $30", tip: "Fiber A computes 100 − 30 = 70 locally. No TRef write yet." },
     { lane: "b", start: 1, end: 1, state: "active", label: "debit $20", tip: "Fiber B computes 100 − 20 = 80 locally. No TRef write yet." },
-    // t2 — both try to commit, runtime decides
-    { lane: "a", start: 2, end: 2, state: "active", label: "commit $70", tip: "Fiber A submits: set Alice=$70. Version still matches v1 — accepted." },
+    // t2 : both try to commit, runtime decides
+    { lane: "a", start: 2, end: 2, state: "active", label: "commit $70", tip: "Fiber A submits: set Alice=$70. Version still matches v1 : accepted." },
     { lane: "rt", start: 2, end: 2, state: "blocked", label: "A ✓ · B ✗", tip: "STM serializes: A's snapshot matches, committed. B's snapshot is stale, transaction discarded." },
-    { lane: "b", start: 2, end: 2, state: "blocked", label: "commit $80", tip: "Fiber B submits: set Alice=$80. But version is now v2 (A changed it) — rejected." },
-    // t3–t4 — Fiber B retries
+    { lane: "b", start: 2, end: 2, state: "blocked", label: "commit $80", tip: "Fiber B submits: set Alice=$80. But version is now v2 (A changed it) : rejected." },
+    // t3–t4 : Fiber B retries
     { lane: "b", start: 3, end: 4, state: "active", label: "re-read + debit", tip: "B re-reads Alice=$70 (v2), recomputes 70 − 20 = 50." },
-    // t5 — Fiber B commits successfully
-    { lane: "b", start: 5, end: 5, state: "active", label: "commit $50", tip: "Fiber B submits: set Alice=$50. Version matches v2 — accepted." },
+    // t5 : Fiber B commits successfully
+    { lane: "b", start: 5, end: 5, state: "active", label: "commit $50", tip: "Fiber B submits: set Alice=$50. Version matches v2 : accepted." },
     { lane: "rt", start: 5, end: 5, state: "active", label: "B ✓", tip: "Both transfers completed correctly. Alice=$50." },
   ]}
   events={[

@@ -61,9 +61,9 @@ Because physical network cuts (partitions) are an inevitable fact of life, **Par
 <DecisionGuide
   title="CAP trade-off navigator"
   steps={[
-    { id: "start", question: "Is a network partition currently happening?", note: "Partitions are unavoidable in real networks — the question is what to sacrifice when one occurs.", options: [
-      { label: "No — the network is healthy", next: "r-both" },
-      { label: "Yes — nodes cannot communicate", next: "q-sacrifice" },
+    { id: "start", question: "Is a network partition currently happening?", note: "Partitions are unavoidable in real networks : the question is what to sacrifice when one occurs.", options: [
+      { label: "No : the network is healthy", next: "r-both" },
+      { label: "Yes : nodes cannot communicate", next: "q-sacrifice" },
     ]},
     { id: "q-sacrifice", question: "Which guarantee do you sacrifice during the partition?", note: "You cannot have both Consistency and Availability while the partition lasts.", options: [
       { label: "Sacrifice Availability (refuse requests until partition heals)", next: "r-cp" },
@@ -84,10 +84,10 @@ Distributed databases do not offer a binary choice between strong consistency an
 <PipelineStrip
   title="Consistency spectrum: strongest → weakest"
   stages={[
-    { label: "Linearizability", color: "#34d399", tip: "Single global order of all operations matching real-time. Highest coordination cost — requires distributed consensus (Paxos/Raft).", href: "#1-linearizability-strong-consistency" },
+    { label: "Linearizability", color: "#34d399", tip: "Single global order of all operations matching real-time. Highest coordination cost : requires distributed consensus (Paxos/Raft).", href: "#1-linearizability-strong-consistency" },
     { label: "Sequential Consistency", color: "#60a5fa", tip: "All nodes see the same global sequence, and each process's operations appear in program order. Real-time ordering is relaxed.", href: "#2-sequential-consistency" },
     { label: "Causal Consistency", color: "#f59e0b", tip: "Causally related operations are ordered consistently everywhere. Concurrent (independent) operations may appear in different orders on different nodes.", href: "#3-causal-consistency" },
-    { label: "Eventual Consistency", color: "#f87171", tip: "Replicas converge to the same value given no new writes. Zero real-time coordination — fastest and cheapest, but clients may read stale data.", href: "#4-eventual-consistency" },
+    { label: "Eventual Consistency", color: "#f87171", tip: "Replicas converge to the same value given no new writes. Zero real-time coordination : fastest and cheapest, but clients may read stale data.", href: "#4-eventual-consistency" },
   ]}
 />
 
@@ -129,7 +129,7 @@ In distributed databases, enforcing this "instant shared vision" is extremely ex
       { from: "reader", to: "nodeA", message: "Read(x)", description: "Client 2 reads from Replica Node A and receives the new value x = 5." },
       { from: "nodeA", to: "reader", message: "Returns x = 5", description: "Replica Node A responds with x = 5 (New Value)." },
       { from: "reader", to: "nodeB", message: "Read(x)", description: "Client 2 immediately queries Replica Node B for x." },
-      { from: "nodeB", to: "reader", message: "❌ Returns x = 0 (Stale!)", description: "Because asynchronous replication is lagging, Replica Node B still holds the old value x = 0. Client 2 reads a stale value after already seeing the newer value — violating Linearizability!" },
+      { from: "nodeB", to: "reader", message: "❌ Returns x = 0 (Stale!)", description: "Because asynchronous replication is lagging, Replica Node B still holds the old value x = 0. Client 2 reads a stale value after already seeing the newer value : violating Linearizability!" },
     ]},
     { label: "Linearizable Execution", steps: [
       { from: "writer", to: "nodeA", message: "Write(x = 5)", description: "Client 1 writes a new value x = 5 to Replica Node A." },

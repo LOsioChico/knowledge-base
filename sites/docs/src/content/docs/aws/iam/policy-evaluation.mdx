@@ -35,9 +35,9 @@ Before diving in, make sure you understand:
   stages={[
     { label: "Authenticate caller", color: "#60a5fa", tip: "AWS resolves the principal from the request's signing credentials (IAM user, role session, federated identity)." },
     { label: "Collect all applicable policies", color: "#60a5fa", tip: "Gather identity-based, resource-based, permissions boundary, session, SCP, and RCP policies that apply to this principal + resource pair." },
-    { label: "Check explicit denies", color: "#ef4444", tip: "Scan every collected policy for a matching Deny statement. One explicit Deny stops evaluation immediately — the request is denied." },
+    { label: "Check explicit denies", color: "#ef4444", tip: "Scan every collected policy for a matching Deny statement. One explicit Deny stops evaluation immediately : the request is denied." },
     { label: "Check for an Allow", color: "#f59e0b", tip: "If no explicit deny was found, look for at least one matching Allow. No Allow means implicit deny (request fails silently)." },
-    { label: "Apply ceilings (boundaries, SCPs, RCPs)", color: "#a78bfa", tip: "Permissions boundaries, session policies, SCPs, and RCPs are ceilings — they cannot grant access, only restrict what identity/resource policies allowed." },
+    { label: "Apply ceilings (boundaries, SCPs, RCPs)", color: "#a78bfa", tip: "Permissions boundaries, session policies, SCPs, and RCPs are ceilings : they cannot grant access, only restrict what identity/resource policies allowed." },
     { label: "Final decision: Allow or Deny", color: "#34d399", tip: "If the Allow survived every ceiling check, the request proceeds. Otherwise, implicit deny." },
   ]}
 />
@@ -57,10 +57,10 @@ The union/intersection rules are the starting point, but resource policies have 
   layers={[
     { id: "identity", label: "Identity-based policy", color: "#60a5fa", description: "Attached to a user, group, or role. Can allow and can explicitly deny. Inspect first when the error says no identity-based policy allows the action.", items: ["Managed policies (AWS or customer)", "Inline policies embedded in the principal", "Explicit Deny overrides any Allow"] },
     { id: "resource", label: "Resource-based policy", color: "#34d399", description: "Attached to a resource such as an S3 bucket, SQS queue, KMS key, or role trust policy. Can allow and can explicitly deny. The resource owner controls access, especially cross-account.", items: ["S3 bucket policies", "KMS key policies", "SQS/SNS access policies", "Same-account: union with identity policies", "Cross-account: both sides must Allow"] },
-    { id: "boundary", label: "Permissions boundary", color: "#f59e0b", description: "A managed policy attached as a maximum-permissions ceiling on an IAM user or role. Cannot grant permissions — only limits what identity policies can grant. Effective permissions = intersection of identity policy and boundary.", items: ["Ceiling, not a grant", "Effective = identity ∩ boundary", "Check when identity allows but principal still cannot act"] },
-    { id: "session", label: "Session policy", color: "#a78bfa", description: "Inline or managed policy passed when creating temporary credentials via STS AssumeRole, GetFederationToken, etc. Cannot grant permissions — only restricts what the role's identity policies allow for this session.", items: ["Passed as Policy or PolicyArns to STS", "Scopes a single session, not the role itself"] },
-    { id: "scp", label: "Service control policy (SCP)", color: "#f87171", description: "AWS Organizations guardrail on an account or organizational unit. Cannot grant permissions — sets the maximum available permissions for every principal in the account.", items: ["Applies to entire accounts/OUs", "Ceiling only — does not grant", "Check when all principals in an account are blocked"] },
-    { id: "rcp", label: "Resource control policy (RCP)", color: "#fb923c", description: "AWS Organizations resource guardrail. Cannot grant permissions — limits what resource-based policies can grant. Check when the denial is tied to an Organizations resource guardrail.", items: ["Applies to resources, not principals", "Ceiling only — does not grant"] },
+    { id: "boundary", label: "Permissions boundary", color: "#f59e0b", description: "A managed policy attached as a maximum-permissions ceiling on an IAM user or role. Cannot grant permissions : only limits what identity policies can grant. Effective permissions = intersection of identity policy and boundary.", items: ["Ceiling, not a grant", "Effective = identity ∩ boundary", "Check when identity allows but principal still cannot act"] },
+    { id: "session", label: "Session policy", color: "#a78bfa", description: "Inline or managed policy passed when creating temporary credentials via STS AssumeRole, GetFederationToken, etc. Cannot grant permissions : only restricts what the role's identity policies allow for this session.", items: ["Passed as Policy or PolicyArns to STS", "Scopes a single session, not the role itself"] },
+    { id: "scp", label: "Service control policy (SCP)", color: "#f87171", description: "AWS Organizations guardrail on an account or organizational unit. Cannot grant permissions : sets the maximum available permissions for every principal in the account.", items: ["Applies to entire accounts/OUs", "Ceiling only : does not grant", "Check when all principals in an account are blocked"] },
+    { id: "rcp", label: "Resource control policy (RCP)", color: "#fb923c", description: "AWS Organizations resource guardrail. Cannot grant permissions : limits what resource-based policies can grant. Check when the denial is tied to an Organizations resource guardrail.", items: ["Applies to resources, not principals", "Ceiling only : does not grant"] },
     { id: "trust", label: "Trust policy", color: "#818cf8", description: "A resource-based policy on an IAM role that defines who can assume it. Can allow sts:AssumeRole only. If AssumeRole fails, the caller never reaches the target service.", items: ["Attached to the role itself", "Names trusted principals and conditions", "Cross-account: both caller permission + trust policy required"] },
   ]}
 />
@@ -78,7 +78,7 @@ The union/intersection rules are the starting point, but resource policies have 
     { label: "Same-account", steps: [
       { from: "Principal", to: "IAM", message: "API call with signing credentials" },
       { from: "IAM", to: "IAM", message: "Collect identity + resource policies (union)" },
-      { from: "IAM", to: "IAM", message: "Check explicit denies — any Deny stops here" },
+      { from: "IAM", to: "IAM", message: "Check explicit denies : any Deny stops here" },
       { from: "IAM", to: "IAM", message: "Apply ceilings (boundary, SCP, session)" },
       { from: "IAM", to: "Service", message: "Allow or implicit deny" },
     ]},
@@ -87,7 +87,7 @@ The union/intersection rules are the starting point, but resource policies have 
       { from: "STS", to: "STS", message: "Account B: caller must have sts:AssumeRole" },
       { from: "STS", to: "STS", message: "Account A: trust policy must name Account B" },
       { from: "STS", to: "Account B", message: "Temporary credentials (both sides allowed)" },
-      { from: "Account B", to: "Service", message: "Use credentials — role's identity policies apply" },
+      { from: "Account B", to: "Service", message: "Use credentials : role's identity policies apply" },
     ]},
   ]}
 />

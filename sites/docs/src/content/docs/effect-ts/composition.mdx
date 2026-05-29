@@ -246,7 +246,7 @@ The following tracer shows how the **error channel** `E` changes across a realis
     { op: "yield* chargeCard(order.total)", a: "Receipt", e: "ValidationError | PaymentError", note: "Second yield* adds PaymentError. gen automatically unions all yielded errors into E." },
     { op: ".pipe(Effect.map(r => r.id))", a: "string", e: "ValidationError | PaymentError", note: "pipe inside gen: map only transforms A (Receipt → string). E stays unchanged." },
     { op: "yield* sendConfirmation(user)", a: "void", e: "ValidationError | PaymentError", note: "sendConfirmation can't fail (E = never), so it adds nothing to the union." },
-    { op: ".pipe(Effect.catchTag('ValidationError', ...))", a: "void", e: "PaymentError", removed: ["ValidationError"], note: "catchTag handles one error variant. E narrows — ValidationError is gone." },
+    { op: ".pipe(Effect.catchTag('ValidationError', ...))", a: "void", e: "PaymentError", removed: ["ValidationError"], note: "catchTag handles one error variant. E narrows : ValidationError is gone." },
   ]}
 />
 

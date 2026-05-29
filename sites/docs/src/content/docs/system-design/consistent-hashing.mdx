@@ -89,7 +89,7 @@ flowchart TD
         end
 ```
 
-Try the interactive ring below — add or remove a server and watch which keys migrate:
+Try the interactive ring below : add or remove a server and watch which keys migrate:
 
 <HashRingVisualizer
   title="Consistent hashing ring"
@@ -116,7 +116,7 @@ Try the interactive ring below — add or remove a server and watch which keys m
 3.  **Route Clockwise**: To locate the server responsible for storing a key, we start at the key's slot and travel clockwise around the ring until we encounter the very first server.
 
 In the interactive ring above:
-*   **session-alice** sits at position 70. Traveling clockwise, the first server is **Server B** at position 140 — so alice routes to B.
+*   **session-alice** sits at position 70. Traveling clockwise, the first server is **Server B** at position 140 : so alice routes to B.
 *   Click **"− Remove server"** to remove Server C. Watch the routing table: only keys previously on C migrate to their new clockwise neighbor. All other keys stay put.
 
 If Server B crashes and is removed, only the keys that mapped to Server B are affected and need to be re-routed. All other keys on the ring stay exactly where they are.
@@ -143,11 +143,11 @@ Below is a self-contained, fully typed TypeScript implementation of a Consistent
 <CodeWalkthrough
   title="consistent hash ring implementation"
   steps={[
-    { lines: "1-10", title: "Hash function", body: "MD5 produces a hex digest. We take the first 8 hex chars (32 bits) and parse them as an unsigned integer, mapping any string key to a position between 0 and 4.3 billion on the ring.", tip: "Only 8 hex chars (32 bits) are used — the rest of the MD5 digest is discarded." },
+    { lines: "1-10", title: "Hash function", body: "MD5 produces a hex digest. We take the first 8 hex chars (32 bits) and parse them as an unsigned integer, mapping any string key to a position between 0 and 4.3 billion on the ring.", tip: "Only 8 hex chars (32 bits) are used : the rest of the MD5 digest is discarded." },
     { lines: "12-27", title: "Ring data structure + constructor", body: "The ring is a Map from hash positions to server names. sortedKeys keeps all positions in ascending order for binary search. The constructor loops over initial servers and calls addServer for each." },
     { lines: "29-43", title: "Adding a server (VNodes)", body: "Each physical server gets numReplicas virtual positions. We hash 'ServerName-0', 'ServerName-1', etc. to scatter VNodes across the ring. After adding, we re-sort to maintain binary search invariant.", tip: "More VNodes = better balance but more memory. 100-150 is the production sweet spot." },
-    { lines: "45-58", title: "Removing a server", body: "Reverse of add: delete all VNode hashes from the Map, then filter sortedKeys to remove orphaned positions. Only keys that belonged to this server are affected — everyone else stays put." },
-    { lines: "60-84", title: "Clockwise lookup (binary search)", body: "Hash the key, then binary search sortedKeys for the first position ≥ the hash. The modulo wrap (low % length) handles the 'past the last server, go back to the first' ring behavior. This is O(log K) where K = servers × VNodes.", tip: "The modulo wrap at line 81 is what makes it a ring — overflow wraps back to position 0." },
+    { lines: "45-58", title: "Removing a server", body: "Reverse of add: delete all VNode hashes from the Map, then filter sortedKeys to remove orphaned positions. Only keys that belonged to this server are affected : everyone else stays put." },
+    { lines: "60-84", title: "Clockwise lookup (binary search)", body: "Hash the key, then binary search sortedKeys for the first position ≥ the hash. The modulo wrap (low % length) handles the 'past the last server, go back to the first' ring behavior. This is O(log K) where K = servers × VNodes.", tip: "The modulo wrap at line 81 is what makes it a ring : overflow wraps back to position 0." },
     { lines: "86-104", title: "Load distribution simulation", body: "Routes numKeys random session IDs through getServer and tallies how many land on each physical server. With enough VNodes (~100-150), each server should get roughly 1/N of the total keys." },
   ]}
 >

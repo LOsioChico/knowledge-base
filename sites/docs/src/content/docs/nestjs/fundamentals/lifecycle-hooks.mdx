@@ -45,8 +45,8 @@ Before diving into lifecycle hooks, make sure you understand:
     { label: "onModuleInit", color: "#34d399", tip: "Called once the host module's dependencies are resolved. Runs before the app starts listening." },
     { label: "onApplicationBootstrap", color: "#34d399", tip: "Called after all modules initialized. App is ready to listen but not yet listening." },
     { label: "onModuleDestroy", color: "#f87171", tip: "Called when app.close() is invoked or the process receives a termination signal (if enabled)." },
-    { label: "beforeApplicationShutdown", color: "#f87171", tip: "Called after onModuleDestroy. Receives the signal (SIGTERM, SIGINT). Connections still open — flush buffers here." },
-    { label: "onApplicationShutdown", color: "#f87171", tip: "Called after all connections are closed. Final cleanup — log, notify, exit." },
+    { label: "beforeApplicationShutdown", color: "#f87171", tip: "Called after onModuleDestroy. Receives the signal (SIGTERM, SIGINT). Connections still open : flush buffers here." },
+    { label: "onApplicationShutdown", color: "#f87171", tip: "Called after all connections are closed. Final cleanup : log, notify, exit." },
   ]}
 />
 

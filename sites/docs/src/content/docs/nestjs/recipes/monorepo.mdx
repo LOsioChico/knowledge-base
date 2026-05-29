@@ -44,7 +44,7 @@ A standard high-performance NestJS monorepo uses the following structure:
   title="Workspace layers"
   direction="down"
   layers={[
-    { id: "root", label: "Root workspace", color: "#60a5fa", description: "Shared tsconfig, turbo.json pipeline, pnpm-workspace.yaml. No application code lives here — only configuration that all packages and apps inherit.", items: ["turbo.json", "pnpm-workspace.yaml", "tsconfig.json", "package.json"] },
+    { id: "root", label: "Root workspace", color: "#60a5fa", description: "Shared tsconfig, turbo.json pipeline, pnpm-workspace.yaml. No application code lives here : only configuration that all packages and apps inherit.", items: ["turbo.json", "pnpm-workspace.yaml", "tsconfig.json", "package.json"] },
     { id: "apps", label: "Applications (apps/)", color: "#34d399", description: "Independent NestJS applications, each with its own package.json, dependencies, and entry point. Turborepo builds them in topological order after their workspace dependencies.", items: ["apps/api", "apps/worker"] },
     { id: "packages", label: "Shared libraries (packages/)", color: "#a78bfa", description: "Reusable NestJS modules consumed by applications via workspace:* protocol. Built before apps via dependsOn: [^build]. Each has its own tsconfig extending the root.", items: ["@repo/logger", "@repo/config", "@repo/common"] },
   ]}

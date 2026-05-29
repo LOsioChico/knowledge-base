@@ -60,9 +60,9 @@ Before diving in, make sure you understand:
   stages={[
     { label: "CLI + Identities", color: "#60a5fa", tip: "Named profiles, sts get-caller-identity on both sides" },
     { label: "IAM Roles", color: "#f59e0b", tip: "Cross-account roles for services staying behind" },
-    { label: "Data", color: "#a78bfa", tip: "RDS snapshots + S3 sync — longest copy windows, start early" },
-    { label: "Compute", color: "#34d399", tip: "Lambda, ECS — deploy after data validates" },
-    { label: "Frontend + DNS", color: "#fb923c", tip: "Amplify, CloudFront, Route 53 — user-visible cutover last" },
+    { label: "Data", color: "#a78bfa", tip: "RDS snapshots + S3 sync : longest copy windows, start early" },
+    { label: "Compute", color: "#34d399", tip: "Lambda, ECS : deploy after data validates" },
+    { label: "Frontend + DNS", color: "#fb923c", tip: "Amplify, CloudFront, Route 53 : user-visible cutover last" },
     { label: "Cleanup", color: "#ef4444", tip: "Revoke grants, delete source after rollback window" },
   ]}
 />

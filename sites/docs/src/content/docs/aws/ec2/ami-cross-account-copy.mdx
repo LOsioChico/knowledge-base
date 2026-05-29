@@ -49,7 +49,7 @@ Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGui
       steps: [
         { from: "source", to: "ami", message: "modify-image-attribute", description: "Grant launch permission to destination account" },
         { from: "source", to: "ami", message: "modify-snapshot-attribute", description: "Grant create-volume permission on EACH underlying EBS snapshot" },
-        { from: "dest", to: "ami", message: "copy-image", description: "Destination runs copy-image — creates NEW AMI + snapshots owned by B" },
+        { from: "dest", to: "ami", message: "copy-image", description: "Destination runs copy-image : creates NEW AMI + snapshots owned by B" },
         { from: "ami", to: "dest", message: "new AMI (owned)", description: "Destination now owns independent copies. Closing source account won't affect B." },
       ],
     },

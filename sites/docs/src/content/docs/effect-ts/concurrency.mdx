@@ -82,14 +82,14 @@ Effect.runPromise(program);
     { id: "child", label: "Child", color: "#a78bfa" },
   ]}
   segments={[
-    // t0 — parent starts
+    // t0 : parent starts
     { lane: "parent", start: 0, end: 0, state: "active", label: "start", tip: "Parent fiber begins executing the Effect.gen block." },
-    // t1 — fork: parent continues, child starts
-    { lane: "parent", start: 1, end: 1, state: "active", label: "fork + log", tip: "Effect.fork(backgroundJob) spawns the child fiber. Parent immediately continues with Console.log — no waiting." },
+    // t1 : fork: parent continues, child starts
+    { lane: "parent", start: 1, end: 1, state: "active", label: "fork + log", tip: "Effect.fork(backgroundJob) spawns the child fiber. Parent immediately continues with Console.log : no waiting." },
     { lane: "child",  start: 1, end: 3, state: "active", label: "background job", tip: "Child runs in parallel: sleep(100ms), Console.log, then returns 42." },
-    // t2–t3 — parent joins, waits for child
-    { lane: "parent", start: 2, end: 3, state: "blocked", label: "join — waiting", tip: "Fiber.join(fiber) blocks the parent until the child completes. This is where concurrency meets synchronization." },
-    // t4 — child done, parent resumes
+    // t2–t3 : parent joins, waits for child
+    { lane: "parent", start: 2, end: 3, state: "blocked", label: "join : waiting", tip: "Fiber.join(fiber) blocks the parent until the child completes. This is where concurrency meets synchronization." },
+    // t4 : child done, parent resumes
     { lane: "parent", start: 4, end: 4, state: "active", label: "got 42", tip: "Child returned 42 → parent unblocks, receives the value, and logs it." },
   ]}
   events={[

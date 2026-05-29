@@ -64,21 +64,21 @@ This note is part of the **[[nestjs|NestJS Track]]**. Before diving into the JWT
     {
       label: "Protected request",
       steps: [
-        { from: "client", to: "guard", message: "GET /profile — Authorization: Bearer eyJ…" },
+        { from: "client", to: "guard", message: "GET /profile : Authorization: Bearer eyJ…" },
         { from: "guard", to: "strategy", message: "Delegate to passport-jwt strategy" },
         { from: "strategy", to: "strategy", message: "Verify signature + expiration with secret" },
         { from: "strategy", to: "guard", message: "validate() → { userId: 1, username: 'john' }" },
-        { from: "guard", to: "client", message: "200 — req.user attached to request" },
+        { from: "guard", to: "client", message: "200 : req.user attached to request" },
       ],
     },
     {
       label: "Token rejected",
       steps: [
-        { from: "client", to: "guard", message: "GET /profile — Authorization: Bearer expired…" },
+        { from: "client", to: "guard", message: "GET /profile : Authorization: Bearer expired…" },
         { from: "guard", to: "strategy", message: "Delegate to passport-jwt strategy" },
         { from: "strategy", to: "strategy", message: "Signature valid but token EXPIRED" },
         { from: "strategy", to: "guard", message: "UnauthorizedException thrown" },
-        { from: "guard", to: "client", message: "401 — { statusCode: 401, message: 'Unauthorized' }" },
+        { from: "guard", to: "client", message: "401 : { statusCode: 401, message: 'Unauthorized' }" },
       ],
     },
   ]}

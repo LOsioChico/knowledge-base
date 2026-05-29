@@ -126,8 +126,8 @@ Express v5 (default in Nest 11) uses **named** wildcards: `'*splat'` (subpaths o
   title="Which NestJS layer should handle this?"
   steps={[
     { id: "start", question: "Do you need to read handler metadata (@Roles, @Public, custom decorators)?", options: [
-      { label: "Yes — I need to know which handler or controller will run", next: "nest-layer" },
-      { label: "No — I just need raw req/res (headers, body parsing, logging)", next: "r-middleware" },
+      { label: "Yes : I need to know which handler or controller will run", next: "nest-layer" },
+      { label: "No : I just need raw req/res (headers, body parsing, logging)", next: "r-middleware" },
     ]},
     { id: "nest-layer", question: "What do you need to do?", options: [
       { label: "Allow or deny the entire request (authorization)", next: "r-guard" },

@@ -71,7 +71,7 @@ Failed Amplify associations can leave claims for hours. Each retry adds another 
         { from: "amplify", to: "cf", message: "create distribution", description: "Amplify provisions a CloudFront distribution" },
         { from: "cf", to: "cf", message: "claim CNAME", description: "CloudFront registers the alternate domain globally" },
         { from: "amplify", to: "dns", message: "update DNS target", description: "Amplify points DNS to the new distribution" },
-        { from: "dns", to: "cf", message: "resolve", description: "DNS resolves to CloudFront — site works" },
+        { from: "dns", to: "cf", message: "resolve", description: "DNS resolves to CloudFront : site works" },
       ],
     },
     {
@@ -79,8 +79,8 @@ Failed Amplify associations can leave claims for hours. Each retry adds another 
       steps: [
         { from: "user", to: "amplify", message: "retry domain", description: "You click Retry after seeing the CNAME error" },
         { from: "amplify", to: "cf", message: "new distribution #2", description: "Amplify provisions ANOTHER distribution for the same domain" },
-        { from: "cf", to: "cf", message: "claim CNAME → CONFLICT", description: "Ghost from previous attempt still holds the CNAME globally — fails" },
-        { from: "user", to: "amplify", message: "retry again", description: "You retry a third time — creating distribution #3" },
+        { from: "cf", to: "cf", message: "claim CNAME → CONFLICT", description: "Ghost from previous attempt still holds the CNAME globally : fails" },
+        { from: "user", to: "amplify", message: "retry again", description: "You retry a third time : creating distribution #3" },
         { from: "amplify", to: "cf", message: "new distribution #3", description: "Yet ANOTHER distribution provisioned, each one leaving a ghost claim" },
         { from: "cf", to: "cf", message: "claim CNAME → CONFLICT", description: "Now 3 ghosts hold the alias. Claims persist for hours." },
       ],

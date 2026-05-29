@@ -127,12 +127,12 @@ If the payment step fails:
     { label: "Happy path", steps: [
       { from: "order", to: "inventory", message: "OrderCreated", description: "User places an order. Order Service commits locally and publishes an OrderCreated event to the event bus." },
       { from: "inventory", to: "payment", message: "InventoryReserved", description: "Inventory Service consumes OrderCreated, reserves stock in its local DB, and publishes InventoryReserved." },
-      { from: "payment", to: "result", message: "PaymentApproved", description: "Payment Service charges the card successfully. The saga completes — all three services committed independently." },
+      { from: "payment", to: "result", message: "PaymentApproved", description: "Payment Service charges the card successfully. The saga completes: all three services committed independently." },
     ]},
     { label: "Compensation (payment fails)", steps: [
       { from: "order", to: "inventory", message: "OrderCreated", description: "Same start: Order Service publishes OrderCreated after committing the order locally." },
       { from: "inventory", to: "payment", message: "InventoryReserved", description: "Inventory Service reserves stock and forwards InventoryReserved to Payment Service." },
-      { from: "payment", to: "inventory", message: "PaymentFailed", description: "Payment fails (insufficient funds). Payment Service publishes PaymentFailed — compensation begins." },
+      { from: "payment", to: "inventory", message: "PaymentFailed", description: "Payment fails (insufficient funds). Payment Service publishes PaymentFailed: compensation begins." },
       { from: "inventory", to: "order", message: "InventoryReleased", description: "Inventory Service consumes PaymentFailed and runs its compensating transaction: release the reserved stock." },
       { from: "order", to: "result", message: "OrderCancelled", description: "Order Service consumes InventoryReleased and marks the order as cancelled. All services are consistent again." },
     ]},
@@ -158,13 +158,13 @@ In Orchestration, a dedicated coordinator service (the Orchestrator) directs all
       { from: "inv", to: "orch", message: "Stock Reserved", description: "Inventory Service reserves stock and responds with Stock Reserved." },
       { from: "orch", to: "pay", message: "Charge Card", description: "Orchestrator sends a Charge Card command to the Payment Service." },
       { from: "pay", to: "orch", message: "Card Charged", description: "Payment Service charges the card successfully and responds." },
-      { from: "orch", to: "order", message: "Approve Order", description: "All services committed. Orchestrator approves the order — saga completes." },
+      { from: "orch", to: "order", message: "Approve Order", description: "All services committed. Orchestrator approves the order: saga completes." },
     ]},
     { label: "Compensation (payment fails)", steps: [
       { from: "orch", to: "inv", message: "Reserve Stock", description: "Same start: Orchestrator sends Reserve Stock command." },
       { from: "inv", to: "orch", message: "Stock Reserved", description: "Inventory Service reserves stock successfully." },
       { from: "orch", to: "pay", message: "Charge Card", description: "Orchestrator sends Charge Card command to Payment Service." },
-      { from: "pay", to: "orch", message: "PaymentFailed", description: "Payment fails. Payment Service returns PaymentFailed — Orchestrator catches the error and starts compensation." },
+      { from: "pay", to: "orch", message: "PaymentFailed", description: "Payment fails. Payment Service returns PaymentFailed: Orchestrator catches the error and starts compensation." },
       { from: "orch", to: "inv", message: "Release Stock", description: "Orchestrator sends Release Stock compensation command to Inventory Service." },
       { from: "orch", to: "order", message: "Cancel Order", description: "Orchestrator cancels the order. All services are consistent again." },
     ]},
@@ -286,4 +286,4 @@ Due to network retries, a service can receive the same Saga command or compensat
 *   [[system-design/consistency-models|Consistency Models]]: Study CAP theorem limits, sequential consistency spectrums, and linearizability.
 *   [[system-design/consistent-hashing|Consistent Hashing]]: Distribute database partitions dynamically across hash ring structures.
 *   [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Implement gateway rate limiting to prevent traffic floods from overwhelming multi-service transaction queues.
-*   [Saga Pattern](https://microservices.io/patterns/data/saga.html) — Chris Richardson's canonical reference for the [Saga coordination strategies](#saga-coordination-strategies) section.
+*   [Saga Pattern](https://microservices.io/patterns/data/saga.html) : Chris Richardson's canonical reference for the [Saga coordination strategies](#saga-coordination-strategies) section.

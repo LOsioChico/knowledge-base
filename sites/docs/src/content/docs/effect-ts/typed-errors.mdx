@@ -371,7 +371,7 @@ Effect.runPromise(getDisplayName("missing")).then(console.log);
     { op: "Effect.map(user => user.name)", a: "string", e: "NotFoundError | NetworkError | ParseError", aChanged: true, note: "Success type narrows from User object to string" },
     { op: "catchTag('NotFoundError', ...)", a: "string", e: "NetworkError | ParseError", removed: ["NotFoundError"] },
     { op: "catchTags({ NetworkError, ParseError })", a: "string", e: "never", removed: ["NetworkError", "ParseError"] },
-    { op: "Effect.runPromise", a: "string", e: "never", note: "E is never — safe to run without unhandled errors" },
+    { op: "Effect.runPromise", a: "string", e: "never", note: "E is never : safe to run without unhandled errors" },
   ]}
 />
 
@@ -442,7 +442,7 @@ Fix the annotation or narrow with `catchTag` / `mapError` until `E` matches what
       { label: "Same handler for all of them", next: "r-catchAll" },
     ]},
     { id: "all", result: "catchAll", explanation: "Effect.catchAll handles every expected error in E. Use it at the app edge when you want to guarantee E becomes never before calling runPromise." },
-    { id: "transform", result: "mapError", explanation: "Effect.mapError transforms the error without recovering — the effect still fails, just with a new error type. Useful for re-tagging or wrapping errors at layer boundaries." },
+    { id: "transform", result: "mapError", explanation: "Effect.mapError transforms the error without recovering : the effect still fails, just with a new error type. Useful for re-tagging or wrapping errors at layer boundaries." },
     { id: "r-catchTag", result: "catchTag", explanation: "Effect.catchTag('TagName', handler) matches a single _tag literal and removes it from E. The handler returns a new Effect that replaces the failure path for that tag." },
     { id: "r-mapError", result: "mapError", explanation: "Effect.mapError transforms the error type. The effect still fails, but with a different E. Use this at service boundaries to translate internal errors into API-level errors." },
     { id: "r-catchTags", result: "catchTags", explanation: "Effect.catchTags({ TagA: handler, TagB: handler }) handles multiple tags in one call. Each handler runs only for its matching tag. All matched tags are removed from E." },

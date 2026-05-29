@@ -99,7 +99,7 @@ Inbound **pre**: global → controller → route. Outbound **post**: route → c
     { label: "Controller Interceptor", color: "#818cf8", pre: "Controller-scoped logic (e.g., rate limiting)", post: "Transform response after route-level changes" },
     { label: "Route Interceptor", color: "#a78bfa", pre: "Route-specific cache check or validation", post: "map() to add route metadata, tap() to write cache" },
   ]}
-  core={{ label: "Handler", color: "#f472b6", tip: "Your @Get()/@Post() method — next.handle() returns this as an Observable" }}
+  core={{ label: "Handler", color: "#f472b6", tip: "Your @Get()/@Post() method : next.handle() returns this as an Observable" }}
 />
 
 A global logging interceptor sees the **final** response after route-level `map()` transforms.

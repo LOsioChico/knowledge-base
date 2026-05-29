@@ -31,7 +31,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before stud
 
 </Aside>
 
-In an [[system-design/delivery-semantics|at-least-once delivery]] system, a broker retries failed messages until they are acknowledged. But what happens when a message can *never* be processed successfully? Without a safety valve, it cycles endlessly through the retry loop, consuming resources and blocking the queue. **Dead letter queues** (DLQs) are that safety valve — a dedicated destination where undeliverable messages are routed for inspection, diagnosis, and recovery.
+In an [[system-design/delivery-semantics|at-least-once delivery]] system, a broker retries failed messages until they are acknowledged. But what happens when a message can *never* be processed successfully? Without a safety valve, it cycles endlessly through the retry loop, consuming resources and blocking the queue. **Dead letter queues** (DLQs) are that safety valve : a dedicated destination where undeliverable messages are routed for inspection, diagnosis, and recovery.
 
 ---
 
@@ -110,7 +110,7 @@ rabbitmqctl set_policy DLX ".*" \
   --apply-to queues
 ```
 
-Unlike SQS, RabbitMQ's DLX is a normal exchange — you can route dead-lettered messages to different queues based on the routing key, enabling categorized failure handling.
+Unlike SQS, RabbitMQ's DLX is a normal exchange : you can route dead-lettered messages to different queues based on the routing key, enabling categorized failure handling.
 
 </TabItem>
 <TabItem label="Apache Kafka">
@@ -193,7 +193,7 @@ Before a message reaches the DLQ, the system should retry transient failures. Th
 
 ### Fixed-delay retry
 
-Wait a constant interval between each retry attempt. Simple but suboptimal for transient failures caused by downstream overload — all failed messages retry simultaneously, amplifying the spike.
+Wait a constant interval between each retry attempt. Simple but suboptimal for transient failures caused by downstream overload : all failed messages retry simultaneously, amplifying the spike.
 
 ### Exponential backoff
 
@@ -259,13 +259,13 @@ This envelope enables:
 
 *   **Root cause triage**: The `lastError` field immediately points to the failure category (timeout? validation? auth?).
 *   **Version tracking**: `consumerVersion` reveals whether a specific deployment introduced the bug.
-*   **Replay safety**: `originalMessageId` enables idempotent replay — the recovery consumer can check whether the message was already successfully processed.
+*   **Replay safety**: `originalMessageId` enables idempotent replay : the recovery consumer can check whether the message was already successfully processed.
 
 ---
 
 ## Recovery Workflows
 
-Messages in a DLQ are not garbage — they represent real business events that need resolution. There are three recovery strategies:
+Messages in a DLQ are not garbage : they represent real business events that need resolution. There are three recovery strategies:
 
 ### 1. Fix and replay
 
@@ -282,7 +282,7 @@ The most common recovery: identify the bug, deploy a fix, and replay the DLQ mes
 </Steps>
 
 <Aside type="caution" title="Replay idempotency">
-If time has passed since the original failure, the downstream state may have changed. Replay consumers must be [[system-design/delivery-semantics#idempotency-strategies|idempotent]] — replaying a "create order" message that was already manually resolved must not create a second order.
+If time has passed since the original failure, the downstream state may have changed. Replay consumers must be [[system-design/delivery-semantics#idempotency-strategies|idempotent]] : replaying a "create order" message that was already manually resolved must not create a second order.
 </Aside>
 
 ### 2. Transform and redirect
@@ -291,7 +291,7 @@ Some messages fail because their payload is invalid but the business intent is r
 
 ### 3. Audit and drop
 
-For messages that represent irrecoverable failures (expired promotions, deleted user accounts), log them for audit purposes and remove them from the DLQ. Always capture the reason for dropping — "silently deleting DLQ messages" is an anti-pattern that hides systemic issues.
+For messages that represent irrecoverable failures (expired promotions, deleted user accounts), log them for audit purposes and remove them from the DLQ. Always capture the reason for dropping : "silently deleting DLQ messages" is an anti-pattern that hides systemic issues.
 
 ---
 
@@ -327,11 +327,11 @@ If the DLQ retention period is shorter than the source queue, messages can expir
       { from: "queue", to: "consumer", message: "Deliver (attempt 1)", description: "Main queue delivers the message to a consumer. The consumer starts processing the order." },
       { from: "consumer", to: "queue", message: "❌ NACK (timeout)", description: "The payment API times out. The consumer negatively acknowledges the message, which returns it to the queue for retry after a backoff delay." },
       { from: "queue", to: "consumer", message: "Redeliver (attempt 2)", description: "After the backoff delay, the queue redelivers the message. The payment API is back up." },
-      { from: "consumer", to: "queue", message: "✅ ACK (success)", description: "Consumer processes successfully and acknowledges. The message is deleted from the queue. No DLQ needed — the transient failure was resolved by retry." },
+      { from: "consumer", to: "queue", message: "✅ ACK (success)", description: "Consumer processes successfully and acknowledges. The message is deleted from the queue. No DLQ needed : the transient failure was resolved by retry." },
     ]},
     { label: "Poison pill → DLQ", steps: [
       { from: "queue", to: "consumer", message: "Deliver (attempt 1)", description: "Main queue delivers a message with a malformed payload (missing required 'currency' field)." },
-      { from: "consumer", to: "queue", message: "❌ NACK (validation)", description: "Consumer fails on validation. The message returns to the queue. Retrying won't help — the payload is permanently invalid." },
+      { from: "consumer", to: "queue", message: "❌ NACK (validation)", description: "Consumer fails on validation. The message returns to the queue. Retrying won't help : the payload is permanently invalid." },
       { from: "queue", to: "consumer", message: "Redeliver (attempt 2)", description: "Queue redelivers. Consumer fails again with the same validation error." },
       { from: "queue", to: "dlq", message: "→ DLQ (max retries)", description: "After the maxReceiveCount is exceeded, the broker moves the message to the DLQ with all its diagnostic metadata." },
     ]},
@@ -349,9 +349,9 @@ If the DLQ retention period is shorter than the source queue, messages can expir
 
 ## See Also
 
-*   [[system-design/message-queues|Asynchronous Message Queues]] — Parent note covering broker architecture and message lifecycle.
-*   [[system-design/delivery-semantics|Delivery Semantics]] — At-least-once delivery and idempotent consumer strategies.
-*   [[system-design/messaging-patterns|Messaging Patterns]] — Competing consumers, fan-out, and consumer group distribution models.
-*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] — Compensating transactions and saga failure recovery.
-*   [Amazon SQS Dead-Letter Queues](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html) — Official AWS docs on DLQ configuration and redrive.
-*   [RabbitMQ Dead Letter Exchanges](https://www.rabbitmq.com/docs/dlx) — Official RabbitMQ docs on DLX triggers and routing.
+*   [[system-design/message-queues|Asynchronous Message Queues]] : Parent note covering broker architecture and message lifecycle.
+*   [[system-design/delivery-semantics|Delivery Semantics]] : At-least-once delivery and idempotent consumer strategies.
+*   [[system-design/messaging-patterns|Messaging Patterns]] : Competing consumers, fan-out, and consumer group distribution models.
+*   [[system-design/distributed-transactions|Distributed Transactions & Saga Patterns]] : Compensating transactions and saga failure recovery.
+*   [Amazon SQS Dead-Letter Queues](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html) : Official AWS docs on DLQ configuration and redrive.
+*   [RabbitMQ Dead Letter Exchanges](https://www.rabbitmq.com/docs/dlx) : Official RabbitMQ docs on DLX triggers and routing.
