@@ -486,48 +486,19 @@ function getDirectPrereqs(node: RoadmapNode): {id: string; label: string}[] {
     background: rgba(30, 41, 59, 0.08);
     border-color: rgba(255, 255, 255, 0.03);
     border-left-color: color-mix(in srgb, var(--rc) 20%, transparent);
-    padding: 0.5rem 1rem;
     opacity: 0.45;
   }
-  /* Compact: hide desc and prereqs when locked */
-  .lr__row.is-locked .lr__desc {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    margin: 0;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
-  }
-  .lr__row.is-locked .lr__prereqs {
-    max-height: 0;
-    opacity: 0;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    border: none;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
-  }
-  /* Expand on hover */
+  /* Hover state for locked card — changes only opacity & background, no layout shifting */
   .lr__row.is-locked:hover .lr__row-content {
     opacity: 0.75;
     background: rgba(30, 41, 59, 0.2);
     border-color: rgba(255, 255, 255, 0.06);
     border-left-color: color-mix(in srgb, var(--rc) 40%, transparent);
-    padding: 0.8rem 1.2rem;
-  }
-  .lr__row.is-locked:hover .lr__desc {
-    max-height: 3em;
-    opacity: 1;
-  }
-  .lr__row.is-locked:hover .lr__prereqs {
-    max-height: 4em;
-    opacity: 1;
-    margin-top: 0.5rem;
-    padding-top: 0.4rem;
   }
   .lr__row.is-locked .lr__link {
     color: var(--sl-color-gray-3);
-    font-size: 0.82rem;
   }
+
 
   /* ── "Start here" indicator ── */
   @keyframes lr-start-pulse {
