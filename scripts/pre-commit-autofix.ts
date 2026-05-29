@@ -522,6 +522,126 @@ export function promoteFileCommentToTitle(body: string): { updatedBody: string, 
 }
 
 // ---------------------------------------------------------
+// 2.8. Obsidian Callout to Astro Aside Converter
+// ---------------------------------------------------------
+export function convertObsidianCalloutsToAsides(body: string): { updatedBody: string, modified: boolean } {
+  const lines = body.split(/\r?\n/);
+  let modified = false;
+  const resultLines: string[] = [];
+  
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i]!;
+    
+    // Check if it's the start of a callout block
+    // It must start with > (with optional leading space) and [!type]
+    const calloutStartMatch = line.match(/^\s*>\s*\[!([a-zA-Z-]+)\](-)?(.*)$/);
+    
+    if (calloutStartMatch) {
+      modified = true;
+      const rawType = calloutStartMatch[1]!.toLowerCase();
+      const isCollapsed = !!calloutStartMatch[2];
+      let title = calloutStartMatch[3]!.trim();
+      
+      // Map Obsidian type to Starlight Aside type
+      let asideType = "note";
+      if (rawType === "warning") {
+        asideType = "caution";
+      } else if (rawType === "danger" || rawType === "failure" || rawType === "bug") {
+        asideType = "danger";
+      } else if (rawType === "tip" || rawType === "success" || rawType === "question" || rawType === "example") {
+        asideType = "tip";
+      } else if (rawType === "caution") {
+        asideType = "caution";
+      }
+      
+      // Collect all lines belonging to this callout block
+      const calloutLines: string[] = [];
+      
+      // Collect all subsequent lines that are part of this callout
+      let j = i + 1;
+      while (j < lines.length) {
+        const nextLine = lines[j]!;
+        
+        // It belongs to the callout if it starts with >
+        const match = nextLine.match(/^\s*>\s?(.*)$/);
+        if (match) {
+          calloutLines.push(match[1]!);
+          j++;
+        } else {
+          break;
+        }
+      }
+      
+      const openingTag = title ? `<Aside type="${asideType}" title="${title}">` : `<Aside type="${asideType}">`;
+      
+      // Remove trailing blank lines from calloutLines
+      while (calloutLines.length > 0 && calloutLines[calloutLines.length - 1]!.trim() === "") {
+        calloutLines.pop();
+      }
+      
+      // Add the Aside block
+      resultLines.push(openingTag);
+      for (const calloutLine of calloutLines) {
+        resultLines.push(calloutLine);
+      }
+      resultLines.push(`</Aside>`);
+      
+      // Advance our line index
+      i = j;
+    } else {
+      resultLines.push(line);
+      i++;
+    }
+  }
+  
+  return {
+    updatedBody: resultLines.join("\n"),
+    modified
+  };
+}
+
+// ---------------------------------------------------------
+// 2.9. Astro Aside Import Auto-Injector
+// ---------------------------------------------------------
+export function ensureAsideImport(body: string): { updatedBody: string, modified: boolean } {
+  // If no <Aside component is used, we don't need any import
+  if (!/<Aside/i.test(body)) return { updatedBody: body, modified: false };
+
+  // Check if Aside is already imported from @astrojs/starlight/components
+  const hasAsideImportRe = /import\s+{[^}]*\bAside\b[^}]*}\s+from\s+['"]@astrojs\/starlight\/components['"]/s;
+  if (hasAsideImportRe.test(body)) {
+    return { updatedBody: body, modified: false };
+  }
+
+  // If @astrojs/starlight/components is imported but without Aside, let's add Aside to it
+  const existingStarlightImportRe = /(import\s+{)([^}]*)}\s+from\s+(['"]@astrojs\/starlight\/components['"])/g;
+  let starlightModified = false;
+  const updatedBody = body.replace(existingStarlightImportRe, (match, prefix, tokensStr, suffix) => {
+    const tokens = tokensStr.split(",").map((t: string) => t.trim()).filter(Boolean);
+    if (!tokens.includes("Aside")) {
+      tokens.push("Aside");
+      starlightModified = true;
+      return `${prefix} ${tokens.sort().join(", ")} } from ${suffix}`;
+    }
+    return match;
+  });
+
+  if (starlightModified) {
+    return { updatedBody, modified: true };
+  }
+
+  // Otherwise, prepend the new import at the very top of the body (right after frontmatter)
+  const lines = body.split("\n");
+  let insertIndex = 0;
+  while (insertIndex < lines.length && lines[insertIndex]!.trim() === "") {
+    insertIndex++;
+  }
+  lines.splice(insertIndex, 0, `import { Aside } from "@astrojs/starlight/components";\n`);
+  return { updatedBody: lines.join("\n"), modified: true };
+}
+
+// ---------------------------------------------------------
 // 3. First-Mention Wikilink Auto-Fixer
 // ---------------------------------------------------------
 function buildProseMask(body: string): string {
@@ -762,6 +882,22 @@ function processNoteFile(filePath: string, concepts: Concept[], dryRun: boolean)
   if (ecResult.modified) {
     console.log(`  ${green}✓ Promoted // filename comments to title= annotations.${reset}`);
     currentBody = ecResult.updatedBody;
+    fileModified = true;
+  }
+
+  // 1.8. Convert Obsidian Callouts to Asides
+  const calloutResult = convertObsidianCalloutsToAsides(currentBody);
+  if (calloutResult.modified) {
+    console.log(`  ${green}✓ Converted Obsidian-style callouts to Starlight Asides.${reset}`);
+    currentBody = calloutResult.updatedBody;
+    fileModified = true;
+  }
+
+  // 1.9. Ensure Aside Import in MDX
+  const asideImportResult = ensureAsideImport(currentBody);
+  if (asideImportResult.modified) {
+    console.log(`  ${green}✓ Ensured Starlight Aside import is present.${reset}`);
+    currentBody = asideImportResult.updatedBody;
     fileModified = true;
   }
 

@@ -7,8 +7,10 @@ import {
   injectImportsIntoCodeBlocks,
   fixFirstMentionWikilinks,
   convertEffectBlocksToTwoslash,
-  promoteFileCommentToTitle
-} from "./pre-commit-autofix";
+  promoteFileCommentToTitle,
+  convertObsidianCalloutsToAsides,
+  ensureAsideImport
+} from "./pre-commit-autofix.js";
 
 test("getFrontmatterAndBody correctly splits frontmatter and body", () => {
   const content = `---
@@ -398,3 +400,89 @@ import { IsEmail } from "class-validator";
   assert.equal(modified, true);
   assert.match(updatedBody, /```typescript title="dto\/user.dto.ts"/);
 });
+
+// ---------------------------------------------------------
+// convertObsidianCalloutsToAsides and ensureAsideImport tests
+// ---------------------------------------------------------
+
+test("convertObsidianCalloutsToAsides converts standard Obsidian callouts to Starlight Asides with proper mapping", () => {
+  const body = `Some introduction text.
+
+> [!warning] Retries make it worse
+> During a DNS propagation window, do **not** run repeated CLI commands to fix the domain.
+> Retries stack faster than DNS can update.
+
+Some middle text.
+
+> [!danger]
+> This is a critical alert without a title.
+> Line two of the warning.
+
+Some ending text.`;
+
+  const { updatedBody, modified } = convertObsidianCalloutsToAsides(body);
+  assert.equal(modified, true);
+  
+  // First callout converted to caution with title
+  assert.match(updatedBody, /<Aside type="caution" title="Retries make it worse">/);
+  assert.match(updatedBody, /During a DNS propagation window, do \*\*not\*\* run repeated CLI commands/);
+  
+  // Second callout converted to danger without title
+  assert.match(updatedBody, /<Aside type="danger">/);
+  assert.match(updatedBody, /This is a critical alert without a title/);
+  
+  assert.doesNotMatch(updatedBody, /> \[!warning\]/);
+  assert.doesNotMatch(updatedBody, /> \[!danger\]/);
+});
+
+test("convertObsidianCalloutsToAsides correctly handles nested content and preserves spacing", () => {
+  const body = `> [!example] Practical Implementation
+> \`\`\`ts
+> const value = "Hello World";
+> console.log(value);
+> \`\`\``;
+
+  const { updatedBody, modified } = convertObsidianCalloutsToAsides(body);
+  assert.equal(modified, true);
+  
+  assert.match(updatedBody, /<Aside type="tip" title="Practical Implementation">/);
+  assert.match(updatedBody, /```ts/);
+  assert.match(updatedBody, /console.log\(value\);/);
+  assert.match(updatedBody, /<\/Aside>/);
+});
+
+test("ensureAsideImport injects Aside import if Aside component is used but missing", () => {
+  const body = `Some content.
+
+<Aside type="tip">
+Use this instead.
+</Aside>`;
+
+  const { updatedBody, modified } = ensureAsideImport(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /import \{ Aside \} from "@astrojs\/starlight\/components";/);
+});
+
+test("ensureAsideImport adds Aside to existing starlight components import", () => {
+  const body = `import { Steps, Tabs } from "@astrojs/starlight/components";
+
+<Aside type="tip">
+Use this instead.
+</Aside>`;
+
+  const { updatedBody, modified } = ensureAsideImport(body);
+  assert.equal(modified, true);
+  assert.match(updatedBody, /import \{ Aside, Steps, Tabs \} from "@astrojs\/starlight\/components";/);
+});
+
+test("ensureAsideImport skips injection if Aside is already imported", () => {
+  const body = `import { Aside } from "@astrojs/starlight/components";
+
+<Aside type="tip">
+Use this.
+</Aside>`;
+
+  const { modified } = ensureAsideImport(body);
+  assert.equal(modified, false);
+});
+
