@@ -1,7 +1,9 @@
 ---
 title: Amplify Hosting
-description: Managed frontend hosting — apps, branches, zip deployments, custom domains, and CloudFront under the hood.
+description: "Managed frontend hosting: apps, branches, zip deployments, custom domains, and CloudFront under the hood."
 ---
+
+import HierarchyExplorer from '/src/components/interactive/HierarchyExplorer.astro';
 
 > AWS Amplify Hosting is git-push-or-zip-deploy frontend hosting: Amplify builds, ships to an internal [[aws/cloudfront|CloudFront]] distribution, serves on `*.amplifyapp.com` or custom domains. One CLI surface (`aws amplify`).
 
@@ -21,14 +23,53 @@ description: Managed frontend hosting — apps, branches, zip deployments, custo
 
 ## Mental model
 
-```
-App (one per project)
-└── Branch (main, staging, …)
-    └── Deployment / Job (one build)
-        └── Domain association (hostname → branch)
-```
+<HierarchyExplorer
+  title="Amplify Hosting Resource Stack"
+  resources={[
+    {
+      id: "app",
+      label: "Amplify App",
+      color: "#60a5fa",
+      badge: "App Container",
+      description: "The top-level container for your web application. Encapsulates service settings, git repository connections, social previews, and environment variables.",
+      cliCommand: `aws amplify create-app --name \${APP_NAME} --repository \${REPO_URL}`
+    },
+    {
+      id: "branch",
+      label: "Git Branch",
+      color: "#34d399",
+      badge: "Branch Environment",
+      description: "Represents an isolated pipeline mapped to a specific git branch (e.g., main, staging). Supports features like password protection, pull request previews, and automatic builds.",
+      cliCommand: `aws amplify create-branch --app-id \${APP_ID} --branch-name \${BRANCH} --stage PRODUCTION`
+    },
+    {
+      id: "domain",
+      label: "Domain Association",
+      color: "#f472b6",
+      badge: "DNS Routing",
+      description: "Associates a custom domain with your branch environment. Automatically provisions an SSL certificate via ACM and creates Route 53 DNS records under the hood.",
+      cliCommand: `aws amplify create-domain-association --app-id \${APP_ID} --domain-name \${DOMAIN} --sub-domain-settings prefix=www,branchName=\${BRANCH}`
+    },
+    {
+      id: "job",
+      label: "Deployment Job",
+      color: "#a78bfa",
+      badge: "CodeBuild Job",
+      description: "A single, isolated build execution executing compile tasks (e.g., npm run build), generating static distribution folders, and packaging zip files.",
+      cliCommand: `aws amplify start-job --app-id \${APP_ID} --branch-name \${BRANCH} --job-type \${JOB_TYPE}`
+    }
+  ]}
+/>
 
 Amplify provisions CloudFront you won't see in `cloudfront list-distributions`. Domain moves hit global CNAME uniqueness: [[aws/cloudfront/alternate-domain-claim|ghost claims]].
+
+## Job types
+
+Amplify deployment jobs support three execution modes via `--job-type`:
+
+- **`RELEASE`**: Triggers a brand new build execution environment, pulls the latest source code from your Git provider, and compiles your project using your build specifications.
+- **`RETRY`**: Retries a build execution using the exact same commit hash and build inputs as the last run.
+- **`WEB_HOOK`**: Deploys via an incoming webhook notification trigger.
 
 ## Pending notes
 

@@ -1,0 +1,977 @@
+---
+/**
+ * HierarchyExplorer.astro
+ * ───────────────────────
+ * A premium interactive hierarchy visualizer designed to represent nested
+ * AWS resources (App -> Branch -> Domain -> Job) and simulate dynamic lifecycles.
+ *
+ * Core Interactive Features:
+ *   - Hierarchical vertical cards representing parent-child resources.
+ *   - Descriptions are rendered inline directly inside each card (step block) for maximum scannability.
+ *   - Parameter Inputs Bar: allows readers to fill in custom values (App Name, App ID, Branch, Domain)
+ *     that dynamically replace template placeholders inside the copyable terminal commands!
+ *   - macOS-style CLI prompt terminal panel at the very bottom, updating dynamically
+ *     to display the copyable command for the currently selected card with variables resolved live.
+ *   - Interactive "Simulate Deployment Pulse" button at the top of the component
+ *     which runs an animated glowing pulse through each tier, flashing active
+ *     CodeBuild status indicators ("Idle" -> "Building" -> "Success") in real time.
+ *
+ * Props:
+ *   title      – Optional heading
+ *   resources  – Ordered list of resource cards
+ */
+
+interface ResourceNode {
+  id: string;
+  label: string;
+  color: string;
+  badge?: string;
+  description: string;
+  cliCommand: string;
+}
+
+interface Props {
+  title?: string;
+  resources: ResourceNode[];
+}
+
+const { title, resources } = Astro.props;
+---
+
+<div class="he not-content" id="he-root">
+  {title && (
+    <div class="he-header">
+      <div class="he-header-title">
+        <span class="he-header-dot" />
+        <span class="he-title">{title}</span>
+      </div>
+      <span class="he-badge">⬡ Resource Hierarchy</span>
+    </div>
+  )}
+
+  <div class="he-layout">
+    {/* 1. Simulator controls at the top */}
+    <div class="he-simulator-controls">
+      <div class="he-btn-group">
+        <button class="he-btn he-btn-success" id="he-btn-success" type="button" aria-label="Deploy Success Pipeline">
+          <svg class="he-btn-icon" viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+          </svg>
+          Deploy Success
+        </button>
+        <button class="he-btn he-btn-fail" id="he-btn-fail" type="button" aria-label="Deploy Failure & Rollback">
+          <svg class="he-btn-icon" viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          Deploy Failure
+        </button>
+      </div>
+      <div class="he-simulator-status" id="he-sim-status">
+        <span class="he-sim-status-dot"></span>
+        <span class="he-sim-status-text">System Idle</span>
+      </div>
+    </div>
+
+    {/* 1b. Parameter Inputs Bar */}
+    <div class="he-params-bar">
+      <div class="he-param-field">
+        <label class="he-param-label">App Name</label>
+        <input class="he-param-input" type="text" data-var="APP_NAME" value="my-amplify-app" placeholder="my-amplify-app" aria-label="App Name Parameter" />
+      </div>
+      <div class="he-param-field">
+        <label class="he-param-label">App ID</label>
+        <input class="he-param-input" type="text" data-var="APP_ID" value="d123456abcdef" placeholder="d123456abcdef" aria-label="App ID Parameter" />
+      </div>
+      <div class="he-param-field">
+        <label class="he-param-label">Branch</label>
+        <input class="he-param-input" type="text" data-var="BRANCH" value="main" placeholder="main" aria-label="Branch Parameter" />
+      </div>
+      <div class="he-param-field">
+        <label class="he-param-label">Domain</label>
+        <input class="he-param-input" type="text" data-var="DOMAIN" value="example.com" placeholder="example.com" aria-label="Domain Parameter" />
+      </div>
+      <div class="he-param-field">
+        <div class="he-param-label-row">
+          <label class="he-param-label">Job Type</label>
+          <a href="#job-types" class="he-param-help-link" title="Explain Job Types">?</a>
+        </div>
+        <select class="he-param-input he-param-select" data-var="JOB_TYPE" aria-label="Job Type Parameter">
+          <option value="RELEASE" selected>RELEASE</option>
+          <option value="RETRY">RETRY</option>
+          <option value="WEB_HOOK">WEB_HOOK</option>
+        </select>
+      </div>
+      <div class="he-param-field" style="grid-column: span 2;">
+        <label class="he-param-label">Repo URL</label>
+        <input class="he-param-input" type="text" data-var="REPO_URL" value="https://github.com/user/my-repo" placeholder="https://github.com/user/my-repo" aria-label="Repo URL Parameter" />
+      </div>
+    </div>
+
+    {/* 2. The Steps Blocks (Cards Stack) */}
+    <div class="he-nodes">
+      {resources.map((res, idx) => (
+        <div class="he-node-wrapper" data-index={idx}>
+          {/* Connecting Connector Arrow between levels */}
+          {idx > 0 && (
+            <div class="he-connector">
+              <div class="he-connector-line" />
+              <div class="he-connector-pulse" id={`he-pulse-${idx}`} />
+              <div class="he-connector-arrow">▼</div>
+            </div>
+          )}
+
+          <div 
+            class={`he-card ${idx === 0 ? 'is-selected' : ''}`} 
+            id={`he-card-${res.id}`}
+            style={`--he-c: ${res.color}`}
+            data-id={res.id}
+            data-label={res.label}
+            data-cli={res.cliCommand}
+          >
+            <div class="he-card-glow" />
+            <div class="he-card-header">
+              <div class="he-card-header-left">
+                <span class="he-card-num">0{idx + 1}</span>
+                <h4 class="he-card-title">{res.label}</h4>
+              </div>
+              <div class="he-card-badges">
+                {res.badge && <span class="he-card-badge">{res.badge}</span>}
+                <span class="he-card-status-badge status-idle" id={`he-status-${res.id}`}>Idle</span>
+              </div>
+            </div>
+            {/* Description is now inline for premium readability */}
+            <p class="he-card-desc">{res.description}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* 3. Copyable CLI prompt box at the very bottom, updating dynamically */}
+    <div class="he-cli-box">
+      <div class="he-cli-header">
+        <span>CLI PROMPT | <span id="he-cli-node-label" style="color: var(--he-c, var(--he-accent)); transition: color 150ms ease;">{resources[0]?.label}</span></span>
+        <button class="he-cli-copy" id="he-cli-copy-btn" type="button" aria-label="Copy Command">Copy</button>
+      </div>
+      <pre class="he-cli-code"><code id="he-cli-code-text">{resources[0]?.cliCommand}</code></pre>
+    </div>
+  </div>
+</div>
+
+<style>
+  .he {
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --he-text:       var(--sl-color-text);
+    --he-text-faint: var(--sl-color-gray-3);
+    --he-text-ghost: var(--sl-color-gray-4);
+    --he-rule:       var(--sl-color-hairline-shade);
+    --he-accent:     var(--sl-color-accent-high);
+    --he-panel:      rgba(20, 20, 23, 0.5);
+    
+    margin: 2rem 0;
+    background: var(--he-panel);
+    border: 1px solid var(--he-rule);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.25);
+  }
+
+  .he-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--he-rule);
+    background: rgba(10, 10, 12, 0.45);
+  }
+
+  .he-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .he-header-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--he-accent);
+    box-shadow: 0 0 8px var(--he-accent);
+  }
+
+  .he-title {
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    color: var(--he-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .he-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--he-accent);
+    background: color-mix(in srgb, var(--he-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--he-accent) 25%, transparent);
+    padding: 0.25rem 0.65rem;
+    border-radius: 99px;
+  }
+
+  .he-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 24px;
+  }
+
+  /* ═══ Simulator controls at the top ═══ */
+  .he-simulator-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--he-rule);
+    border-radius: 10px;
+    padding: 10px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .he-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .he-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid transparent;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .he-btn-success {
+    background: rgba(16, 185, 129, 0.06);
+    border-color: rgba(16, 185, 129, 0.25);
+    color: #34d399;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .he-btn-success:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: #10b981;
+    color: #6ee7b7;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  }
+
+  .he-btn-fail {
+    background: rgba(239, 68, 68, 0.06);
+    border-color: rgba(239, 68, 68, 0.25);
+    color: #f87171;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .he-btn-fail:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+    color: #fca5a5;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+  }
+
+  .he-btn:active:not(:disabled) {
+    opacity: 0.8;
+  }
+
+  .he-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none !important;
+  }
+
+  .he-btn-icon {
+    flex-shrink: 0;
+  }
+
+  .he-simulator-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .he-sim-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--he-text-ghost);
+    box-shadow: 0 0 4px var(--he-text-ghost);
+    transition: background 250ms ease, box-shadow 250ms ease;
+  }
+
+  /* When running */
+  .he-simulator-status.is-running .he-sim-status-dot {
+    background: #f59e0b;
+    box-shadow: 0 0 8px #f59e0b;
+    animation: he-dot-pulse 1s infinite alternate;
+  }
+  .he-simulator-status.is-running .he-sim-status-text {
+    color: #fbbf24;
+  }
+
+  /* When complete */
+  .he-simulator-status.is-complete .he-sim-status-dot {
+    background: #10b981;
+    box-shadow: 0 0 8px #10b981;
+  }
+  .he-simulator-status.is-complete .he-sim-status-text {
+    color: #34d399;
+  }
+
+  /* When failed */
+  .he-simulator-status.is-failed .he-sim-status-dot {
+    background: #ef4444;
+    box-shadow: 0 0 8px #ef4444;
+    animation: he-dot-pulse 0.5s infinite alternate;
+  }
+  .he-simulator-status.is-failed .he-sim-status-text {
+    color: #f87171;
+  }
+
+  @keyframes he-dot-pulse {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  /* ═══ Parameter Inputs Bar ═══ */
+  .he-params-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--he-rule);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+
+  .he-param-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .he-param-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--he-text-ghost);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .he-param-input {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--he-rule);
+    border-radius: 6px;
+    color: var(--he-text);
+    padding: 4px 8px;
+    outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+
+  .he-param-input:focus {
+    border-color: var(--he-accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--he-accent) 25%, transparent);
+  }
+
+  .he-param-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .he-param-help-link {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: var(--he-accent);
+    text-decoration: none;
+    background: color-mix(in srgb, var(--he-accent) 12%, transparent);
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .he-param-help-link:hover {
+    background: var(--he-accent);
+    color: white;
+  }
+
+  .he-param-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 10px;
+    padding-right: 24px !important; /* Make room for arrow icon */
+    cursor: pointer;
+  }
+
+  .he-param-select option {
+    background: #16161a;
+    color: var(--he-text);
+  }
+
+  /* ═══ Cards Stack ═══ */
+  .he-nodes {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+  }
+
+  .he-node-wrapper {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Connecting arrow & pulse track */
+  .he-connector {
+    height: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    margin: 2px 0;
+  }
+
+  .he-connector-line {
+    width: 2px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .he-connector-pulse {
+    position: absolute;
+    top: 0;
+    width: 4px;
+    height: 0;
+    background: var(--he-accent);
+    border-radius: 99px;
+    box-shadow: 0 0 10px var(--he-accent);
+    opacity: 0;
+  }
+
+  @keyframes pulse-flow {
+    0% { top: 0; height: 0; opacity: 1; }
+    50% { height: 100%; }
+    100% { top: 100%; height: 0; opacity: 0; }
+  }
+
+  .he-connector-pulse.active-pulse {
+    animation: pulse-flow 500ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+
+  .he-connector-arrow {
+    position: absolute;
+    bottom: -6px;
+    font-size: 8px;
+    color: rgba(255, 255, 255, 0.12);
+    line-height: 1;
+  }
+
+  .he-connector-pulse.active-pulse ~ .he-connector-arrow {
+    color: var(--he-accent);
+  }
+
+  /* Card primitive block */
+  .he-card {
+    --he-c: var(--he-accent);
+    width: 100%;
+    background: rgba(22, 22, 26, 0.95);
+    border: 1.5px solid var(--he-rule);
+    border-left: 4px solid var(--he-c);
+    border-radius: 12px;
+    padding: 14px 18px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: border-color 250ms var(--ease),
+                background 250ms var(--ease),
+                transform 200ms var(--ease),
+                box-shadow 250ms var(--ease);
+    overflow: hidden;
+  }
+
+  .he-card-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 10% 20%, color-mix(in srgb, var(--he-c) 8%, transparent) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 250ms var(--ease);
+    pointer-events: none;
+  }
+
+  .he-card:hover,
+  .he-card.is-selected {
+    border-color: color-mix(in srgb, var(--he-c) 35%, var(--he-rule));
+    background: color-mix(in srgb, var(--he-c) 2%, rgba(22, 22, 26, 0.98));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), 0 0 12px color-mix(in srgb, var(--he-c) 12%, transparent);
+  }
+
+  .he-card:hover .he-card-glow,
+  .he-card.is-selected .he-card-glow {
+    opacity: 1;
+  }
+
+  .he-card.active-ring {
+    border-color: var(--he-c) !important;
+    box-shadow: 0 0 18px color-mix(in srgb, var(--he-c) 40%, transparent) !important;
+    transform: scale(1.01);
+  }
+
+  .he-card.failed-ring {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 18px color-mix(in srgb, #ef4444 40%, transparent) !important;
+    transform: scale(1.01);
+  }
+
+  .he-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .he-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .he-card-num {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--he-c);
+    background: color-mix(in srgb, var(--he-c) 12%, transparent);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .he-card-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--he-text);
+    margin: 0;
+  }
+
+  .he-card-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .he-card-badge {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--he-text-ghost);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .he-card-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--he-text-ghost);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1.5px 6px 1.5px 8px; /* Extra left padding for dot */
+    border-radius: 4px;
+    transition: color 200ms ease, background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+    white-space: nowrap;
+  }
+
+  .he-card-status-badge::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--he-text-ghost);
+    box-shadow: 0 0 3px var(--he-text-ghost);
+    transition: background 200ms ease, box-shadow 200ms ease;
+  }
+
+  /* Idle State */
+  .he-card-status-badge.status-idle {
+    color: var(--he-text-ghost);
+    background: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+  .he-card-status-badge.status-idle::before {
+    background: var(--he-text-ghost);
+    box-shadow: 0 0 3px var(--he-text-ghost);
+  }
+
+  /* Building State */
+  .he-card-status-badge.status-building {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.1);
+  }
+  .he-card-status-badge.status-building::before {
+    background: #f59e0b;
+    box-shadow: 0 0 6px #f59e0b;
+    animation: he-dot-pulse 0.8s infinite alternate;
+  }
+
+  /* Success State */
+  .he-card-status-badge.status-success {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.35);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.15);
+  }
+  .he-card-status-badge.status-success::before {
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+  }
+
+  .he-card-desc {
+    font-size: 0.72rem;
+    color: var(--he-text-faint);
+    line-height: 1.55;
+    margin: 0;
+    padding-left: 32px; /* Align description text beautifully with title */
+  }
+
+  /* ═══ CLI copybox panel at the bottom ═══ */
+  .he-cli-box {
+    margin-top: 10px;
+    border: 1px solid var(--he-rule);
+    border-radius: 12px;
+    background: rgba(9, 9, 11, 0.95);
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .he-cli-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--he-rule);
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--he-text-ghost);
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .he-cli-copy {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--he-text-faint);
+    font-size: 0.58rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+  }
+
+  .he-cli-copy:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--he-text);
+  }
+
+  .he-cli-code {
+    margin: 0;
+    padding: 12px 16px;
+    overflow-x: auto;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    color: #34d399; /* Green prompt */
+    line-height: 1.45;
+  }
+
+  /* Motion & Print */
+  @media (prefers-reduced-motion: reduce) {
+    .he-connector-pulse, .he-card, .he-card-status-badge {
+      transition-duration: 0.01ms !important;
+      animation: none !important;
+    }
+  }
+</style>
+
+<script>
+  function initHierarchyExplorer() {
+    document.querySelectorAll<HTMLElement>('.he:not([data-init])').forEach((comp) => {
+      comp.setAttribute('data-init', '');
+ 
+      const cards = comp.querySelectorAll<HTMLElement>('.he-card');
+      const inspectCli = comp.querySelector<HTMLElement>('#he-cli-code-text')!;
+      const inspectCliLabel = comp.querySelector<HTMLElement>('#he-cli-node-label')!;
+      const copyBtn = comp.querySelector<HTMLButtonElement>('#he-cli-copy-btn')!;
+      const btnSuccess = comp.querySelector<HTMLButtonElement>('#he-btn-success')!;
+      const btnFail = comp.querySelector<HTMLButtonElement>('#he-btn-fail')!;
+      const simStatus = comp.querySelector<HTMLElement>('#he-sim-status')!;
+      const simStatusText = comp.querySelector<HTMLElement>('#he-sim-status .he-sim-status-text')!;
+      const params = comp.querySelectorAll<HTMLInputElement | HTMLSelectElement>('.he-param-input');
+
+      // Keep active state
+      let activeCard = cards[0];
+
+      // Resolve prompt template variables
+      function getParamValues() {
+        const vals: Record<string, string> = {};
+        params.forEach((input) => {
+          const varName = input.dataset.var!;
+          vals[varName] = input.value || input.getAttribute('placeholder') || '';
+        });
+        return vals;
+      }
+
+      function resolveTemplate(template: string, values: Record<string, string>): string {
+        return template.replace(/\$\{(\w+)\}/g, (_, name) => values[name] || '');
+      }
+
+      function updateCLIPreview() {
+        if (!activeCard) return;
+        const rawCli = activeCard.dataset.cli || '';
+        const values = getParamValues();
+        inspectCli.textContent = resolveTemplate(rawCli, values);
+      }
+
+      // ── Bind Parameter Input Listeners ──
+      params.forEach((param) => {
+        param.addEventListener('input', updateCLIPreview);
+        param.addEventListener('change', updateCLIPreview);
+      });
+
+      // ── Inspector Hover & Selection ──
+      cards.forEach((card) => {
+        const label = card.dataset.label || '';
+
+        function selectNode() {
+          cards.forEach(c => c.classList.remove('is-selected'));
+          card.classList.add('is-selected');
+          activeCard = card;
+
+          inspectCliLabel.textContent = label;
+          updateCLIPreview();
+          copyBtn.textContent = 'Copy';
+          
+          // Dynamically color label inside header to match card accent color
+          const activeColor = card.style.getPropertyValue('--he-c') || 'var(--he-accent)';
+          inspectCliLabel.style.color = activeColor;
+        }
+
+        card.addEventListener('mouseenter', selectNode);
+        card.addEventListener('click', selectNode);
+      });
+
+      // Initialize first view
+      if (activeCard) {
+        activeCard.dispatchEvent(new Event('mouseenter'));
+      }
+
+      // ── Copy Prompt Action ──
+      copyBtn.addEventListener('click', () => {
+        const command = inspectCli.textContent || '';
+        if (command) {
+          navigator.clipboard.writeText(command).then(() => {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => {
+              copyBtn.textContent = 'Copy';
+            }, 1500);
+          });
+        }
+      });
+
+      // ── Simulate Git Push / Deployment Flow ──
+      let isSimulating = false;
+
+      function runSimulation(isSuccess: boolean) {
+        if (isSimulating) return;
+        isSimulating = true;
+        
+        btnSuccess.disabled = true;
+        btnFail.disabled = true;
+        simStatusText.textContent = 'DEPLOYING...';
+        simStatus.classList.remove('is-complete', 'is-failed');
+        simStatus.classList.add('is-running');
+
+        // Clear all statuses back to Idle
+        cards.forEach((c) => {
+          const cid = c.dataset.id!;
+          const st = comp.querySelector<HTMLElement>(`#he-status-${cid}`)!;
+          st.textContent = 'Idle';
+          st.classList.remove('status-building', 'status-success', 'status-failed');
+          st.classList.add('status-idle');
+          c.classList.remove('active-ring', 'failed-ring');
+        });
+
+        // App -> Branch -> Domain always succeed in pipeline initiation
+        const timeline = [
+          { id: 'app', action: () => setNodeStatus('app', 'active', 'Success') },
+          { id: 'pulse-1', action: () => triggerPulse(1) },
+          { id: 'branch', action: () => setNodeStatus('branch', 'active', 'Success') },
+          { id: 'pulse-2', action: () => triggerPulse(2) },
+          { id: 'domain', action: () => setNodeStatus('domain', 'active', 'Success') },
+          { id: 'pulse-3', action: () => triggerPulse(3) },
+          { id: 'job', action: () => setNodeStatus('job', 'active', 'Building', 'status-building') }
+        ];
+
+        let currentStep = 0;
+        function runNextStep() {
+          if (currentStep >= timeline.length) {
+            // Reached CodeBuild evaluation
+            if (isSuccess) {
+              setNodeStatus('job', 'active', 'Success', 'status-success');
+              
+              setTimeout(() => {
+                simStatusText.textContent = 'ACTIVE / DEPLOYED';
+                simStatus.classList.remove('is-running');
+                simStatus.classList.add('is-complete');
+                
+                isSimulating = false;
+                btnSuccess.disabled = false;
+                btnFail.disabled = false;
+
+                setTimeout(() => {
+                  cards.forEach(c => c.classList.remove('active-ring'));
+                }, 1200);
+              }, 600);
+            } else {
+              setNodeStatus('job', 'inactive', 'Failed', 'status-failed');
+              const jobCard = comp.querySelector<HTMLElement>('#he-card-job')!;
+              jobCard.classList.add('failed-ring');
+
+              setTimeout(() => {
+                simStatusText.textContent = 'FAILED / ROLLING BACK...';
+                simStatus.classList.remove('is-running');
+                simStatus.classList.add('is-failed');
+
+                // Simulate reverse rollback pulse
+                setTimeout(() => {
+                  simStatusText.textContent = 'ROLLBACK COMPLETE / STABLE BUILD ACTIVE';
+                  triggerPulse(3);
+
+                  setTimeout(() => {
+                    setNodeStatus('job', 'inactive', 'Idle');
+                    jobCard.classList.remove('failed-ring');
+                    
+                    isSimulating = false;
+                    btnSuccess.disabled = false;
+                    btnFail.disabled = false;
+
+                    setTimeout(() => {
+                      cards.forEach(c => c.classList.remove('active-ring'));
+                      simStatus.classList.remove('is-failed');
+                      simStatusText.textContent = 'System Idle';
+                    }, 2500);
+                  }, 800);
+                }, 1200);
+              }, 600);
+            }
+            return;
+          }
+
+          const step = timeline[currentStep];
+          step.action();
+
+          // Standard delay between actions
+          let delay = 650;
+          if (step.id === 'job') {
+            delay = 1800; // Let "Building" stay visible longer to simulate compiler compile execution!
+          } else if (step.id.startsWith('pulse')) {
+            delay = 550; // Connector pulse timing
+          }
+
+          currentStep++;
+          setTimeout(runNextStep, delay);
+        }
+
+        runNextStep();
+      }
+
+      btnSuccess.addEventListener('click', () => runSimulation(true));
+      btnFail.addEventListener('click', () => runSimulation(false));
+
+      function setNodeStatus(nodeId: string, cardState: string, statusText: string, statusClass?: string) {
+        cards.forEach(c => c.classList.remove('active-ring'));
+        const card = comp.querySelector<HTMLElement>(`#he-card-${nodeId}`)!;
+        const statusBadge = comp.querySelector<HTMLElement>(`#he-status-${nodeId}`)!;
+
+        if (cardState === 'active') {
+          card.classList.add('active-ring');
+        }
+        
+        statusBadge.textContent = statusText;
+        statusBadge.classList.remove('status-idle', 'status-building', 'status-success', 'status-failed');
+        if (statusClass) {
+          statusBadge.classList.add(statusClass);
+        } else {
+          statusBadge.classList.add('status-' + statusText.toLowerCase());
+        }
+
+        // Auto hover/select active card to trigger CLI preview during simulation
+        card.dispatchEvent(new Event('mouseenter'));
+      }
+
+      function triggerPulse(pulseIndex: number) {
+        const pulse = comp.querySelector<HTMLElement>(`#he-pulse-${pulseIndex}`)!;
+        pulse.classList.remove('active-pulse');
+        void pulse.offsetWidth; // Trigger reflow to restart keyframe animation
+        pulse.classList.add('active-pulse');
+      }
+    });
+  }
+
+  // Bind on load and Astro page transitions
+  initHierarchyExplorer();
+  document.addEventListener('astro:page-load', initHierarchyExplorer);
+</script>
