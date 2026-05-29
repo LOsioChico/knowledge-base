@@ -150,7 +150,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
             <span class="pe-gate-num">3</span>
             <div class="pe-gate-title-block">
               <span class="pe-gate-badge" id="badge-auth-mode">Same-Account Union</span>
-              <h5 class="pe-gate-title">Identity & Resource Union</h5>
+              <h5 class="pe-gate-title" id="title-auth">Identity & Resource Union</h5>
             </div>
             <span class="pe-gate-status" id="status-auth">Pass</span>
           </div>
@@ -715,6 +715,7 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
       const verdictTitle = comp.querySelector<HTMLElement>('#pe-verdict-title')!;
       const verdictReason = comp.querySelector<HTMLElement>('#pe-verdict-reason')!;
       const badgeAuthMode = comp.querySelector<HTMLElement>('#badge-auth-mode')!;
+      const titleAuth = comp.querySelector<HTMLElement>('#title-auth')!;
 
       // Current State
       let activeMode: 'same' | 'cross' = 'same';
@@ -826,9 +827,11 @@ const { title = "IAM Policy Evaluation Engine" } = Astro.props;
 
         if (activeMode === 'same') {
           badgeAuthMode.textContent = "Same-Account Union";
+          titleAuth.textContent = "Identity & Resource Union";
           descAuth.textContent = "Same-account operations are a union : either identity policy OR S3 bucket policy must allow access.";
         } else {
           badgeAuthMode.textContent = "Cross-Account Intersection";
+          titleAuth.textContent = "Identity & Resource Intersection";
           descAuth.textContent = "Cross-account access requires an explicit Allow on BOTH the caller side (Identity) and target side (Resource policy).";
         }
 
