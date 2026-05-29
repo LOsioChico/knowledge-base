@@ -25,6 +25,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
+import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -243,10 +244,36 @@ export class SlidingWindowLimiter {
 
 Rate limiting can be deployed at multiple layers of a system. The choice of architecture dictates how latency, horizontal scalability, and application complexity behave.
 
-```
-[Client] ---> [API Gateway / Envoy] ---> [Application Tier] ---> [Redis Cache Tier]
-                 (Layer 7 Limiter)         (Local Middleware)      (Distributed State)
-```
+<FlowSimulator
+  title="Rate Limiting Deployment Architectures"
+  nodes={[
+    { id: "client", label: "Client", col: 0 },
+    { id: "gateway", label: "API Gateway (Envoy)", col: 1 },
+    { id: "app", label: "App Server", col: 2 },
+    { id: "redis", label: "Redis Cache Tier", col: 3 },
+  ]}
+  flows={[
+    { label: "API Gateway Limiting (Rejection)", steps: [
+      { from: "client", to: "gateway", message: "GET /api/resource", description: "Client sends an API request to the system's public endpoint." },
+      { from: "gateway", to: "client", message: "❌ HTTP 429 (Too Many Requests)", description: "The API Gateway evaluates rate limits locally, detects that this client has exceeded their limit, and immediately drops the request. The request never hits the App Server, protecting thread pools and compute resources from starvation." },
+    ]},
+    { label: "API Gateway Limiting (Happy Path)", steps: [
+      { from: "client", to: "gateway", message: "GET /api/resource", description: "Client sends an API request." },
+      { from: "gateway", to: "app", message: "GET /api/resource (Forwarded)", description: "Gateway evaluates limits. Client is under limit, so the request is forwarded to the App Server." },
+      { from: "app", to: "gateway", message: "HTTP 200 OK", description: "App Server processes the request and returns the response." },
+      { from: "gateway", to: "client", message: "HTTP 200 OK", description: "Gateway forwards the response to the client." },
+    ]},
+    { label: "Distributed Redis Limiting", steps: [
+      { from: "client", to: "gateway", message: "GET /api/resource", description: "Client sends an API request." },
+      { from: "gateway", to: "app", message: "GET /api/resource (Forwarded)", description: "Gateway forwards the request directly to the App Server without edge limiting." },
+      { from: "app", to: "redis", message: "EVALSHA rate_limit.lua", description: "The Application middleware executes an atomic Lua script on the shared Redis cluster to verify the client's current request bucket." },
+      { from: "redis", to: "app", message: "1 (Allowed)", description: "Redis increments the token count and returns 1, meaning the request is allowed." },
+      { from: "app", to: "gateway", message: "HTTP 200 OK", description: "App Server processes the business logic and returns the response." },
+      { from: "gateway", to: "client", message: "HTTP 200 OK", description: "Gateway forwards the response to the client." },
+    ]}
+  ]}
+  speed={1400}
+/>
 
 ### 1. Client-Side Limiting
 Implementing rate limits within the client application (such as mobile apps or web frontends) before the network call is made.

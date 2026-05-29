@@ -220,19 +220,31 @@ When a message repeatedly fails to process, it cannot remain at the head of the 
 
 To maintain throughput, systems route poison pills to a **[[system-design/dead-letter-queues|Dead Letter Queue (DLQ)]]** — a dedicated holding queue for failed messages. The broker counts delivery attempts and, once a configured `maxReceiveCount` is exceeded, automatically moves the message to the DLQ.
 
-```mermaid
-flowchart TD
-    MQ[(Main Queue)]:::purple -->|"1. Pull message"| C[Consumer]:::teal
-    C -->|"2. Process fails"| R{"Retry count <br/> < Max attempts?"}:::orange
-    R -->|"Yes: Wait & Backoff"| MQ
-    R -->|"No: Route to DLQ"| DLQ[(Dead Letter Queue)]:::red
-    DLQ -->|"Monitor Depth"| Alert[Page On-Call Team]:::orange
-
-    classDef purple fill:#9775fa,stroke:#000,color:#000
-    classDef teal fill:#38d9a9,stroke:#000,color:#000
-    classDef orange fill:#ffa94d,stroke:#000,color:#000
-    classDef red fill:#ff8787,stroke:#000,color:#000
-```
+<FlowSimulator
+  title="Poison Pill & Dead Letter Queue Routing"
+  nodes={[
+    { id: "queue", label: "Main Queue", col: 0 },
+    { id: "consumer", label: "Consumer", col: 1 },
+    { id: "dlq", label: "Dead Letter Queue", col: 2 },
+    { id: "alert", label: "On-Call System", col: 3 },
+  ]}
+  flows={[
+    { label: "Transient Failure Retry", steps: [
+      { from: "queue", to: "consumer", message: "Deliver Msg A", description: "Broker delivers Message A to the consumer. A visibility timeout is started in the Main Queue." },
+      { from: "consumer", to: "queue", message: "❌ Process Fails (NACK)", description: "The consumer fails due to a temporary network timeout, releasing the message back to the Main Queue." },
+      { from: "queue", to: "consumer", message: "Redeliver Msg A", description: "After a configured retry backoff delay, the broker redelivers Message A to the consumer." },
+      { from: "consumer", to: "queue", message: "✅ Success (ACK)", description: "On retry, downstream services are healthy. The consumer processes the message successfully and acknowledges it, deleting it from the Main Queue." },
+    ]},
+    { label: "Poison Pill to DLQ", steps: [
+      { from: "queue", to: "consumer", message: "Deliver Msg B", description: "Broker delivers Message B, which contains a permanently malformed payload (poison pill)." },
+      { from: "consumer", to: "queue", message: "❌ Process Fails (NACK)", description: "The consumer fails validation. The message returns to the Main Queue." },
+      { from: "queue", to: "consumer", message: "Redeliver Msg B", description: "The broker redelivers the message. The consumer fails again since the payload is permanently invalid." },
+      { from: "queue", to: "dlq", message: "→ Route to DLQ", description: "The Main Queue detects that the message's delivery attempt count has exceeded the 'maxReceiveCount' policy, and automatically routes it to the Dead Letter Queue." },
+      { from: "dlq", to: "alert", message: "Alert: DLQ Depth > 0", description: "Monitoring metrics detect that a message has landed in the DLQ, triggering an instant notification to the on-call engineering team to inspect and recover." },
+    ]}
+  ]}
+  speed={1400}
+/>
 
 <Aside type="tip" title="Deep dive">
 For the full treatment — retry strategies (exponential backoff with jitter), DLQ metadata envelopes, per-queue vs shared DLQs, recovery workflows, and monitoring best practices — see [[system-design/dead-letter-queues|Dead Letter Queues]].
