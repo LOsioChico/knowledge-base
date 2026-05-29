@@ -23,6 +23,7 @@ prerequisites:
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import TypeChannelTracer from '/src/components/interactive/TypeChannelTracer.astro';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 ---
 
@@ -88,6 +89,19 @@ The following workflow diagram illustrates how elements are batched, fetched, pa
 ## Complete Resilient Ingestion Implementation
 
 Below is the complete, self-contained, and compile-safe implementation. It implements each operational policy (timeouts, retry limits, [[effect-ts/concurrency|concurrency]] bounds) as clean, composable functional operators.
+
+<CodeWalkthrough
+  title="Resilient Ingestion Pipeline"
+  steps={[
+    { lines: "4-16", title: "Domain Errors", body: "We define our custom error classes by extending Data.TaggedError. This automatically gives them a structural _tag field, which allows us to easily distinguish them later in our error handling logic." },
+    { lines: "18-26", title: "Target Schema", body: "We define our target data structure using Effect Schema. Struct ensures that any decoded data strictly matches the properties and types we expect, and automatically infers the TypeScript type Todo." },
+    { lines: "28-41", title: "Low-level Fetch", body: "fetchRaw calls the endpoint using fetch, supports abort signals, and converts non-200 HTTP statuses to HttpError." },
+    { lines: "43-54", title: "Parsing Boundary", body: "parseTodo attempts to parse the response body as JSON. If successful, it passes the unknown data to Schema.decodeUnknown to validate the payload structure, mapping any issues to ParseFailure." },
+    { lines: "56-73", title: "Resilient Fetch Composition", body: "fetchTodoResilient chains raw fetching, parsing, a strict 5-second timeout, and selective exponential retries with randomized jitter to handle transient errors." },
+    { lines: "75-82", title: "Batch Ingestion & Concurrency", body: "We run the ingestion for an array of IDs using Effect.forEach. We pass a concurrency option of 3 to ensure we never have more than 3 active HTTP calls in-flight at any time." },
+    { lines: "84-91", title: "Running the Effect", body: "We call Effect.runPromise at the application entry point to execute the asynchronous pipeline, converting the declarative effect into a real running promise." }
+  ]}
+>
 
 ```ts twoslash title="resilient-ingestion.ts"
 import { Console, Data, Effect, Schedule, Schema } from "effect";
@@ -182,6 +196,8 @@ Effect.runPromise(ingestionProgram)
     console.error("Fatal ingestion pipeline crash:", error);
   });
 ```
+
+</CodeWalkthrough>
 
 ---
 

@@ -21,6 +21,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
+import CapTheoremSimulator from '/src/components/interactive/CapTheoremSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -44,17 +45,7 @@ The CAP theorem states that a distributed data store can simultaneously provide 
 *   **Availability**: Every non-failing node returns a non-error response for every request, without guaranteeing that it contains the most recent write.
 *   **Partition Tolerance**: The system continues to operate despite an arbitrary number of messages being dropped or delayed by the network between nodes.
 
-```mermaid
-flowchart TD
-    %% Venn diagram representing CAP theorem trade-offs
-        subgraph CAP ["The CAP Theorem Spectrum"]
-            direction TB
-            P["Partition Tolerance<br/>(Mandatory in Real Networks)"] --- CP["CP Systems<br/>(Consistent under Partition)"]
-            P --- AP["AP Systems<br/>(Available under Partition)"]
-            CP --- C["Consistency<br/>(Linearizability)"]
-            AP --- A["Availability<br/>(Always responds)"]
-        end
-```
+<CapTheoremSimulator />
 
 ### The "Branch Office" Partition Analogy
 To build immediate intuition, imagine a bank with two physical branches (one in London and one in New York). Both branches have local databases containing customer account balances. Under normal conditions, when a customer deposits money in London, the system instantly notifies the New York branch over the internet, and both databases match.
@@ -328,7 +319,14 @@ Achieving linearizability requires distributed consensus algorithms like Paxos o
 ### 2. Reconciling Concurrent Updates
 If you choose Availability (AP) and allow concurrent local writes, you must eventually reconcile conflicting updates.
 *   **Last-Write-Wins (LWW)**: Uses physical clock timestamps to pick the "latest" write. It is simple but vulnerable to clock skew, which can silently discard updates made on nodes with slightly lagging clocks.
-*   **CRDTs (Conflict-Free Replicated Data Types)**: Uses mathematical structures (like grow-only sets or observed-removed sets) to merge concurrent updates deterministically without coordination.
+*   **Multi-Value (Siblings)**: The database retains all conflicting concurrent writes as a sibling set, returning `[ValA, ValB]` on client reads. The client application must reconcile this set (either by querying the user or executing automated merge logic).
+*   **CRDTs (Conflict-Free Replicated Data Types)**: Uses mathematical structures (like grow-only sets, PN-counters, or observed-removed sets) to merge concurrent updates deterministically without custom resolution code.
+
+<Aside type="tip" title="Case Study: Amazon Dynamo & The Shopping Cart Sibling Merge">
+Amazon's original Dynamo database pioneered the use of **Multi-Value Sibling Registers** to enforce a strict **"never lose a sale"** business rule. 
+
+During a network partition, if a customer added a "Book" on Server A (London) and "Headphones" on Server B (New York), a standard Last-Write-Wins (LWW) resolution would have silently deleted one of the items based on timestamp (resulting in lost revenue). By storing both values as siblings `[["Book"], ["Headphones"]]`, the shopping cart application server received both states upon the next read and executed a simple `Union()` merge: `Cart = ["Book", "Headphones"]`. The customer sees both items, checkout succeeds, and data loss is avoided!
+</Aside>
 
 ---
 

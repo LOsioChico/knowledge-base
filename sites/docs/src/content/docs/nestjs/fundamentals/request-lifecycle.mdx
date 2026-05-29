@@ -27,6 +27,7 @@ prerequisites: []
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import ArchitectureExplorer from '/src/components/interactive/ArchitectureExplorer.astro';
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
+import CodeWalkthrough from '/src/components/interactive/CodeWalkthrough.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -163,6 +164,17 @@ Exception filters invert that: **route → controller → global**. First `@Catc
 
 Decorators on a single handler show **where** each layer attaches (Express adapter; imports omitted on purpose in prose: the fence is copy-pasteable):
 
+<CodeWalkthrough
+  title="CatsController Enhancer Ordering"
+  steps={[
+    { lines: "15-28", title: "Standalone Enhancers", body: "We mock AuthGuard, AdminGuard, and LoggingInterceptor to keep the example copy-pasteable. In standard apps, these are separate classes decorated with @Injectable()." },
+    { lines: "30-33", title: "Controller Scope", body: "The controller prefix is /cats. Enhancers applied here — @UseGuards(AuthGuard) and @UseInterceptors(LoggingInterceptor) — wrap every handler method within this class." },
+    { lines: "34-35", title: "Route Scope", body: "@Get(':id') mounts the GET endpoint. @UseGuards(AdminGuard) attaches AdminGuard specifically to this handler, executing after the controller-level guards." },
+    { lines: "36-38", title: "Parameter Pipe", body: "The @Param('id', ParseIntPipe) decorator extracts the 'id' parameter. ParseIntPipe runs after guards and before-interceptors, transforming the string input into a number or throwing a 400 error if invalid." },
+    { lines: "39-41", title: "Controller Handler", body: "This is Step 6 (the method body). By this point, all validation has succeeded and authorization is complete. We simply return the parsed id." }
+  ]}
+>
+
 ```typescript
 import {
   Controller,
@@ -207,6 +219,8 @@ export class CatsController {
   }
 }
 ```
+
+</CodeWalkthrough>
 
 Global `APP_GUARD`, `APP_INTERCEPTOR`, and `APP_PIPE` providers run **before** controller decorators ([[nestjs/fundamentals/global-providers|global enhancers]] note).
 

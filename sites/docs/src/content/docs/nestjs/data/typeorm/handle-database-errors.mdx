@@ -71,6 +71,8 @@ export function isUniqueViolation(
 
 Postgres `err.code` is a **string**. MySQL uses numeric `errno`. Branch on codes, not `err.message`.
 
+## Recipe 1: Global exception filter
+
 <CodeWalkthrough
   title="Global exception filter walkthrough"
   steps={[
