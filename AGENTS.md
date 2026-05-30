@@ -6,7 +6,14 @@ Operating contract for any AI agent (Copilot CLI, Claude Code, Cursor, etc.) edi
 
 ## Surface choices, don't pick silently
 
-When a request has plausibly different interpretations (callout severity, callout type, placement, prose vs. table, scope of a refactor, where to put a new section), name the options in one sentence and pick a default — don't commit to one silently. Cheap to ask, expensive to undo.
+When a request has plausibly different interpretations (callout severity, callout type, placement, prose vs. table, scope of a refactor, where to put a new section), name the options in one sentence and pick a default: don't commit to one silently. Cheap to ask, expensive to undo.
+
+## Component-driven note enrichment (Core Directive)
+
+Before writing any new notes or expanding index files, prioritize the systematic evaluation of every existing note to enrich, replace, or introduce interactive components (e.g. `<ParameterPlayground>`, `<ShellSession>`, `<PipelineStrip>`, `<FlowSimulator>`). Focus heavily on:
+1. **Improving Readability**: Break up walls of text with visually striking layers.
+2. **Accelerating Understanding**: Replace dense prose with highly digestible comparisons, matrices, or visual timelines.
+3. **Enhancing Reasonability**: Provide dynamic tools (playgrounds or simulators) that make complex technical tradeoffs and execution boundaries easy to grasp and experiment with directly on the page.
 
 ## Session context hygiene & SkillOpt self-evolution
 
