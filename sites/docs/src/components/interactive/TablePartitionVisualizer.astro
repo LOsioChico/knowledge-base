@@ -3,33 +3,34 @@
  * TablePartitionVisualizer.astro
  *
  * Interactive visualization of Monolithic vs Partitioned tables.
- * Displays side-by-side or stacked visual schemas where readers can trigger queries
- * (e.g., query by year 2023, query by year 2024, or standard cross-year query)
- * and see the query planner execute partition pruning live (fading/dimming partitions).
- * Includes an interactive explanation panel translating technical operations into plain learning points.
+ * Displays side-by-side visual schemas where readers trigger queries.
+ * An animated scan engine sequentially walks through the disk blocks (table rows),
+ * highlighting match vs filter outcomes, physically overlaying a "PRUNED" barrier
+ * on bypassed database partitions to visually teach disk I/O savings.
  */
 
 interface Record {
   id: number;
   date: string;
   amount: string;
+  monoIdx: number;
 }
 
 const monoRecords: Record[] = [
-  { id: 1, date: "2023-05-12", amount: "$50" },
-  { id: 2, date: "2024-03-10", amount: "$120" },
-  { id: 3, date: "2024-07-22", amount: "$85" },
-  { id: 4, date: "2023-11-04", amount: "$30" },
+  { id: 1, date: "2023-05-12", amount: "$50", monoIdx: 0 },
+  { id: 2, date: "2024-03-10", amount: "$120", monoIdx: 1 },
+  { id: 3, date: "2024-07-22", amount: "$85", monoIdx: 2 },
+  { id: 4, date: "2023-11-04", amount: "$30", monoIdx: 3 },
 ];
 
 const p2023Records: Record[] = [
-  { id: 1, date: "2023-05-12", amount: "$50" },
-  { id: 4, date: "2023-11-04", amount: "$30" },
+  { id: 1, date: "2023-05-12", amount: "$50", monoIdx: 0 },
+  { id: 4, date: "2023-11-04", amount: "$30", monoIdx: 3 },
 ];
 
 const p2024Records: Record[] = [
-  { id: 2, date: "2024-03-10", amount: "$120" },
-  { id: 3, date: "2024-07-22", amount: "$85" },
+  { id: 2, date: "2024-03-10", amount: "$120", monoIdx: 1 },
+  { id: 3, date: "2024-07-22", amount: "$85", monoIdx: 2 },
 ];
 ---
 
@@ -96,7 +97,7 @@ const p2024Records: Record[] = [
           </thead>
           <tbody>
             {monoRecords.map((r) => (
-              <tr class="tpv-row" data-year={r.date.startsWith("2023") ? "2023" : "2024"}>
+              <tr class="tpv-row" data-year={r.date.startsWith("2023") ? "2023" : "2024"} data-idx={r.monoIdx}>
                 <td>{r.id}</td>
                 <td><code class="date-code">{r.date}</code></td>
                 <td class="amount-cell">{r.amount}</td>
@@ -116,6 +117,11 @@ const p2024Records: Record[] = [
 
       <div class="tpv-partitions">
         <div class="tpv-partition-container" data-partition="2023">
+          <!-- Bypassed Barrier Overlay -->
+          <div class="tpv-pruned-overlay">
+            <span class="tpv-pruned-label">🚫 PRUNED: Bypassed by Planner</span>
+          </div>
+
           <div class="tpv-partition-header">
             <span class="tpv-partition-title">orders_2023 partition</span>
             <span class="tpv-partition-range">RANGE ('2023-01-01' TO '2024-01-01')</span>
@@ -131,7 +137,7 @@ const p2024Records: Record[] = [
               </thead>
               <tbody>
                 {p2023Records.map((r) => (
-                  <tr class="tpv-row" data-year="2023">
+                  <tr class="tpv-row" data-year="2023" data-idx={r.monoIdx}>
                     <td>{r.id}</td>
                     <td><code class="date-code">{r.date}</code></td>
                     <td class="amount-cell">{r.amount}</td>
@@ -143,6 +149,11 @@ const p2024Records: Record[] = [
         </div>
 
         <div class="tpv-partition-container" data-partition="2024">
+          <!-- Bypassed Barrier Overlay -->
+          <div class="tpv-pruned-overlay">
+            <span class="tpv-pruned-label">🚫 PRUNED: Bypassed by Planner</span>
+          </div>
+
           <div class="tpv-partition-header">
             <span class="tpv-partition-title">orders_2024 partition</span>
             <span class="tpv-partition-range">RANGE ('2024-01-01' TO '2025-01-01')</span>
@@ -158,7 +169,7 @@ const p2024Records: Record[] = [
               </thead>
               <tbody>
                 {p2024Records.map((r) => (
-                  <tr class="tpv-row" data-year="2024">
+                  <tr class="tpv-row" data-year="2024" data-idx={r.monoIdx}>
                     <td>{r.id}</td>
                     <td><code class="date-code">{r.date}</code></td>
                     <td class="amount-cell">{r.amount}</td>
@@ -499,7 +510,46 @@ const p2024Records: Record[] = [
     display: flex;
     flex-direction: column;
     gap: 6px;
+    position: relative; /* Added relative positioning for absolute pruned overlay */
     transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+  }
+
+  /* Pruned Barrier Overlay Style */
+  .tpv-pruned-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 10, 12, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 300ms var(--ease-out);
+    border-radius: 12px;
+    border: 1.5px dashed var(--tpv-red);
+  }
+
+  :root[data-theme='light'] .tpv-pruned-overlay {
+    background: rgba(240, 240, 243, 0.9);
+  }
+
+  .tpv-pruned-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--tpv-red);
+    background: color-mix(in srgb, var(--tpv-red) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tpv-red) 30%, transparent);
+    padding: 6px 12px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .tpv-partition-container.inactive-partition .tpv-pruned-overlay {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .tpv-partition-header {
@@ -524,14 +574,22 @@ const p2024Records: Record[] = [
 
   /* Interactive execution styles */
   .tpv-row {
-    transition: opacity 250ms var(--ease-out), background-color 200ms var(--ease-out);
+    transition: opacity 250ms var(--ease-out), background-color 200ms var(--ease-out), outline 200ms var(--ease-out);
   }
 
-  .tpv-row.active-row {
-    background-color: rgba(74, 222, 128, 0.05);
+  /* Animated scanning state highlights */
+  .tpv-row.scanning-row {
+    background-color: rgba(251, 191, 36, 0.15) !important;
+    outline: 1.5px solid var(--tpv-amber) !important;
   }
 
-  .tpv-row.inactive-row {
+  .tpv-row.match-row {
+    background-color: rgba(74, 222, 128, 0.08) !important;
+    color: var(--tpv-text) !important;
+    font-weight: 600;
+  }
+
+  .tpv-row.filter-row {
     opacity: 0.4; /* Raised to prevent extreme fading when inside inactive containers */
   }
 
@@ -592,85 +650,143 @@ const p2024Records: Record[] = [
         }
       };
 
+      let currentTimer: any = null;
+
       function executeQuery(query: "all" | "2023" | "2024") {
+        // Clear any running scanner animation
+        if (currentTimer) clearInterval(currentTimer);
+
         // Reset query button states
         buttons.forEach(btn => {
           btn.classList.toggle("active", btn.dataset.query === query);
         });
 
-        // 1. Update Explanation Card
+        // 1. Initial Reset of Row classes
+        comp.querySelectorAll(".tpv-row").forEach(row => {
+          row.className = "tpv-row";
+        });
+
+        // 2. Set Up Partition Overlay Boundaries Instantly
+        const isPart2023Active = query === "all" || query === "2023";
+        const isPart2024Active = query === "all" || query === "2024";
+
+        partContainers.forEach(container => {
+          const partYear = container.dataset.partition;
+          const isActive = (partYear === "2023" && isPart2023Active) || (partYear === "2024" && isPart2024Active);
+          if (isActive) {
+            container.classList.remove("inactive-partition");
+          } else {
+            container.classList.add("inactive-partition");
+          }
+        });
+
+        // 3. Initiate Scan Status Labels
+        let monoScanned = 0;
+        let partScanned = 0;
+        monoStatus.innerHTML = `Scan: <span class="status-bad">0</span> / 4 rows`;
+        partStatus.innerHTML = `Scan: active partitions | <span class="status-good">0</span> rows`;
+
+        // 4. Temporary Analysis explanation states
         const content = explanations[query];
         queryName.textContent = content.name;
-        querySaving.textContent = content.saving;
-        queryExp.textContent = content.exp;
-        monoDetail.textContent = content.mono;
-        partDetail.textContent = content.part;
+        querySaving.textContent = "Analyzing query plan...";
+        querySaving.className = "tpv-exp-saving-badge status-bad";
+        queryExp.textContent = "Query optimizer is calculating partition boundaries and plotting physical disk scan routes...";
+        monoDetail.textContent = "Estimating sequential scan path...";
+        partDetail.textContent = "Determining partition target boundaries...";
 
-        if (content.isGood) {
-          querySaving.className = "tpv-exp-saving-badge status-good";
-        } else {
-          querySaving.className = "tpv-exp-saving-badge status-bad";
-        }
+        // Disable button clicks during scan execution
+        buttons.forEach(btn => btn.style.pointerEvents = "none");
 
-        // 2. Update monolithic behavior (demonstrating full table scan)
-        if (query === "all") {
-          monoStatus.textContent = "Scan: 4 / 4 rows (100% table scan)";
-          monoStatus.className = "tpv-col-status status-bad";
-          monoRows.forEach(row => {
-            row.classList.remove("inactive-row", "active-row");
-          });
-        } else {
-          // Querying specific year. Monolithic table still scans all rows but filters them at execution.
-          monoStatus.textContent = `Scan: 4 / 4 rows (100% table scan, filtered at runtime)`;
-          monoStatus.className = "tpv-col-status status-bad";
-          
-          monoRows.forEach(row => {
-            const year = row.dataset.year;
-            if (year === query) {
-              row.classList.remove("inactive-row");
-              row.classList.add("active-row");
-            } else {
-              row.classList.remove("active-row");
-              row.classList.add("inactive-row");
-            }
-          });
-        }
+        let step = 0;
+        const totalRows = 4;
 
-        // 3. Update partitioned behavior (demonstrating Partition Pruning)
-        if (query === "all") {
-          partStatus.textContent = "Scan: 2 partitions | 4 / 4 rows total";
-          partStatus.className = "tpv-col-status status-bad"; /* Scan 100% is inefficient! */
-          
-          partContainers.forEach(container => {
-            container.classList.remove("inactive-partition", "active-partition");
-            container.querySelectorAll(".tpv-row").forEach(row => {
-              row.classList.remove("inactive-row", "active-row");
+        currentTimer = setInterval(() => {
+          if (step >= totalRows) {
+            clearInterval(currentTimer);
+            currentTimer = null;
+
+            // 5. Scan Finished! Render final metrics & states
+            querySaving.textContent = content.saving;
+            querySaving.className = content.isGood ? "tpv-exp-saving-badge status-good" : "tpv-exp-saving-badge status-bad";
+            queryExp.textContent = content.exp;
+            monoDetail.textContent = content.mono;
+            partDetail.textContent = content.part;
+
+            // Final status counters
+            monoStatus.innerHTML = `Scan: <span class="status-bad">4</span> / 4 rows (100% table scan)`;
+            partStatus.innerHTML = query === "all" 
+              ? `Scan: 2 partitions | <span class="status-bad">4</span> / 4 rows (100% scan)`
+              : `Scan: 1 partition | <span class="status-good">2</span> / 4 rows (Partition Pruned!)`;
+
+            // Reset final visual classes based on matched queries
+            monoRows.forEach(row => {
+              const year = row.dataset.year;
+              const isMatch = query === "all" || year === query;
+              row.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
             });
-          });
-        } else {
-          // Pruned query!
-          partStatus.textContent = `Scan: 1 partition | 2 / 4 rows scanned (Partition Pruned!)`;
-          partStatus.className = "tpv-col-status status-good";
 
-          partContainers.forEach(container => {
-            const partYear = container.dataset.partition;
-            if (partYear === query) {
-              container.classList.remove("inactive-partition");
-              container.classList.add("active-partition");
-              container.querySelectorAll(".tpv-row").forEach(row => {
-                row.classList.remove("inactive-row");
-                row.classList.add("active-row");
+            partContainers.forEach(container => {
+              const partYear = container.dataset.partition;
+              const isActive = (partYear === "2023" && isPart2023Active) || (partYear === "2024" && isPart2024Active);
+              container.querySelectorAll<HTMLElement>(".tpv-row").forEach(row => {
+                if (isActive) {
+                  const rowYear = row.dataset.year;
+                  const isMatch = query === "all" || rowYear === query;
+                  row.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
+                } else {
+                  row.className = "tpv-row filter-row";
+                }
               });
-            } else {
-              container.classList.remove("active-partition");
-              container.classList.add("inactive-partition");
-              container.querySelectorAll(".tpv-row").forEach(row => {
-                row.classList.remove("active-row");
-                row.classList.add("inactive-row");
-              });
+            });
+
+            // Re-enable clicks
+            buttons.forEach(btn => btn.style.pointerEvents = "auto");
+            return;
+          }
+
+          // --- Step Scan Animation Execution ---
+          
+          // A. Scan Monolithic row (always sequential)
+          const mRow = monoRows[step];
+          mRow.className = "tpv-row scanning-row";
+          monoScanned++;
+          monoStatus.innerHTML = `Scan: <span class="status-bad">${monoScanned}</span> / 4 rows (Sequential Scan)`;
+
+          // B. Scan Partitioned row (only if its containing partition is active)
+          const rowYear = mRow.dataset.year;
+          const isPartActive = (rowYear === "2023" && isPart2023Active) || (rowYear === "2024" && isPart2024Active);
+
+          if (isPartActive) {
+            const pRow = comp.querySelector(`.partitioned-col [data-partition="${rowYear}"] .tpv-row[data-idx="${step}"]`);
+            if (pRow) {
+              pRow.className = "tpv-row scanning-row";
             }
-          });
-        }
+            partScanned++;
+            partStatus.innerHTML = `Scan: active partitions | <span class="status-good">${partScanned}</span> rows read`;
+          } else {
+            // Pruned segment is skipped!
+            partStatus.innerHTML = `Scan: active partitions | <span class="status-good">${partScanned}</span> rows read (Bypassed partition!)`;
+          }
+
+          // C. Set visual states for completed historical steps
+          if (step > 0) {
+            const prevStep = step - 1;
+            const prevMRow = monoRows[prevStep];
+            const prevYear = prevMRow.dataset.year;
+            const isMatch = query === "all" || prevYear === query;
+            prevMRow.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
+
+            if ((prevYear === "2023" && isPart2023Active) || (prevYear === "2024" && isPart2024Active)) {
+              const prevPRow = comp.querySelector(`.partitioned-col [data-partition="${prevYear}"] .tpv-row[data-idx="${prevStep}"]`);
+              if (prevPRow) {
+                prevPRow.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
+              }
+            }
+          }
+
+          step++;
+        }, 400); // 400ms scan step delay
       }
 
       // Bind button events
