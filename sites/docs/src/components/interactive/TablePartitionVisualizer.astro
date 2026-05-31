@@ -1,0 +1,507 @@
+---
+/**
+ * TablePartitionVisualizer.astro
+ *
+ * Interactive visualization of Monolithic vs Partitioned tables.
+ * Displays side-by-side or stacked visual schemas where readers can trigger queries
+ * (e.g., query by year 2023, query by year 2024, or standard cross-year query)
+ * and see the query planner execute partition pruning live (fading/dimming partitions).
+ */
+
+interface Record {
+  id: number;
+  date: string;
+  amount: string;
+}
+
+const monoRecords: Record[] = [
+  { id: 1, date: "2023-05-12", amount: "$50" },
+  { id: 2, date: "2024-03-10", amount: "$120" },
+  { id: 3, date: "2024-07-22", amount: "$85" },
+  { id: 4, date: "2023-11-04", amount: "$30" },
+];
+
+const p2023Records: Record[] = [
+  { id: 1, date: "2023-05-12", amount: "$50" },
+  { id: 4, date: "2023-11-04", amount: "$30" },
+];
+
+const p2024Records: Record[] = [
+  { id: 2, date: "2024-03-10", amount: "$120" },
+  { id: 3, date: "2024-07-22", amount: "$85" },
+];
+---
+
+<div class="tpv not-content">
+  <div class="tpv-header">
+    <span class="tpv-title">Table Partition Pruning Simulator</span>
+    <span class="tpv-badge">⬡ Declarative Partitioning</span>
+  </div>
+
+  <div class="tpv-controls">
+    <span class="tpv-control-label">Run Query:</span>
+    <div class="tpv-buttons">
+      <button class="tpv-btn active" data-query="all">
+        <code>SELECT * FROM orders;</code>
+      </button>
+      <button class="tpv-btn" data-query="2023">
+        <code>SELECT * FROM orders WHERE order_date &lt; '2024-01-01';</code>
+      </button>
+      <button class="tpv-btn" data-query="2024">
+        <code>SELECT * FROM orders WHERE order_date &gt;= '2024-01-01';</code>
+      </button>
+    </div>
+  </div>
+
+  <div class="tpv-workspace">
+    {/* Left Column: Monolithic Table */}
+    <div class="tpv-column mono-col">
+      <div class="tpv-column-header">
+        <span class="tpv-col-title">Monolithic Orders Table</span>
+        <span class="tpv-col-status status-bad" id="mono-status">Scan: 4 / 4 rows (100% table scan)</span>
+      </div>
+      <div class="tpv-card table-card">
+        <table class="tpv-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {monoRecords.map((r) => (
+              <tr class="tpv-row" data-year={r.date.startsWith("2023") ? "2023" : "2024"}>
+                <td>{r.id}</td>
+                <td><code class="date-code">{r.date}</code></td>
+                <td class="amount-cell">{r.amount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* Right Column: Partitioned Table */}
+    <div class="tpv-column partitioned-col">
+      <div class="tpv-column-header">
+        <span class="tpv-col-title">Partitioned Orders Table</span>
+        <span class="tpv-col-status status-good" id="part-status">Scan: 4 / 4 rows (100% table scan)</span>
+      </div>
+
+      <div class="tpv-partitions">
+        <div class="tpv-partition-container" data-partition="2023">
+          <div class="tpv-partition-header">
+            <span class="tpv-partition-title">orders_2023 partition</span>
+            <span class="tpv-partition-range">RANGE ('2023-01-01' TO '2024-01-01')</span>
+          </div>
+          <div class="tpv-card table-card">
+            <table class="tpv-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p2023Records.map((r) => (
+                  <tr class="tpv-row" data-year="2023">
+                    <td>{r.id}</td>
+                    <td><code class="date-code">{r.date}</code></td>
+                    <td class="amount-cell">{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tpv-partition-container" data-partition="2024">
+          <div class="tpv-partition-header">
+            <span class="tpv-partition-title">orders_2024 partition</span>
+            <span class="tpv-partition-range">RANGE ('2024-01-01' TO '2025-01-01')</span>
+          </div>
+          <div class="tpv-card table-card">
+            <table class="tpv-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p2024Records.map((r) => (
+                  <tr class="tpv-row" data-year="2024">
+                    <td>{r.id}</td>
+                    <td><code class="date-code">{r.date}</code></td>
+                    <td class="amount-cell">{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tpv {
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --tpv-text:       var(--sl-color-text);
+    --tpv-text-faint: var(--sl-color-gray-3);
+    --tpv-text-ghost: var(--sl-color-gray-4);
+    --tpv-rule:       var(--sl-color-hairline-shade);
+    --tpv-accent:     var(--sl-color-accent-high);
+    --tpv-accent-low: var(--sl-color-accent-low);
+    --tpv-panel:      rgba(20, 20, 23, 0.5);
+    --tpv-green:      #4ade80;
+    --tpv-red:        #f87171;
+    --tpv-amber:      #fbbf24;
+    
+    margin: 2rem 0;
+    background: var(--tpv-panel);
+    border: 1px solid var(--tpv-rule);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.2);
+  }
+
+  .tpv-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--tpv-rule);
+    background: rgba(10, 10, 12, 0.4);
+  }
+
+  .tpv-title {
+    font-size: var(--sl-text-xs);
+    font-weight: 700;
+    color: var(--tpv-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .tpv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--tpv-accent);
+    background: color-mix(in srgb, var(--tpv-accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tpv-accent) 25%, transparent);
+    padding: 0.25rem 0.65rem;
+    border-radius: 99px;
+  }
+
+  .tpv-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--tpv-rule);
+    background: rgba(255, 255, 255, 0.01);
+  }
+
+  .tpv-control-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--tpv-text-ghost);
+    letter-spacing: 0.05em;
+  }
+
+  .tpv-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .tpv-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.72rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1.5px solid var(--tpv-rule);
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 200ms var(--ease-out);
+    display: flex;
+    align-items: center;
+  }
+
+  .tpv-btn:hover {
+    border-color: var(--tpv-text-faint);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .tpv-btn.active {
+    border-color: var(--tpv-accent);
+    background: color-mix(in srgb, var(--tpv-accent) 8%, rgba(22, 22, 26, 0.5));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--tpv-accent) 15%, transparent);
+  }
+
+  .tpv-btn code {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace) !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    color: inherit !important;
+  }
+
+  .tpv-workspace {
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 24px;
+    padding: 24px;
+  }
+
+  @media (max-width: 768px) {
+    .tpv-workspace {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+  }
+
+  .tpv-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tpv-column-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .tpv-col-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--tpv-text);
+  }
+
+  .tpv-col-status {
+    font-size: 0.68rem;
+    font-weight: 600;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  }
+
+  .status-bad {
+    color: var(--tpv-amber);
+  }
+
+  .status-good {
+    color: var(--tpv-green);
+  }
+
+  .tpv-card {
+    border-radius: 12px;
+    background: rgba(14, 14, 17, 0.4);
+    border: 1px solid var(--tpv-rule);
+    overflow: hidden;
+  }
+
+  .tpv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+    text-align: left;
+  }
+
+  .tpv-table th,
+  .tpv-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--tpv-rule);
+  }
+
+  .tpv-table th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    color: var(--tpv-text-ghost);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .tpv-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .date-code {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace) !important;
+    color: var(--tpv-text-faint) !important;
+  }
+
+  .amount-cell {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-weight: 600;
+  }
+
+  .tpv-partitions {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .tpv-partition-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+  }
+
+  .tpv-partition-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .tpv-partition-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--tpv-text-faint);
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  }
+
+  .tpv-partition-range {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--tpv-text-ghost);
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  }
+
+  /* Interactive execution styles */
+  .tpv-row {
+    transition: opacity 250ms var(--ease-out), background-color 200ms var(--ease-out);
+  }
+
+  .tpv-row.active-row {
+    background-color: rgba(74, 222, 128, 0.05);
+  }
+
+  .tpv-row.inactive-row {
+    opacity: 0.25;
+  }
+
+  .tpv-partition-container.inactive-partition {
+    opacity: 0.15;
+    transform: scale(0.98);
+  }
+
+  .tpv-partition-container.active-partition .tpv-partition-title {
+    color: var(--tpv-green);
+  }
+</style>
+
+<script>
+  function initTablePartition() {
+    document.querySelectorAll<HTMLElement>(".tpv:not([data-init])").forEach((comp) => {
+      comp.setAttribute("data-init", "");
+
+      const buttons = comp.querySelectorAll<HTMLButtonElement>(".tpv-btn");
+      const monoStatus = comp.querySelector<HTMLElement>("#mono-status")!;
+      const partStatus = comp.querySelector<HTMLElement>("#part-status")!;
+
+      const monoRows = comp.querySelectorAll<HTMLElement>(".mono-col .tpv-row");
+      const partContainers = comp.querySelectorAll<HTMLElement>(".tpv-partition-container");
+
+      function executeQuery(query: string) {
+        // Reset query button states
+        buttons.forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.query === query);
+        });
+
+        // 1. Update monolithic behavior (relational DB always does table scan unless indexed,
+        // but here we demonstrate full table scan vs partitioned pruned scan).
+        if (query === "all") {
+          monoStatus.textContent = "Scan: 4 / 4 rows (100% table scan)";
+          monoStatus.className = "tpv-col-status status-bad";
+          monoRows.forEach(row => {
+            row.classList.remove("inactive-row", "active-row");
+          });
+        } else {
+          // Querying specific year. Monolithic table still scans all rows but filters them at execution.
+          let scannedCount = 4;
+          monoStatus.textContent = `Scan: ${scannedCount} / 4 rows (100% table scan, filtered at runtime)`;
+          monoStatus.className = "tpv-col-status status-bad";
+          
+          monoRows.forEach(row => {
+            const year = row.dataset.year;
+            if (year === query) {
+              row.classList.remove("inactive-row");
+              row.classList.add("active-row");
+            } else {
+              row.classList.remove("active-row");
+              row.classList.add("inactive-row");
+            }
+          });
+        }
+
+        // 2. Update partitioned behavior (demonstrating Partition Pruning)
+        if (query === "all") {
+          partStatus.textContent = "Scan: 2 partitions | 4 / 4 rows total";
+          partStatus.className = "tpv-col-status status-good";
+          
+          partContainers.forEach(container => {
+            container.classList.remove("inactive-partition", "active-partition");
+            container.querySelectorAll(".tpv-row").forEach(row => {
+              row.classList.remove("inactive-row", "active-row");
+            });
+          });
+        } else {
+          // Pruned query!
+          partStatus.textContent = `Scan: 1 partition | 2 / 4 rows scanned (Partition Pruned!)`;
+          partStatus.className = "tpv-col-status status-good";
+
+          partContainers.forEach(container => {
+            const partYear = container.dataset.partition;
+            if (partYear === query) {
+              container.classList.remove("inactive-partition");
+              container.classList.add("active-partition");
+              container.querySelectorAll(".tpv-row").forEach(row => {
+                row.classList.remove("inactive-row");
+                row.classList.add("active-row");
+              });
+            } else {
+              container.classList.remove("active-partition");
+              container.classList.add("inactive-partition");
+              container.querySelectorAll(".tpv-row").forEach(row => {
+                row.classList.remove("active-row");
+                row.classList.add("inactive-row");
+              });
+            }
+          });
+        }
+      }
+
+      // Bind button events
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const q = btn.dataset.query || "all";
+          executeQuery(q);
+        });
+      });
+
+      // Initialize
+      executeQuery("all");
+    });
+  }
+
+  // Bind on load and Astro page transitions
+  initTablePartition();
+  document.addEventListener("astro:page-load", initTablePartition);
+</script>

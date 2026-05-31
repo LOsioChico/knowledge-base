@@ -18,6 +18,9 @@ source:
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
+import TablePartitionVisualizer from '/src/components/interactive/TablePartitionVisualizer.astro';
+import VisualFlow from '/src/components/interactive/VisualFlow.astro';
+import SequenceDiagram from '/src/components/interactive/SequenceDiagram.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -67,30 +70,7 @@ Before committing to complex distributed database architectures, engineers must 
 
 Table partitioning (modeled on standard database scaling paths, see [source](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
 
-```mermaid
-flowchart LR
-  subgraph Mono ["Monolithic Orders Table"]
-    direction TB
-    m1["ID: 1 | Date: 2023-05-12 | $50"]
-    m2["ID: 2 | Date: 2024-03-10 | $120"]
-    m3["ID: 3 | Date: 2024-07-22 | $85"]
-    m4["ID: 4 | Date: 2023-11-04 | $30"]
-  end
-
-  subgraph Partitioned ["Partitioned Orders Table"]
-    direction TB
-    subgraph P2023 ["orders_2023 (Partition 1)"]
-      p1["ID: 1 | Date: 2023-05-12 | $50"]
-      p4["ID: 4 | Date: 2023-11-04 | $30"]
-    end
-    subgraph P2024 ["orders_2024 (Partition 2)"]
-      p2["ID: 2 | Date: 2024-03-10 | $120"]
-      p3["ID: 3 | Date: 2024-07-22 | $85"]
-    end
-  end
-
-  Mono -->|Partition Engine| Partitioned
-```
+<TablePartitionVisualizer />
 
 The application interacts with the parent table as if it were a single table, but the database engine automatically routes records and prunes queries.
 
@@ -186,17 +166,20 @@ When a single server's compute power and disk space are fully exhausted, we must
 
 Sharding is horizontal partitioning **extended across physically separate database instances**. Each server (called a **shard**) is a fully independent database instance storing a unique slice of the logical dataset.
 
-```mermaid
-flowchart TD
-  App["Application Router Logic"]
-  S0["Shard 0 (db-server-0)"]
-  S1["Shard 1 (db-server-1)"]
-  S2["Shard 2 (db-server-2)"]
-
-  App -->|user_id % 3 == 0| S0
-  App -->|user_id % 3 == 1| S1
-  App -->|user_id % 3 == 2| S2
-```
+<VisualFlow
+  title="Shard Routing Logic"
+  nodes={[
+    { id: "app", label: "Application Router", col: 1, row: 0, icon: "loop", description: "Reads the shard key and matches against the hash modulo." },
+    { id: "s0", label: "Shard 0 (db-server-0)", col: 0, row: 1, icon: "network", description: "Stores user accounts where user_id % 3 == 0" },
+    { id: "s1", label: "Shard 1 (db-server-1)", col: 1, row: 1, icon: "network", description: "Stores user accounts where user_id % 3 == 1" },
+    { id: "s2", label: "Shard 2 (db-server-2)", col: 2, row: 1, icon: "network", description: "Stores user accounts where user_id % 3 == 2" },
+  ]}
+  edges={[
+    { from: "app", to: "s0", label: "user_id % 3 == 0" },
+    { from: "app", to: "s1", label: "user_id % 3 == 1" },
+    { from: "app", to: "s2", label: "user_id % 3 == 2" },
+  ]}
+/>
 
 ### The Sharding Components
 1. **Shard Key**: The column (or combination of columns) used to determine data placement. It must be present in almost all write/read queries to avoid searching all shards.
@@ -220,17 +203,26 @@ A central configuration database or dynamic coordination manager (like ZooKeeper
 
 For read-heavy applications, scaling the primary database involves setting up **Read Replicas** (Master-Slave Replication). All database writes are committed to the **Master** node, which replicates updates to one or more read-only **Slave** nodes.
 
-```mermaid
-flowchart TD
-  Writes["Write Requests"] --> Master["Master DB"]
-  Master -->|Asynchronous Replication| Slave0["Slave Replica 0"]
-  Master -->|Asynchronous Replication| Slave1["Slave Replica 1"]
-  Master -->|Asynchronous Replication| Slave2["Slave Replica 2"]
-
-  Slave0 --> Reads["Read Requests"]
-  Slave1 --> Reads
-  Slave2 --> Reads
-```
+<VisualFlow
+  title="Master-Slave Replication & Read Replicas"
+  nodes={[
+    { id: "writes", label: "Write Requests", col: 1, row: 0, icon: "input" },
+    { id: "master", label: "Master DB", col: 1, row: 1, icon: "success", description: "Processes all state mutations and transaction logs locally." },
+    { id: "slave0", label: "Read Replica 0", col: 0, row: 2, icon: "network", description: "Lagging read-only node syncing logs in the background." },
+    { id: "slave1", label: "Read Replica 1", col: 1, row: 2, icon: "network", description: "Lagging read-only node syncing logs in the background." },
+    { id: "slave2", label: "Read Replica 2", col: 2, row: 2, icon: "network", description: "Lagging read-only node syncing logs in the background." },
+    { id: "reads", label: "Read Requests", col: 1, row: 3, icon: "loop" },
+  ]}
+  edges={[
+    { from: "writes", to: "master", label: "Write Transactions" },
+    { from: "master", to: "slave0", label: "Async Replication", style: "dashed" },
+    { from: "master", to: "slave1", label: "Async Replication", style: "dashed" },
+    { from: "master", to: "slave2", label: "Async Replication", style: "dashed" },
+    { from: "slave0", to: "reads", label: "Query Results" },
+    { from: "slave1", to: "reads", label: "Query Results" },
+    { from: "slave2", to: "reads", label: "Query Results" },
+  ]}
+/>
 
 Replication between nodes operates under three synchronicity models:
 
@@ -255,22 +247,20 @@ Under asynchronous replication, **replication lag** creates a common client-cent
 
 Imagine a user updating their bio on a profile page. The update commits on the Master DB successfully. When the page instantly refreshes, the client app reads the profile bio from a lagging read replica. The user observes their old bio, assuming the write was lost.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  actor Client as Client App
-  participant Master as Master DB
-  participant Replica as Lagging Read Replica
-
-  Client->>Master: UpdateBio("Active")
-  Note over Master: Write committed locally
-  Master-->>Client: Write Success
-
-  Note over Client: Immediate Page Refresh
-  Client->>Replica: GetBio()
-  Note over Replica: Lagging by 500ms...
-  Replica-->>Client: Returns "Stale Bio" (Inconsistency!)
-```
+<SequenceDiagram
+  title="Replication Lag & Read-Your-Writes Inconsistency"
+  actors={[
+    { id: "client", label: "Client App" },
+    { id: "master", label: "Master DB" },
+    { id: "replica", label: "Lagging Read Replica" },
+  ]}
+  steps={[
+    { from: "client", to: "master", message: "UpdateBio('Active')", description: "Client commits profile update request directly to the Master DB." },
+    { from: "master", to: "client", message: "Write Success", type: "dashed", description: "Master DB commits the update locally and instantly returns success." },
+    { from: "client", to: "replica", message: "GetBio()", description: "Frontend immediately refreshes, routing the read query to a lagging read replica node." },
+    { from: "replica", to: "client", message: "Returns 'Stale Bio'", type: "dashed", description: "Because background replication is still pending (lag), the replica serves the old state (dirty/stale read!)." },
+  ]}
+/>
 
 ### Mitigations
 1. **Sticky Session Routing**: The session router tracks write timestamps. If a client writes data, the router sticky-pins all of that client's reads to the Master database for a brief window (e.g. 2-5 seconds), bypassing the replicas until replication lag catches up.
