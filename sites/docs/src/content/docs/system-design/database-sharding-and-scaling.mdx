@@ -12,6 +12,8 @@ related:
   - "[[system-design/messaging-patterns]]"
 source:
   - https://algomaster.io/learn/system-design
+  - https://www.postgresql.org/docs/current/ddl-partitioning.html
+  - https://www.postgresql.org/docs/current/warm-standby.html
 ---
 
 > Scaling datastores horizontally using vertical/horizontal partitioning, read replica synchronization, database sharding, and [[system-design/consistent-hashing|consistent hashing]].
@@ -75,7 +77,7 @@ Before committing to complex distributed database architectures, engineers must 
 
 ## Table Partitioning (Within a Single Server)
 
-Table partitioning (modeled on standard database scaling paths, see [source](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
+Table partitioning ([PostgreSQL docs](https://www.postgresql.org/docs/current/ddl-partitioning.html), [overview](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
 
 Physically, each partition is stored as a **completely independent table file on disk**. The parent table (`orders`) is a **logical routing shell** that holds no physical data of its own. When an application queries the parent table, the database query planner uses **Partition Pruning** to inspect the filter constraints and bypass partition files that cannot hold matching records, saving massive disk I/O.
 
@@ -111,7 +113,7 @@ For example, an active user profiles table can be vertically split into:
 
 ### Horizontal Partitioning (Splitting by Rows)
 
-Horizontal partitioning splits a table **by rows** while keeping the identical schema across all partitions. Each partition stores a distinct subset of the row rows.
+Horizontal partitioning splits a table **by rows** while keeping the identical schema across all partitions. Each partition stores a distinct subset of rows.
 
 #### Native Horizontal Partitioning in PostgreSQL
 PostgreSQL supports native **declarative partitioning**. The database engine automatically routes writes to the correct child partition and optimizes reads.
@@ -173,7 +175,7 @@ DROP TABLE orders_2023;
 ```
 
 ### 2. List Partitioning
-Rows are routed based on explicit matching discrete values. Useful for geographical segments or category categories.
+Rows are routed based on explicit matching discrete values. Useful for geographical segments or categorical values.
 ```sql
 -- List partitioning by region CNAME
 CREATE TABLE customers (
@@ -278,7 +280,7 @@ For read-heavy applications, scaling the primary database involves setting up **
   ]}
 />
 
-Replication between nodes operates under three synchronicity models. Under the hood, these models coordinate the distribution of the database's **Write-Ahead Log (WAL)** — a append-only binary log containing all local disk-block mutations:
+Replication between nodes operates under three synchronicity models ([PostgreSQL streaming replication](https://www.postgresql.org/docs/current/warm-standby.html)). Under the hood, these models coordinate the distribution of the database's **Write-Ahead Log (WAL)**: an append-only binary log containing all local disk-block mutations:
 
 ### 1. Synchronous Replication
 The Master writes the transaction to the WAL locally, replicates the WAL entries to the slave, and **waits for the slave to write the log and return an acknowledgement** before returning success to the application client.
@@ -395,12 +397,15 @@ Let us evaluate the statistical risk of read-your-writes failures under varying 
     { name: "readDelay", label: "Client read delay (refresh)", type: "range", min: 0, max: 2000, step: 50, default: 100, suffix: " ms" },
   ]}
   outputs={[
-    { name: "backlog", label: "Unreplicated write backlog", format: "number" },
+    { name: "backlog", label: "Unreplicated write backlog (per replica)", format: "number" },
+    { name: "totalBacklog", label: "Total unreplicated writes (all replicas)", format: "number" },
     { name: "readRisk", label: "Stale read likelihood", format: "percent", good: "low" },
     { name: "status", label: "Read consistency level", format: "text" },
   ]}
   compute={`
-    var backlog = Math.round(params.writeQps * (params.networkLatency / 1000));
+    var lagSeconds = params.networkLatency / 1000;
+    var backlog = Math.round(params.writeQps * lagSeconds);
+    var totalBacklog = backlog * params.replicaCount;
     var risk = 0;
     if (params.readDelay < params.networkLatency) {
       risk = (params.networkLatency - params.readDelay) / params.networkLatency;
@@ -409,10 +414,13 @@ Let us evaluate the statistical risk of read-your-writes failures under varying 
     if (risk === 0) {
       consistency = "Read-Your-Writes Guaranteed";
     } else if (risk > 0.7) {
-      consistency = "CRITICAL: High Stale Read Risk";
+      consistency = "CRITICAL: High Stale Read Risk (" + params.replicaCount + " replicas lagging)";
+    } else {
+      consistency = "Eventual (" + params.replicaCount + " replicas, ~" + params.networkLatency + "ms lag window)";
     }
     return {
       backlog: backlog,
+      totalBacklog: totalBacklog,
       readRisk: risk,
       status: consistency
     };
