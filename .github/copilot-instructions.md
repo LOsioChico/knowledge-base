@@ -46,7 +46,7 @@ scripts/                         # MDX linters, audit tooling
 
 Rules:
 
-- One concept per file. Split before a note exceeds ~250 lines.
+- One concept per file. Split when a note covers two distinct concepts that can stand alone, not based on line count.
 - Every folder under `sites/docs/src/content/docs/` MUST have an `index.mdx` (its MOC).
 - File names: kebab-case, descriptive nouns (`request-lifecycle.mdx`, not `req-lc.mdx`).
 - No orphans. A note that nothing links to is a bug.
