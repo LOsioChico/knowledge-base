@@ -9,6 +9,7 @@ related:
   - "[[system-design/consistency-models]]"
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/distributed-caching]]"
+  - "[[system-design/messaging-patterns]]"
 source:
   - https://algomaster.io/learn/system-design
 ---
@@ -30,15 +31,21 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before tack
 
 </Aside>
 
-When an application's user base grows, the primary database inevitably becomes the central performance bottleneck. Relational databases on a single server hit hard physical hardware limits (CPU, disk I/O speed, and RAM capacity). 
+Imagine a production API servicing a sudden spike of 100,000 orders/sec. Almost instantly, your primary SQL database hits its physical hardware boundaries: CPU spikes to 100%, disk write queues bottleneck, and memory (RAM) is exhausted. The primary database is almost always the ultimate bottleneck of modern systems scaling.
 
-To scale database performance, we must either partition data *within* a single server to speed up queries, or distribute data across *multiple* servers to share the load.
+To scale database performance and avoid system outages, engineers must decide whether to optimize how data is physically arranged *within* a single database server, or physically distribute records across *multiple* separate database instances to share the load.
 
 ---
 
 ## The Database Scaling Spectrum
 
-Before committing to complex distributed database architectures, engineers must choose the simplest scaling pattern that solves their specific bottleneck.
+Before committing to complex distributed database architectures, engineers must choose the simplest scaling pattern that solves their specific bottleneck. Let's compare the core primitives across the database scaling spectrum to grasp their architectural trade-offs:
+
+| Scaling Pattern | Primary Bottleneck Solved | Multi-Server Infrastructure Cost | ACID Transaction Complexity | Query & Join Ergonomics |
+| :--- | :--- | :--- | :--- | :--- |
+| **Table Partitioning** | Massive physical table scans & index size bloating on a single node | **Zero** (Runs within the same database engine instance) | **Local & Native** (Full relational constraint support) | **Seamless** (Transparent logical views, no code changes required) |
+| **Read Replicas** | High volume of read operations (Read QPS saturation) | **Low to Medium** (Spin up read-only nodes) | **Eventual** (Replication lag, master node owns all writes) | **Read-Replica Routing** (App must split read vs write query connections) |
+| **Database Sharding** | Write QPS saturation & primary node storage limits | **High** (Cluster of distinct physical database instances) | **Distributed** (Requires 2-Phase Commits / Sagas across shards) | **Complex** (No cross-shard joins; requires sharding router & denormalization) |
 
 <DecisionGuide
   title="Pick the right database scale pattern"
@@ -70,9 +77,29 @@ Before committing to complex distributed database architectures, engineers must 
 
 Table partitioning (modeled on standard database scaling paths, see [source](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
 
-<TablePartitionVisualizer />
+Physically, each partition is stored as a **completely independent table file on disk**. The parent table (`orders`) is a **logical routing shell** that holds no physical data of its own. When an application queries the parent table, the database query planner uses **Partition Pruning** to inspect the filter constraints and bypass partition files that cannot hold matching records, saving massive disk I/O.
 
-The application interacts with the parent table as if it were a single table, but the database engine automatically routes records and prunes queries.
+### Why Partition by Date Ranges (e.g. Years)?
+Date-based partitioning is the industry standard for time-series tables (like logs, orders, or transactions) because:
+* **Instant Cold Data Archival**: Dropping an old year's worth of data becomes an `O(1)` constant-time filesystem operation:
+  ```sql
+  -- Instantly drops the physical file from disk in milliseconds!
+  ALTER TABLE orders DETACH PARTITION orders_2023;
+  DROP TABLE orders_2023;
+  ```
+* **No Disk-Thrashing Deletes**: Running `DELETE FROM orders WHERE order_date < '2024-01-01'` on a massive monolithic table sequentially reads millions of rows, thrashes CPU and disk I/O, writes a massive volume of Write-Ahead Logs (WAL) for rollback safety, blocks concurrent writers with table locks, and leaves "holes" in the storage files (table bloat) that require slow, locking `VACUUM` maintenance.
+
+<Aside type="caution" title="Gotcha: The Non-Partition-Key Trap (Scatter-Gather Scan)">
+Table partitioning only speeds up queries that filter by the **Partition Key** in their `WHERE` clause (e.g. `order_date`). 
+
+If you run `SELECT * FROM orders WHERE customer_id = 42` without a date filter, the query planner has no idea which physical partition file holds that customer's records. It is forced to run a **scatter-gather sequential scan** across *every single partition file on disk*. Because opening multiple table files introduces file-system overhead, a non-partition-key query can actually run **slower** on a partitioned table than on a standard monolithic index!
+</Aside>
+
+<Aside type="note" title="Gotcha: The Primary Key Invariant">
+In declarative partitioning systems (like PostgreSQL and MySQL), the **partition key MUST be part of the primary key or any unique index** (e.g. `PRIMARY KEY (order_id, order_date)`).
+
+Why? The database engine enforces uniqueness constraints locally within each individual partition file for high performance. It does not perform expensive cross-file scans on every `INSERT` to check if an ID exists in other partitions. Thus, a unique ID is only mathematically guaranteed if it is scoped alongside the partition key itself.
+</Aside>
 
 ### Vertical Partitioning (Splitting by Columns)
 
@@ -127,6 +154,10 @@ SELECT * FROM orders
 WHERE order_date BETWEEN '2024-01-01' AND '2024-06-30';
 ```
 
+Let's trace this behavior interactively. Toggle the system architecture below between a monolithic table and a partitioned table, run different query filters, and watch the query optimizer dynamically execute range evaluations and physically prune disk scan overhead:
+
+<TablePartitionVisualizer />
+
 ---
 
 ## Common Partitioning Strategies
@@ -152,11 +183,17 @@ CREATE TABLE customers (
 ```
 
 ### 3. Hash Partitioning
-A hash function is applied to the partition key (e.g., `user_id`), and the modulo determines the partition:
-```
-Partition Index = Hash(user_id) mod NumberOfPartitions
-```
-This distributes rows uniformly across a fixed number of partitions, preventing hotspots, but range queries are difficult because adjacent keys reside in different partitions.
+A hash function is applied to the partition key (e.g., `user_id`), and the modulo determines the partition index. 
+
+Let's map out exactly how 3 records are distributed across 3 physical partitions using a simple numeric ID as the hash:
+
+| Record ID | Partition Formula | Partition Assignment | Disk Storage File |
+| :--- | :--- | :--- | :--- |
+| **101** | `101 % 3 = 2` | Partition 2 | `orders_hash_2` |
+| **102** | `102 % 3 = 0` | Partition 0 | `orders_hash_0` |
+| **103** | `103 % 3 = 1` | Partition 1 | `orders_hash_1` |
+
+This modular distribution scatters rows uniformly, preventing hotspots. However, **range queries are highly expensive**: a query seeking records between 101 and 103 cannot perform partition pruning; it must read from all three physical partition files because adjacent keys reside in completely different storage segments.
 
 ---
 
@@ -184,6 +221,23 @@ Sharding is horizontal partitioning **extended across physically separate databa
 ### The Sharding Components
 1. **Shard Key**: The column (or combination of columns) used to determine data placement. It must be present in almost all write/read queries to avoid searching all shards.
 2. **Query Router**: A software layer (embedded in application logic or running as database middleware) that reads the shard key, references a **shard map**, and opens a connection to the correct physical server.
+
+#### The Modulo Resharding Math Nightmare
+Many teams start by sharding using a simple modulo hash: `Shard = user_id % N`, where `N` is the number of active database shards. This seems simple, but it contains a **catastrophic operational pitfall when you need to add database capacity**.
+
+When your database fills up and you scale from $N = 3$ to $N = 4$ servers, the modulo math shifts for almost every single key in the database. Look at how keys are redistributed:
+
+| User ID | Original Shard Index (`ID % 3`) | New Shard Index (`ID % 4`) | Rebalancing Physical Action |
+| :--- | :--- | :--- | :--- |
+| **100** | Shard 1 (`100 % 3 = 1`) | Shard 0 (`100 % 4 = 0`) | **🚚 MOVED** (Must migrate to Shard 0) |
+| **101** | Shard 2 (`101 % 3 = 2`) | Shard 1 (`101 % 4 = 1`) | **🚚 MOVED** (Must migrate to Shard 1) |
+| **102** | Shard 0 (`102 % 3 = 0`) | Shard 2 (`102 % 4 = 2`) | **🚚 MOVED** (Must migrate to Shard 2) |
+| **103** | Shard 1 (`103 % 3 = 1`) | Shard 3 (`103 % 4 = 3`) | **🚚 MOVED** (Must migrate to Shard 3) |
+| **104** | Shard 2 (`104 % 3 = 2`) | Shard 0 (`104 % 4 = 0`) | **🚚 MOVED** (Must migrate to Shard 0) |
+
+By adding just one database server, **almost 100% of all existing keys changed their target server!** This thrashes the network, requires taking the system offline or running massive database lock migrations, and exposes the app to heavy downtime.
+
+This is why modern architectures enforce **[[system-design/consistent-hashing|Consistent Hashing]]**. Consistent hashing maps both shards and user IDs to a virtual hash ring; when a new shard is added, it only claims keys from its immediate neighbor on the ring, meaning **only `1 / (N+1)` of keys move**, leaving the remaining 75-90% of data completely untouched.
 
 #### Shard Map Metadata Structure
 A central configuration database or dynamic coordination manager (like ZooKeeper or etcd) maintains a routing lookup table:
@@ -224,20 +278,26 @@ For read-heavy applications, scaling the primary database involves setting up **
   ]}
 />
 
-Replication between nodes operates under three synchronicity models:
+Replication between nodes operates under three synchronicity models. Under the hood, these models coordinate the distribution of the database's **Write-Ahead Log (WAL)** — a append-only binary log containing all local disk-block mutations:
 
 ### 1. Synchronous Replication
-The Master writes the data locally, replicates it to the slave, and **waits for the slave to acknowledge the write** before returning success to the application client.
+The Master writes the transaction to the WAL locally, replicates the WAL entries to the slave, and **waits for the slave to write the log and return an acknowledgement** before returning success to the application client.
 * **Pro**: Strong consistency (Zero data loss or dirty reads on master failover).
-* **Con**: Extremely high write latency. If even a single replica experiences network skew or crashes, all master writes block.
+* **Con**: Extremely high write latency. If even a single replica experiences network skew, disk choke, or crashes, all master writes block.
 
 ### 2. Asynchronous Replication
-The Master commits the write locally and **instantly returns success to the client**. Replication occurs in the background.
-* **Pro**: High write throughput and ultra-low latency.
-* **Con**: Eventual consistency. Replicas lag behind the master, creating replication lag. If the master dies before replication finishes, committed transactions are lost.
+The Master commits the write locally, immediately returns success to the client, and broadcasts the WAL entries to the background replication channel.
+* **Pro**: Maximum write throughput and ultra-low latency.
+* **Con**: Eventual consistency. The slave reads and applies WAL records asynchronously. If the master dies before replication finishes, committed transactions are lost.
 
 ### 3. Semi-Synchronous Replication
-The Master commits locally, replicates to the replicas, and returns success once **at least one replica has written the event to its relay log** (without waiting for all of them). Balances performance and consistency.
+The Master commits locally, replicates to the replicas, and returns success once **at least one replica has written the event to its relay log** (without waiting for all of them). This balances write performance and durability.
+
+#### What Causes Replication Lag Physically?
+Replication lag is the time delay between a write committing on the Master and appearing on a read replica. It is physically driven by three primary bottlenecks:
+1. **WAL Apply Thread Contention**: While the Master database is multi-threaded (processing thousands of concurrent writes across distinct CPU cores), read replicas often apply the WAL log using a **single-threaded log recovery worker**. If a replica is running expensive, slow analytical read queries, these queries lock database blocks and block the single-threaded WAL apply worker, causing the lag to skyrocket.
+2. **Disk I/O Choke**: Read replicas are highly read-intensive. Heavy read workloads saturate disk heads, leaving insufficient I/O bandwidth for the apply worker to write log entries to disk.
+3. **Network Ingestion Skew**: Network packet drops or congestion between geographic regions delays WAL transmission.
 
 ---
 
@@ -265,6 +325,64 @@ Imagine a user updating their bio on a profile page. The update commits on the M
 ### Mitigations
 1. **Sticky Session Routing**: The session router tracks write timestamps. If a client writes data, the router sticky-pins all of that client's reads to the Master database for a brief window (e.g. 2-5 seconds), bypassing the replicas until replication lag catches up.
 2. **Quorum Reads**: Read from a subset of replicas and resolve inconsistencies using vector clocks or timestamps.
+
+#### Sticky Session Routing Code Blueprint
+Here is a production-grade TypeScript middleware example demonstrating how sticky session routing is implemented in Node.js/Express using Redis. 
+
+We write session records to Redis when a database write occurs, forcing subsequent reads within a 5-second window to go to the Master database.
+
+```typescript
+import { Request, Response, NextFunction } from 'express';
+import Redis from 'ioredis';
+
+const redis = new Redis();
+const STICKY_WINDOW_SECONDS = 5;
+
+// Extend Express request type to carry database route choice
+declare global {
+  namespace Express {
+    interface Request {
+      dbConnection?: 'master' | 'replica';
+    }
+  }
+}
+
+export async function dbRoutingMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  const userId = req.headers['x-user-id'] as string;
+  if (!userId) {
+    req.dbConnection = 'replica'; // Route anonymous users to eventual consistency
+    return next();
+  }
+
+  const cacheKey = `sticky:master:${userId}`;
+  const isWrite = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+
+  try {
+    if (isWrite) {
+      // Pin this user's subsequent reads to the Master DB for the sticky window
+      await redis.set(cacheKey, 'true', 'EX', STICKY_WINDOW_SECONDS);
+      req.dbConnection = 'master';
+    } else {
+      // Read request: check if this user is in their master-pinning window
+      const isPinnedToMaster = await redis.exists(cacheKey);
+      if (isPinnedToMaster === 1) {
+        req.dbConnection = 'master'; // Force master read to avoid replication lag
+      } else {
+        req.dbConnection = 'replica'; // Safe eventual consistency path on replica
+      }
+    }
+  } catch (error) {
+    console.error('[DB Router] Redis failure, falling back to Master for safety:', error);
+    req.dbConnection = 'master';
+  }
+
+  next();
+}
+```
 
 Let us evaluate the statistical risk of read-your-writes failures under varying system parameters:
 
@@ -309,7 +427,9 @@ While sharding scales writes horizontally, it introduces deep architectural fric
 
 ### 1. Celebrity / Hotspot Key Problem
 If data is sharded by a standard key like `user_id` or `username`, a shard storing a high-traffic celebrity's profile (e.g. Katy Perry or Justin Bieber) will receive orders of magnitude more QPS than other shards. This overloads the specific physical server, causing a hotspot.
-* **Mitigation**: **Salt keys**. For highly skewed data, append a random suffix to the shard key (e.g. `celebrity_username_1`, `celebrity_username_2`), spreading celebrity lookups across multiple shards.
+* **Mitigation**: **Key Salting**. Append a random numeric suffix (salt) to the shard key of highly active accounts (e.g. `celebrity_username_1`, `celebrity_username_2` up to salt size `S`).
+  * **On Writes**: When the celebrity posts, the application routes the write to a randomly chosen salted shard (e.g. `user_id = celebrity_username_2`). This spreads the heavy write volume evenly across different physical servers.
+  * **On Reads**: When [[system-design/messaging-patterns|fan-out]] feeds fetch the celebrity's profile, the query router must query **all `S` salted shards parallelly** (scatter-gather) and merge/sort the results in application memory. Key salting trades read complexity to protect physical databases from write melting.
 
 ### 2. Resharding and Rebalancing Pain
 As shards grow, some servers fill up faster than others due to data skew. Rebalancing data requires adding a new server shard, modifying the shard key hash function, and moving millions of existing database rows over the network without downtime.
@@ -317,7 +437,20 @@ As shards grow, some servers fill up faster than others due to data skew. Rebala
 
 ### 3. The Cross-Shard Join Bottleneck
 Once data is distributed across physical database instances, executing `JOIN` operations across tables residing on different shards is impossible or extremely slow (requiring application-level federated joins).
-* **Mitigation**: **Denormalization**. Duplicate critical fields directly into tables to keep queries self-contained inside a single shard.
+* **Mitigation**: **Denormalization**. Duplicate critical read-heavy columns into the target table to eliminate the need for cross-server joins.
+  * **The SQL Join Monolith**:
+    ```sql
+    -- Standard SQL relational join: easy in a monolithic database
+    SELECT o.order_id, o.amount, c.name 
+    FROM orders o 
+    JOIN customers c ON o.customer_id = c.customer_id;
+    ```
+  * **The Sharded Reality**: If `orders` is sharded by `order_id` (Server A) and `customers` is sharded by `customer_id` (Server B), running the query above thrashes the system. The application router must perform two separate network queries across different servers and merge them in memory (an expensive federated join).
+  * **The Denormalized Solution**: Duplicate the `customer_name` column directly inside the `orders` physical table at write time:
+    ```sql
+    -- Query is fully self-contained inside a single shard!
+    SELECT order_id, amount, customer_name FROM orders WHERE order_id = 999;
+    ```
 
 ---
 

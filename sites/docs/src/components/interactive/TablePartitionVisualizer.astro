@@ -2,104 +2,95 @@
 /**
  * TablePartitionVisualizer.astro
  *
- * Interactive visualization of Monolithic vs Partitioned tables.
- * Displays side-by-side visual schemas where readers trigger queries.
- * An animated scan engine sequentially walks through the disk blocks (table rows),
- * highlighting match vs filter outcomes, physically overlaying a "PRUNED" barrier
- * on bypassed database partitions to visually teach disk I/O savings.
+ * Completely redesigned to be ultra-clear, simple, and flow-based.
+ * Maps the journey of a query from Application (Logical) -> Planner (Routing) -> Disk (Physical).
+ * Contrasts a Single Monolithic Table vs a Range-Partitioned Table side-by-side to show real value.
  */
 
 interface Record {
   id: number;
   date: string;
   amount: string;
-  monoIdx: number;
+  customer_id: number;
 }
 
-const monoRecords: Record[] = [
-  { id: 1, date: "2023-05-12", amount: "$50", monoIdx: 0 },
-  { id: 2, date: "2024-03-10", amount: "$120", monoIdx: 1 },
-  { id: 3, date: "2024-07-22", amount: "$85", monoIdx: 2 },
-  { id: 4, date: "2023-11-04", amount: "$30", monoIdx: 3 },
+const allRecords: Record[] = [
+  { id: 1, date: "2023-05-12", amount: "$50", customer_id: 101 },
+  { id: 2, date: "2024-03-10", amount: "$120", customer_id: 202 },
+  { id: 3, date: "2024-07-22", amount: "$85", customer_id: 303 },
+  { id: 4, date: "2023-11-04", amount: "$30", customer_id: 101 },
 ];
 
-const p2023Records: Record[] = [
-  { id: 1, date: "2023-05-12", amount: "$50", monoIdx: 0 },
-  { id: 4, date: "2023-11-04", amount: "$30", monoIdx: 3 },
-];
-
-const p2024Records: Record[] = [
-  { id: 2, date: "2024-03-10", amount: "$120", monoIdx: 1 },
-  { id: 3, date: "2024-07-22", amount: "$85", monoIdx: 2 },
-];
+const p2023Records = allRecords.filter(r => r.date.startsWith("2023"));
+const p2024Records = allRecords.filter(r => r.date.startsWith("2024"));
 ---
 
 <div class="tpv not-content">
+  <!-- Simulator Header -->
   <div class="tpv-header">
-    <span class="tpv-title">Table Partition Pruning Simulator</span>
-    <span class="tpv-badge">⬡ Declarative Partitioning</span>
+    <span class="tpv-title">Visual Partition Pruning Flow</span>
+    <span class="tpv-badge">⬡ Physical Disk Perspective</span>
   </div>
 
+  <!-- System Architecture Selector -->
+  <div class="tpv-arch-selector">
+    <span class="tpv-arch-label">System Architecture:</span>
+    <div class="tpv-arch-tabs">
+      <button class="tpv-arch-btn active" data-arch="partitioned">
+        <span class="arch-icon">⚡</span> Range-Partitioned Table
+      </button>
+      <button class="tpv-arch-btn" data-arch="monolithic">
+        <span class="arch-icon">📦</span> Single Monolithic Table
+      </button>
+    </div>
+  </div>
+
+  <!-- Query Selector Controls -->
   <div class="tpv-controls">
-    <span class="tpv-control-label">Run Query:</span>
+    <span class="tpv-control-label">Click to Run App Query:</span>
     <div class="tpv-buttons">
       <button class="tpv-btn active" data-query="all">
         <code>SELECT * FROM orders;</code>
       </button>
       <button class="tpv-btn" data-query="2023">
-        <code>SELECT * FROM orders WHERE order_date &lt; '2024-01-01';</code>
+        <code>SELECT * FROM orders WHERE order_date = '2023-05-12';</code>
       </button>
       <button class="tpv-btn" data-query="2024">
-        <code>SELECT * FROM orders WHERE order_date &gt;= '2024-01-01';</code>
+        <code>SELECT * FROM orders WHERE order_date = '2024-03-10';</code>
+      </button>
+      <button class="tpv-btn" data-query="unindexed">
+        <code>SELECT * FROM orders WHERE customer_id = 101;</code>
       </button>
     </div>
   </div>
 
-  <div class="tpv-workspace">
-    <!-- Explanation Panel spanning full-width at the top -->
-    <div class="tpv-explanation-card">
-      <div class="tpv-exp-header">
-        <div class="tpv-exp-meta">
-          <span class="tpv-exp-badge">Query Mode</span>
-          <span class="tpv-exp-query-name" id="query-name">Full Table Scan</span>
-        </div>
-        <span class="tpv-exp-saving-badge status-bad" id="query-saving">Scan Cost: 100%</span>
+  <!-- Flow Visualizer Workspace -->
+  <div class="tpv-flow-container">
+    
+    <!-- 1. Logical App Layer -->
+    <div class="tpv-flow-node logical-node">
+      <div class="tpv-node-header">
+        <span class="tpv-node-badge">Logical View</span>
+        <strong class="tpv-node-title">Application Layer (Single virtual table)</strong>
       </div>
-      <p class="tpv-exp-text" id="query-explanation">
-        When a query has no filter, the database must scan all records. Without a partition key filter, the partitioned table must scan every individual partition node, yielding no performance benefits over the monolithic table.
-      </p>
-      <div class="tpv-exp-details">
-        <div class="tpv-exp-detail-col">
-          <strong>Monolithic Table Scan:</strong>
-          <span id="mono-exp-detail">Scanning entire physical table file.</span>
-        </div>
-        <div class="tpv-exp-detail-col">
-          <strong>Partitioned Pruning Scan:</strong>
-          <span id="part-exp-detail">Scanning all partition tables.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Left Column: Monolithic Table -->
-    <div class="tpv-column mono-col">
-      <div class="tpv-column-header">
-        <span class="tpv-col-title">Monolithic Orders Table</span>
-        <span class="tpv-col-status status-bad" id="mono-status">Scan: 4 / 4 rows (100% table scan)</span>
-      </div>
-      <div class="tpv-card table-card">
-        <table class="tpv-table">
+      <p class="tpv-node-desc">The application writes code as if querying a single unified table named <code>orders</code>. <em>Notice that query syntax remains identical under both architectures!</em></p>
+      
+      <div class="tpv-card logical-table-card">
+        <table class="tpv-mini-table">
           <thead>
             <tr>
               <th>ID</th>
               <th>Date</th>
+              <th>CustID</th>
               <th>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {monoRecords.map((r) => (
-              <tr class="tpv-row" data-year={r.date.startsWith("2023") ? "2023" : "2024"} data-idx={r.monoIdx}>
+            {allRecords.map(r => (
+              <tr class="tpv-flow-row" data-id={r.id} data-year={r.date.startsWith("2023") ? "2023" : "2024"} data-cust={r.customer_id}>
                 <td>{r.id}</td>
                 <td><code class="date-code">{r.date}</code></td>
+                <td>{r.customer_id}</td>
                 <td class="amount-cell">{r.amount}</td>
               </tr>
             ))}
@@ -108,96 +99,234 @@ const p2024Records: Record[] = [
       </div>
     </div>
 
-    <!-- Right Column: Partitioned Table -->
-    <div class="tpv-column partitioned-col">
-      <div class="tpv-column-header">
-        <span class="tpv-col-title">Partitioned Orders Table</span>
-        <span class="tpv-col-status status-good" id="part-status">Scan: 4 / 4 rows (100% table scan)</span>
+    <!-- Connector: App to Planner -->
+    <div class="tpv-flow-connector vertical-connector">
+      <div class="tpv-connector-beam beam-to-planner"></div>
+    </div>
+
+    <!-- 2. Query Planner Layer -->
+    <div class="tpv-flow-node planner-node">
+      <div class="tpv-node-header">
+        <span class="tpv-node-badge badge-accent">Router</span>
+        <strong class="tpv-node-title">Database Query Planner & Optimizer</strong>
       </div>
-
-      <div class="tpv-partitions">
-        <div class="tpv-partition-container" data-partition="2023">
-          <!-- Bypassed Barrier Overlay -->
-          <div class="tpv-pruned-overlay">
-            <span class="tpv-pruned-label">🚫 PRUNED: Bypassed by Planner</span>
+      
+      <!-- Real-time Planner Decision Trace Logger -->
+      <div class="tpv-planner-trace">
+        <div class="tpv-trace-row">
+          <span class="tpv-trace-label">Incoming Filter:</span>
+          <span class="tpv-trace-value" id="trace-query">Analyzing...</span>
+        </div>
+        <div class="tpv-trace-row">
+          <span class="tpv-trace-label">Partitioning Key:</span>
+          <span class="tpv-trace-value font-mono" id="trace-key">order_date</span>
+        </div>
+        
+        <div class="tpv-trace-divider"></div>
+        
+        <!-- Partitioned Range Checks -->
+        <div id="planner-eval-partitioned">
+          <div class="tpv-trace-eval-title">Planner Range Checks:</div>
+          
+          <div class="tpv-trace-eval" data-eval="2023">
+            <span class="tpv-eval-name">orders_2023.ibd</span>
+            <span class="tpv-eval-range">['2023-01-01' to '2024-01-01')</span>
+            <span class="tpv-eval-badge" id="eval-badge-2023">WAITING</span>
           </div>
-
-          <div class="tpv-partition-header">
-            <span class="tpv-partition-title">orders_2023 partition</span>
-            <span class="tpv-partition-range">RANGE ('2023-01-01' TO '2024-01-01')</span>
-          </div>
-          <div class="tpv-card table-card">
-            <table class="tpv-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {p2023Records.map((r) => (
-                  <tr class="tpv-row" data-year="2023" data-idx={r.monoIdx}>
-                    <td>{r.id}</td>
-                    <td><code class="date-code">{r.date}</code></td>
-                    <td class="amount-cell">{r.amount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          
+          <div class="tpv-trace-eval" style="margin-top: 6px;" data-eval="2024">
+            <span class="tpv-eval-name">orders_2024.ibd</span>
+            <span class="tpv-eval-range">['2024-01-01' to '2025-01-01')</span>
+            <span class="tpv-eval-badge" id="eval-badge-2024">WAITING</span>
           </div>
         </div>
 
-        <div class="tpv-partition-container" data-partition="2024">
-          <!-- Bypassed Barrier Overlay -->
-          <div class="tpv-pruned-overlay">
-            <span class="tpv-pruned-label">🚫 PRUNED: Bypassed by Planner</span>
-          </div>
-
-          <div class="tpv-partition-header">
-            <span class="tpv-partition-title">orders_2024 partition</span>
-            <span class="tpv-partition-range">RANGE ('2024-01-01' TO '2025-01-01')</span>
-          </div>
-          <div class="tpv-card table-card">
-            <table class="tpv-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {p2024Records.map((r) => (
-                  <tr class="tpv-row" data-year="2024" data-idx={r.monoIdx}>
-                    <td>{r.id}</td>
-                    <td><code class="date-code">{r.date}</code></td>
-                    <td class="amount-cell">{r.amount}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <!-- Monolithic Storage File Check -->
+        <div id="planner-eval-monolithic" class="hidden">
+          <div class="tpv-trace-eval-title">Storage File Check:</div>
+          <div class="tpv-trace-eval">
+            <span class="tpv-eval-name">orders.ibd</span>
+            <span class="tpv-eval-range">All Ranges (Unrestricted)</span>
+            <span class="tpv-eval-badge" id="eval-badge-mono">WAITING</span>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Dynamic SVG Connector Paths (Planner to Disks) -->
+    <div class="tpv-svg-connector-container">
+      <svg class="tpv-svg-connector" viewBox="0 0 200 100" preserveAspectRatio="none">
+        <!-- Left path to 2023 partition -->
+        <path d="M 100,0 Q 100,50 30,100" id="connector-line-2023" class="connector-line" />
+        <!-- Right path to 2024 partition -->
+        <path d="M 100,0 Q 100,50 170,100" id="connector-line-2024" class="connector-line" />
+        <!-- Center path to monolithic table -->
+        <path d="M 100,0 L 100,100" id="connector-line-mono" class="connector-line" />
+      </svg>
+    </div>
+
+    <!-- 3. Physical Storage Layer (Decoupled Relative Layout to Prevent Shifts) -->
+    <div class="tpv-physical-layer">
+      
+      <!-- Partitioned Storage View -->
+      <div class="tpv-physical-grid" id="storage-partitioned">
+        <!-- Block A: 2023 Partition File -->
+        <div class="tpv-partition-box" data-partition="2023">
+          <!-- Pruned Glassmorphic Overlay -->
+          <div class="tpv-overlay-status overlay-pruned" id="overlay-2023-pruned">
+            <span>⚡ PRUNED<br/><small>0 disk reads</small></span>
+          </div>
+          <div class="tpv-overlay-status overlay-scanned" id="overlay-2023-scanned">
+            <span>🔍 SCANNING<br/><small>disk read active</small></span>
+          </div>
+
+          <div class="tpv-box-header">
+            <div>
+              <div class="tpv-box-filename">orders_2023.ibd</div>
+              <div class="tpv-box-range">RANGE: '2023-01-01' to '2024-01-01'</div>
+            </div>
+            <span class="tpv-box-badge">Physical Storage</span>
+          </div>
+          
+          <div class="tpv-card physical-table-card">
+            <table class="tpv-mini-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p2023Records.map(r => (
+                  <tr class="tpv-flow-row" data-id={r.id} data-year="2023" data-cust={r.customer_id}>
+                    <td>{r.id}</td>
+                    <td><code class="date-code">{r.date}</code></td>
+                    <td class="amount-cell">{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Block B: 2024 Partition File -->
+        <div class="tpv-partition-box" data-partition="2024">
+          <!-- Pruned Glassmorphic Overlay -->
+          <div class="tpv-overlay-status overlay-pruned" id="overlay-2024-pruned">
+            <span>⚡ PRUNED<br/><small>0 disk reads</small></span>
+          </div>
+          <div class="tpv-overlay-status overlay-scanned" id="overlay-2024-scanned">
+            <span>🔍 SCANNING<br/><small>disk read active</small></span>
+          </div>
+
+          <div class="tpv-box-header">
+            <div>
+              <div class="tpv-box-filename">orders_2024.ibd</div>
+              <div class="tpv-box-range">RANGE: '2024-01-01' to '2025-01-01'</div>
+            </div>
+            <span class="tpv-box-badge">Physical Storage</span>
+          </div>
+
+          <div class="tpv-card physical-table-card">
+            <table class="tpv-mini-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {p2024Records.map(r => (
+                  <tr class="tpv-flow-row" data-id={r.id} data-year="2024" data-cust={r.customer_id}>
+                    <td>{r.id}</td>
+                    <td><code class="date-code">{r.date}</code></td>
+                    <td class="amount-cell">{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monolithic Storage View -->
+      <div class="tpv-monolithic-box hidden" id="storage-monolithic">
+        <div class="tpv-partition-box monolithic-box" data-partition="monolithic">
+          <!-- Scanned Overlay -->
+          <div class="tpv-overlay-status overlay-scanned" id="overlay-mono-scanned">
+            <span>🔍 FULL TABLE SCAN<br/><small>reading all physical disk blocks</small></span>
+          </div>
+          
+          <div class="tpv-box-header">
+            <div>
+              <div class="tpv-box-filename">orders.ibd</div>
+              <div class="tpv-box-range">RANGE: All dates & keys (Monolithic File)</div>
+            </div>
+            <span class="tpv-box-badge">Physical Storage</span>
+          </div>
+
+          <div class="tpv-card physical-table-card">
+            <table class="tpv-mini-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>CustID</th>
+                  <th>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allRecords.map(r => (
+                  <tr class="tpv-flow-row" data-id={r.id} data-year={r.date.startsWith("2023") ? "2023" : "2024"} data-cust={r.customer_id}>
+                    <td>{r.id}</td>
+                    <td><code class="date-code">{r.date}</code></td>
+                    <td>{r.customer_id}</td>
+                    <td class="amount-cell">{r.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Educational Explanation Panel (Stabilized Height to Avoid Layout Shifts) -->
+    <div class="tpv-explanation-panel">
+      <div class="tpv-exp-header">
+        <div class="tpv-exp-badge" id="exp-badge">Query Mode</div>
+        <strong class="tpv-exp-title" id="exp-title">Loading query...</strong>
+        <span class="tpv-cost-badge" id="exp-cost">Disk Reads: 100%</span>
+      </div>
+      <p class="tpv-exp-desc" id="exp-desc">
+        Click an application query to trace how the database planner processes it.
+      </p>
+    </div>
+
   </div>
 </div>
 
 <style>
   .tpv {
-    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out: cubic-bezier(0.25, 1, 0.5, 1);
     --tpv-text:       var(--sl-color-text);
     --tpv-text-faint: var(--sl-color-gray-3);
     --tpv-text-ghost: var(--sl-color-gray-4);
     --tpv-rule:       var(--sl-color-hairline-shade);
     --tpv-accent:     var(--sl-color-accent-high);
     --tpv-accent-low: var(--sl-color-accent-low);
-    --tpv-panel:      rgba(20, 20, 23, 0.5);
+    --tpv-panel:      rgba(17, 17, 20, 0.65);
+    --tpv-panel-inner:rgba(25, 25, 30, 0.4);
     --tpv-green:      #4ade80;
+    --tpv-green-bg:   rgba(74, 222, 128, 0.1);
     --tpv-red:        #f87171;
+    --tpv-red-bg:     rgba(248, 113, 113, 0.1);
     --tpv-amber:      #fbbf24;
-    
+    --tpv-amber-bg:   rgba(251, 191, 36, 0.1);
+
     margin: 2rem 0;
     background: var(--tpv-panel);
     border: 1px solid var(--tpv-rule);
@@ -205,14 +334,18 @@ const p2024Records: Record[] = [
     overflow: hidden;
     position: relative;
     backdrop-filter: blur(8px);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 12px 40px rgba(0, 0, 0, 0.3);
   }
 
   :root[data-theme='light'] .tpv {
-    --tpv-panel: rgba(240, 240, 243, 0.7);
-    --tpv-green: #166534;
+    --tpv-panel: rgba(243, 243, 246, 0.85);
+    --tpv-panel-inner: rgba(255, 255, 255, 0.7);
+    --tpv-green: #15803d;
+    --tpv-green-bg: rgba(22, 163, 74, 0.1);
+    --tpv-red:   #b91c1c;
+    --tpv-red-bg: rgba(220, 38, 38, 0.1);
     --tpv-amber: #b45309;
-    --tpv-red:   #c2410c;
+    --tpv-amber-bg: rgba(217, 119, 6, 0.1);
   }
 
   .tpv-header {
@@ -221,7 +354,7 @@ const p2024Records: Record[] = [
     justify-content: space-between;
     padding: 14px 20px;
     border-bottom: 1px solid var(--tpv-rule);
-    background: rgba(10, 10, 12, 0.4);
+    background: rgba(10, 10, 12, 0.3);
   }
 
   .tpv-title {
@@ -235,7 +368,6 @@ const p2024Records: Record[] = [
   .tpv-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -245,6 +377,77 @@ const p2024Records: Record[] = [
     border: 1px solid color-mix(in srgb, var(--tpv-accent) 25%, transparent);
     padding: 0.25rem 0.65rem;
     border-radius: 99px;
+  }
+
+  /* System Architecture Selector styles */
+  .tpv-arch-selector {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom: 1px solid var(--tpv-rule);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  :root[data-theme='light'] .tpv-arch-selector {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .tpv-arch-label {
+    font-size: 0.7rem;
+    font-weight: 750;
+    text-transform: uppercase;
+    color: var(--tpv-text-faint);
+    letter-spacing: 0.05em;
+  }
+
+  .tpv-arch-tabs {
+    display: flex;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 3px;
+    border-radius: 8px;
+    border: 1px solid var(--tpv-rule);
+  }
+
+  :root[data-theme='light'] .tpv-arch-tabs {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .tpv-arch-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: var(--tpv-text-faint);
+    font-weight: 600;
+    transition: all 180ms var(--ease-out);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tpv-arch-btn:hover {
+    color: var(--sl-color-text);
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  :root[data-theme='light'] .tpv-arch-btn:hover {
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .tpv-arch-btn.active {
+    color: var(--sl-color-text);
+    background: var(--tpv-panel-inner);
+    border: 1px solid var(--tpv-rule);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+
+  .arch-icon {
+    font-size: 0.85rem;
   }
 
   .tpv-controls {
@@ -278,9 +481,13 @@ const p2024Records: Record[] = [
     border: 1.5px solid var(--tpv-rule);
     padding: 8px 12px;
     border-radius: 8px;
-    transition: all 200ms var(--ease-out);
+    transition: all 180ms var(--ease-out);
     display: flex;
     align-items: center;
+  }
+
+  :root[data-theme='light'] .tpv-btn {
+    background: rgba(0, 0, 0, 0.02);
   }
 
   .tpv-btn:focus-visible {
@@ -295,8 +502,9 @@ const p2024Records: Record[] = [
 
   .tpv-btn.active {
     border-color: var(--tpv-accent);
-    background: color-mix(in srgb, var(--tpv-accent) 8%, rgba(22, 22, 26, 0.5));
+    background: color-mix(in srgb, var(--tpv-accent) 8%, rgba(22, 22, 26, 0.4));
     box-shadow: 0 0 12px color-mix(in srgb, var(--tpv-accent) 15%, transparent);
+    font-weight: 600;
   }
 
   .tpv-btn code {
@@ -307,183 +515,98 @@ const p2024Records: Record[] = [
     color: inherit !important;
   }
 
-  .tpv-workspace {
-    display: grid;
-    grid-template-columns: 1fr 1.1fr;
-    gap: 24px;
+  /* Flow Diagram Container */
+  .tpv-flow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     padding: 24px;
+    gap: 0px;
   }
 
-  @media (max-width: 768px) {
-    .tpv-workspace {
-      grid-template-columns: 1fr;
-      gap: 32px;
-    }
-  }
-
-  /* Explanation Card Styles */
-  .tpv-explanation-card {
-    grid-column: 1 / -1;
-    background: rgba(255, 255, 255, 0.02);
+  /* Node Common Styles */
+  .tpv-flow-node {
+    width: 100%;
+    max-width: 580px;
+    background: var(--tpv-panel-inner);
     border: 1px solid var(--tpv-rule);
     border-radius: 12px;
     padding: 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    backdrop-filter: blur(4px);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    position: relative;
+    transition: border-color 200ms var(--ease-out);
   }
 
-  .tpv-exp-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-    border-bottom: 1px solid var(--tpv-rule);
-    padding-bottom: 8px;
-  }
-
-  .tpv-exp-meta {
+  .tpv-node-header {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin-bottom: 6px;
   }
 
-  .tpv-exp-badge {
+  .tpv-node-badge {
     font-size: 0.58rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--tpv-text-ghost);
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.08);
     padding: 2px 6px;
     border-radius: 4px;
   }
 
-  .tpv-exp-query-name {
-    font-size: 0.82rem;
-    font-weight: 700;
-    color: var(--tpv-text);
+  :root[data-theme='light'] .tpv-node-badge {
+    background: rgba(0, 0, 0, 0.06);
   }
 
-  .tpv-exp-saving-badge {
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 3px 8px;
-    border-radius: 6px;
-    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+  .tpv-node-badge.badge-accent {
+    color: var(--tpv-accent);
+    background: color-mix(in srgb, var(--tpv-accent) 10%, transparent);
   }
 
-  .tpv-exp-saving-badge.status-bad {
-    color: var(--tpv-amber);
-    background: color-mix(in srgb, var(--tpv-amber) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--tpv-amber) 25%, transparent);
+  .tpv-node-title {
+    font-size: 0.8rem;
+    color: var(--sl-color-text);
   }
 
-  .tpv-exp-saving-badge.status-good {
-    color: var(--tpv-green);
-    background: color-mix(in srgb, var(--tpv-green) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--tpv-green) 25%, transparent);
-  }
-
-  .tpv-exp-text {
-    font-size: 0.76rem;
-    line-height: 1.5;
-    color: var(--tpv-text-faint);
-    margin: 0;
-  }
-
-  .tpv-exp-details {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 4px;
-  }
-
-  @media (max-width: 580px) {
-    .tpv-exp-details {
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-  }
-
-  .tpv-exp-detail-col {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.7rem;
-    color: var(--tpv-text-faint);
-  }
-
-  .tpv-exp-detail-col strong {
-    color: var(--tpv-text);
+  .tpv-node-desc {
     font-size: 0.72rem;
+    color: var(--tpv-text-faint);
+    margin: 0 0 12px 0;
+    line-height: 1.4;
   }
 
-  .tpv-column {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .tpv-column-header {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .tpv-col-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--tpv-text);
-  }
-
-  .tpv-col-status {
-    font-size: 0.68rem;
-    font-weight: 600;
-    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
-  }
-
-  .status-bad {
-    color: var(--tpv-amber);
-  }
-
-  .status-good {
-    color: var(--tpv-green);
-  }
-
-  .tpv-card {
-    border-radius: 12px;
-    background: rgba(14, 14, 17, 0.4);
+  /* Logical Table Styles */
+  .logical-table-card {
     border: 1px solid var(--tpv-rule);
+    border-radius: 8px;
     overflow: hidden;
   }
 
-  .tpv-table {
+  .tpv-mini-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     text-align: left;
   }
 
-  .tpv-table th,
-  .tpv-table td {
-    padding: 10px 12px;
+  .tpv-mini-table th,
+  .tpv-mini-table td {
+    padding: 6px 10px;
     border-bottom: 1px solid var(--tpv-rule);
   }
 
-  .tpv-table th {
+  .tpv-mini-table th {
     font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.65rem;
-    letter-spacing: 0.05em;
     color: var(--tpv-text-ghost);
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.15);
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
   }
 
-  .tpv-table tr:last-child td {
+  .tpv-mini-table tr:last-child td {
     border-bottom: none;
   }
 
@@ -492,7 +615,7 @@ const p2024Records: Record[] = [
     border: none !important;
     padding: 0 !important;
     font-family: var(--sl-font-system-mono, ui-monospace, monospace) !important;
-    color: var(--tpv-text-faint) !important;
+    color: inherit !important;
   }
 
   .amount-cell {
@@ -500,309 +623,825 @@ const p2024Records: Record[] = [
     font-weight: 600;
   }
 
-  .tpv-partitions {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+  /* Connectors */
+  .tpv-flow-connector {
+    width: 2px;
+    height: 36px;
+    background: var(--tpv-rule);
+    position: relative;
+    z-index: 5;
   }
 
-  .tpv-partition-container {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    position: relative; /* Added relative positioning for absolute pruned overlay */
-    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+  .tpv-connector-beam {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--tpv-accent), transparent);
+    background-size: 100% 200%;
+    animation: flow-beam 1.2s infinite linear;
+    opacity: 0;
+    transition: opacity 300ms var(--ease-out);
   }
 
-  /* Pruned Barrier Overlay Style */
-  .tpv-pruned-overlay {
+  .tpv-connector-beam.active {
+    opacity: 1;
+  }
+
+  @keyframes flow-beam {
+    0% { background-position: 0% -100%; }
+    100% { background-position: 0% 100%; }
+  }
+
+  /* Planner Layer */
+  .planner-node {
+    border-color: color-mix(in srgb, var(--tpv-rule) 150%, transparent);
+  }
+
+  /* Trace styling inside planner node */
+  .tpv-planner-trace {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--tpv-rule);
+    border-radius: 8px;
+    padding: 12px 14px;
+    text-align: left;
+    margin-top: 6px;
+  }
+
+  :root[data-theme='light'] .tpv-planner-trace {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .tpv-trace-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+  }
+
+  .tpv-trace-label {
+    color: var(--tpv-text-ghost);
+    font-weight: 500;
+  }
+
+  .tpv-trace-value {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    color: var(--sl-color-text);
+    font-weight: 600;
+  }
+
+  .tpv-trace-divider {
+    height: 1px;
+    background: var(--tpv-rule);
+    margin: 4px 0;
+  }
+
+  .tpv-trace-eval-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tpv-text-ghost);
+    margin-bottom: 2px;
+  }
+
+  .tpv-trace-eval {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.68rem;
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--tpv-rule);
+    border-radius: 6px;
+    transition: all 250ms var(--ease-out);
+  }
+
+  :root[data-theme='light'] .tpv-trace-eval {
+    background: rgba(0, 0, 0, 0.01);
+  }
+
+  .tpv-eval-name {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-weight: 600;
+    color: var(--sl-color-text);
+  }
+
+  .tpv-eval-range {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.58rem;
+    color: var(--tpv-text-ghost);
+  }
+
+  .tpv-eval-badge {
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--tpv-text-ghost);
+    text-transform: uppercase;
+    transition: all 200ms var(--ease-out);
+  }
+
+  :root[data-theme='light'] .tpv-eval-badge {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .tpv-eval-badge.badge-pruned {
+    color: var(--tpv-text-ghost);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--tpv-rule);
+    opacity: 0.6;
+  }
+
+  .tpv-eval-badge.badge-scan {
+    color: var(--tpv-green);
+    background: var(--tpv-green-bg);
+    border: 1px solid color-mix(in srgb, var(--tpv-green) 25%, transparent);
+  }
+
+  .tpv-eval-badge.badge-scatter {
+    color: var(--tpv-amber);
+    background: var(--tpv-amber-bg);
+    border: 1px solid color-mix(in srgb, var(--tpv-amber) 25%, transparent);
+  }
+
+  /* SVG Routing Connector */
+  .tpv-svg-connector-container {
+    width: 100%;
+    max-width: 580px;
+    height: 48px;
+    position: relative;
+    margin-top: -1px;
+    margin-bottom: -1px;
+    z-index: 5;
+  }
+
+  .tpv-svg-connector {
+    width: 100%;
+    height: 100%;
+  }
+
+  .connector-line {
+    fill: none;
+    stroke: var(--tpv-rule);
+    stroke-width: 2;
+    transition: stroke 300ms var(--ease-out), stroke-width 300ms var(--ease-out);
+    stroke-dasharray: 4;
+  }
+
+  .connector-line.beam-active {
+    stroke: var(--tpv-accent);
+    stroke-width: 3;
+    stroke-dasharray: 8 4;
+    animation: dash-flow 1.5s infinite linear;
+  }
+
+  .connector-line.beam-scatter {
+    stroke: var(--tpv-amber);
+    stroke-width: 3;
+    stroke-dasharray: 6 3;
+    animation: dash-flow 1s infinite linear;
+  }
+
+  @keyframes dash-flow {
+    to {
+      stroke-dashoffset: -20;
+    }
+  }
+
+  /* Decoupled Physical Storage Layer to Prevent Vertical Jumps */
+  .tpv-physical-layer {
+    width: 100%;
+    max-width: 580px;
+    height: 220px;
+    position: relative;
+    z-index: 10;
+  }
+
+  #storage-partitioned,
+  #storage-monolithic {
     position: absolute;
     inset: 0;
-    background: rgba(10, 10, 12, 0.85);
+    transition: opacity 250ms var(--ease-out), transform 250ms var(--ease-out);
+    opacity: 1;
+    transform: none;
+  }
+
+  .tpv-monolithic-box {
+    width: 100%;
+  }
+
+  .tpv-physical-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 520px) {
+    .tpv-physical-layer {
+      height: 440px; /* Adjust height when stacked on mobile screens */
+    }
+    .tpv-physical-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .tpv-svg-connector-container {
+      display: none; /* Clean up connectors on stacked screens */
+    }
+    #storage-partitioned,
+    #storage-monolithic {
+      position: relative; /* Re-flow on stacked mobile screens */
+      height: auto;
+    }
+  }
+
+  /* Partition Storage Box */
+  .tpv-partition-box {
+    background: var(--tpv-panel-inner);
+    border: 1px solid var(--tpv-rule);
+    border-radius: 12px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: opacity 300ms var(--ease-out), transform 300ms var(--ease-out), border-color 300ms var(--ease-out);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .monolithic-box {
+    border-color: var(--tpv-rule);
+  }
+
+  .tpv-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+  }
+
+  .tpv-box-filename {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--sl-color-text);
+  }
+
+  .tpv-box-range {
+    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    font-size: 0.58rem;
+    color: var(--tpv-text-ghost);
+    margin-top: 2px;
+  }
+
+  .tpv-box-badge {
+    font-size: 0.52rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tpv-text-ghost);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .physical-table-card {
+    border: 1px solid var(--tpv-rule);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  /* Glassmorphic Overlays */
+  .tpv-overlay-status {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 5;
+    text-align: center;
+    z-index: 20;
     opacity: 0;
     pointer-events: none;
     transition: opacity 300ms var(--ease-out);
-    border-radius: 12px;
-    border: 1.5px dashed var(--tpv-red);
-  }
-
-  :root[data-theme='light'] .tpv-pruned-overlay {
-    background: rgba(240, 240, 243, 0.9);
-  }
-
-  .tpv-pruned-label {
-    font-size: 0.72rem;
     font-weight: 700;
-    color: var(--tpv-red);
-    background: color-mix(in srgb, var(--tpv-red) 12%, transparent);
-    border: 1px solid color-mix(in srgb, var(--tpv-red) 30%, transparent);
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+  }
+
+  .overlay-pruned {
+    background: rgba(12, 12, 14, 0.88);
+    color: var(--tpv-text-faint);
+    border: 1.5px dashed var(--tpv-rule);
+    border-radius: 12px;
+  }
+
+  :root[data-theme='light'] .overlay-pruned {
+    background: rgba(235, 235, 238, 0.9);
+  }
+
+  .overlay-pruned span {
+    color: var(--tpv-text-faint);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--tpv-rule);
     padding: 6px 12px;
     border-radius: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 
-  .tpv-partition-container.inactive-partition .tpv-pruned-overlay {
+  .overlay-pruned small {
+    display: block;
+    font-size: 0.55rem;
+    text-transform: none;
+    font-weight: 500;
+    color: var(--tpv-text-ghost);
+    margin-top: 2px;
+    letter-spacing: 0;
+  }
+
+  .overlay-scanned {
+    background: color-mix(in srgb, var(--tpv-amber-bg) 60%, rgba(10, 10, 12, 0.82));
+    border: 1.5px solid var(--tpv-amber);
+    border-radius: 12px;
+  }
+
+  .overlay-scanned span {
+    color: var(--tpv-amber);
+    background: color-mix(in srgb, var(--tpv-amber) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tpv-amber) 30%, transparent);
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .overlay-scanned small {
+    display: block;
+    font-size: 0.55rem;
+    text-transform: none;
+    font-weight: 500;
+    color: var(--tpv-amber);
+    margin-top: 2px;
+    letter-spacing: 0;
+    opacity: 0.8;
+  }
+
+  /* Active/Inactive Physical Partition states */
+  .tpv-partition-box.pruned-box {
+    opacity: 0.35;
+  }
+
+  .tpv-partition-box.pruned-box .overlay-pruned {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .tpv-partition-header {
+  .tpv-partition-box.scanning-box .overlay-scanned {
+    opacity: 1;
+  }
+
+  /* Row States inside nodes */
+  .tpv-flow-row {
+    transition: opacity 250ms var(--ease-out), background-color 200ms var(--ease-out);
+  }
+
+  .tpv-flow-row.row-match {
+    background-color: var(--tpv-green-bg) !important;
+    color: var(--tpv-green) !important;
+    font-weight: 600;
+  }
+
+  .tpv-flow-row.row-scanning {
+    background-color: var(--tpv-amber-bg) !important;
+    color: var(--tpv-amber) !important;
+  }
+
+  .tpv-flow-row.row-dim {
+    opacity: 0.3;
+  }
+
+  /* Educational Explanation Panel - Optimized for Zero Layout shift */
+  .tpv-explanation-panel {
+    width: 100%;
+    max-width: 580px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--tpv-rule);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 24px;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+    min-height: 180px; /* Completely covers maximum text bounds to avoid shifting */
     display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-sizing: border-box;
+  }
+
+  .tpv-exp-header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 10px;
+    border-bottom: 1px solid var(--tpv-rule);
+    padding-bottom: 8px;
   }
 
-  .tpv-partition-title {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--tpv-text-faint);
-    font-family: var(--sl-font-system-mono, ui-monospace, monospace);
-  }
-
-  .tpv-partition-range {
-    font-size: 0.6rem;
-    font-weight: 600;
+  .tpv-exp-badge {
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: var(--tpv-text-ghost);
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  :root[data-theme='light'] .tpv-exp-badge {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .tpv-exp-title {
+    font-size: 0.8rem;
+    color: var(--sl-color-text);
+    margin-right: auto;
+  }
+
+  .tpv-cost-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
     font-family: var(--sl-font-system-mono, ui-monospace, monospace);
+    padding: 3px 8px;
+    border-radius: 6px;
+    transition: all 200ms var(--ease-out);
   }
 
-  /* Interactive execution styles */
-  .tpv-row {
-    transition: opacity 250ms var(--ease-out), background-color 200ms var(--ease-out), outline 200ms var(--ease-out);
+  .tpv-cost-badge.cost-bad {
+    color: var(--tpv-red);
+    background: var(--tpv-red-bg);
+    border: 1px solid color-mix(in srgb, var(--tpv-red) 25%, transparent);
   }
 
-  /* Animated scanning state highlights */
-  .tpv-row.scanning-row {
-    background-color: rgba(251, 191, 36, 0.15) !important;
-    outline: 1.5px solid var(--tpv-amber) !important;
+  .tpv-cost-badge.cost-warn {
+    color: var(--tpv-amber);
+    background: var(--tpv-amber-bg);
+    border: 1px solid color-mix(in srgb, var(--tpv-amber) 25%, transparent);
   }
 
-  .tpv-row.match-row {
-    background-color: rgba(74, 222, 128, 0.08) !important;
-    color: var(--tpv-text) !important;
-    font-weight: 600;
-  }
-
-  .tpv-row.filter-row {
-    opacity: 0.4; /* Raised to prevent extreme fading when inside inactive containers */
-  }
-
-  .tpv-partition-container.inactive-partition {
-    opacity: 0.25; /* Raised from 0.15 so text is still legible for educational purposes */
-    transform: scale(0.98);
-  }
-
-  .tpv-partition-container.active-partition .tpv-partition-title {
+  .tpv-cost-badge.cost-good {
     color: var(--tpv-green);
+    background: var(--tpv-green-bg);
+    border: 1px solid color-mix(in srgb, var(--tpv-green) 25%, transparent);
+  }
+
+  .tpv-exp-desc {
+    font-size: 0.74rem;
+    line-height: 1.45;
+    color: var(--tpv-text-faint);
+    margin: 0;
+  }
+
+  .hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(8px) !important;
   }
 </style>
 
 <script>
-  function initTablePartition() {
+  function initFlowPartition() {
     document.querySelectorAll<HTMLElement>(".tpv:not([data-init])").forEach((comp) => {
       comp.setAttribute("data-init", "");
 
       const buttons = comp.querySelectorAll<HTMLButtonElement>(".tpv-btn");
+      const archButtons = comp.querySelectorAll<HTMLButtonElement>(".tpv-arch-btn");
       
-      // Explanation items
-      const queryName = comp.querySelector<HTMLElement>("#query-name")!;
-      const querySaving = comp.querySelector<HTMLElement>("#query-saving")!;
-      const queryExp = comp.querySelector<HTMLElement>("#query-explanation")!;
-      const monoDetail = comp.querySelector<HTMLElement>("#mono-exp-detail")!;
-      const partDetail = comp.querySelector<HTMLElement>("#part-exp-detail")!;
+      // Connection elements
+      const beamToPlanner = comp.querySelector<HTMLElement>(".beam-to-planner")!;
+      const line2023 = comp.querySelector<SVGPathElement>("#connector-line-2023")!;
+      const line2024 = comp.querySelector<SVGPathElement>("#connector-line-2024")!;
+      const lineMono = comp.querySelector<SVGPathElement>("#connector-line-mono")!;
 
-      // Column items
-      const monoStatus = comp.querySelector<HTMLElement>("#mono-status")!;
-      const partStatus = comp.querySelector<HTMLElement>("#part-status")!;
-      const monoRows = comp.querySelectorAll<HTMLElement>(".mono-col .tpv-row");
-      const partContainers = comp.querySelectorAll<HTMLElement>(".tpv-partition-container");
+      // Partition elements
+      const storagePartitioned = comp.querySelector<HTMLElement>("#storage-partitioned")!;
+      const storageMonolithic = comp.querySelector<HTMLElement>("#storage-monolithic")!;
+      
+      const plannerPartitioned = comp.querySelector<HTMLElement>("#planner-eval-partitioned")!;
+      const plannerMonolithic = comp.querySelector<HTMLElement>("#planner-eval-monolithic")!;
+
+      // Box containers
+      const box2023 = comp.querySelector<HTMLElement>(".tpv-partition-box[data-partition='2023']")!;
+      const box2024 = comp.querySelector<HTMLElement>(".tpv-partition-box[data-partition='2024']")!;
+      const boxMono = comp.querySelector<HTMLElement>(".tpv-partition-box[data-partition='monolithic']")!;
+
+      // Row mappings
+      const logicalRows = comp.querySelectorAll<HTMLElement>(".logical-node .tpv-flow-row");
+      const p2023Rows = comp.querySelectorAll<HTMLElement>("#storage-partitioned .tpv-partition-box[data-partition='2023'] .tpv-flow-row");
+      const p2024Rows = comp.querySelectorAll<HTMLElement>("#storage-partitioned .tpv-partition-box[data-partition='2024'] .tpv-flow-row");
+      const monoRows = comp.querySelectorAll<HTMLElement>("#storage-monolithic .tpv-partition-box[data-partition='monolithic'] .tpv-flow-row");
+
+      // Dynamic text & status items
+      const traceQuery = comp.querySelector<HTMLElement>("#trace-query")!;
+      const traceKey = comp.querySelector<HTMLElement>("#trace-key")!;
+      const badge2023 = comp.querySelector<HTMLElement>("#eval-badge-2023")!;
+      const badge2024 = comp.querySelector<HTMLElement>("#eval-badge-2024")!;
+      const badgeMono = comp.querySelector<HTMLElement>("#eval-badge-mono")!;
+      
+      const expTitle = comp.querySelector<HTMLElement>("#exp-title")!;
+      const expCost = comp.querySelector<HTMLElement>("#exp-cost")!;
+      const expDesc = comp.querySelector<HTMLElement>("#exp-desc")!;
+
+      // State
+      let currentArch: 'partitioned' | 'monolithic' = 'partitioned';
+      let currentQuery: 'all' | '2023' | '2024' | 'unindexed' = 'all';
 
       const explanations = {
-        all: {
-          name: "Full Table Scan (No Filter)",
-          saving: "Scan Cost: 100% (No Savings)",
-          isGood: false,
-          exp: "When a query has no filter criteria (like order_date), the database must retrieve every single row in existence. In a partitioned database, the engine is forced to scan 100% of all partitioned tables sequentially, completely negating any architectural benefits.",
-          mono: "Reads all 4 database blocks on disk sequentially.",
-          part: "Forced to open and scan both orders_2023 and orders_2024 partitions."
+        partitioned: {
+          all: {
+            title: "Full Partition Scan (No Range Filter)",
+            cost: "Disk Reads: 100% (No Savings)",
+            costClass: "cost-bad",
+            desc: "Since the query does not filter by a date range, the query planner has no physical boundary metadata to evaluate. It is forced to scan every single partition file on disk sequentially (orders_2023.ibd and orders_2024.ibd). In this scenario, partitioning provides zero performance benefits and adds slight file coordination overhead."
+          },
+          "2023": {
+            title: "Partition Pruning: Target 2023 Records",
+            cost: "Disk Reads: 50% (50% disk I/O saved!)",
+            costClass: "cost-good",
+            desc: "By filtering on order_date ('2023-05-12'), the optimizer calculates that only orders_2023.ibd can physically contain matching records. It PRUNES orders_2024.ibd completely. The disk head bypasses the 2024 storage block entirely, saving 50% of unnecessary disk read operations."
+          },
+          "2024": {
+            title: "Partition Pruning: Target 2024 Records",
+            cost: "Disk Reads: 50% (50% disk I/O saved!)",
+            costClass: "cost-good",
+            desc: "The query filter targets a 2024 date, so the planner instantly bypasses orders_2023.ibd. Disk operations are routed exclusively into the orders_2024.ibd storage container, cutting physical I/O overhead in half."
+          },
+          unindexed: {
+            title: "Scatter-Gather Scan (Non-Partition Key Gotcha)",
+            cost: "Disk Reads: 100% + File Overhead (Inefficient)",
+            costClass: "cost-bad",
+            desc: "CRITICAL GOTCHA: The query filters by customer_id = 101. Because the data is partitioned physically by Date Range, the planner has no idea which file contains this customer's rows. It is forced to sequential-scan BOTH physical partition files on disk, matching records row-by-row. This scatter-gather pattern is slower than querying a monolithic indexed table!"
+          }
         },
-        "2023": {
-          name: "Range Query: Orders before 2024",
-          saving: "Scan Cost: 50% (50% disk I/O Saved!)",
-          isGood: true,
-          exp: "Table partitioning shines when queries filter on the 'Partition Key' (order_date). The query planner executes Partition Pruning: it maps the query boundaries to the partition ranges, realizes only the orders_2023 table holds matching rows, and completely ignores (prunes) the orders_2024 disk segment!",
-          mono: "Must scan every single block (all 4 rows) to filter out 2024 records in memory.",
-          part: "Prunes orders_2024 completely! Direct disk read on orders_2023 table (scans only 2 rows)."
-        },
-        "2024": {
-          name: "Range Query: Orders from 2024 onwards",
-          saving: "Scan Cost: 50% (50% disk I/O Saved!)",
-          isGood: true,
-          exp: "With a filter targeting dates on or after 2024-01-01, the database engine ignores the orders_2023 physical file completely. By pointing disk heads exclusively to the orders_2024 segment, we avoid reading half the dataset entirely, doubling query speed.",
-          mono: "Scans all 4 rows on disk, discarding 2023 records in CPU memory filter.",
-          part: "Prunes orders_2023 completely! Direct disk read on orders_2024 table (scans only 2 rows)."
+        monolithic: {
+          all: {
+            title: "Full Monolithic Table Scan",
+            cost: "Disk Reads: 100% (Baseline)",
+            costClass: "cost-bad",
+            desc: "Without partitioning, the query planner routes the query directly to the single monolithic orders.ibd storage file. The database engine scans the entire file sequentially to locate and return all records."
+          },
+          "2023": {
+            title: "Full Table Scan (Range Filter Evaluated in Memory)",
+            cost: "Disk Reads: 100% (0% disk I/O saved)",
+            costClass: "cost-bad",
+            desc: "Even though the query requests a specific date in 2023, there is only one physical orders.ibd table file on disk. The database engine must open and scan the entire monolithic file. The date filter is applied in memory after reading every block from disk, yielding zero hardware I/O savings."
+          },
+          "2024": {
+            title: "Full Table Scan (Range Filter Evaluated in Memory)",
+            cost: "Disk Reads: 100% (0% disk I/O saved)",
+            costClass: "cost-bad",
+            desc: "Just like the 2023 query, the database is forced to read the entire monolithic orders.ibd file from disk because all records reside in a single physical container. No partition pruning can occur, and disk reads remain at 100%."
+          },
+          unindexed: {
+            title: "Sequential Full Table Scan",
+            cost: "Disk Reads: 100% (Baseline)",
+            costClass: "cost-bad",
+            desc: "Since customer_id is unindexed, the query scans the single monolithic orders.ibd file from beginning to end. While this reads the entire file, it avoids the sequential file opening overhead of a partitioned scatter-gather scan, demonstrating the scatter-gather penalty."
+          }
         }
       };
 
-      let currentTimer: any = null;
+      let animationTimeout: any = null;
 
-      function executeQuery(query: "all" | "2023" | "2024") {
-        // Clear any running scanner animation
-        if (currentTimer) clearInterval(currentTimer);
+      function executeQuery() {
+        // Clear active timeouts
+        if (animationTimeout) clearTimeout(animationTimeout);
 
-        // Reset query button states
+        // 1. Sync button states
         buttons.forEach(btn => {
-          btn.classList.toggle("active", btn.dataset.query === query);
+          btn.classList.toggle("active", btn.dataset.query === currentQuery);
+        });
+        archButtons.forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.arch === currentArch);
         });
 
-        // 1. Initial Reset of Row classes
-        comp.querySelectorAll(".tpv-row").forEach(row => {
-          row.className = "tpv-row";
+        // 2. Hide/Show layers based on architecture instantly (helps prevent visual stutter)
+        if (currentArch === "partitioned") {
+          plannerPartitioned.classList.remove("hidden");
+          plannerMonolithic.classList.add("hidden");
+          storagePartitioned.classList.remove("hidden");
+          storageMonolithic.classList.add("hidden");
+          traceKey.textContent = "order_date";
+        } else {
+          plannerPartitioned.classList.add("hidden");
+          plannerMonolithic.classList.remove("hidden");
+          storagePartitioned.classList.add("hidden");
+          storageMonolithic.classList.remove("hidden");
+          traceKey.textContent = "N/A (No partition key)";
+        }
+
+        // 3. Reset visual styling states instantly
+        beamToPlanner.classList.remove("active");
+        line2023.setAttribute("class", "connector-line");
+        line2024.setAttribute("class", "connector-line");
+        lineMono.setAttribute("class", "connector-line");
+
+        box2023.className = "tpv-partition-box";
+        box2024.className = "tpv-partition-box";
+        boxMono.className = "tpv-partition-box monolithic-box";
+
+        traceQuery.textContent = "Analyzing filter keys...";
+        badge2023.textContent = "WAITING";
+        badge2023.className = "tpv-eval-badge";
+        badge2024.textContent = "WAITING";
+        badge2024.className = "tpv-eval-badge";
+        badgeMono.textContent = "WAITING";
+        badgeMono.className = "tpv-eval-badge";
+
+        // Reset rows
+        [...logicalRows, ...p2023Rows, ...p2024Rows, ...monoRows].forEach(row => {
+          row.className = "tpv-flow-row";
         });
 
-        // 2. Set Up Partition Overlay Boundaries Instantly
-        const isPart2023Active = query === "all" || query === "2023";
-        const isPart2024Active = query === "all" || query === "2024";
+        // Setup dynamic initial explanation text
+        const data = explanations[currentArch][currentQuery];
+        expTitle.textContent = "Analyzing query plan...";
+        expCost.textContent = "Disk Reads: Calculating...";
+        expCost.className = "tpv-cost-badge cost-warn";
+        expDesc.textContent = "Query optimizer is calculating partition boundaries and plotting physical disk scan routes...";
 
-        partContainers.forEach(container => {
-          const partYear = container.dataset.partition;
-          const isActive = (partYear === "2023" && isPart2023Active) || (partYear === "2024" && isPart2024Active);
-          if (isActive) {
-            container.classList.remove("inactive-partition");
+        // --- ANIMATION STEP 1: App to Planner ---
+        beamToPlanner.classList.add("active");
+
+        animationTimeout = setTimeout(() => {
+          // --- ANIMATION STEP 2: Planner Decides Routing ---
+          
+          if (currentArch === "partitioned") {
+            if (currentQuery === "2023") {
+              traceQuery.textContent = "order_date = '2023-05-12'";
+              badge2023.textContent = "🔍 SCAN";
+              badge2023.className = "tpv-eval-badge badge-scan";
+              badge2024.textContent = "⚡ PRUNED";
+              badge2024.className = "tpv-eval-badge badge-pruned";
+              
+              line2023.setAttribute("class", "connector-line beam-active");
+              box2023.className = "tpv-partition-box scanning-box";
+              box2024.className = "tpv-partition-box pruned-box";
+            } 
+            else if (currentQuery === "2024") {
+              traceQuery.textContent = "order_date = '2024-03-10'";
+              badge2023.textContent = "⚡ PRUNED";
+              badge2023.className = "tpv-eval-badge badge-pruned";
+              badge2024.textContent = "🔍 SCAN";
+              badge2024.className = "tpv-eval-badge badge-scan";
+              
+              line2024.setAttribute("class", "connector-line beam-active");
+              box2024.className = "tpv-partition-box scanning-box";
+              box2023.className = "tpv-partition-box pruned-box";
+            } 
+            else if (currentQuery === "all") {
+              traceQuery.textContent = "None (No Date Filter)";
+              badge2023.textContent = "⚠️ FULL SCAN";
+              badge2023.className = "tpv-eval-badge badge-scatter";
+              badge2024.textContent = "⚠️ FULL SCAN";
+              badge2024.className = "tpv-eval-badge badge-scatter";
+              
+              line2023.setAttribute("class", "connector-line beam-scatter");
+              line2024.setAttribute("class", "connector-line beam-scatter");
+              box2023.className = "tpv-partition-box scanning-box";
+              box2024.className = "tpv-partition-box scanning-box";
+            }
+            else if (currentQuery === "unindexed") {
+              traceQuery.textContent = "customer_id = 101 (Key Mismatch!)";
+              badge2023.textContent = "⚠️ SCATTER";
+              badge2023.className = "tpv-eval-badge badge-scatter";
+              badge2024.textContent = "⚠️ SCATTER";
+              badge2024.className = "tpv-eval-badge badge-scatter";
+              
+              line2023.setAttribute("class", "connector-line beam-scatter");
+              line2024.setAttribute("class", "connector-line beam-scatter");
+              box2023.className = "tpv-partition-box scanning-box";
+              box2024.className = "tpv-partition-box scanning-box";
+            }
+
+            // Highlight scanning rows for partitioned
+            logicalRows.forEach(row => {
+              const year = row.dataset.year;
+              const cust = row.dataset.cust;
+              
+              if (currentQuery === "all") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "unindexed") {
+                row.className = cust === "101" ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
+              } else {
+                row.className = year === currentQuery ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
+              }
+            });
+
+            // Physical rows highlighting
+            p2023Rows.forEach(row => {
+              const cust = row.dataset.cust;
+              if (currentQuery === "2023") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "unindexed" && cust === "101") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "all") {
+                row.className = "tpv-flow-row row-match";
+              } else {
+                row.className = "tpv-flow-row row-dim";
+              }
+            });
+
+            p2024Rows.forEach(row => {
+              const cust = row.dataset.cust;
+              if (currentQuery === "2024") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "unindexed" && cust === "101") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "all") {
+                row.className = "tpv-flow-row row-match";
+              } else {
+                row.className = "tpv-flow-row row-dim";
+              }
+            });
+
           } else {
-            container.classList.add("inactive-partition");
-          }
-        });
+            // MONOLITHIC FLOW
+            badgeMono.textContent = "🔍 FULL SCAN";
+            badgeMono.className = "tpv-eval-badge badge-scatter";
 
-        // 3. Initiate Scan Status Labels
-        let monoScanned = 0;
-        let partScanned = 0;
-        monoStatus.innerHTML = `Scan: <span class="status-bad">0</span> / 4 rows`;
-        partStatus.innerHTML = `Scan: active partitions | <span class="status-good">0</span> rows`;
+            if (currentQuery === "all" || currentQuery === "unindexed") {
+              traceQuery.textContent = currentQuery === "all" ? "None (No Date Filter)" : "customer_id = 101";
+              lineMono.setAttribute("class", "connector-line beam-scatter");
+            } else {
+              traceQuery.textContent = currentQuery === "2023" ? "order_date = '2023-05-12'" : "order_date = '2024-03-10'";
+              lineMono.setAttribute("class", "connector-line beam-active");
+            }
+            boxMono.className = "tpv-partition-box monolithic-box scanning-box";
 
-        // 4. Temporary Analysis explanation states
-        const content = explanations[query];
-        queryName.textContent = content.name;
-        querySaving.textContent = "Analyzing query plan...";
-        querySaving.className = "tpv-exp-saving-badge status-bad";
-        queryExp.textContent = "Query optimizer is calculating partition boundaries and plotting physical disk scan routes...";
-        monoDetail.textContent = "Estimating sequential scan path...";
-        partDetail.textContent = "Determining partition target boundaries...";
+            // Highlight logical and physical monolithic rows
+            logicalRows.forEach(row => {
+              const year = row.dataset.year;
+              const cust = row.dataset.cust;
+              if (currentQuery === "all") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "unindexed") {
+                row.className = cust === "101" ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
+              } else {
+                row.className = year === currentQuery ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
+              }
+            });
 
-        // Disable button clicks during scan execution
-        buttons.forEach(btn => btn.style.pointerEvents = "none");
-
-        let step = 0;
-        const totalRows = 4;
-
-        currentTimer = setInterval(() => {
-          if (step >= totalRows) {
-            clearInterval(currentTimer);
-            currentTimer = null;
-
-            // 5. Scan Finished! Render final metrics & states
-            querySaving.textContent = content.saving;
-            querySaving.className = content.isGood ? "tpv-exp-saving-badge status-good" : "tpv-exp-saving-badge status-bad";
-            queryExp.textContent = content.exp;
-            monoDetail.textContent = content.mono;
-            partDetail.textContent = content.part;
-
-            // Final status counters
-            monoStatus.innerHTML = `Scan: <span class="status-bad">4</span> / 4 rows (100% table scan)`;
-            partStatus.innerHTML = query === "all" 
-              ? `Scan: 2 partitions | <span class="status-bad">4</span> / 4 rows (100% scan)`
-              : `Scan: 1 partition | <span class="status-good">2</span> / 4 rows (Partition Pruned!)`;
-
-            // Reset final visual classes based on matched queries
             monoRows.forEach(row => {
               const year = row.dataset.year;
-              const isMatch = query === "all" || year === query;
-              row.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
-            });
-
-            partContainers.forEach(container => {
-              const partYear = container.dataset.partition;
-              const isActive = (partYear === "2023" && isPart2023Active) || (partYear === "2024" && isPart2024Active);
-              container.querySelectorAll<HTMLElement>(".tpv-row").forEach(row => {
-                if (isActive) {
-                  const rowYear = row.dataset.year;
-                  const isMatch = query === "all" || rowYear === query;
-                  row.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
-                } else {
-                  row.className = "tpv-row filter-row";
-                }
-              });
-            });
-
-            // Re-enable clicks
-            buttons.forEach(btn => btn.style.pointerEvents = "auto");
-            return;
-          }
-
-          // --- Step Scan Animation Execution ---
-          
-          // A. Scan Monolithic row (always sequential)
-          const mRow = monoRows[step];
-          mRow.className = "tpv-row scanning-row";
-          monoScanned++;
-          monoStatus.innerHTML = `Scan: <span class="status-bad">${monoScanned}</span> / 4 rows (Sequential Scan)`;
-
-          // B. Scan Partitioned row (only if its containing partition is active)
-          const rowYear = mRow.dataset.year;
-          const isPartActive = (rowYear === "2023" && isPart2023Active) || (rowYear === "2024" && isPart2024Active);
-
-          if (isPartActive) {
-            const pRow = comp.querySelector(`.partitioned-col [data-partition="${rowYear}"] .tpv-row[data-idx="${step}"]`);
-            if (pRow) {
-              pRow.className = "tpv-row scanning-row";
-            }
-            partScanned++;
-            partStatus.innerHTML = `Scan: active partitions | <span class="status-good">${partScanned}</span> rows read`;
-          } else {
-            // Pruned segment is skipped!
-            partStatus.innerHTML = `Scan: active partitions | <span class="status-good">${partScanned}</span> rows read (Bypassed partition!)`;
-          }
-
-          // C. Set visual states for completed historical steps
-          if (step > 0) {
-            const prevStep = step - 1;
-            const prevMRow = monoRows[prevStep];
-            const prevYear = prevMRow.dataset.year;
-            const isMatch = query === "all" || prevYear === query;
-            prevMRow.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
-
-            if ((prevYear === "2023" && isPart2023Active) || (prevYear === "2024" && isPart2024Active)) {
-              const prevPRow = comp.querySelector(`.partitioned-col [data-partition="${prevYear}"] .tpv-row[data-idx="${prevStep}"]`);
-              if (prevPRow) {
-                prevPRow.className = isMatch ? "tpv-row match-row" : "tpv-row filter-row";
+              const cust = row.dataset.cust;
+              if (currentQuery === "all") {
+                row.className = "tpv-flow-row row-match";
+              } else if (currentQuery === "unindexed") {
+                row.className = cust === "101" ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
+              } else {
+                row.className = year === currentQuery ? "tpv-flow-row row-match" : "tpv-flow-row row-dim";
               }
-            }
+            });
           }
 
-          step++;
-        }, 400); // 400ms scan step delay
+          // Update explanation card
+          expTitle.textContent = data.title;
+          expCost.textContent = data.cost;
+          expCost.className = `tpv-cost-badge ${data.costClass}`;
+          expDesc.textContent = data.desc;
+
+        }, 400); // Snappy 400ms planner analysis delay
       }
 
-      // Bind button events
+      // Bind query button events
       buttons.forEach(btn => {
         btn.addEventListener("click", () => {
-          const q = (btn.dataset.query || "all") as "all" | "2023" | "2024";
-          executeQuery(q);
+          currentQuery = (btn.dataset.query || "all") as any;
+          executeQuery();
         });
       });
 
-      // Initialize
-      executeQuery("all");
+      // Bind arch toggle button events
+      archButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          currentArch = (btn.dataset.arch || "partitioned") as any;
+          executeQuery();
+        });
+      });
+
+      // Init
+      executeQuery();
     });
   }
 
-  // Bind on load and Astro page transitions
-  initTablePartition();
-  document.addEventListener("astro:page-load", initTablePartition);
+  // Load handler
+  initFlowPartition();
+  document.addEventListener("astro:page-load", initFlowPartition);
 </script>

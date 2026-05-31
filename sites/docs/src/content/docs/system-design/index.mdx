@@ -54,13 +54,12 @@ In a single-computer system, building software is straightforward: there is a si
 | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
 | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
-| [Database Sharding & Scaling](/knowledge-base/system-design/database-sharding-and-scaling/) | Vertical/horizontal partitioning, sharding keys, hotspot key salt, [[system-design/database-sharding-and-scaling|read replicas]], replication lag |
+| [Database Sharding & Scaling](/knowledge-base/system-design/database-sharding-and-scaling/) | Vertical/horizontal partitioning, sharding keys, hotspot key salt, [read replicas](/knowledge-base/system-design/database-sharding-and-scaling/), replication lag |
 | [Distributed Transactions & Saga Patterns](/knowledge-base/system-design/distributed-transactions/) | [2PC](/knowledge-base/system-design/distributed-transactions/), [Saga Orchestrator](/knowledge-base/system-design/distributed-transactions/), [Saga Choreography](/knowledge-base/system-design/distributed-transactions/), [Transactional Outbox](/knowledge-base/system-design/distributed-transactions/) |
 
 ## Planned Concepts
 
 - **Distributed Consensus & Coordination**: Master election, split-brain mitigation, heartbeats, and leader coordination using consensus algorithms like Raft and Paxos.
 - **Storage Internals & Advanced Data Structures**: Analyzing B-Trees vs. LSM Trees for read/write performance, and using Bloom Filters, Merkle Trees, and Geohashes for efficient distributed data storage.
-- **Database Partitioning & Scaling**: Horizontal sharding strategies, sharding key selection, hotspot key mitigation (celebrity problem), read replicas, and replication lag.
 - **API Infrastructure & Traffic Routing**: Layer 4 vs. Layer 7 Load Balancing, DNS load balancing, reverse proxies, and API Gateway boundaries (routing, SSL termination, and cross-cutting security).
 - **Big Data & Analytical Architectures**: Batch vs. Stream processing paradigms, MapReduce execution flow, and structural trade-offs between Lambda and Kappa architectures.
