@@ -29,9 +29,9 @@ Before diving in, make sure you understand:
 
 ## Evaluation flow
 
-<PolicyEvaluator />
+AWS describes the authorization input as a request context, then evaluates identity policies, resource policies, permissions boundaries, AWS Organizations controls, and session policies to reach the final decision ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The diagram below is a debugging model, not a replacement for service-specific rules.
 
-AWS describes the authorization input as a request context, then evaluates identity policies, resource policies, permissions boundaries, AWS Organizations controls, and session policies to reach the final decision ([source](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)). The diagram is a debugging model, not a replacement for service-specific rules.
+<PolicyEvaluator />
 
 <Aside type="caution" title="Resource policies have service-specific edges">
 

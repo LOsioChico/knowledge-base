@@ -36,6 +36,8 @@ Per [share-AMI considerations](https://docs.aws.amazon.com/AWSEC2/latest/UserGui
 
 ## Recipe
 
+The copy requires a share step in the source account followed by a copy step in the target account:
+
 <FlowSimulator
   title="Cross-account AMI copy flow"
   nodes={[

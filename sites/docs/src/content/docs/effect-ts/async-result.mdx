@@ -237,7 +237,7 @@ const renderUI = (result: AsyncResult<{ name: string }, { message: string }>) =>
   Collapsing a `Failure` state into an empty default (like a `null` value or `[]` array) hides critical operational faults. When an API call crashes, the user interface must display the actual cause details so the user is informed of the failure type, rather than silently showing a misleading "No records found" visual state.
 </Aside>
 
-<Aside type="tip" title="Use cause.pretty for Diagnostic Error Renders">
+<Aside type="note" title="Use cause.pretty for Diagnostic Error Renders">
   When displaying failures originating from deep nested fiber crashes, use `Cause.pretty(cause)` to format the error text. It provides stack traces and precise tagging out-of-the-box, ensuring developers can diagnose issues directly from user-submitted screenshots.
 </Aside>
 

@@ -114,6 +114,10 @@ Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (li
 
 ## 3. OpenTelemetry Integration
 
+Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel)** standard. Under the hood, log spans are actual OpenTelemetry Tracer Spans.
+
+By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors.
+
 <StackDiagram
   title="Nested span wrapping"
   layers={[
@@ -122,10 +126,6 @@ Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (li
   ]}
   core={{ label: "charge API call", color: "#f472b6", tip: "The actual HTTP request to the payment gateway" }}
 />
-
-Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel)** standard. Under the hood, log spans are actual OpenTelemetry Tracer Spans.
-
-By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors:
 
 ```ts twoslash title="opentelemetry-integration.ts"
 // @noErrors

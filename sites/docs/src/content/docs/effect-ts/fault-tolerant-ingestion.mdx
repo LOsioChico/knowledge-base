@@ -30,44 +30,7 @@ import VisualFlow from '/src/components/interactive/VisualFlow.astro';
 
 ## Architecture and Data Flow
 
-The following workflow diagram illustrates how elements are batched, fetched, parsed, timed out, and retried. Transient exceptions trigger backoffs, while structural [[effect-ts/schema|schema]] or HTTP violations fail fast.
-
-<VisualFlow
-  title="Ingestion pipeline data flow"
-  nodes={[
-    { id: "inputs", label: "Inputs (e.g., IDs: 1, 2, 3)", col: 0, row: 0, icon: "input", description: "Raw array of data records, queue payloads, or identifiers passed into the execution loop." },
-    { id: "foreach", label: "Effect.forEach (concurrency: n)", col: 0, row: 1, icon: "loop", description: "Concurrent execution wrapper that spawns parallel fibers to process inputs simultaneously." },
-    { id: "fetch", label: "fetchRaw (HTTP request)", col: 0, row: 2, icon: "network", description: "Fetches the raw JSON payload from the flaky external endpoint. Fails fast on HttpError (>= 400)." },
-    { id: "parse", label: "parseTodo (JSON parsing)", col: 0, row: 3, icon: "schema", description: "Validates raw JSON against the Schema struct. Fails fast on ParseFailure (bad/invalid JSON)." },
-    { id: "timeout", label: "Timeout (5s limit)", col: 0, row: 4, icon: "timer", description: "Races the validation task against a 5-second timeout window. Triggers TimeoutException on breach." },
-    { id: "success", label: "Ingested OK", col: 0, row: 5, icon: "success", color: "#4ade80", description: "Successful ingestion terminal [[effect-ts/state|state]]. Validated record is written to database." },
-    { id: "retry", label: "selectiveRetry (3 attempts)", col: 2, row: 4, icon: "retry", color: "#fbbf24", description: "Catches TimeoutExceptions and transient failures to trigger jittered exponential backoffs." },
-    { id: "fail", label: "FAIL FAST", col: 2, row: 2, icon: "fail", color: "#f87171", description: "Terminal failure state. Aborts the pipeline immediately on structural errors or exhausted retries." },
-  ]}
-  edges={[
-    { from: "inputs", to: "foreach", style: "solid" },
-    { from: "foreach", to: "fetch", style: "solid" },
-    { from: "fetch", to: "parse", label: "(res.ok)", style: "solid" },
-    { from: "fetch", to: "fail", label: "(HttpError)", color: "#f87171", style: "dashed" },
-    { from: "parse", to: "timeout", label: "(valid Todo)", style: "solid" },
-    { from: "parse", to: "fail", label: "(ParseFailure)", color: "#f87171", style: "dashed" },
-    { from: "timeout", to: "success", label: "(within 5s)", color: "#4ade80", style: "solid" },
-    { from: "timeout", to: "retry", label: "(TimeoutException)", color: "#fbbf24", style: "solid" },
-    { from: "retry", to: "fetch", label: "(Success on retry)", color: "#4ade80", style: "solid", type: "curved" },
-    { from: "retry", to: "fail", label: "(Failed after 3)", color: "#f87171", style: "solid" },
-  ]}
-/>
-
-<TypeChannelTracer
-  title="Error channel through the ingestion pipeline"
-  steps={[
-    { op: "fetchRaw(url)", a: "Response", e: "FetchError | HttpError", note: "tryPromise wraps the native fetch; flatMap adds HttpError for non-ok status codes" },
-    { op: "parseTodo(response)", a: "Todo", e: "FetchError | HttpError | ParseFailure", note: "Schema.decodeUnknown adds ParseFailure : flatMap composes it into E alongside the existing errors" },
-    { op: "Effect.timeout('5 seconds')", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Timeout adds TimeoutException : E widens again" },
-    { op: "Effect.retry({ while: ... })", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Retry doesn't change E : it re-runs on FetchError | TimeoutException but fails fast on HttpError | ParseFailure" },
-    { op: "Effect.forEach(ids, fn, { concurrency: 3 })", a: "Todo[]", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "forEach collects results; short-circuits on first unrecoverable failure" },
-  ]}
-/>
+The pipeline composes five stages: fetch the raw HTTP response, parse it against a typed [[effect-ts/schema|schema]], enforce a timeout, selectively retry transient failures, and batch everything with bounded [[effect-ts/concurrency|concurrency]]. The sections below walk through each stage in detail.
 
 ---
 
@@ -197,6 +160,45 @@ Effect.runPromise(ingestionProgram)
 ```
 
 </CodeWalkthrough>
+
+Now that each stage is clear, the following diagrams show how data flows through the pipeline and how the error channel widens at each operator:
+
+<VisualFlow
+  title="Ingestion pipeline data flow"
+  nodes={[
+    { id: "inputs", label: "Inputs (e.g., IDs: 1, 2, 3)", col: 0, row: 0, icon: "input", description: "Raw array of data records, queue payloads, or identifiers passed into the execution loop." },
+    { id: "foreach", label: "Effect.forEach (concurrency: n)", col: 0, row: 1, icon: "loop", description: "Concurrent execution wrapper that spawns parallel fibers to process inputs simultaneously." },
+    { id: "fetch", label: "fetchRaw (HTTP request)", col: 0, row: 2, icon: "network", description: "Fetches the raw JSON payload from the flaky external endpoint. Fails fast on HttpError (>= 400)." },
+    { id: "parse", label: "parseTodo (JSON parsing)", col: 0, row: 3, icon: "schema", description: "Validates raw JSON against the Schema struct. Fails fast on ParseFailure (bad/invalid JSON)." },
+    { id: "timeout", label: "Timeout (5s limit)", col: 0, row: 4, icon: "timer", description: "Races the validation task against a 5-second timeout window. Triggers TimeoutException on breach." },
+    { id: "success", label: "Ingested OK", col: 0, row: 5, icon: "success", color: "#4ade80", description: "Successful ingestion terminal [[effect-ts/state|state]]. Validated record is written to database." },
+    { id: "retry", label: "selectiveRetry (3 attempts)", col: 2, row: 4, icon: "retry", color: "#fbbf24", description: "Catches TimeoutExceptions and transient failures to trigger jittered exponential backoffs." },
+    { id: "fail", label: "FAIL FAST", col: 2, row: 2, icon: "fail", color: "#f87171", description: "Terminal failure state. Aborts the pipeline immediately on structural errors or exhausted retries." },
+  ]}
+  edges={[
+    { from: "inputs", to: "foreach", style: "solid" },
+    { from: "foreach", to: "fetch", style: "solid" },
+    { from: "fetch", to: "parse", label: "(res.ok)", style: "solid" },
+    { from: "fetch", to: "fail", label: "(HttpError)", color: "#f87171", style: "dashed" },
+    { from: "parse", to: "timeout", label: "(valid Todo)", style: "solid" },
+    { from: "parse", to: "fail", label: "(ParseFailure)", color: "#f87171", style: "dashed" },
+    { from: "timeout", to: "success", label: "(within 5s)", color: "#4ade80", style: "solid" },
+    { from: "timeout", to: "retry", label: "(TimeoutException)", color: "#fbbf24", style: "solid" },
+    { from: "retry", to: "fetch", label: "(Success on retry)", color: "#4ade80", style: "solid", type: "curved" },
+    { from: "retry", to: "fail", label: "(Failed after 3)", color: "#f87171", style: "solid" },
+  ]}
+/>
+
+<TypeChannelTracer
+  title="Error channel through the ingestion pipeline"
+  steps={[
+    { op: "fetchRaw(url)", a: "Response", e: "FetchError | HttpError", note: "tryPromise wraps the native fetch; flatMap adds HttpError for non-ok status codes" },
+    { op: "parseTodo(response)", a: "Todo", e: "FetchError | HttpError | ParseFailure", note: "Schema.decodeUnknown adds ParseFailure : flatMap composes it into E alongside the existing errors" },
+    { op: "Effect.timeout('5 seconds')", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Timeout adds TimeoutException : E widens again" },
+    { op: "Effect.retry({ while: ... })", a: "Todo", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "Retry doesn't change E : it re-runs on FetchError | TimeoutException but fails fast on HttpError | ParseFailure" },
+    { op: "Effect.forEach(ids, fn, { concurrency: 3 })", a: "Todo[]", e: "FetchError | HttpError | ParseFailure | TimeoutException", note: "forEach collects results; short-circuits on first unrecoverable failure" },
+  ]}
+/>
 
 ---
 

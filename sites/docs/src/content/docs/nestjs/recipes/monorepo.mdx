@@ -39,7 +39,7 @@ Turborepo, paired with pnpm workspaces, resolves this dependency bleed by keepin
 
 ## Monorepo architecture
 
-A standard high-performance NestJS monorepo uses the following structure:
+A standard high-performance NestJS monorepo splits into three layers. The **root** holds shared [[nestjs/recipes/configuration|configuration]] (TypeScript base, Turbo pipelines, workspace manifest) with zero application code. **Packages** contain reusable libraries: NestJS modules, DTOs, or utilities that multiple services consume. **Apps** contain independently deployable NestJS services, each with its own `package.json` and dependency tree. Dependencies flow strictly one direction: apps depend on packages, never the reverse.
 
 <ArchitectureExplorer
   title="Workspace layers"
