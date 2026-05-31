@@ -242,8 +242,6 @@ const result = Effect.runSyncExit(parseTodo(badInput));
   steps={[
     { op: "Schema.decodeUnknown(Todo)(input)", a: "Todo", e: "ParseError", note: "Parses unknown input; if the shape is wrong, E is ParseError" },
     { op: ".pipe(Effect.mapError(toParseFailure))", a: "Todo", e: "ParseFailure", note: "mapError replaces ParseError with your domain error : E narrows" },
-    { op: "Effect.flatMap(todo, validateBiz)", a: "ValidTodo", e: "ParseFailure | BizError", note: "flatMap adds BizError from a business rule check : E widens" },
-    { op: "Effect.catchTag('BizError', recover)", a: "ValidTodo | Fallback", e: "ParseFailure", note: "catchTag removes BizError : E narrows back to ParseFailure only" },
   ]}
 />
 

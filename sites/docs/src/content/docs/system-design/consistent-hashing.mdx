@@ -90,6 +90,18 @@ flowchart TD
         end
 ```
 
+### The Clockwise Routing Protocol
+
+1.  **Map Servers**: We hash each physical server's identifier (for example, `Hash("Server-A")`) to get a large number, putting the server on that specific slot on the 4.3-billion-slot circle.
+2.  **Map Keys**: We hash the incoming data key (for example, `Hash("session-alice")`) using the same hash function to get another slot number on the circle.
+3.  **Route Clockwise**: To locate the server responsible for storing a key, we start at the key's slot and travel clockwise around the ring until we encounter the very first server.
+
+In the interactive ring below:
+*   **session-alice** sits at position 70. Traveling clockwise, the first server is **Server B** at position 140 : so alice routes to B.
+*   Click **"− Remove server"** to remove Server C. Watch the routing table: only keys previously on C migrate to their new clockwise neighbor. All other keys stay put.
+
+If Server B crashes and is removed, only the keys that mapped to Server B are affected and need to be re-routed. All other keys on the ring stay exactly where they are.
+
 Try the interactive ring below : add or remove a server and watch which keys migrate:
 
 <HashRingVisualizer
@@ -109,18 +121,6 @@ Try the interactive ring below : add or remove a server and watch which keys mig
   vnodes={3}
   ringSize={360}
 />
-
-### The Clockwise Routing Protocol
-
-1.  **Map Servers**: We hash each physical server's identifier (for example, `Hash("Server-A")`) to get a large number, putting the server on that specific slot on the 4.3-billion-slot circle.
-2.  **Map Keys**: We hash the incoming data key (for example, `Hash("session-alice")`) using the same hash function to get another slot number on the circle.
-3.  **Route Clockwise**: To locate the server responsible for storing a key, we start at the key's slot and travel clockwise around the ring until we encounter the very first server.
-
-In the interactive ring above:
-*   **session-alice** sits at position 70. Traveling clockwise, the first server is **Server B** at position 140 : so alice routes to B.
-*   Click **"− Remove server"** to remove Server C. Watch the routing table: only keys previously on C migrate to their new clockwise neighbor. All other keys stay put.
-
-If Server B crashes and is removed, only the keys that mapped to Server B are affected and need to be re-routed. All other keys on the ring stay exactly where they are.
 
 ---
 

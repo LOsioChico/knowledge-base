@@ -60,33 +60,6 @@ Data is stored on a dedicated, external cluster of caching servers (such as Redi
     *   **Process Isolation**: Restarting a web server does not wipe cached data.
 *   **Cons**: Network latency. Accessing an external Redis node requires a network socket call (~500 microseconds), which is slower than process RAM lookup but still far faster than a database seek.
 
-<ParameterPlayground
-  title="Cache Capacity & Experience Explorer"
-  params={[
-    { name: "users", label: "Daily active users", type: "range", min: 10000, max: 5000000, step: 10000, default: 1000000 },
-    { name: "size", label: "Object size per user", type: "range", min: 0.5, max: 20.0, step: 0.5, default: 2.0, suffix: " KB" },
-    { name: "hitRatio", label: "Target hit ratio", type: "range", min: 50, max: 99, default: 80, suffix: "%" },
-    { name: "dbLatency", label: "Database latency", type: "range", min: 10, max: 200, default: 50, suffix: " ms" },
-    { name: "cacheLatency", label: "Cache lookup latency", type: "range", min: 0.2, max: 2.0, step: 0.1, default: 0.5, suffix: " ms" },
-  ]}
-  outputs={[
-    { name: "footprint", label: "RAM working set size", format: "text" },
-    { name: "avgLatency", label: "Average read latency", format: "decimal", good: "low" },
-    { name: "savings", label: "Latency improvement", format: "percent", good: "high" },
-  ]}
-  compute={`
-    var rawFootprint = (params.users * params.size * 1.3) / 1024 / 1024; // with 30% overhead
-    var fpText = rawFootprint.toFixed(2) + " GB";
-    
-    var ratio = params.hitRatio / 100;
-    var avgLatency = (ratio * params.cacheLatency) + ((1 - ratio) * params.dbLatency);
-    
-    var rawSavings = (params.dbLatency - avgLatency) / params.dbLatency;
-    
-    return { footprint: fpText, avgLatency: avgLatency, savings: rawSavings };
-  `}
-/>
-
 ---
 
 ## Caching Read and Write Patterns
@@ -184,6 +157,33 @@ The application writes to the cache, which immediately returns a success status.
 | **[Read-Through](/knowledge-base/system-design/distributed-caching/#2-read-through)** | Low (on hit) | Low | Zero | Medium | Unified data access layers |
 | **[Write-Through](/knowledge-base/system-design/distributed-caching/#3-write-through)** | Low | High | Zero | Medium | Financial systems, balance logs |
 | **[Write-Behind](/knowledge-base/system-design/distributed-caching/#4-write-behind-write-back)** | Low | Ultra-Low | High (eventual DB sync) | High | Write-heavy telemetry, game logs |
+
+<ParameterPlayground
+  title="Cache Capacity & Experience Explorer"
+  params={[
+    { name: "users", label: "Daily active users", type: "range", min: 10000, max: 5000000, step: 10000, default: 1000000 },
+    { name: "size", label: "Object size per user", type: "range", min: 0.5, max: 20.0, step: 0.5, default: 2.0, suffix: " KB" },
+    { name: "hitRatio", label: "Target hit ratio", type: "range", min: 50, max: 99, default: 80, suffix: "%" },
+    { name: "dbLatency", label: "Database latency", type: "range", min: 10, max: 200, default: 50, suffix: " ms" },
+    { name: "cacheLatency", label: "Cache lookup latency", type: "range", min: 0.2, max: 2.0, step: 0.1, default: 0.5, suffix: " ms" },
+  ]}
+  outputs={[
+    { name: "footprint", label: "RAM working set size", format: "text" },
+    { name: "avgLatency", label: "Average read latency", format: "decimal", good: "low" },
+    { name: "savings", label: "Latency improvement", format: "percent", good: "high" },
+  ]}
+  compute={`
+    var rawFootprint = (params.users * params.size * 1.3) / 1024 / 1024; // with 30% overhead
+    var fpText = rawFootprint.toFixed(2) + " GB";
+    
+    var ratio = params.hitRatio / 100;
+    var avgLatency = (ratio * params.cacheLatency) + ((1 - ratio) * params.dbLatency);
+    
+    var rawSavings = (params.dbLatency - avgLatency) / params.dbLatency;
+    
+    return { footprint: fpText, avgLatency: avgLatency, savings: rawSavings };
+  `}
+/>
 
 <DecisionGuide
   title="Pick the right caching read/write strategy"

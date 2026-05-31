@@ -180,6 +180,8 @@ Here is the step-by-step visual execution trace illustrating the exponential bac
 
 ## 3. Jitter
 
+Jitter randomizes each retry delay to prevent synchronized retry storms (thundering herd). When many clients fail at the same moment and retry on identical schedules, they all hit the server simultaneously on every attempt. Adding jitter spreads retries across a time window so the server recovers gradually.
+
 ```ts twoslash title="jitter.ts"
 import { Schedule } from "effect";
 

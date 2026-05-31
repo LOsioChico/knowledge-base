@@ -47,8 +47,6 @@ The CAP theorem states that a distributed data store can simultaneously provide 
 *   **Availability**: Every non-failing node returns a non-error response for every request, without guaranteeing that it contains the most recent write.
 *   **Partition Tolerance**: The system continues to operate despite an arbitrary number of messages being dropped or delayed by the network between nodes.
 
-<CapTheoremSimulator />
-
 ### The "Branch Office" Partition Analogy
 To build immediate intuition, imagine a bank with two physical branches (one in London and one in New York). Both branches have local databases containing customer account balances. Under normal conditions, when a customer deposits money in London, the system instantly notifies the New York branch over the internet, and both databases match.
 
@@ -59,6 +57,8 @@ At this exact moment, a customer walks into the New York branch and wants to wit
 2.  **Prioritize Availability (AP)**: New York says, "We cannot talk to London, but we want to be helpful. Here is your $100." The system remains **Available**, but we have sacrificed **Consistency**: if the customer had already withdrawn their entire balance in London five minutes ago, the databases are now out of sync, and the account is overdrawn.
 
 Because physical network cuts (partitions) are an inevitable fact of life, **Partition Tolerance (P)** is mandatory. We can never choose "CA" (Consistency + Availability without Partition Tolerance) because we cannot prevent network failures. When a partition occurs, we must choose either **CP** or **AP**.
+
+<CapTheoremSimulator />
 
 <DecisionGuide
   title="CAP trade-off navigator"

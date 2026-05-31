@@ -364,6 +364,8 @@ Effect.runPromise(getDisplayName("missing")).then(console.log);
 
 `Effect.catchTags` is the multi-tag form: one object keyed by tag literals, same narrowing semantics as chaining several `catchTag` calls.
 
+Each row traces how the success channel (**A**) and error channel (**E**) evolve as operations compose:
+
 <TypeChannelTracer
   title="Error channel narrowing in getDisplayName"
   steps={[

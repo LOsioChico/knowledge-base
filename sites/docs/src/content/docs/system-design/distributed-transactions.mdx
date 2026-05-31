@@ -145,6 +145,15 @@ If the payment step fails:
 
 In Orchestration, a dedicated coordinator service (the Orchestrator) directs all workflow decisions. The Orchestrator sends command messages to services, receives responses, and decides which step or compensation to trigger next.
 
+#### Compensating Flow in Orchestration
+If charging the card fails:
+1.  Payment Service returns a `PaymentFailed` message to the Orchestrator.
+2.  The Orchestrator catches the error, halts the workflow, and sends a `ReleaseStock` command to the Inventory Service.
+3.  Once the Inventory Service acknowledges the release, the Orchestrator sends a `CancelOrder` command to the Order Service.
+
+*   *Pros*: Highly visible. The entire workflow logic is centralized in one state machine, making debugging and metrics tracking straightforward.
+*   *Cons*: Creates tight coupling. The orchestrator must understand the API/commands of every participant service, and it presents a central point of logic complexity.
+
 <FlowSimulator
   title="Orchestration saga flow"
   nodes={[
@@ -172,15 +181,6 @@ In Orchestration, a dedicated coordinator service (the Orchestrator) directs all
   ]}
   speed={1400}
 />
-
-#### Compensating Flow in Orchestration
-If charging the card fails:
-1.  Payment Service returns a `PaymentFailed` message to the Orchestrator.
-2.  The Orchestrator catches the error, halts the workflow, and sends a `ReleaseStock` command to the Inventory Service.
-3.  Once the Inventory Service acknowledges the release, the Orchestrator sends a `CancelOrder` command to the Order Service.
-
-*   *Pros*: Highly visible. The entire workflow logic is centralized in one state machine, making debugging and metrics tracking straightforward.
-*   *Cons*: Creates tight coupling. The orchestrator must understand the API/commands of every participant service, and it presents a central point of logic complexity.
 
 ---
 

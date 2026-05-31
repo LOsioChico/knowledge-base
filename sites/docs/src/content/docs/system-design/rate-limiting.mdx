@@ -125,26 +125,6 @@ The Sliding Window Counter is a hybrid algorithm that combines the memory effici
 
 *Note: For detail on how standard clients use these concepts, check the [[nestjs/recipes/rate-limiting|NestJS Rate Limiting Recipe]].*
 
-<ParameterPlayground
-  title="Rate limiter calculator"
-  params={[
-    { name: "windowSec", label: "Window size", type: "range", min: 1, max: 120, step: 1, default: 60, suffix: "s" },
-    { name: "maxRequests", label: "Max requests per window", type: "range", min: 1, max: 1000, step: 1, default: 100 },
-    { name: "burstFactor", label: "Burst factor (token bucket)", type: "range", min: 1, max: 10, step: 0.5, default: 2, suffix: "×" },
-  ]}
-  outputs={[
-    { name: "rps", label: "Sustained RPS", format: "decimal" },
-    { name: "burstCapacity", label: "Max burst", format: "number" },
-    { name: "refillRate", label: "Token refill rate", format: "text" },
-  ]}
-  compute={`
-    var rps = params.maxRequests / params.windowSec;
-    var burst = Math.round(params.maxRequests * params.burstFactor);
-    var refill = rps.toFixed(1) + ' tokens/sec';
-    return { rps: rps, burstCapacity: burst, refillRate: refill };
-  `}
-/>
-
 <DecisionGuide
   title="Pick the right rate limiting algorithm"
   steps={[
@@ -165,6 +145,26 @@ The Sliding Window Counter is a hybrid algorithm that combines the memory effici
     { id: "r-sliding-log", result: "Sliding Window Log", explanation: "Stores every request timestamp for exact counting. Perfect accuracy but high memory cost: O(n) per user. Good for low-volume high-value APIs.", link: "#4-sliding-window-log" },
     { id: "r-sliding-counter", result: "Sliding Window Counter", explanation: "Approximates the sliding window using weighted fixed-window counts. Near-exact accuracy with O(1) memory. The production sweet spot for most gateways.", link: "#5-sliding-window-counter" },
   ]}
+/>
+
+<ParameterPlayground
+  title="Rate limiter calculator"
+  params={[
+    { name: "windowSec", label: "Window size", type: "range", min: 1, max: 120, step: 1, default: 60, suffix: "s" },
+    { name: "maxRequests", label: "Max requests per window", type: "range", min: 1, max: 1000, step: 1, default: 100 },
+    { name: "burstFactor", label: "Burst factor (token bucket)", type: "range", min: 1, max: 10, step: 0.5, default: 2, suffix: "×" },
+  ]}
+  outputs={[
+    { name: "rps", label: "Sustained RPS", format: "decimal" },
+    { name: "burstCapacity", label: "Max burst", format: "number" },
+    { name: "refillRate", label: "Token refill rate", format: "text" },
+  ]}
+  compute={`
+    var rps = params.maxRequests / params.windowSec;
+    var burst = Math.round(params.maxRequests * params.burstFactor);
+    var refill = rps.toFixed(1) + ' tokens/sec';
+    return { rps: rps, burstCapacity: burst, refillRate: refill };
+  `}
 />
 
 ---
@@ -244,6 +244,21 @@ export class SlidingWindowLimiter {
 
 Rate limiting can be deployed at multiple layers of a system. The choice of architecture dictates how latency, horizontal scalability, and application complexity behave.
 
+### 1. Client-Side Limiting
+Implementing rate limits within the client application (such as mobile apps or web frontends) before the network call is made.
+*   *Pros*: Eliminates unnecessary network egress cost and gateway overhead. Excellent user experience if structured as optimistic delay queues.
+*   *Cons*: Entirely untrusted. Any client can bypass the logic by calling the HTTP endpoint directly or spoofing the client SDK.
+
+### 2. API Gateway / Reverse Proxy
+Rate limiting is handled at the network edge via a dedicated proxy (e.g., Nginx, Envoy, or AWS API Gateway) before the request ever reaches application servers.
+*   *Pros*: Zero overhead on application code. Rejects malicious traffic early, protecting thread pools and compute resources from starvation.
+*   *Cons*: Complex routing rules. Can create a single point of failure (SPOF) if proxy layers are not scaled independently.
+
+### 3. Distributed Cache Tier (Shared Middleware)
+Application servers invoke a shared, centralized cache like Redis to store and evaluate rate limiting state.
+*   *Pros*: Allows scaling the compute layer horizontally while maintaining a single, unified global limit across all servers.
+*   *Cons*: Introduces network hops (1 to 2 milliseconds of latency) for every incoming request to inspect Redis state.
+
 <FlowSimulator
   title="Rate Limiting Deployment Architectures"
   nodes={[
@@ -274,21 +289,6 @@ Rate limiting can be deployed at multiple layers of a system. The choice of arch
   ]}
   speed={1400}
 />
-
-### 1. Client-Side Limiting
-Implementing rate limits within the client application (such as mobile apps or web frontends) before the network call is made.
-*   *Pros*: Eliminates unnecessary network egress cost and gateway overhead. Excellent user experience if structured as optimistic delay queues.
-*   *Cons*: Entirely untrusted. Any client can bypass the logic by calling the HTTP endpoint directly or spoofing the client SDK.
-
-### 2. API Gateway / Reverse Proxy
-Rate limiting is handled at the network edge via a dedicated proxy (e.g., Nginx, Envoy, or AWS API Gateway) before the request ever reaches application servers.
-*   *Pros*: Zero overhead on application code. Rejects malicious traffic early, protecting thread pools and compute resources from starvation.
-*   *Cons*: Complex routing rules. Can create a single point of failure (SPOF) if proxy layers are not scaled independently.
-
-### 3. Distributed Cache Tier (Shared Middleware)
-Application servers invoke a shared, centralized cache like Redis to store and evaluate rate limiting state.
-*   *Pros*: Allows scaling the compute layer horizontally while maintaining a single, unified global limit across all servers.
-*   *Cons*: Introduces network hops (1 to 2 milliseconds of latency) for every incoming request to inspect Redis state.
 
 ---
 
