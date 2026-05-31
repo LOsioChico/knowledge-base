@@ -866,11 +866,40 @@ import StateMachineDiagram from '/src/components/interactive/StateMachineDiagram
 />
 ```
 
-#### Target notes
-
 No current usages. Good candidates: Effect-TS `AsyncResult` lifecycle, NestJS module lifecycle hooks.
 
 ---
+
+### LogicalClockSimulator
+
+Interactive logical clock simulator for distributed event ordering. Traces three horizontal process timelines (Process A, B, C) where readers can toggle between Lamport and Vector clocks, run a pre-loaded guided walkthrough, or click sandbox buttons to spawn local events and message transmissions. The Conflict Inspector mathematically compares any two selected event vectors to determine causality (`a -> b`) vs concurrency (`a || b`).
+
+**When to use:** Distributed event ordering, clock skew, happened-before relationships, Lamport Timestamps, and Vector Clocks.
+
+**When NOT to use:** Simple linear pipelines or sequential message passing without logical clock math (→ FlowSimulator).
+
+#### Props
+
+| Prop | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `title` | `string` | no | "Interactive Logical Clocks Explorer" | Heading above the simulator |
+
+#### Example
+
+```mdx
+import LogicalClockSimulator from '/src/components/interactive/LogicalClockSimulator.astro';
+
+<LogicalClockSimulator />
+```
+
+#### Target notes
+
+| Note | Purpose |
+|------|---------|
+| `system-design/logical-clocks` | Replaces static FlowSimulator to trace Lamport vs Vector clock updates and detect concurrent conflicts. |
+
+---
+
 
 ## Future: LinkedDiagram (deferred)
 

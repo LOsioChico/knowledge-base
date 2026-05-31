@@ -16,7 +16,7 @@ prerequisites:
 > Solving the impossibility of absolute physical time in distributed networks using Lamport Timestamps and Vector Clocks.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
-import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
+import LogicalClockSimulator from '/src/components/interactive/LogicalClockSimulator.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -165,26 +165,7 @@ In a cluster of `N` nodes, each node `P_i` maintains a vector `V_i` of size `N`,
 
 The following sequence timeline traces three concurrent processes (A, B, and C) managing event ordering and message exchanges via Vector Clocks.
 
-<FlowSimulator
-  title="Vector clock propagation across 3 processes"
-  speed={1000}
-  nodes={[
-    { id: "A", label: "Process A" },
-    { id: "B", label: "Process B" },
-    { id: "C", label: "Process C" },
-  ]}
-  flows={[
-    { label: "Vector clock trace", steps: [
-      { from: "A", to: "A", message: "a1 (local) → V=[1,0,0]" },
-      { from: "A", to: "B", message: "a2 (send) → A attaches V=[2,0,0]" },
-      { from: "B", to: "B", message: "b1 (local) → V=[0,1,0]" },
-      { from: "B", to: "B", message: "b2 (recv Msg 1) → merge max([0,1,0],[2,0,0])+1 → V=[2,2,0]" },
-      { from: "B", to: "C", message: "b3 (send) → B attaches V=[2,3,0]" },
-      { from: "C", to: "C", message: "c1 (recv Msg 2) → merge max([0,0,0],[2,3,0])+1 → V=[2,3,1]" },
-      { from: "C", to: "C", message: "c2 (local) → V=[2,3,2]" },
-    ]},
-  ]}
-/>
+<LogicalClockSimulator />
 
 ### Detecting Conflicts and Concurrency
 Vector Clocks allow us to mathematically prove whether two events `a` and `b` are causally related or concurrent:

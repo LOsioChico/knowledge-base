@@ -22,6 +22,7 @@ prerequisites:
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
+import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
 
 <Aside type="tip" title="Prerequisites">
 
@@ -218,6 +219,51 @@ delay = min(maxDelay, baseDelay × 2^attempt + random(0, baseDelay))
 <Aside type="caution" title="Always cap your backoff">
 Without a maximum delay cap, exponential backoff can grow to minutes or hours. Set a `maxDelay` ceiling (e.g., 60 seconds) and a `maxAttempts` limit (e.g., 5 retries) to bound total retry duration.
 </Aside>
+
+<ParameterPlayground
+  title="Retry Strategy & Backoff Explorer"
+  params={[
+    { name: "baseDelay", label: "Base backoff delay", type: "range", min: 100, max: 5000, step: 100, default: 1000, suffix: " ms" },
+    { name: "multiplier", label: "Backoff multiplier", type: "range", min: 1.5, max: 3.0, step: 0.1, default: 2.0 },
+    { name: "maxAttempts", label: "Max retry attempts", type: "range", min: 2, max: 10, default: 5 },
+    { name: "ceiling", label: "Max delay ceiling", type: "range", min: 5000, max: 60000, step: 1000, default: 30000, suffix: " ms" },
+    { name: "jitter", label: "Jitter intensity", type: "range", min: 0, max: 100, default: 25, suffix: "%" },
+  ]}
+  outputs={[
+    { name: "lastDelay", label: "Final attempt delay", format: "text" },
+    { name: "totalDuration", label: "Cumulative retry time", format: "text" },
+    { name: "herdRisk", label: "Thundering herd risk", format: "text", good: "low" },
+  ]}
+  compute={`
+    var total = 0;
+    var current = params.baseDelay;
+    var last = 0;
+    
+    for (var i = 1; i <= params.maxAttempts; i++) {
+      var nextDelay = current;
+      if (nextDelay > params.ceiling) {
+        nextDelay = params.ceiling;
+      }
+      // Apply jitter
+      var maxJitter = nextDelay * (params.jitter / 100);
+      var averageDelay = nextDelay - (maxJitter / 2); // average experienced delay
+      
+      total += averageDelay;
+      last = nextDelay;
+      current = current * params.multiplier;
+    }
+    
+    var lastText = last + " ms" + (last >= params.ceiling ? " (capped)" : "");
+    var totalText = (total / 1000).toFixed(2) + " seconds";
+    
+    var risk = "Extreme";
+    if (params.jitter >= 50) risk = "Low";
+    else if (params.jitter >= 20) risk = "Moderate";
+    else if (params.jitter > 0) risk = "High";
+    
+    return { lastDelay: lastText, totalDuration: totalText, herdRisk: risk };
+  `}
+/>
 
 ### Retry budgets
 

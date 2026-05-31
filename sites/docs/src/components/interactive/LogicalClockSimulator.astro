@@ -1,0 +1,1480 @@
+---
+/**
+ * LogicalClockSimulator.astro
+ *
+ * A premium, highly interactive visualizer for Leslie Lamport's happen-before relation,
+ * Lamport Timestamps, and Vector Clocks.
+ *
+ * Features:
+ * - Toggle between Lamport Timestamps (integers) and Vector Clocks (arrays [A, B, C]).
+ * - Toggle between Guided Scenario (preloaded causal trace) and Sandbox Mode (dynamic sandbox).
+ * - Click nodes to evaluate causal precedence (a -> b) vs concurrency (a || b) in the Conflict Inspector.
+ * - Dynamic SVG message lines drawn between processes.
+ * - Responsive design with custom Starlight theme alignment.
+ */
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Interactive Logical Clocks Explorer" } = Astro.props;
+---
+
+<div class="lcs not-content" id="logical-clock-simulator">
+  <div class="lcs-header">
+    <div class="lcs-title-bar">
+      <h3 class="lcs-title">{title}</h3>
+      <span class="lcs-subtitle">Visualize causal event ordering and conflict detection in distributed systems.</span>
+    </div>
+    
+    <div class="lcs-controls">
+      <div class="lcs-btn-group">
+        <button class="lcs-btn active" data-lcs-mode="vector">Vector Clocks</button>
+        <button class="lcs-btn" data-lcs-mode="lamport">Lamport Clocks</button>
+      </div>
+      <div class="lcs-btn-group">
+        <button class="lcs-btn active" data-lcs-setup="guided">Guided Scenario</button>
+        <button class="lcs-btn" data-lcs-setup="sandbox">Sandbox Simulator</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="lcs-body">
+    {/* ===== SCENARIO WALKTHROUGH CONTROLS ===== */}
+    <div class="lcs-walkthrough" id="lcs-walkthrough-panel">
+      <div class="lcs-walkthrough-header">
+        <span class="lcs-walkthrough-step" id="lcs-step-indicator">Step 1 of 7</span>
+        <div class="lcs-walkthrough-btns">
+          <button class="lcs-nav-btn" id="lcs-prev-btn" disabled>◀ Back</button>
+          <button class="lcs-nav-btn" id="lcs-next-btn">Next Step ▶</button>
+        </div>
+      </div>
+      <div class="lcs-walkthrough-card">
+        <h4 class="lcs-card-title" id="lcs-card-title">Event a1 (Process A Local)</h4>
+        <p class="lcs-card-text" id="lcs-card-text">Process A executes local event a1. Its local logical clock increments by 1. Since it is the first event, the vector is initialized to [1,0,0].</p>
+      </div>
+    </div>
+
+    {/* ===== SIMULATOR TIMELINES (VERTICAL SPACE-TIME DIAGRAM) ===== */}
+    <div class="lcs-timeline-container" id="lcs-timeline-container">
+      {/* Horizontal Headers Row */}
+      <div class="lcs-timeline-headers">
+        <div class="lcs-v-header lcs-lane" data-process="A" style="--lane-color: var(--lcs-violet)">
+          <div style="display: flex; align-items: center; gap: 0.35rem;">
+            <span class="lcs-lane-dot"></span>
+            <span class="lcs-lane-name">Process A</span>
+          </div>
+          <div class="lcs-sandbox-actions">
+            <button class="lcs-action-btn" data-action="local" title="Add local event">+</button>
+            <button class="lcs-action-btn" data-action="send" data-target="B" title="Send to B">➡ B</button>
+            <button class="lcs-action-btn" data-action="send" data-target="C" title="Send to C">➡ C</button>
+          </div>
+        </div>
+        <div class="lcs-v-header lcs-lane" data-process="B" style="--lane-color: var(--lcs-blue)">
+          <div style="display: flex; align-items: center; gap: 0.35rem;">
+            <span class="lcs-lane-dot"></span>
+            <span class="lcs-lane-name">Process B</span>
+          </div>
+          <div class="lcs-sandbox-actions">
+            <button class="lcs-action-btn" data-action="local" title="Add local event">+</button>
+            <button class="lcs-action-btn" data-action="send" data-target="A" title="Send to A">➡ A</button>
+            <button class="lcs-action-btn" data-action="send" data-target="C" title="Send to C">➡ C</button>
+          </div>
+        </div>
+        <div class="lcs-v-header lcs-lane" data-process="C" style="--lane-color: var(--lcs-green)">
+          <div style="display: flex; align-items: center; gap: 0.35rem;">
+            <span class="lcs-lane-dot"></span>
+            <span class="lcs-lane-name">Process C</span>
+          </div>
+          <div class="lcs-sandbox-actions">
+            <button class="lcs-action-btn" data-action="local" title="Add local event">+</button>
+            <button class="lcs-action-btn" data-action="send" data-target="A" title="Send to A">➡ A</button>
+            <button class="lcs-action-btn" data-action="send" data-target="B" title="Send to B">➡ B</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Vertical Lanes Canvas */}
+      <div class="lcs-timeline-canvas" id="lcs-timeline-canvas">
+        <svg class="lcs-svg-overlay" id="lcs-svg-overlay"></svg>
+        
+        {/* Process A Timeline Column */}
+        <div class="lcs-v-column" data-process="A" style="--lane-color: var(--lcs-violet)">
+          <div class="lcs-v-line" style="--lane-color: var(--lcs-violet)"></div>
+          <div class="lcs-v-timeline" id="lcs-timeline-A"></div>
+        </div>
+
+        {/* Process B Timeline Column */}
+        <div class="lcs-v-column" data-process="B" style="--lane-color: var(--lcs-blue)">
+          <div class="lcs-v-line" style="--lane-color: var(--lcs-blue)"></div>
+          <div class="lcs-v-timeline" id="lcs-timeline-B"></div>
+        </div>
+
+        {/* Process C Timeline Column */}
+        <div class="lcs-v-column" data-process="C" style="--lane-color: var(--lcs-green)">
+          <div class="lcs-v-line" style="--lane-color: var(--lcs-green)"></div>
+          <div class="lcs-v-timeline" id="lcs-timeline-C"></div>
+        </div>
+      </div>
+    </div>
+
+    {/* ===== CONFLICT INSPECTOR ===== */}
+    <div class="lcs-inspector">
+      <div class="lcs-inspector-header">
+        <span class="lcs-inspector-tag">Inspector</span>
+        <h4 class="lcs-inspector-title">Event Conflict Analyzer</h4>
+        <button class="lcs-reset-sandbox-btn" id="lcs-reset-sandbox" style="display: none;">Reset Sandbox</button>
+      </div>
+      
+      <div class="lcs-inspector-content" id="lcs-inspector-content">
+        <div class="lcs-inspector-placeholder">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>Select any two event nodes on the timelines to evaluate their causal relationship.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  :root {
+    --lcs-violet: #a78bfa;
+    --lcs-blue: #60a5fa;
+    --lcs-green: #34d399;
+    --lcs-red: #f87171;
+    --lcs-amber: #fbbf24;
+    --lcs-bg: var(--sl-color-gray-6, #1e1e2e);
+    --lcs-surface: var(--sl-color-gray-5, #313244);
+    --lcs-border: var(--sl-color-gray-5, #313244);
+    --lcs-text: var(--sl-color-gray-1, #cdd6f4);
+    --lcs-dim: var(--sl-color-gray-3, #6c7086);
+    --lcs-accent: var(--sl-color-accent, #89b4fa);
+  }
+
+  .lcs {
+    border: 1px solid var(--lcs-border);
+    border-radius: 12px;
+    background: var(--lcs-bg);
+    margin: 1.5rem 0;
+    overflow: hidden;
+    color: var(--lcs-text);
+    font-family: var(--sl-font-system, sans-serif);
+  }
+
+  .lcs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--lcs-border);
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .lcs-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 0.15rem 0 !important;
+    color: var(--lcs-text);
+  }
+
+  .lcs-subtitle {
+    font-size: 0.78rem;
+    color: var(--lcs-dim);
+    display: block;
+  }
+
+  .lcs-controls {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .lcs-btn-group {
+    display: flex;
+    background: var(--lcs-surface);
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid var(--lcs-border);
+  }
+
+  .lcs-btn {
+    background: transparent;
+    border: none;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--lcs-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .lcs-btn.active {
+    background: var(--lcs-bg);
+    color: var(--lcs-text);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .lcs-body {
+    padding: 1.25rem;
+  }
+
+  /* ===== Guided Walkthrough Panel ===== */
+  .lcs-walkthrough {
+    background: var(--lcs-surface);
+    border: 1px solid var(--lcs-border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+    transition: all 0.3s ease;
+  }
+
+  .lcs-walkthrough-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+  }
+
+  .lcs-walkthrough-step {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--lcs-accent);
+  }
+
+  .lcs-walkthrough-btns {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .lcs-nav-btn {
+    background: var(--lcs-bg);
+    border: 1px solid var(--lcs-border);
+    color: var(--lcs-text);
+    padding: 0.25rem 0.55rem;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lcs-nav-btn:hover:not(:disabled) {
+    border-color: var(--lcs-accent);
+  }
+
+  .lcs-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  .lcs-card-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem 0 !important;
+    color: var(--lcs-text);
+  }
+
+  .lcs-card-text {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--lcs-dim);
+    margin: 0 !important;
+  }
+
+  /* ===== Simulator lanes ===== */
+  .lcs-timeline-container {
+    position: relative;
+    background: var(--sl-color-gray-7, #11111b);
+    border-radius: 8px;
+    border: 1px solid var(--lcs-border);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    min-width: 320px;
+  }
+
+  .lcs-timeline-headers {
+    position: relative;
+    height: 75px;
+    border-bottom: 1px solid var(--lcs-border);
+    background: var(--sl-color-gray-7, #11111b);
+    width: 100%;
+  }
+
+  .lcs-v-header {
+    position: absolute;
+    top: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transform: translateX(-50%);
+    z-index: 2;
+    white-space: nowrap;
+  }
+
+  .lcs-v-header:nth-child(1) { left: 20%; }
+  .lcs-v-header:nth-child(2) { left: 50%; }
+  .lcs-v-header:nth-child(3) { left: 80%; }
+
+  .lcs-lane-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--lane-color);
+    box-shadow: 0 0 6px var(--lane-color);
+  }
+
+  .lcs-lane-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--lcs-text);
+  }
+
+  .lcs-sandbox-actions {
+    display: none;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .lcs-action-btn {
+    background: var(--lcs-surface);
+    border: 1px solid var(--lcs-border);
+    color: var(--lcs-text);
+    padding: 0.15rem 0.4rem;
+    font-size: 0.58rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lcs-action-btn:hover {
+    background: var(--lane-color);
+    border-color: var(--lane-color);
+    color: #000;
+  }
+
+  .lcs-timeline-canvas {
+    position: relative;
+    height: 480px;
+    background: var(--sl-color-gray-7, #11111b);
+    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
+    transition: height 0.3s ease;
+  }
+
+  .lcs-svg-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  .lcs-v-column {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 0;
+  }
+
+  .lcs-v-column[data-process="A"] { left: 20%; }
+  .lcs-v-column[data-process="B"] { left: 50%; }
+  .lcs-v-column[data-process="C"] { left: 80%; }
+
+  .lcs-v-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: repeating-linear-gradient(180deg, var(--lane-color) 0px, var(--lane-color) 4px, transparent 4px, transparent 8px);
+    opacity: 0.35;
+    transform: translateX(-50%);
+    z-index: 1;
+  }
+
+  .lcs-v-timeline {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100%;
+    z-index: 3;
+  }
+
+  /* Nodes */
+  .lcs-node {
+    min-width: 60px;
+    width: auto;
+    padding: 0 0.75rem;
+    height: 24px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--lane-color) 12%, #1e1e2e);
+    border: 1.5px solid color-mix(in srgb, var(--lane-color) 45%, var(--lcs-border));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+    transform: translate(-50%, -50%);
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--lcs-text);
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .lcs-node:hover {
+    transform: translate(-50%, -50%) scale(1.08);
+    border-color: var(--lane-color);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--lane-color) 40%, transparent);
+    color: var(--lcs-text);
+  }
+
+  .lcs-node.lcs-node-current {
+    background: color-mix(in srgb, var(--lane-color) 20%, var(--lcs-surface));
+    border-color: var(--lane-color);
+    border-width: 2px !important;
+    box-shadow: 0 0 12px color-mix(in srgb, var(--lane-color) 50%, transparent);
+  }
+
+  .lcs-node.selected {
+    background: var(--lane-color) !important;
+    border-color: var(--lane-color) !important;
+    color: #000 !important;
+    box-shadow: 0 0 14px var(--lane-color) !important;
+    opacity: 1 !important;
+  }
+
+  .lcs-node.selected.concurrent-conflict {
+    background: var(--lcs-amber) !important;
+    border-color: var(--lcs-amber) !important;
+    color: #000 !important;
+    box-shadow: 0 0 14px var(--lcs-amber) !important;
+    opacity: 1 !important;
+  }
+
+  .lcs-node.selected .lcs-node-label {
+    color: #000 !important;
+  }
+
+  .lcs-node.path-highlighted {
+    border-color: var(--lcs-amber) !important;
+    box-shadow: 0 0 12px var(--lcs-amber) !important;
+    background: color-mix(in srgb, var(--lcs-amber) 15%, var(--lcs-surface)) !important;
+  }
+
+  .lcs-node.path-highlighted .lcs-node-label {
+    color: var(--lcs-amber) !important;
+  }
+
+  .lcs-msg-arrow.path-highlighted {
+    stroke: var(--lcs-amber) !important;
+    stroke-width: 3.5 !important;
+    stroke-dasharray: none !important;
+    filter: drop-shadow(0 0 4px var(--lcs-amber));
+  }
+
+  /* Node state color cues */
+  .lcs-node[data-type="send"] {
+    border-style: dashed;
+    border-color: var(--lane-color);
+  }
+
+  .lcs-node[data-type="receive"] {
+    border-width: 2px;
+    border-color: var(--lane-color);
+    background: color-mix(in srgb, var(--lane-color) 22%, #1e1e2e);
+  }
+
+  /* Node clock adjustments for high-fidelity rendering */
+  .lcs-node-clock {
+    font-size: 0.62rem;
+    opacity: 0.8;
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+
+  /* Future nodes and arrows ghosted opacity */
+  .lcs-node.lcs-node-future {
+    opacity: 0.22;
+    pointer-events: none;
+    box-shadow: none;
+    border-style: dotted !important;
+  }
+
+  .lcs-msg-arrow.lcs-arrow-future {
+    opacity: 0.08;
+    stroke-dasharray: 2 4 !important;
+  }
+
+  .lcs-mode-guided #lcs-timeline-canvas {
+    overflow-y: hidden;
+  }
+
+  /* ===== Inspector Panel ===== */
+  .lcs-inspector {
+    background: var(--lcs-surface);
+    border: 1px solid var(--lcs-border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem;
+    min-height: 90px;
+    transition: all 0.3s ease;
+  }
+
+  .lcs-inspector-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+  }
+
+  .lcs-inspector-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--lcs-accent) 15%, transparent);
+    color: var(--lcs-accent);
+  }
+
+  .lcs-inspector-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin: 0 !important;
+    color: var(--lcs-text);
+    flex: 1;
+  }
+
+  .lcs-reset-sandbox-btn {
+    background: transparent;
+    border: 1px solid var(--lcs-red);
+    color: var(--lcs-red);
+    padding: 0.2rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .lcs-reset-sandbox-btn:hover {
+    background: color-mix(in srgb, var(--lcs-red) 12%, transparent);
+  }
+
+  .lcs-inspector-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0;
+    font-size: 0.78rem;
+    color: var(--lcs-dim);
+    text-align: center;
+  }
+
+  .lcs-inspector-placeholder svg {
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  /* Comparison details styling */
+  .lcs-comparison {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .lcs-comp-cards {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .lcs-comp-card {
+    flex: 1;
+    background: var(--lcs-bg);
+    border: 1px solid var(--lcs-border);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    min-width: 0;
+  }
+
+  .lcs-comp-label {
+    font-size: 0.62rem;
+    color: var(--lcs-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .lcs-comp-name {
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .lcs-comp-clock {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--comp-color, var(--lcs-text));
+    margin-top: 0.25rem;
+    display: block;
+  }
+
+  .lcs-verdict-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    background: var(--lcs-bg);
+    border: 1px solid var(--lcs-border);
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .lcs-verdict-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .lcs-verdict-math {
+    font-family: var(--sl-font-mono, monospace);
+    font-size: 0.75rem;
+    color: var(--lcs-dim);
+  }
+
+  .lcs-verdict-desc {
+    font-size: 0.78rem;
+    color: var(--lcs-text);
+  }
+
+  .lcs-verdict-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .lcs-badge-causal {
+    background: color-mix(in srgb, var(--lcs-green) 15%, transparent);
+    color: var(--lcs-green);
+    border: 1px solid color-mix(in srgb, var(--lcs-green) 25%, transparent);
+  }
+
+  .lcs-badge-concurrent {
+    background: color-mix(in srgb, var(--lcs-amber) 15%, transparent);
+    color: var(--lcs-amber);
+    border: 1px solid color-mix(in srgb, var(--lcs-amber) 25%, transparent);
+  }
+
+  /* ===== Responsive adjustments ===== */
+  @media (max-width: 768px) {
+    .lcs-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .lcs-controls {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  @media (max-width: 580px) {
+    .lcs-comp-cards {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+</style>
+
+<script>
+  // Dynamic simulation engine
+  interface EventNode {
+    id: string;
+    process: 'A' | 'B' | 'C';
+    type: 'local' | 'send' | 'receive';
+    label: string; // Event label e.g. "a1"
+    xPos: number; // 0 to 100 representing horizontal percentage along the timeline
+    clocks: {
+      lamport: number;
+      vector: [number, number, number];
+    };
+    msgTarget?: 'A' | 'B' | 'C'; // target process if type === 'send'
+    msgLink?: string; // target node ID
+  }
+
+  // Preloaded Guided Scenario Events
+  const guidedEvents: EventNode[] = [
+    { id: 'a1', process: 'A', type: 'local', label: 'a1', xPos: 10, clocks: { lamport: 1, vector: [1, 0, 0] } },
+    { id: 'a2', process: 'A', type: 'send', label: 'a2', xPos: 34, clocks: { lamport: 2, vector: [2, 0, 0] }, msgTarget: 'B', msgLink: 'b2' },
+    { id: 'b1', process: 'B', type: 'local', label: 'b1', xPos: 22, clocks: { lamport: 1, vector: [0, 1, 0] } },
+    { id: 'b2', process: 'B', type: 'receive', label: 'b2', xPos: 48, clocks: { lamport: 3, vector: [2, 2, 0] } },
+    { id: 'b3', process: 'B', type: 'send', label: 'b3', xPos: 64, clocks: { lamport: 4, vector: [2, 3, 0] }, msgTarget: 'C', msgLink: 'c1' },
+    { id: 'c1', process: 'C', type: 'receive', label: 'c1', xPos: 79, clocks: { lamport: 5, vector: [2, 3, 1] } },
+    { id: 'c2', process: 'C', type: 'local', label: 'c2', xPos: 95, clocks: { lamport: 6, vector: [2, 3, 2] } },
+  ];
+
+  // Guided Walkthrough Steps Text
+  const guidedSteps = [
+    {
+      activeIds: ['a1'],
+      title: "Event a1 (Process A Local)",
+      text: "Process A performs local work. It increments its local logical counter A by 1. Vector clock reaches <b>[1, 0, 0]</b> (or <b>1</b> in Lamport)."
+    },
+    {
+      activeIds: ['a1', 'b1'],
+      title: "Event b1 (Process B Local)",
+      text: "Concurrently, Process B executes local event b1. It increments its B index. Clock: <b>[0, 1, 0]</b>. Note that Alice's a1 and Bob's b1 are independent; their vectors are incomparable, mathematically proving <b>a1 || b1</b>."
+    },
+    {
+      activeIds: ['a1', 'b1', 'a2'],
+      title: "Event a2 (Process A Send)",
+      text: "Process A executes a send event a2 to B. It increments its A index again. Current clock: <b>[2, 0, 0]</b>. The message carries this timestamp."
+    },
+    {
+      activeIds: ['a1', 'b1', 'a2', 'b2'],
+      title: "Event b2 (Process B Receive)",
+      text: "Process B receives the message from A. It max-merges its current vector <b>[0, 1, 0]</b> with the incoming <b>[2, 0, 0]</b> to get <b>[2, 1, 0]</b>, and then increments its B counter to yield <b>[2, 2, 0]</b>. The cause-and-effect relationship <b>a2 -> b2</b> is preserved."
+    },
+    {
+      activeIds: ['a1', 'b1', 'a2', 'b2', 'b3'],
+      title: "Event b3 (Process B Send)",
+      text: "Process B executes a send event b3 to C. It increments its B index. Current clock: <b>[2, 3, 0]</b>, which is attached to the outgoing packet."
+    },
+    {
+      activeIds: ['a1', 'b1', 'a2', 'b2', 'b3', 'c1'],
+      title: "Event c1 (Process C Receive)",
+      text: "Process C receives the packet from B. It max-merges its vector <b>[0, 0, 0]</b> with the incoming <b>[2, 3, 0]</b> to get <b>[2, 3, 0]</b>, and increments its C index to yield <b>[2, 3, 1]</b>. Now C knows the full history of A and B up to this point."
+    },
+    {
+      activeIds: ['a1', 'b1', 'a2', 'b2', 'b3', 'c1', 'c2'],
+      title: "Event c2 (Process C Local)",
+      text: "Process C executes local event c2. It increments its C counter. Clock: <b>[2, 3, 2]</b>. By transitivity, since <b>a2 -> b2</b> and <b>b3 -> c1</b>, we can mathematically confirm <b>a2 -> c2</b>."
+    }
+  ];
+
+  function initLogicalClockSimulator() {
+    const root = document.querySelector<HTMLElement>("#logical-clock-simulator");
+    if (!root || root.dataset.lcsBooted === "true") return;
+    root.dataset.lcsBooted = "true";
+    const rootEl = root;
+
+    // Elements
+    const timelineCanvas = root.querySelector<HTMLElement>("#lcs-timeline-canvas")!;
+    const svgOverlay = root.querySelector<SVGSVGElement>("#lcs-svg-overlay")!;
+    const timelines = {
+      A: root.querySelector<HTMLElement>("#lcs-timeline-A")!,
+      B: root.querySelector<HTMLElement>("#lcs-timeline-B")!,
+      C: root.querySelector<HTMLElement>("#lcs-timeline-C")!,
+    };
+
+    // Controls
+    const modeBtns = root.querySelectorAll<HTMLButtonElement>("[data-lcs-mode]");
+    const setupBtns = root.querySelectorAll<HTMLButtonElement>("[data-lcs-setup]");
+    const walkthroughPanel = root.querySelector<HTMLElement>("#lcs-walkthrough-panel")!;
+    const stepIndicator = root.querySelector<HTMLElement>("#lcs-step-indicator")!;
+    const prevBtn = root.querySelector<HTMLButtonElement>("#lcs-prev-btn")!;
+    const nextBtn = root.querySelector<HTMLButtonElement>("#lcs-next-btn")!;
+    const cardTitle = root.querySelector<HTMLElement>("#lcs-card-title")!;
+    const cardText = root.querySelector<HTMLElement>("#lcs-card-text")!;
+    const resetSandboxBtn = root.querySelector<HTMLButtonElement>("#lcs-reset-sandbox")!;
+    const inspectorContent = root.querySelector<HTMLElement>("#lcs-inspector-content")!;
+    
+    // Sandbox Elements
+    const sandboxControls = root.querySelectorAll<HTMLElement>(".lcs-sandbox-actions");
+    const actionBtns = root.querySelectorAll<HTMLButtonElement>(".lcs-action-btn");
+
+    // Set initial classes on rootEl
+    rootEl.classList.add('lcs-mode-guided');
+    rootEl.classList.remove('lcs-mode-sandbox');
+
+    // Interactive State
+    let clockMode: 'vector' | 'lamport' = 'vector';
+    let setupMode: 'guided' | 'sandbox' = 'guided';
+    let currentStep = 0;
+    
+    // Active events list (can be sandbox or guided)
+    let events: EventNode[] = [...guidedEvents];
+    let selectedNodes: string[] = [];
+
+    // Sandbox clock counters
+    let sandboxClocks: Record<'A'|'B'|'C', [number, number, number]> = {
+      A: [0, 0, 0],
+      B: [0, 0, 0],
+      C: [0, 0, 0]
+    };
+    let sandboxLocalCount = 0;
+
+    function getSortedProcessEvents(process: 'A' | 'B' | 'C') {
+      return events.filter(e => e.process === process).sort((a,b) => {
+        if (setupMode === 'guided') return a.xPos - b.xPos;
+        return events.indexOf(a) - events.indexOf(b);
+      });
+    }
+
+    function findCausalPath(startId: string, endId: string): string[] | null {
+      const path: string[] = [];
+      const visited = new Set<string>();
+
+      function dfs(currId: string): boolean {
+        path.push(currId);
+        visited.add(currId);
+
+        if (currId === endId) return true;
+
+        const curr = events.find(x => x.id === currId);
+        if (!curr) {
+          path.pop();
+          return false;
+        }
+        
+        // Successors:
+        // 1. Next event on the same process
+        const procEvents = getSortedProcessEvents(curr.process);
+        const idx = procEvents.findIndex(x => x.id === currId);
+        const nextLocal = idx !== -1 && idx < procEvents.length - 1 ? procEvents[idx + 1] : null;
+
+        // 2. Message link if send
+        const nextMsg = curr.type === 'send' && curr.msgLink ? events.find(x => x.id === curr.msgLink) : null;
+
+        const neighbors = [nextLocal, nextMsg].filter((x): x is EventNode => !!x);
+
+        for (const n of neighbors) {
+          if (!visited.has(n.id)) {
+            if (dfs(n.id)) return true;
+          }
+        }
+
+        path.pop();
+        return false;
+      }
+
+      if (dfs(startId)) return path;
+      return null;
+    }
+
+    // Initialize/Render Timelines
+    function render() {
+      // Clear timelines
+      timelines.A.innerHTML = '';
+      timelines.B.innerHTML = '';
+      timelines.C.innerHTML = '';
+
+      // Clear SVG overlay
+      svgOverlay.innerHTML = '';
+
+      const canvasHeight = 480;
+
+      // Determine active events to render
+      let activeEvents = events;
+      let guidedActiveIds: string[] = [];
+      if (setupMode === 'guided') {
+        guidedActiveIds = guidedSteps[currentStep].activeIds;
+      }
+
+      // Check if we have an active causal path to highlight
+      let activeCausalPath: string[] | null = null;
+      let isConcurrentComparison = false;
+      if (selectedNodes.length === 2) {
+        activeCausalPath = findCausalPath(selectedNodes[0], selectedNodes[1]);
+        if (!activeCausalPath) {
+          activeCausalPath = findCausalPath(selectedNodes[1], selectedNodes[0]);
+        }
+        if (!activeCausalPath) {
+          isConcurrentComparison = true;
+        }
+      }
+
+      // Set dynamic canvas height and positions
+      if (setupMode === 'guided') {
+        timelineCanvas.style.height = `${canvasHeight}px`;
+      } else {
+        const eventSpacing = 50;
+        const topOffset = 30;
+        const totalHeight = Math.max(canvasHeight, topOffset + events.length * eventSpacing + 40);
+        timelineCanvas.style.height = `${totalHeight}px`;
+      }
+
+      // Render Nodes
+      activeEvents.forEach((e) => {
+        const node = document.createElement('div');
+        node.className = 'lcs-node';
+        node.id = `lcs-node-${e.id}`;
+        node.dataset.id = e.id;
+        node.dataset.type = e.type;
+        node.style.setProperty('--lane-color', getProcessColor(e.process));
+
+        // Position nodes vertically
+        if (setupMode === 'guided') {
+          const topOffset = 25;
+          const usableHeight = canvasHeight - 50;
+          const topPos = topOffset + (e.xPos / 100) * usableHeight;
+          node.style.top = `${topPos}px`;
+        } else {
+          // Sandbox chronological vertical index
+          const eventIndex = events.indexOf(e);
+          const topOffset = 30;
+          const eventSpacing = 50;
+          const topPos = topOffset + eventIndex * eventSpacing;
+          node.style.top = `${topPos}px`;
+        }
+
+        // Create label span (e.g. a1)
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'lcs-node-label';
+        labelSpan.textContent = e.label;
+        labelSpan.style.color = getProcessColor(e.process);
+        labelSpan.style.fontWeight = '800';
+        labelSpan.style.marginRight = '0.35rem';
+        node.appendChild(labelSpan);
+
+        // Create clock span
+        const clockSpan = document.createElement('span');
+        clockSpan.className = 'lcs-node-clock';
+        if (clockMode === 'vector') {
+          clockSpan.textContent = `[${e.clocks.vector.join(',')}]`;
+        } else {
+          clockSpan.textContent = e.clocks.lamport.toString();
+        }
+        node.appendChild(clockSpan);
+
+        // Highlight/Selection states
+        if (selectedNodes.includes(e.id)) {
+          node.classList.add('selected');
+          if (isConcurrentComparison) {
+            node.classList.add('concurrent-conflict');
+          }
+        }
+        
+        if (activeCausalPath && activeCausalPath.includes(e.id)) {
+          node.classList.add('path-highlighted');
+        }
+        
+        if (setupMode === 'guided' && guidedSteps[currentStep].activeIds.slice(-1)[0] === e.id) {
+          node.classList.add('lcs-node-current');
+        }
+
+        if (setupMode === 'guided' && !guidedActiveIds.includes(e.id)) {
+          node.classList.add('lcs-node-future');
+        }
+
+        // Attach click listeners for conflict inspector
+        node.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          handleNodeClick(e.id);
+        });
+
+        timelines[e.process].appendChild(node);
+      });
+
+      // Render SVG Message Arrows and Horizontal Step Grid Lines
+      // Need to defer rendering slightly so node positions are committed to DOM
+      setTimeout(() => {
+        svgOverlay.setAttribute('width', timelineCanvas.scrollWidth.toString());
+        svgOverlay.setAttribute('height', timelineCanvas.scrollHeight.toString());
+
+        // Draw horizontal chronological step lines in Guided Mode
+        if (setupMode === 'guided') {
+          activeEvents.forEach((e) => {
+            const nodeEl = rootEl.querySelector<HTMLElement>(`#lcs-node-${e.id}`);
+            if (nodeEl) {
+              const nodeRect = nodeEl.getBoundingClientRect();
+              const containerRect = timelineCanvas.getBoundingClientRect();
+              const y = nodeRect.top - containerRect.top + timelineCanvas.scrollTop + (nodeRect.height / 2);
+              const isFutureNode = setupMode === 'guided' && !guidedActiveIds.includes(e.id);
+
+              // 1. Draw horizontal grid line
+              const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+              line.setAttribute('x1', '5%');
+              line.setAttribute('y1', y.toString());
+              line.setAttribute('x2', '95%');
+              line.setAttribute('y2', y.toString());
+              line.setAttribute('stroke', 'var(--lcs-border)');
+              line.setAttribute('stroke-width', '1');
+              line.setAttribute('stroke-dasharray', '2 4');
+              line.setAttribute('opacity', isFutureNode ? '0.1' : '0.45');
+              svgOverlay.appendChild(line);
+
+              // 2. Draw step text label near the left margin
+              const stepIndex = guidedEvents.findIndex(x => x.id === e.id);
+              if (stepIndex !== -1) {
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', '4%');
+                text.setAttribute('y', (y + 4).toString());
+                text.setAttribute('fill', 'var(--lcs-dim)');
+                text.setAttribute('opacity', isFutureNode ? '0.15' : '1');
+                text.setAttribute('font-size', '0.58rem');
+                text.setAttribute('font-family', 'var(--sl-font-system, sans-serif)');
+                text.setAttribute('font-weight', '700');
+                text.setAttribute('text-anchor', 'end');
+                text.textContent = `t${stepIndex + 1}`;
+                svgOverlay.appendChild(text);
+              }
+            }
+          });
+        }
+
+        activeEvents.forEach((e) => {
+          if (e.type === 'send' && e.msgTarget && e.msgLink) {
+            const targetNode = activeEvents.find(t => t.id === e.msgLink);
+            if (!targetNode) return;
+
+            const sendEl = rootEl.querySelector<HTMLElement>(`#lcs-node-${e.id}`);
+            const recvEl = rootEl.querySelector<HTMLElement>(`#lcs-node-${targetNode.id}`);
+
+            if (sendEl && recvEl) {
+              const sendRect = sendEl.getBoundingClientRect();
+              const recvRect = recvEl.getBoundingClientRect();
+              const containerRect = timelineCanvas.getBoundingClientRect();
+
+              // Calculate positions relative to the scrollable container
+              const x1 = sendRect.left - containerRect.left + timelineCanvas.scrollLeft + (sendRect.width / 2);
+              const y1 = sendRect.top - containerRect.top + timelineCanvas.scrollTop + (sendRect.height / 2);
+              const x2 = recvRect.left - containerRect.left + timelineCanvas.scrollLeft + (recvRect.width / 2);
+              const y2 = recvRect.top - containerRect.top + timelineCanvas.scrollTop + (recvRect.height / 2);
+
+              // Shorten path endpoints so the arrowhead marker sits elegantly outside the target node pill
+              const dx = x2 - x1;
+              const isLeftToRight = dx > 0;
+              const startOffset = isLeftToRight ? 38 : -38;
+              const endOffset = isLeftToRight ? -45 : 45; // Pull back end of line by 45px to allow arrowhead depth
+
+              const x1_adj = x1 + startOffset;
+              const x2_adj = x2 + endOffset;
+
+              // Draw Arrow Path (with smooth curve or direct diagonal line)
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              
+              // Arrow curve offset (beautiful horizontal-entry S-curve using adjusted endpoints)
+              const dy = y2 - y1;
+              const cx1 = x1_adj + dx * 0.35;
+              const cy1 = y1 + dy * 0.15;
+              const cx2 = x2_adj - dx * 0.35;
+              const cy2 = y2 - dy * 0.15;
+
+              path.setAttribute('d', `M ${x1_adj} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2_adj} ${y2}`);
+              path.setAttribute('stroke', getProcessColor(e.process));
+              path.setAttribute('stroke-width', '2');
+              path.setAttribute('fill', 'none');
+              path.setAttribute('stroke-dasharray', '4 2');
+              
+              const isFutureArrow = setupMode === 'guided' && (!guidedActiveIds.includes(e.id) || !guidedActiveIds.includes(targetNode.id));
+
+              // Animated flow markers
+              path.classList.add('lcs-msg-arrow');
+
+              // Highlight if part of the causal path
+              let isPathArrow = false;
+              if (activeCausalPath) {
+                const idx1 = activeCausalPath.indexOf(e.id);
+                const idx2 = activeCausalPath.indexOf(targetNode.id);
+                if (idx1 !== -1 && idx2 !== -1 && idx2 === idx1 + 1) {
+                  isPathArrow = true;
+                }
+              }
+
+              if (isPathArrow) {
+                path.classList.add('path-highlighted');
+              } else if (isFutureArrow) {
+                path.classList.add('lcs-arrow-future');
+              }
+
+              // Arrow marker (head)
+              const markerId = isPathArrow ? `lcs-marker-amber` : (isFutureArrow ? `lcs-marker-future` : `lcs-marker-${e.id}`);
+              const defs = svgOverlay.querySelector('defs') || document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+              if (!svgOverlay.querySelector('defs')) svgOverlay.appendChild(defs);
+
+              if (!svgOverlay.querySelector(`#${markerId}`)) {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+                marker.setAttribute('id', markerId);
+                marker.setAttribute('viewBox', '0 0 10 10');
+                marker.setAttribute('refX', '8');
+                marker.setAttribute('refY', '5');
+                marker.setAttribute('markerWidth', '6');
+                marker.setAttribute('markerHeight', '6');
+                marker.setAttribute('orient', 'auto');
+                
+                const arrowHead = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                arrowHead.setAttribute('d', 'M 0 1 L 10 5 L 0 9 z');
+                arrowHead.setAttribute('fill', isPathArrow ? 'var(--lcs-amber)' : (isFutureArrow ? 'var(--lcs-border)' : getProcessColor(e.process)));
+                
+                marker.appendChild(arrowHead);
+                defs.appendChild(marker);
+              }
+
+              path.setAttribute('marker-end', `url(#${markerId})`);
+              svgOverlay.appendChild(path);
+            }
+          }
+        });
+      }, 50);
+    }
+
+    function getProcessColor(p: 'A' | 'B' | 'C'): string {
+      if (p === 'A') return 'var(--lcs-violet)';
+      if (p === 'B') return 'var(--lcs-blue)';
+      return 'var(--lcs-green)';
+    }
+
+    // Node click handler (Conflict Inspector)
+    function handleNodeClick(id: string) {
+      if (setupMode === 'guided') {
+        const activeIds = guidedSteps[currentStep].activeIds;
+        if (!activeIds.includes(id)) return; // Don't allow clicking future events
+      }
+
+      if (selectedNodes.includes(id)) {
+        selectedNodes = selectedNodes.filter(x => x !== id);
+      } else {
+        if (selectedNodes.length >= 2) {
+          selectedNodes = [selectedNodes[1], id];
+        } else {
+          selectedNodes.push(id);
+        }
+      }
+      render();
+      updateInspector();
+    }
+
+    // Conflict Inspector Logic
+    function updateInspector() {
+      if (selectedNodes.length === 0) {
+        inspectorContent.innerHTML = `
+          <div class="lcs-inspector-placeholder">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <span>Select any two event nodes on the timelines to evaluate their causal relationship.</span>
+          </div>`;
+        return;
+      }
+
+      if (selectedNodes.length === 1) {
+        const e1 = events.find(x => x.id === selectedNodes[0])!;
+        const cText = clockMode === 'vector' ? `[${e1.clocks.vector.join(',')}]` : e1.clocks.lamport;
+        inspectorContent.innerHTML = `
+          <div class="lcs-inspector-placeholder">
+            <div class="lcs-comp-card" style="--comp-color: ${getProcessColor(e1.process)}; text-align: left; width: 100%;">
+              <span class="lcs-comp-label">Event 1 Selected</span>
+              <div class="lcs-comp-name">
+                <span class="lcs-lane-dot" style="background: ${getProcessColor(e1.process)}"></span>
+                <span>Process ${e1.process} Event ${e1.label}</span>
+              </div>
+              <code class="lcs-comp-clock">${cText}</code>
+            </div>
+            <span class="lcs-dim" style="font-size: 0.72rem; margin-left: 1rem;">Click a second node to compare and analyze relationships...</span>
+          </div>`;
+        return;
+      }
+
+      // Two nodes selected
+      const e1 = events.find(x => x.id === selectedNodes[0])!;
+      const e2 = events.find(x => x.id === selectedNodes[1])!;
+
+      const isVector = clockMode === 'vector';
+      const c1Text = isVector ? `[${e1.clocks.vector.join(',')}]` : e1.clocks.lamport;
+      const c2Text = isVector ? `[${e2.clocks.vector.join(',')}]` : e2.clocks.lamport;
+
+      let mathText = '';
+      let verdictDesc = '';
+      let verdictBadge = '';
+
+      if (isVector) {
+        const v1 = e1.clocks.vector;
+        const v2 = e2.clocks.vector;
+
+        // V1 <= V2 checks
+        let v1_le_v2 = true;
+        let v1_lt_v2 = false;
+        for (let i = 0; i < 3; i++) {
+          if (v1[i] > v2[i]) v1_le_v2 = false;
+          if (v1[i] < v2[i]) v1_lt_v2 = true;
+        }
+        const v1_strictly_less = v1_le_v2 && v1_lt_v2;
+
+        // V2 <= V1 checks
+        let v2_le_v1 = true;
+        let v2_lt_v1 = false;
+        for (let i = 0; i < 3; i++) {
+          if (v2[i] > v1[i]) v2_le_v1 = false;
+          if (v2[i] < v1[i]) v2_lt_v1 = true;
+        }
+        const v2_strictly_less = v2_le_v1 && v2_lt_v1;
+
+        if (v1_strictly_less) {
+          mathText = `V(${e1.label}) ≤ V(${e2.label}) &nbsp;⇒&nbsp; [${v1.join(',')}] ≤ [${v2.join(',')}] &nbsp;(TRUE)`;
+          verdictDesc = `Event ${e1.label} causally preceded ${e2.label} (<b>${e1.label} → ${e2.label}</b>). Information from ${e1.label} successfully flowed to ${e2.label}.`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-causal">Causal: ${e1.label} → ${e2.label}</span>`;
+        } else if (v2_strictly_less) {
+          mathText = `V(${e2.label}) ≤ V(${e1.label}) &nbsp;⇒&nbsp; [${v2.join(',')}] ≤ [${v1.join(',')}] &nbsp;(TRUE)`;
+          verdictDesc = `Event ${e2.label} causally preceded ${e1.label} (<b>${e2.label} → ${e1.label}</b>). Information from ${e2.label} successfully flowed to ${e1.label}.`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-causal">Causal: ${e2.label} → ${e1.label}</span>`;
+        } else {
+          mathText = `V(${e1.label}) ≰ V(${e2.label}) &nbsp;AND&nbsp; V(${e2.label}) ≰ V(${e1.label}) &nbsp;(FALSE)`;
+          verdictDesc = `Events ${e1.label} and ${e2.label} are concurrent (<b>${e1.label} || ${e2.label}</b>). Neither could influence the other; they are completely independent. In distributed databases, this represents a write conflict!`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-concurrent">Concurrent: ${e1.label} || ${e2.label}</span>`;
+        }
+      } else {
+        // Lamport logical clocks
+        const l1 = e1.clocks.lamport;
+        const l2 = e2.clocks.lamport;
+
+        mathText = `Clock(${e1.label}) = ${l1}, Clock(${e2.label}) = ${l2}`;
+        if (l1 < l2) {
+          verdictDesc = `Because Clock(${e1.label}) &lt; Clock(${e2.label}), we order them as <b>${e1.label} &lt; ${e2.label}</b>. <i>Warning: Lamport Clocks alone CANNOT guarantee this was causal! They could be concurrent.</i>`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-causal">Ordered: ${e1.label} &lt; ${e2.label}</span>`;
+        } else if (l2 < l1) {
+          verdictDesc = `Because Clock(${e2.label}) &lt; Clock(${e1.label}), we order them as <b>${e2.label} &lt; ${e1.label}</b>. <i>Warning: Lamport Clocks alone CANNOT guarantee this was causal! They could be concurrent.</i>`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-causal">Ordered: ${e2.label} &lt; ${e1.label}</span>`;
+        } else {
+          verdictDesc = `Both events have equal Lamport timestamps (${l1}). Processes tie-break using their IDs (e.g. A &lt; B &lt; C) to force a total order, even though they are causally concurrent.`;
+          verdictBadge = `<span class="lcs-verdict-badge lcs-badge-concurrent">Tie-breaker required</span>`;
+        }
+      }
+
+      inspectorContent.innerHTML = `
+        <div class="lcs-comparison">
+          <div class="lcs-comp-cards">
+            <div class="lcs-comp-card" style="--comp-color: ${getProcessColor(e1.process)}">
+              <span class="lcs-comp-label">Event 1</span>
+              <div class="lcs-comp-name">
+                <span class="lcs-lane-dot" style="background: ${getProcessColor(e1.process)}"></span>
+                <span>Process ${e1.process} Event ${e1.label}</span>
+              </div>
+              <code class="lcs-comp-clock">${c1Text}</code>
+            </div>
+            <div class="lcs-comp-card" style="--comp-color: ${getProcessColor(e2.process)}">
+              <span class="lcs-comp-label">Event 2</span>
+              <div class="lcs-comp-name">
+                <span class="lcs-lane-dot" style="background: ${getProcessColor(e2.process)}"></span>
+                <span>Process ${e2.process} Event ${e2.label}</span>
+              </div>
+              <code class="lcs-comp-clock">${c2Text}</code>
+            </div>
+          </div>
+          
+          <div class="lcs-verdict-card">
+            <div class="lcs-verdict-left">
+              <div class="lcs-verdict-math">${mathText}</div>
+              <div class="lcs-verdict-desc">${verdictDesc}</div>
+            </div>
+            ${verdictBadge}
+          </div>
+        </div>`;
+    }
+
+    // Toggle Modes (Vector vs Lamport)
+    modeBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        clockMode = btn.dataset.lcsMode as any;
+        render();
+        updateInspector();
+      });
+    });
+
+    // Toggle Setups (Guided vs Sandbox)
+    setupBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        setupBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        setupMode = btn.dataset.lcsSetup as any;
+        
+        selectedNodes = [];
+        
+        if (setupMode === 'guided') {
+          rootEl.classList.add('lcs-mode-guided');
+          rootEl.classList.remove('lcs-mode-sandbox');
+          events = [...guidedEvents];
+          currentStep = 0;
+          walkthroughPanel.style.display = 'block';
+          sandboxControls.forEach(el => (el.style.display = 'none'));
+          resetSandboxBtn.style.display = 'none';
+          updateWalkthrough();
+        } else {
+          rootEl.classList.add('lcs-mode-sandbox');
+          rootEl.classList.remove('lcs-mode-guided');
+          // Initialize Sandbox Clocks
+          events = [];
+          sandboxClocks = { A: [0, 0, 0], B: [0, 0, 0], C: [0, 0, 0] };
+          sandboxLocalCount = 0;
+          
+          walkthroughPanel.style.display = 'none';
+          sandboxControls.forEach(el => (el.style.display = 'flex'));
+          resetSandboxBtn.style.display = 'inline-block';
+        }
+        
+        render();
+        updateInspector();
+      });
+    });
+
+    // Guided walkthrough steps navigation
+    function updateWalkthrough() {
+      const step = guidedSteps[currentStep];
+      stepIndicator.textContent = `Step ${currentStep + 1} of ${guidedSteps.length}`;
+      cardTitle.textContent = step.title;
+      cardText.innerHTML = step.text;
+
+      prevBtn.disabled = currentStep === 0;
+      nextBtn.disabled = currentStep === guidedSteps.length - 1;
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentStep > 0) {
+        currentStep--;
+        selectedNodes = [];
+        updateWalkthrough();
+        render();
+        updateInspector();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentStep < guidedSteps.length - 1) {
+        currentStep++;
+        selectedNodes = [];
+        updateWalkthrough();
+        render();
+        updateInspector();
+      }
+    });
+
+    // Sandbox Simulator Mechanics
+    function addSandboxEvent(process: 'A' | 'B' | 'C', type: 'local' | 'send' | 'receive', incomingClock?: { lamport: number; vector: [number, number, number] }, label?: string, target?: 'A' | 'B' | 'C', linkedId?: string) {
+      const pIdx = process === 'A' ? 0 : process === 'B' ? 1 : 2;
+      let vector = [...sandboxClocks[process]] as [number, number, number];
+
+      // Clock Increment rules
+      if (type === 'local' || type === 'send') {
+        vector[pIdx]++;
+      } else if (type === 'receive' && incomingClock) {
+        // max-merge vectors
+        for (let i = 0; i < 3; i++) {
+          vector[i] = Math.max(vector[i], incomingClock.vector[i]);
+        }
+        // increment process's own counter
+        vector[pIdx]++;
+      }
+
+      // Max Lamport clock increment
+      let maxLamport = 0;
+      events.filter(e => e.process === process).forEach(e => {
+        if (e.clocks.lamport > maxLamport) maxLamport = e.clocks.lamport;
+      });
+
+      let nextLamport = maxLamport + 1;
+      if (type === 'receive' && incomingClock) {
+        nextLamport = Math.max(nextLamport, incomingClock.lamport) + 1;
+      }
+
+      // Commit clock update
+      sandboxClocks[process] = vector;
+
+      // Position events sequentially horizontally based on global chronological order
+      const processEvents = events.filter(e => e.process === process);
+      const xPos = 12 + events.length * 15;
+
+      sandboxLocalCount++;
+      const eventId = `sb_${process}_${sandboxLocalCount}`;
+      const evLabel = label || `${process.toLowerCase()}${processEvents.length + 1}`;
+
+      const newEv: EventNode = {
+        id: eventId,
+        process,
+        type,
+        label: evLabel,
+        xPos,
+        clocks: {
+          lamport: nextLamport,
+          vector
+        }
+      };
+
+      if (type === 'send' && target) {
+        newEv.msgTarget = target;
+        newEv.msgLink = linkedId;
+      }
+
+      events.push(newEv);
+      return newEv;
+    }
+
+    actionBtns.forEach((btn) => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const process = btn.closest<HTMLElement>(".lcs-lane")!.dataset.process as 'A' | 'B' | 'C';
+        const action = btn.dataset.action as 'local' | 'send';
+        
+        if (action === 'local') {
+          addSandboxEvent(process, 'local');
+        } else if (action === 'send') {
+          const target = btn.dataset.target as 'A' | 'B' | 'C';
+          
+          // 1. Spawning send node
+          const sendNode = addSandboxEvent(process, 'send', undefined, undefined, target);
+          
+          // 2. Spawning target receive node
+          const recvNode = addSandboxEvent(target, 'receive', { lamport: sendNode.clocks.lamport, vector: sendNode.clocks.vector });
+          
+          // Connect links
+          sendNode.msgLink = recvNode.id;
+        }
+
+        render();
+        updateInspector();
+      });
+    });
+
+    // Reset Sandbox
+    resetSandboxBtn.addEventListener('click', () => {
+      events = [];
+      sandboxClocks = { A: [0, 0, 0], B: [0, 0, 0], C: [0, 0, 0] };
+      sandboxLocalCount = 0;
+      selectedNodes = [];
+      render();
+      updateInspector();
+    });
+
+    // Handle initial sizing and resize
+    window.addEventListener('resize', render);
+
+    // Initial setup trigger
+    render();
+    updateWalkthrough();
+  }
+
+  // Load and bootstrap on lifecycle triggers
+  initLogicalClockSimulator();
+  document.addEventListener("astro:page-load", initLogicalClockSimulator);
+</script>
