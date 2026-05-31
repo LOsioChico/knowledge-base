@@ -67,19 +67,29 @@ Before committing to complex distributed database architectures, engineers must 
 
 Table partitioning (modeled on standard database scaling paths, see [source](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
 
-```
-       Monolithic Table                             Partitioned Table
-┌─────────────────────────────┐              ┌─────────────────────────────┐
-│  ID  │  Order Date  │ Amount│              │  orders_2023 (Partition 1)  │
-├──────┼──────────────┼───────┤              ├──────┼──────────────┼───────┤
-│  1   │  2023-05-12  │ $50   │              │  1   │  2023-05-12  │ $50   │
-│  2   │  2024-03-10  │ $120  │              └──────┴──────────────┴───────┘
-│  3   │  2024-07-22  │ $85   │              ┌─────────────────────────────┐
-│  4   │  2023-11-04  │ $30   │ ──────>     │  orders_2024 (Partition 2)  │
-└─────────────────────────────┘              ├──────┼──────────────┼───────┤
-                                             │  2   │  2024-03-10  │ $120  │
-                                             │  3   │  2024-07-22  │ $85   │
-                                             └──────┴──────────────┴───────┘
+```mermaid
+flowchart LR
+  subgraph Mono ["Monolithic Orders Table"]
+    direction TB
+    m1["ID: 1 | Date: 2023-05-12 | $50"]
+    m2["ID: 2 | Date: 2024-03-10 | $120"]
+    m3["ID: 3 | Date: 2024-07-22 | $85"]
+    m4["ID: 4 | Date: 2023-11-04 | $30"]
+  end
+
+  subgraph Partitioned ["Partitioned Orders Table"]
+    direction TB
+    subgraph P2023 ["orders_2023 (Partition 1)"]
+      p1["ID: 1 | Date: 2023-05-12 | $50"]
+      p4["ID: 4 | Date: 2023-11-04 | $30"]
+    end
+    subgraph P2024 ["orders_2024 (Partition 2)"]
+      p2["ID: 2 | Date: 2024-03-10 | $120"]
+      p3["ID: 3 | Date: 2024-07-22 | $85"]
+    end
+  end
+
+  Mono -->|Partition Engine| Partitioned
 ```
 
 The application interacts with the parent table as if it were a single table, but the database engine automatically routes records and prunes queries.
@@ -176,14 +186,16 @@ When a single server's compute power and disk space are fully exhausted, we must
 
 Sharding is horizontal partitioning **extended across physically separate database instances**. Each server (called a **shard**) is a fully independent database instance storing a unique slice of the logical dataset.
 
-```
-                  [Application Router Logic]
-                    /         |          \
-           user_id % 3 = 0  user_id % 3 = 1  user_id % 3 = 2
-                  /           |            \
-                 v            v             v
-            [Shard 0]     [Shard 1]     [Shard 2]
-           (db-server-0) (db-server-1) (db-server-2)
+```mermaid
+flowchart TD
+  App["Application Router Logic"]
+  S0["Shard 0 (db-server-0)"]
+  S1["Shard 1 (db-server-1)"]
+  S2["Shard 2 (db-server-2)"]
+
+  App -->|user_id % 3 == 0| S0
+  App -->|user_id % 3 == 1| S1
+  App -->|user_id % 3 == 2| S2
 ```
 
 ### The Sharding Components
@@ -208,17 +220,16 @@ A central configuration database or dynamic coordination manager (like ZooKeeper
 
 For read-heavy applications, scaling the primary database involves setting up **Read Replicas** (Master-Slave Replication). All database writes are committed to the **Master** node, which replicates updates to one or more read-only **Slave** nodes.
 
-```
-                          [Writes]
-                             |
-                             v
-                        [Master DB]
-                       /     |     \
-         [Replication] /      |      \ [Replication]
-                     v       v       v
-                  [Slave] [Slave] [Slave]
-                     |       |       |
-                     +─── [Reads] ───+
+```mermaid
+flowchart TD
+  Writes["Write Requests"] --> Master["Master DB"]
+  Master -->|Asynchronous Replication| Slave0["Slave Replica 0"]
+  Master -->|Asynchronous Replication| Slave1["Slave Replica 1"]
+  Master -->|Asynchronous Replication| Slave2["Slave Replica 2"]
+
+  Slave0 --> Reads["Read Requests"]
+  Slave1 --> Reads
+  Slave2 --> Reads
 ```
 
 Replication between nodes operates under three synchronicity models:
@@ -244,14 +255,21 @@ Under asynchronous replication, **replication lag** creates a common client-cent
 
 Imagine a user updating their bio on a profile page. The update commits on the Master DB successfully. When the page instantly refreshes, the client app reads the profile bio from a lagging read replica. The user observes their old bio, assuming the write was lost.
 
-```
-[Client] ─── 1. UpdateBio("Active") ───> [Master DB] (Success)
-   │
-   │ (Immediate Refresh)
-   v
-[Client] ─── 2. GetBio() ──────────────> [Read Replica] (Lags by 500ms)
-                                            │
-[Client] <── 3. Returns "Stale Bio" ────────┘ (Inconsistency!)
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Client as Client App
+  participant Master as Master DB
+  participant Replica as Lagging Read Replica
+
+  Client->>Master: UpdateBio("Active")
+  Note over Master: Write committed locally
+  Master-->>Client: Write Success
+
+  Note over Client: Immediate Page Refresh
+  Client->>Replica: GetBio()
+  Note over Replica: Lagging by 500ms...
+  Replica-->>Client: Returns "Stale Bio" (Inconsistency!)
 ```
 
 ### Mitigations

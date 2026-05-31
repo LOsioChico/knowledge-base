@@ -275,6 +275,7 @@ const systemDesignSidebar = [
   },
   { label: "Rate Limiting & Traffic Shaping", slug: "system-design/rate-limiting" },
   { label: "Consistent Hashing", slug: "system-design/consistent-hashing" },
+  { label: "Database Partitioning & Scaling", slug: "system-design/database-sharding-and-scaling" },
   { label: "Consistency Models", slug: "system-design/consistency-models" },
   { label: "Logical Clocks", slug: "system-design/logical-clocks" },
   { label: "Distributed Transactions & Saga Patterns", slug: "system-design/distributed-transactions" },
