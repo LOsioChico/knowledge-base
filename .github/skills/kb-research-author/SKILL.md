@@ -3,11 +3,18 @@ name: kb-research-author
 description: End-to-end workflow for researching a topic from external courses/docs, verifying every claim against primary sources, and authoring audit-clean canonical Starlight MDX.
 ---
 
+import { Aside } from "@astrojs/starlight/components";
+
 # kb-research-author
 
 Use this when the user asks to write notes about a topic you don't already have firsthand reps in (a new AWS service, a new framework feature, a new pattern). It chains: discovery → source selection → claim extraction → primary-source verification → categorization → MDX drafting → audit → triage → handoff or commit when asked.
 
 AGENTS.md governs the invariants (frontmatter schema, tag vocabulary, linker rules, sourcing rule). This skill governs the **process** of getting from "I want to write about X" to a clean commit. Read AGENTS.md first; this file does not duplicate its rules.
+
+<Aside type="note">
+**North Star — The Instant Clarity Principle (from AGENTS.md)**:
+Every element in a note exists to make a concept *instantly graspable* to someone who knows nothing. If it doesn't, it's noise. When drafting new notes: (1) teach from zero — no assumed context, (2) every section must earn its place, (3) every component and diagram must be self-explaining without surrounding prose.
+</Aside>
 
 ## Phase 1 — Scope and discovery (before any source reading)
 

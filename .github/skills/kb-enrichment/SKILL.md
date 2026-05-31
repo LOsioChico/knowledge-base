@@ -7,10 +7,17 @@ description: >
   sites/docs/. Triggers: interactive component, enrichment, /kb-enrichment, S4 audit.
 ---
 
+import { Aside } from "@astrojs/starlight/components";
+
 # kb-enrichment
 
 Workflow for selecting, validating, and placing interactive components in Starlight MDX
 pages under `sites/docs/src/content/docs/`.
+
+<Aside type="note">
+**North Star — The Instant Clarity Principle (from AGENTS.md)**:
+Every element in a note exists to make a concept *instantly graspable* to someone who knows nothing. If it doesn't, it's noise — no matter how beautiful it is. Components are tools, not decorations. If a component is hard to understand, it's a bug — not a feature that needs more explanation around it.
+</Aside>
 
 **API reference** (props, slots, examples) lives in the component
 [README](../../../sites/docs/src/components/interactive/README.md). This skill owns
