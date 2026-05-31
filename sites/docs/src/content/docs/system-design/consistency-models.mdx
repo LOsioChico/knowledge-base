@@ -25,7 +25,7 @@ import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import CapTheoremSimulator from '/src/components/interactive/CapTheoremSimulator.astro';
 import SequenceDiagram from '/src/components/interactive/SequenceDiagram.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before resolving CAP theorem partition trade-offs and consistency spectrums, make sure you understand:
 - [[system-design/rate-limiting|Rate Limiting & Traffic Shaping]]: Master token bucket, leaky bucket, sliding window counter algorithms, and gateway traffic shaping defenses.
@@ -311,7 +311,7 @@ If you choose Availability (AP) and allow concurrent local writes, you must even
 *   **Multi-Value (Siblings)**: The database retains all conflicting concurrent writes as a sibling set, returning `[ValA, ValB]` on client reads. The client application must reconcile this set (either by querying the user or executing automated merge logic).
 *   **CRDTs (Conflict-Free Replicated Data Types)**: Uses mathematical structures (like grow-only sets, PN-counters, or observed-removed sets) to merge concurrent updates deterministically without custom resolution code.
 
-<Aside type="tip" title="Case Study: Amazon Dynamo & The Shopping Cart Sibling Merge">
+<Aside type="note" title="Case Study: Amazon Dynamo & The Shopping Cart Sibling Merge">
 Amazon's original Dynamo database pioneered the use of **Multi-Value Sibling Registers** to enforce a strict **"never lose a sale"** business rule. 
 
 During a network partition, if a customer added a "Book" on Server A (London) and "Headphones" on Server B (New York), a standard Last-Write-Wins (LWW) resolution would have silently deleted one of the items based on timestamp (resulting in lost revenue). By storing both values as siblings `[["Book"], ["Headphones"]]`, the shopping cart application server received both states upon the next read and executed a simple `Union()` merge: `Cart = ["Book", "Headphones"]`. The customer sees both items, checkout succeeds, and data loss is avoided!

@@ -12,7 +12,7 @@ prerequisites: []
 import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/cli/profiles-and-credentials|AWS Profiles & Credentials]]: since comparing runtime platforms assumes a foundational understanding of AWS computing profiles.
 </Aside>
@@ -63,7 +63,7 @@ Unblessed 5-minute ping keeps **one** env warm: second concurrent request still 
 - **6 MB sync response**: stream via S3 [[aws/s3/presigned-urls|presigned URLs]] or response streaming.
 - **No long-lived sockets** on Function URL: API Gateway WebSocket or other compute.
 
-<Aside type="tip" title="Durable Functions change the model">
+<Aside type="note" title="Durable Functions change the model">
 
 Can run up to one year with checkpoints ([source](https://docs.aws.amazon.com/lambda/latest/dg/durable-functions.html)): different SDK contract, not "timeout lifted".
 

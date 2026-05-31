@@ -24,7 +24,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before studying dead letter queues, make sure you understand:
 - [[system-design/message-queues|Asynchronous Message Queues]]: Broker architecture, acknowledgment models, and message lifecycle.
@@ -182,7 +182,7 @@ async function processBusinessLogic(message: KafkaMessage): Promise<void> {
 | **Per-queue DLQ** | Easy to trace which source queue a failed message came from; isolated monitoring and alerting | More infrastructure to manage; one DLQ per source queue |
 | **Shared DLQ** | Centralized monitoring; fewer resources to manage | Must include source-queue metadata in messages to trace origin; risk of cross-contamination between failure categories |
 
-<Aside type="tip" title="Recommendation">
+<Aside type="note" title="Recommendation">
 Start with per-queue DLQs for critical pipelines (payments, orders) and shared DLQs for non-critical workloads (analytics, logging). The traceability benefit of per-queue DLQs outweighs the management overhead for business-critical flows.
 </Aside>
 

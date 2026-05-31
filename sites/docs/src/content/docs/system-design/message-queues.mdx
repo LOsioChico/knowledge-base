@@ -25,7 +25,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 
 This note is part of the **[[system-design|Systems Design Track]]**. Before queuing messages, make sure you understand:
 - [[system-design/distributed-caching|Distributed Caching]]: Master read-through, write-through, and write-behind caching synchronization patterns before analyzing queue buffers.
@@ -208,7 +208,7 @@ Distributed messaging must navigate the **Two Generals' Problem**: the impossibi
 
 Most business-critical systems use **at-least-once delivery** paired with **idempotent consumers** to prevent data loss while safely handling duplicates.
 
-<Aside type="tip" title="Deep dive">
+<Aside type="note" title="Deep dive">
 For the full treatment of the Broker's Dilemma, Kafka's transactional exactly-once, and three idempotency engineering patterns, see [[system-design/delivery-semantics|Delivery Semantics]].
 </Aside>
 
@@ -246,7 +246,7 @@ To maintain throughput, systems route poison pills to a **[[system-design/dead-l
   speed={1400}
 />
 
-<Aside type="tip" title="Deep dive">
+<Aside type="note" title="Deep dive">
 For the full treatment of retry strategies (exponential backoff with jitter), DLQ metadata envelopes, per-queue vs shared DLQs, recovery workflows, and monitoring best practices, see [[system-design/dead-letter-queues|Dead Letter Queues]].
 </Aside>
 

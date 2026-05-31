@@ -264,14 +264,14 @@ function checkMdxPrerequisiteBadge(text: string, isIndex: boolean): Finding[] {
     }
   }
 
-  const hasAsidePrereq = /<Aside\s+[^>]*type=["']tip["']\s+[^>]*title=["']Prerequisites["']/i.test(text);
+  const hasAsidePrereq = /<Aside\s+[^>]*type=["'](?:tip|note)["']\s+[^>]*title=["']Prerequisites["']/i.test(text);
 
   if (!hasTaglinePrereq && !hasAsidePrereq) {
     findings.push({
       rule: "frontmatter-schema",
       line: 1,
       message:
-        "Missing prerequisite documentation. Notes must either carry 'Prerequisite: [[link]]' in their tagline quote, or have a standard `<Aside type=\"tip\" title=\"Prerequisites\">` badge block at the top of the body.",
+        "Missing prerequisite documentation. Notes must either carry 'Prerequisite: [[link]]' in their tagline quote, or have a standard `<Aside type=\"note\" title=\"Prerequisites\">` badge block at the top of the body.",
     });
   }
 

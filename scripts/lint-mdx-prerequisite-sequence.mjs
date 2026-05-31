@@ -69,8 +69,8 @@ function parseMermaidGraph(indexContent, folderSlug) {
 function extractPrerequisites(fileContent) {
   const prereqs = new Set();
 
-  // 1. Check for Starlight <Aside type="tip" title="Prerequisites">...</Aside> block
-  const asideRegex = /<Aside\s+[^>]*type=["']tip["']\s+[^>]*title=["']Prerequisites["'][^>]*>([\s\S]+?)<\/Aside>/i;
+  // 1. Check for Starlight <Aside type="note" title="Prerequisites">...</Aside> block
+  const asideRegex = /<Aside\s+[^>]*type=["'](?:tip|note)["']\s+[^>]*title=["']Prerequisites["'][^>]*>([\s\S]+?)<\/Aside>/i;
   const asideMatch = asideRegex.exec(fileContent);
   if (asideMatch) {
     const blockContent = asideMatch[1];

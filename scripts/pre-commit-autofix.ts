@@ -550,7 +550,7 @@ export function convertObsidianCalloutsToAsides(body: string): { updatedBody: st
       } else if (rawType === "danger" || rawType === "failure" || rawType === "bug") {
         asideType = "danger";
       } else if (rawType === "tip" || rawType === "success" || rawType === "question" || rawType === "example") {
-        asideType = "tip";
+        asideType = "note";
       } else if (rawType === "caution") {
         asideType = "caution";
       }

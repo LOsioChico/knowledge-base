@@ -19,7 +19,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 Before diving into file uploads, make sure you understand:
 - [[nestjs/fundamentals/interceptors|Interceptors]]: since NestJS file uploading uses the `FileInterceptor` class.
 - [[nestjs/fundamentals/pipes|Pipes]]: since file validations (e.g. file size, mime-type) are executed within the Pipes layer using `ParseFilePipe`.
@@ -351,7 +351,7 @@ When developers think of "file upload," they usually think of a browser sending 
     Server: AmazonS3
     ```
 
-    <Aside type="tip" title="Integrate with Dynamic Modules">
+    <Aside type="note" title="Integrate with Dynamic Modules">
       If your application needs to connect to multiple S3 buckets depending on the module domain (e.g. public avatars vs. secure private invoices), combine this service with the custom provider pattern outlined in the [[nestjs/recipes/dynamic-modules|Dynamic Modules recipe]].
     </Aside>
 

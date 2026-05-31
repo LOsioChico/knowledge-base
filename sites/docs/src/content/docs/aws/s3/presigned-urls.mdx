@@ -15,7 +15,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 Before diving in, make sure you understand:
 - [[aws/s3/quickstart|S3 quickstart]]: since generating secure presigned links assumes existing S3 object paths.
 - [[aws/iam|IAM Policies & Resource Permissions]]: since signatures inherit the signer's IAM capabilities, and bucket policies can block presigned operations.

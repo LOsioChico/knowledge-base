@@ -445,7 +445,7 @@ test("convertObsidianCalloutsToAsides correctly handles nested content and prese
   const { updatedBody, modified } = convertObsidianCalloutsToAsides(body);
   assert.equal(modified, true);
   
-  assert.match(updatedBody, /<Aside type="tip" title="Practical Implementation">/);
+  assert.match(updatedBody, /<Aside type="note" title="Practical Implementation">/);
   assert.match(updatedBody, /```ts/);
   assert.match(updatedBody, /console.log\(value\);/);
   assert.match(updatedBody, /<\/Aside>/);

@@ -18,7 +18,7 @@ import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
 import PipelineStrip from '/src/components/interactive/PipelineStrip.astro';
 
-<Aside type="tip" title="Prerequisites">
+<Aside type="note" title="Prerequisites">
 Before diving into rate limiting, make sure you understand:
 - [[nestjs/fundamentals/guards|Guards]]: since rate limiting is enforced in NestJS via `ThrottlerGuard` which runs within the NestJS Guard layer.
 - [[nestjs/recipes/configuration|Configuration]]: since production rate limiters are configured asynchronously via `ConfigService`.
