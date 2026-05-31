@@ -1,0 +1,320 @@
+---
+title: Database Partitioning & Scaling
+aliases: [database sharding, partitioning vs sharding, read replicas, database scaling]
+tags: [type/concept, tech/postgres, tech/dynamodb]
+area: system-design
+status: evergreen
+related:
+  - "[[system-design/consistent-hashing]]"
+  - "[[system-design/consistency-models]]"
+  - "[[system-design/distributed-transactions]]"
+  - "[[system-design/distributed-caching]]"
+source:
+  - https://algomaster.io/learn/system-design
+---
+
+> Scaling datastores horizontally using vertical/horizontal partitioning, read replica synchronization, database sharding, and [[system-design/consistent-hashing|consistent hashing]].
+
+import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
+import ParameterPlayground from '/src/components/interactive/ParameterPlayground.astro';
+
+<Aside type="tip" title="Prerequisites">
+
+This note is part of the **[[system-design|Systems Design Track]]**. Before tackling datastore scaling boundaries, make sure you understand:
+- [[system-design/consistency-models|Consistency Models]]: Master replication models, CAP theorem CP/AP choices, and eventual consistency spectras.
+- [[system-design/consistent-hashing|Consistent Hashing]]: Master dynamic hash rings and virtual nodes used for resharding mitigation.
+
+</Aside>
+
+When an application's user base grows, the primary database inevitably becomes the central performance bottleneck. Relational databases on a single server hit hard physical hardware limits (CPU, disk I/O speed, and RAM capacity). 
+
+To scale database performance, we must either partition data *within* a single server to speed up queries, or distribute data across *multiple* servers to share the load.
+
+---
+
+## The Database Scaling Spectrum
+
+Before committing to complex distributed database architectures, engineers must choose the simplest scaling pattern that solves their specific bottleneck.
+
+<DecisionGuide
+  title="Pick the right database scale pattern"
+  steps={[
+    { id: "start", question: "What is your primary database bottleneck?", options: [
+      { label: "Slow read queries due to large table scans", next: "q-scan" },
+      { label: "High volume of read operations (Read QPS saturation)", next: "r-replica" },
+      { label: "Write QPS saturation or storage capacity exhaustion", next: "q-writes" },
+    ]},
+    { id: "q-scan", question: "Is the query bottleneck due to bad lookup patterns or unorganized schemas?", options: [
+      { label: "Yes, queries scan non-indexed fields or mix hot and cold fields", next: "r-index-vert" },
+      { label: "No, queries filter correctly by date range or category but the dataset is massive", next: "r-partition" },
+    ]},
+    { id: "q-writes", question: "Can you migrate non-relational unstructured data (e.g. sessions, logs) out of SQL?", options: [
+      { label: "Yes, the bottlenecked data does not require strict ACID joins", next: "r-nosql" },
+      { label: "No, we strictly require relational constraints and high write capacity", next: "r-sharding" },
+    ]},
+    { id: "r-index-vert", result: "Add Indexes & Vertical Partition", explanation: "Add secondary indexes to eliminate table scans, and vertically partition tables by splitting infrequently-accessed columns (like blobs, bios) into extended tables. Simple schema changes inside the same DB.", link: "#vertical-partitioning-splitting-by-columns" },
+    { id: "r-partition", result: "Horizontal Partitioning (Within Single Server)", explanation: "Keep the schema but split rows into separate physical partitions (e.g. by year or region) inside the same database engine. Enables partition pruning to radically speed up queries.", link: "#horizontal-partitioning-splitting-by-rows" },
+    { id: "r-replica", result: "Read Replicas (Master-Slave Replication)", explanation: "Spin up read replicas. Route all writes to the Master database and distribute all reads across the Slave nodes. Ideal for highly read-intensive workloads.", link: "#replication-models-and-read-replicas" },
+    { id: "r-nosql", result: "Move to NoSQL Datastores", explanation: "Extract unstructured or key-value data to key-value stores (Redis) or document stores (DynamoDB). Offloads heavy key lookups from relational databases.", link: "[[system-design/distributed-caching|distributed caching]]" },
+    { id: "r-sharding", result: "Horizontal Database Sharding", explanation: "Split data horizontally and distribute shards across multiple physically separate database servers. The ultimate write scaling option, but introduces heavy operational complexity.", link: "#database-sharding-across-multiple-servers" },
+  ]}
+/>
+
+---
+
+## Table Partitioning (Within a Single Server)
+
+Table partitioning (modeled on standard database scaling paths, see [source](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
+
+```
+       Monolithic Table                             Partitioned Table
+┌─────────────────────────────┐              ┌─────────────────────────────┐
+│  ID  │  Order Date  │ Amount│              │  orders_2023 (Partition 1)  │
+├──────┼──────────────┼───────┤              ├──────┼──────────────┼───────┤
+│  1   │  2023-05-12  │ $50   │              │  1   │  2023-05-12  │ $50   │
+│  2   │  2024-03-10  │ $120  │              └──────┴──────────────┴───────┘
+│  3   │  2024-07-22  │ $85   │              ┌─────────────────────────────┐
+│  4   │  2023-11-04  │ $30   │ ──────>     │  orders_2024 (Partition 2)  │
+└─────────────────────────────┘              ├──────┼──────────────┼───────┤
+                                             │  2   │  2024-03-10  │ $120  │
+                                             │  3   │  2024-07-22  │ $85   │
+                                             └──────┴──────────────┴───────┘
+```
+
+The application interacts with the parent table as if it were a single table, but the database engine automatically routes records and prunes queries.
+
+### Vertical Partitioning (Splitting by Columns)
+
+Vertical partitioning splits a table **by columns** into separate tables sharing the same primary key. This is used when different columns have highly divergent access patterns (e.g. hot data read constantly vs. heavy cold data read rarely).
+
+For example, an active user profiles table can be vertically split into:
+1. **Core user table** (hot): `user_id`, `name`, `email` (small, compact rows, keeping more records cached in RAM).
+2. **Extended profile table** (cold): `user_id`, `bio`, `preferences`, `avatar_blob` (large row size, queried only when visiting user profiles).
+
+### Horizontal Partitioning (Splitting by Rows)
+
+Horizontal partitioning splits a table **by rows** while keeping the identical schema across all partitions. Each partition stores a distinct subset of the row rows.
+
+#### Native Horizontal Partitioning in PostgreSQL
+PostgreSQL supports native **declarative partitioning**. The database engine automatically routes writes to the correct child partition and optimizes reads.
+
+```sql
+-- Step 1: Create the parent table partitioned by a Range on order_date
+CREATE TABLE orders (
+    order_id      SERIAL,
+    customer_id   INT NOT NULL,
+    order_date    DATE NOT NULL,
+    amount        DECIMAL(10, 2) NOT NULL,
+    PRIMARY KEY (order_id, order_date)
+) PARTITION BY RANGE (order_date);
+
+-- Step 2: Define individual range partitions
+CREATE TABLE orders_2023 PARTITION OF orders
+    FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
+
+CREATE TABLE orders_2024 PARTITION OF orders
+    FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+```
+
+When inserting records into the `orders` table, the database routes rows automatically:
+```sql
+-- Routed to orders_2023 partition
+INSERT INTO orders (customer_id, order_date, amount) 
+VALUES (101, '2023-05-15', 299.99);
+
+-- Routed to orders_2024 partition
+INSERT INTO orders (customer_id, order_date, amount) 
+VALUES (202, '2024-03-10', 1299.00);
+```
+
+#### The Power of Partition Pruning
+When querying the parent table with a filter on the partition key, the query planner executes **partition pruning**. It ignores all irrelevant partitions, performing disk I/O only on the target partition:
+
+```sql
+-- Planner scans ONLY the orders_2024 partition, ignoring orders_2023
+SELECT * FROM orders
+WHERE order_date BETWEEN '2024-01-01' AND '2024-06-30';
+```
+
+---
+
+## Common Partitioning Strategies
+
+Databases apply different strategies to evaluate partition routing:
+
+### 1. Range Partitioning
+Rows are routed based on a continuous range of the partition key (e.g. date-ranges or consecutive ID groups). Ideal for timeseries tables where old partitions can be easily archived or dropped.
+```sql
+-- Drop old partitions in O(1) time instead of slow row-by-row DELETE scans
+ALTER TABLE orders DETACH PARTITION orders_2023;
+DROP TABLE orders_2023;
+```
+
+### 2. List Partitioning
+Rows are routed based on explicit matching discrete values. Useful for geographical segments or category categories.
+```sql
+-- List partitioning by region CNAME
+CREATE TABLE customers (
+    customer_id   INT,
+    country       VARCHAR(3)
+) PARTITION BY LIST (country);
+```
+
+### 3. Hash Partitioning
+A hash function is applied to the partition key (e.g., `user_id`), and the modulo determines the partition:
+```
+Partition Index = Hash(user_id) mod NumberOfPartitions
+```
+This distributes rows uniformly across a fixed number of partitions, preventing hotspots, but range queries are difficult because adjacent keys reside in different partitions.
+
+---
+
+## Database Sharding (Across Multiple Servers)
+
+When a single server's compute power and disk space are fully exhausted, we must scale out using **Database Sharding**.
+
+Sharding is horizontal partitioning **extended across physically separate database instances**. Each server (called a **shard**) is a fully independent database instance storing a unique slice of the logical dataset.
+
+```
+                  [Application Router Logic]
+                    /         |          \
+           user_id % 3 = 0  user_id % 3 = 1  user_id % 3 = 2
+                  /           |            \
+                 v            v             v
+            [Shard 0]     [Shard 1]     [Shard 2]
+           (db-server-0) (db-server-1) (db-server-2)
+```
+
+### The Sharding Components
+1. **Shard Key**: The column (or combination of columns) used to determine data placement. It must be present in almost all write/read queries to avoid searching all shards.
+2. **Query Router**: A software layer (embedded in application logic or running as database middleware) that reads the shard key, references a **shard map**, and opens a connection to the correct physical server.
+
+#### Shard Map Metadata Structure
+A central configuration database or dynamic coordination manager (like ZooKeeper or etcd) maintains a routing lookup table:
+
+```json
+{
+  "shard_map": [
+    { "range_start": 1, "range_end": 25000000, "host": "db-shard-0.company.internal" },
+    { "range_start": 25000001, "range_end": 50000000, "host": "db-shard-1.company.internal" }
+  ]
+}
+```
+
+---
+
+## Replication Models and Read Replicas
+
+For read-heavy applications, scaling the primary database involves setting up **Read Replicas** (Master-Slave Replication). All database writes are committed to the **Master** node, which replicates updates to one or more read-only **Slave** nodes.
+
+```
+                          [Writes]
+                             |
+                             v
+                        [Master DB]
+                       /     |     \
+         [Replication] /      |      \ [Replication]
+                     v       v       v
+                  [Slave] [Slave] [Slave]
+                     |       |       |
+                     +─── [Reads] ───+
+```
+
+Replication between nodes operates under three synchronicity models:
+
+### 1. Synchronous Replication
+The Master writes the data locally, replicates it to the slave, and **waits for the slave to acknowledge the write** before returning success to the application client.
+* **Pro**: Strong consistency (Zero data loss or dirty reads on master failover).
+* **Con**: Extremely high write latency. If even a single replica experiences network skew or crashes, all master writes block.
+
+### 2. Asynchronous Replication
+The Master commits the write locally and **instantly returns success to the client**. Replication occurs in the background.
+* **Pro**: High write throughput and ultra-low latency.
+* **Con**: Eventual consistency. Replicas lag behind the master, creating replication lag. If the master dies before replication finishes, committed transactions are lost.
+
+### 3. Semi-Synchronous Replication
+The Master commits locally, replicates to the replicas, and returns success once **at least one replica has written the event to its relay log** (without waiting for all of them). Balances performance and consistency.
+
+---
+
+## Causal Gotcha: Replication Lag & Read-Your-Writes
+
+Under asynchronous replication, **replication lag** creates a common client-centric inconsistency: **the Read-Your-Writes violation**.
+
+Imagine a user updating their bio on a profile page. The update commits on the Master DB successfully. When the page instantly refreshes, the client app reads the profile bio from a lagging read replica. The user observes their old bio, assuming the write was lost.
+
+```
+[Client] ─── 1. UpdateBio("Active") ───> [Master DB] (Success)
+   │
+   │ (Immediate Refresh)
+   v
+[Client] ─── 2. GetBio() ──────────────> [Read Replica] (Lags by 500ms)
+                                            │
+[Client] <── 3. Returns "Stale Bio" ────────┘ (Inconsistency!)
+```
+
+### Mitigations
+1. **Sticky Session Routing**: The session router tracks write timestamps. If a client writes data, the router sticky-pins all of that client's reads to the Master database for a brief window (e.g. 2-5 seconds), bypassing the replicas until replication lag catches up.
+2. **Quorum Reads**: Read from a subset of replicas and resolve inconsistencies using vector clocks or timestamps.
+
+Let us evaluate the statistical risk of read-your-writes failures under varying system parameters:
+
+<ParameterPlayground
+  title="Replication Lag & Eventual Consistency Calculator"
+  params={[
+    { name: "writeQps", label: "Write QPS", type: "range", min: 100, max: 10000, step: 100, default: 2000 },
+    { name: "replicaCount", label: "Replica nodes", type: "range", min: 1, max: 10, step: 1, default: 3 },
+    { name: "networkLatency", label: "Network replication lag", type: "range", min: 10, max: 2000, step: 10, default: 150, suffix: " ms" },
+    { name: "readDelay", label: "Client read delay (refresh)", type: "range", min: 0, max: 2000, step: 50, default: 100, suffix: " ms" },
+  ]}
+  outputs={[
+    { name: "backlog", label: "Unreplicated write backlog", format: "number" },
+    { name: "readRisk", label: "Stale read likelihood", format: "percent", good: "low" },
+    { name: "status", label: "Read consistency level", format: "text" },
+  ]}
+  compute={`
+    var backlog = Math.round(params.writeQps * (params.networkLatency / 1000));
+    var risk = 0;
+    if (params.readDelay < params.networkLatency) {
+      risk = (params.networkLatency - params.readDelay) / params.networkLatency;
+    }
+    var consistency = "Eventual Consistency";
+    if (risk === 0) {
+      consistency = "Read-Your-Writes Guaranteed";
+    } else if (risk > 0.7) {
+      consistency = "CRITICAL: High Stale Read Risk";
+    }
+    return {
+      backlog: backlog,
+      readRisk: risk,
+      status: consistency
+    };
+  `}
+/>
+
+---
+
+## Sharding Complexities & Gotchas
+
+While sharding scales writes horizontally, it introduces deep architectural friction:
+
+### 1. Celebrity / Hotspot Key Problem
+If data is sharded by a standard key like `user_id` or `username`, a shard storing a high-traffic celebrity's profile (e.g. Katy Perry or Justin Bieber) will receive orders of magnitude more QPS than other shards. This overloads the specific physical server, causing a hotspot.
+* **Mitigation**: **Salt keys**. For highly skewed data, append a random suffix to the shard key (e.g. `celebrity_username_1`, `celebrity_username_2`), spreading celebrity lookups across multiple shards.
+
+### 2. Resharding and Rebalancing Pain
+As shards grow, some servers fill up faster than others due to data skew. Rebalancing data requires adding a new server shard, modifying the shard key hash function, and moving millions of existing database rows over the network without downtime.
+* **Mitigation**: Enforce [[system-design/consistent-hashing|Consistent Hashing]] so only a small subset of rows move when shards scale up/down.
+
+### 3. The Cross-Shard Join Bottleneck
+Once data is distributed across physical database instances, executing `JOIN` operations across tables residing on different shards is impossible or extremely slow (requiring application-level federated joins).
+* **Mitigation**: **Denormalization**. Duplicate critical fields directly into tables to keep queries self-contained inside a single shard.
+
+---
+
+## See Also
+- [[system-design/consistent-hashing|Consistent Hashing & Dynamic Ring Partitioning]]
+- [[system-design/consistency-models|CAP Theorem & Consistency Models Spectrum]]
+- [[system-design/distributed-transactions|Distributed Transactions, Sagas, & Outbox Patterns]]
+- [[system-design/distributed-caching|Distributed Caching: Invalidation, Evictions & Sizing]]

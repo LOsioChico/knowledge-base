@@ -35,6 +35,7 @@ In a single-computer system, building software is straightforward: there is a si
     { id: "consistency-models", label: "Consistency Models", href: "/knowledge-base/system-design/consistency-models/", description: "CAP theorem, linearizability, causal ordering", category: "required", group: "Consistency & Partitioning" },
     { id: "logical-clocks", label: "Logical Clocks", href: "/knowledge-base/system-design/logical-clocks/", description: "Lamport timestamps, Vector clocks, NTP skew", category: "required", group: "Consistency & Partitioning", prereqs: ["consistency-models"] },
     { id: "consistent-hashing", label: "Consistent Hashing", href: "/knowledge-base/system-design/consistent-hashing/", description: "Circular rings, virtual nodes, MD5 search", category: "required", group: "Consistency & Partitioning" },
+    { id: "database-sharding-scaling", label: "Database Sharding & Scaling", href: "/knowledge-base/system-design/database-sharding-and-scaling/", description: "Vertical/horizontal partitioning, read replica lag, sharding keys, hotspots", category: "required", group: "Consistency & Partitioning", prereqs: ["consistency-models", "consistent-hashing"] },
     { id: "distributed-transactions", label: "Distributed Transactions", href: "/knowledge-base/system-design/distributed-transactions/", description: "2PC, Saga Orchestrator/Choreography, Transactional Outbox", category: "required", group: "Coordination", prereqs: ["consistency-models", "message-queues"] },
   ]}
 />
@@ -53,6 +54,7 @@ In a single-computer system, building software is straightforward: there is a si
 | [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
 | [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
 | [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
+| [Database Sharding & Scaling](/knowledge-base/system-design/database-sharding-and-scaling/) | Vertical/horizontal partitioning, sharding keys, hotspot key salt, [[system-design/database-sharding-and-scaling|read replicas]], replication lag |
 | [Distributed Transactions & Saga Patterns](/knowledge-base/system-design/distributed-transactions/) | [2PC](/knowledge-base/system-design/distributed-transactions/), [Saga Orchestrator](/knowledge-base/system-design/distributed-transactions/), [Saga Choreography](/knowledge-base/system-design/distributed-transactions/), [Transactional Outbox](/knowledge-base/system-design/distributed-transactions/) |
 
 ## Planned Concepts
