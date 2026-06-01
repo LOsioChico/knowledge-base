@@ -1,5 +1,6 @@
 ---
 title: Database Partitioning & Scaling
+description: "Scaling datastores horizontally using table partitioning, read replicas, and database sharding with consistent hashing."
 aliases: [database sharding, partitioning vs sharding, read replicas, database scaling]
 tags: [type/concept, tech/postgres, tech/dynamodb]
 area: system-design
@@ -448,7 +449,7 @@ Once data is distributed across physical database instances, executing `JOIN` op
 * **Mitigation**: **Denormalization**. Duplicate critical read-heavy columns into the target table to eliminate the need for cross-server joins.
   * **The SQL Join Monolith**:
     ```sql
-    -- Standard SQL relational join: easy in a monolithic database
+    /* Standard SQL relational join: easy in a monolithic database */
     SELECT o.order_id, o.amount, c.name 
     FROM orders o 
     JOIN customers c ON o.customer_id = c.customer_id;
@@ -456,7 +457,7 @@ Once data is distributed across physical database instances, executing `JOIN` op
   * **The Sharded Reality**: If `orders` is sharded by `order_id` (Server A) and `customers` is sharded by `customer_id` (Server B), running the query above thrashes the system. The application router must perform two separate network queries across different servers and merge them in memory (an expensive federated join).
   * **The Denormalized Solution**: Duplicate the `customer_name` column directly inside the `orders` physical table at write time:
     ```sql
-    -- Query is fully self-contained inside a single shard!
+    /* Query is fully self-contained inside a single shard */
     SELECT order_id, amount, customer_name FROM orders WHERE order_id = 999;
     ```
 
