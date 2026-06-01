@@ -1,6 +1,14 @@
 ---
 title: Fault-Tolerant Ingestion Pipeline
 description: Compose tryPromise, Schema, timeout, selective retry, and forEach into a robust typed ingestion pipeline with bounded concurrency in Effect-TS.
+aliases: [ingestion pipeline, resilient fetch, fault-tolerant pipeline]
+tags: [type/recipe, tech/effect-ts, tech/typescript]
+area: effect-ts
+status: evergreen
+source:
+  - https://effect.website/docs/getting-started/running-effects/
+  - https://effect.website/docs/error-management/expected-errors/
+  - https://effect.website/docs/scheduling/
 related:
   - "[[effect-ts]]"
   - "[[effect-ts/platform]]"
@@ -403,4 +411,6 @@ POST /api/orders { "itemId": 99 }
 - [[effect-ts/schema|Schema]]: deep-dive validation boundaries
 - [[effect-ts/retry-and-schedule|Retry and Schedule]]: designing custom timelines and delay filters
 - [[effect-ts/typed-errors|Typed errors]]: structuring TaggedError records
-- [Effect-TS Scheduling Guide](https://effect.website/docs/scheduling/) (official)
+- [Running Effects](https://effect.website/docs/getting-started/running-effects/) (official): `runPromise`, `runSync`, and execution strategies
+- [Expected Errors](https://effect.website/docs/error-management/expected-errors/) (official): structuring and handling typed error channels
+- [Scheduling Guide](https://effect.website/docs/scheduling/) (official): exponential backoff, jitter, and retry policies
