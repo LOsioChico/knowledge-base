@@ -18,13 +18,15 @@ related:
   - "[[system-design/dead-letter-queues]]"
   - "[[system-design/database-sharding-and-scaling]]"
 source:
+  - https://doi.org/10.1145/38713.38742
+  - https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2003-96.pdf
   - https://microservices.io/patterns/data/saga.html
 prerequisites:
   - "[[system-design/consistency-models]]"
   - "[[system-design/message-queues]]"
 ---
 
-> Foundational concepts and architectural patterns for coordinating atomic multi-service updates, contrasting locking protocols with eventual consistency sagas, and securing reliable event routing.
+> Foundational concepts and architectural patterns for coordinating atomic multi-service updates, contrasting locking protocols with [[system-design/consistency-models|eventual consistency]] sagas, and securing reliable event routing.
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import FlowSimulator from '/src/components/interactive/FlowSimulator.astro';
@@ -46,7 +48,7 @@ In a distributed microservices architecture, however, every service owns its own
 
 ## Two-Phase Commit (2PC)
 
-The Two-Phase Commit (2PC) protocol is a classic distributed consensus pattern that guarantees absolute atomicity across multiple nodes. It utilizes a central coordinator process to direct the transaction lifecycle across several participant databases.
+The [Two-Phase Commit (2PC)](https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2003-96.pdf) protocol is a classic distributed atomic commit protocol that guarantees absolute atomicity across multiple nodes. It utilizes a central coordinator process to direct the transaction lifecycle across several participant databases.
 
 ```
 [Coordinator] -------- Phase 1: Prepare --------> [Participants (Lock & Vote)]
@@ -77,7 +79,7 @@ While 2PC guarantees strong consistency, it introduces severe bottlenecks in hig
 
 To overcome the performance limits of 2PC, modern distributed systems trade strict ACID properties for **BASE** (Basically Available, Soft State, Eventual Consistency) using the **Saga Pattern**.
 
-A Saga coordinates a business transaction through a sequence of local transactions. Each step in the Saga executes a local transaction in a single service and commits instantly, releasing database locks immediately. 
+A [Saga](https://doi.org/10.1145/38713.38742) coordinates a business transaction through a sequence of local transactions. Each step in the Saga executes a local transaction in a single service and commits instantly, releasing database locks immediately. 
 *   If all local transactions succeed, the Saga is complete.
 *   If a local transaction fails, the Saga must coordinate a series of **compensating transactions** to roll back the changes made by the previous steps.
 

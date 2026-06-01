@@ -1,6 +1,14 @@
 ---
 title: Consistent Hashing
 description: Explaining circular hash ring spaces, the mod-N scaling problem, virtual nodes (VNodes), and a high performance TypeScript implementation.
+aliases: [hash ring, virtual nodes, VNodes, consistent hash ring]
+tags: [type/concept]
+area: system-design
+status: evergreen
+source:
+  - https://dl.acm.org/doi/10.1145/258533.258660
+  - https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
+  - https://cassandra.apache.org/doc/stable/cassandra/architecture/dynamo.html
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -28,7 +36,7 @@ This note is part of the **[[system-design|Systems Design Track]]**. Before mapp
 
 </Aside>
 
-In a distributed database or [[system-design/distributed-caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
+In a distributed database or [[system-design/distributed-caching|caching]] cluster, routing requests efficiently is critical. Traditional modulo hashing maps keys directly to specific servers, but this approach breaks down under dynamic scaling. Consistent hashing, as implemented in [Amazon Dynamo](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) and [Apache Cassandra](https://cassandra.apache.org/doc/stable/cassandra/architecture/dynamo.html), solves this bottleneck by guaranteeing that when the node count changes, only a minimal fraction of keys require relocation.
 
 ## Naive Hashing: The Modulo-N Bottleneck
 
@@ -73,7 +81,7 @@ In a production caching layer (like Redis or Memcached), this causes a massive *
 
 ## The Consistent Hashing Ring
 
-Consistent Hashing solves this scaling bottleneck by decoupling key routing from the exact number of active servers. 
+[Consistent Hashing](https://dl.acm.org/doi/10.1145/258533.258660), introduced by Karger et al. in 1997, solves this scaling bottleneck by decoupling key routing from the exact number of active servers. 
 
 Instead of dividing key hashes by the number of servers, consistent hashing places both servers and keys onto a large, fixed circular space known as a **hash ring**. This circle is typically mapped from 0 to 4,294,967,295. This specific number (equal to 2³² - 1) is the standard range of a 32-bit unsigned integer, providing billions of distinct positions around the ring.
 

@@ -12,6 +12,7 @@ related:
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/consistency-models]]"
   - "[[system-design/database-sharding-and-scaling]]"
+  - "[[system-design/distributed-caching]]"
 source:
   - https://kafka.apache.org/documentation/#consumerconfigs
   - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html
@@ -232,7 +233,7 @@ This is the model used by Google Cloud Pub/Sub and MQTT 5.0. Each subscription r
 | Type | Behavior | Use case |
 | :--- | :--- | :--- |
 | **Durable** | Messages accumulate in a buffer while the subscriber is disconnected. On reconnect, all missed messages are delivered. | Business-critical processing where message loss is unacceptable |
-| **Ephemeral** | Messages delivered only to currently connected subscribers. Disconnected subscribers miss messages permanently. | Real-time dashboards, live metrics, cache invalidation |
+| **Ephemeral** | Messages delivered only to currently connected subscribers. Disconnected subscribers miss messages permanently. | Real-time dashboards, live metrics, [cache invalidation](/knowledge-base/system-design/distributed-caching/) |
 
 ### When to use
 

@@ -45,15 +45,15 @@ In a single-computer system, building software is straightforward: there is a si
 | Guide | Key Primitives |
 | --- | --- |
 | [Estimation Primitives](/knowledge-base/system-design/back-of-the-envelope-estimation/) | Powers of two, Latency numbers, SLA nines, QPS math |
-| [Distributed Caching](/knowledge-base/system-design/distributed-caching/) | Read/Write patterns, Eviction LRU/LFU, Cache Stampede |
+| [Distributed Caching](/knowledge-base/system-design/distributed-caching/) | Read/Write patterns, Eviction LRU/LFU, [Cache Stampede](/knowledge-base/system-design/distributed-caching/) |
 | [Asynchronous Message Queues](/knowledge-base/system-design/message-queues/) | P2P vs Pub/Sub, Brokers vs Logs, Push vs Pull delivery |
 | [Messaging Patterns](/knowledge-base/system-design/messaging-patterns/) | [Competing Consumers](/knowledge-base/system-design/messaging-patterns/), [Fan-Out](/knowledge-base/system-design/messaging-patterns/), [Consumer Groups](/knowledge-base/system-design/messaging-patterns/), [Shared Subscriptions](/knowledge-base/system-design/messaging-patterns/) |
 | [Delivery Semantics](/knowledge-base/system-design/delivery-semantics/) | [At-most-once](/knowledge-base/system-design/delivery-semantics/), [At-least-once](/knowledge-base/system-design/delivery-semantics/), [Exactly-once](/knowledge-base/system-design/delivery-semantics/), [Idempotency](/knowledge-base/system-design/delivery-semantics/) strategies |
 | [Dead Letter Queues](/knowledge-base/system-design/dead-letter-queues/) | Poison pills, Retry strategies, [DLQ](/knowledge-base/system-design/dead-letter-queues/) metadata, Recovery workflows |
 | [Rate Limiting & Traffic Shaping](/knowledge-base/system-design/rate-limiting/) | [Token Bucket](/knowledge-base/system-design/rate-limiting/), [Leaky Bucket](/knowledge-base/system-design/rate-limiting/), [Sliding Window](/knowledge-base/system-design/rate-limiting/), Horizontal Lua scripts |
-| [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, Linearizability, Causal ordering |
-| [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | Lamport timestamps, Vector clocks, NTP skew |
-| [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, Virtual Nodes, MD5 search |
+| [Consistency Models](/knowledge-base/system-design/consistency-models/) | CAP spectrum, [Linearizability](/knowledge-base/system-design/consistency-models/), Causal ordering |
+| [Logical Clocks](/knowledge-base/system-design/logical-clocks/) | [Lamport timestamps](/knowledge-base/system-design/logical-clocks/), [Vector clocks](/knowledge-base/system-design/logical-clocks/), NTP skew |
+| [Consistent Hashing](/knowledge-base/system-design/consistent-hashing/) | Circular rings, [Virtual Nodes](/knowledge-base/system-design/consistent-hashing/), MD5 search |
 | [Database Sharding & Scaling](/knowledge-base/system-design/database-sharding-and-scaling/) | Vertical/horizontal partitioning, sharding keys, hotspot key salt, [read replicas](/knowledge-base/system-design/database-sharding-and-scaling/), replication lag |
 | [Distributed Transactions & Saga Patterns](/knowledge-base/system-design/distributed-transactions/) | [2PC](/knowledge-base/system-design/distributed-transactions/), [Saga Orchestrator](/knowledge-base/system-design/distributed-transactions/), [Saga Choreography](/knowledge-base/system-design/distributed-transactions/), [Transactional Outbox](/knowledge-base/system-design/distributed-transactions/) |
 

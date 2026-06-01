@@ -15,6 +15,9 @@ related:
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/delivery-semantics]]"
 source:
+  - https://datatracker.ietf.org/doc/html/rfc2697
+  - https://nginx.org/en/docs/http/ngx_http_limit_req_module.html
+  - https://developers.cloudflare.com/waf/rate-limiting-rules/
   - https://redis.io/commands/eval/
 prerequisites: []
 ---
@@ -48,7 +51,7 @@ Designing a rate limiter requires balancing mathematical accuracy, memory consum
 
 ### 1. Token Bucket
 
-The Token Bucket algorithm models a bucket of fixed capacity that holds tokens. Tokens are added to the bucket at a constant fill rate. When a request arrives, the system attempts to draw a token from the bucket. If a token is available, the request is processed, and the token is consumed. If the bucket is empty, the request is rejected immediately.
+The [Token Bucket](https://datatracker.ietf.org/doc/html/rfc2697) algorithm models a bucket of fixed capacity that holds tokens. Tokens are added to the bucket at a constant fill rate. When a request arrives, the system attempts to draw a token from the bucket. If a token is available, the request is processed, and the token is consumed. If the bucket is empty, the request is rejected immediately.
 
 *   **Mechanism**: A bucket with capacity $C$ fills with tokens at a rate of $r$ tokens per second.
 *   **Burst Support**: Highly supportive. If a client is idle, the bucket fills up to $C$. When a spike of $C$ requests arrives simultaneously, they are all allowed through instantly, after which the rate is capped strictly at $r$ per second.
@@ -250,7 +253,7 @@ Implementing rate limits within the client application (such as mobile apps or w
 *   *Cons*: Entirely untrusted. Any client can bypass the logic by calling the HTTP endpoint directly or spoofing the client SDK.
 
 ### 2. API Gateway / Reverse Proxy
-Rate limiting is handled at the network edge via a dedicated proxy (e.g., Nginx, Envoy, or AWS API Gateway) before the request ever reaches application servers.
+Rate limiting is handled at the network edge via a dedicated proxy (e.g., [Nginx](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html), Envoy, [Cloudflare WAF](https://developers.cloudflare.com/waf/rate-limiting-rules/), or AWS API Gateway) before the request ever reaches application servers.
 *   *Pros*: Zero overhead on application code. Rejects malicious traffic early, protecting thread pools and compute resources from starvation.
 *   *Cons*: Complex routing rules. Can create a single point of failure (SPOF) if proxy layers are not scaled independently.
 

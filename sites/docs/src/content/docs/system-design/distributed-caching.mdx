@@ -1,6 +1,14 @@
 ---
 title: Distributed Caching & Invalidation
 description: "Caching patterns: Cache-Aside, Read/Write-Through, and Write-Behind write strategies, LRU cache memory architectures, and database stampede gotchas."
+aliases: [caching, cache invalidation, LRU cache, cache stampede, thundering herd]
+tags: [type/concept]
+area: system-design
+status: evergreen
+source:
+  - https://redis.io/docs/latest/develop/use/client-side-caching/
+  - https://memcached.org/about
+  - https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/consistency-models]]"
@@ -10,6 +18,8 @@ related:
   - "[[system-design/rate-limiting]]"
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/database-sharding-and-scaling]]"
+  - "[[system-design/dead-letter-queues]]"
+  - "[[system-design/messaging-patterns]]"
 prerequisites: []
 ---
 
@@ -52,7 +62,7 @@ Data is stored directly inside the application process's heap memory (for exampl
 
 ### Distributed Caching
 
-Data is stored on a dedicated, external cluster of caching servers (such as Redis or Memcached clusters) accessed by applications over a local network.
+Data is stored on a dedicated, external cluster of caching servers (such as [Redis](https://redis.io/docs/latest/develop/use/client-side-caching/) or [Memcached](https://memcached.org/about) clusters, often managed via services like [Amazon ElastiCache](https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/WhatIs.html)) accessed by applications over a local network.
 
 *   **Pros**:
     *   **Global Single Source of Truth**: All horizontal web servers read from and write to the same shared cache cluster, eliminating in-flight inconsistencies.
@@ -376,10 +386,10 @@ Prevent concurrent database loads by enforcing a locking mechanism. When a cache
 As a popular key nears its expiration date, read requests trigger an asynchronous background update of the cache *before* it actually expires. The key is never allowed to hit a hard miss state. The probability of triggering an early refresh increases as the key gets closer to its TTL:
 
 ```
-Refresh Probability = -beta * delta * ln(random()) > TTL
+currentTime - (delta * beta * ln(random())) >= expirationTime
 ```
-*   `delta`: The time taken to fetch the value from the database.
-*   `beta`: A scaling constant (typically set to > 0). If `random()` generates a small probability, the system initiates a background update early, avoiding a hard cache miss.
+*   `delta`: The time taken to recompute or fetch the value from the database.
+*   `beta`: A scaling constant (typically set to > 0). Higher values trigger earlier probabilistic refreshes. As `currentTime` approaches `expirationTime`, the left side increasingly exceeds the right, raising the probability of an early background refresh.
 
 ### 2. Cache Invalidation & Stale Reads
 

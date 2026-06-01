@@ -1,6 +1,13 @@
 ---
 title: Logical Clocks & Time Ordering
 description: Exploring physical clock sync limits, Leslie Lamport's happen-before relation, Lamport Timestamps, and Vector Clocks for causal event tracing.
+aliases: [Lamport timestamps, vector clocks, happen-before, logical time]
+tags: [type/concept]
+area: system-design
+status: evergreen
+source:
+  - https://lamport.azurewebsites.net/pubs/time-clocks.pdf
+  - https://doi.org/10.1007/3-540-15850-1_9
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -9,6 +16,7 @@ related:
   - "[[system-design/message-queues]]"
   - "[[system-design/rate-limiting]]"
   - "[[system-design/distributed-transactions]]"
+  - "[[system-design/database-sharding-and-scaling]]"
 prerequisites:
   - "[[system-design/consistency-models]]"
 ---
@@ -51,7 +59,7 @@ Distributed systems use the Network Time Protocol (NTP) to periodically synchron
 
 ### Leslie Lamport's Happen-Before Relation
 
-In 1978, computer scientist Leslie Lamport proved that we do not need physical clocks to order events. Instead, we can establish order by tracking cause and effect. He defined the **happen-before relation** (denoted by `->`), establishing a strict basis for ordering events in distributed systems:
+In 1978, computer scientist Leslie Lamport proved that we do not need physical clocks to order events. Instead, we can establish order by tracking cause and effect. He defined the **happen-before relation** (denoted by `->`) in his seminal paper [Time, Clocks, and the Ordering of Events in a Distributed System](https://lamport.azurewebsites.net/pubs/time-clocks.pdf), establishing a strict basis for ordering events in distributed systems:
 
 **The Physical Mail Analogy**:
 Imagine Alice in London writes a physical letter, puts it in an envelope, and mails it to Bob in New York.
@@ -116,7 +124,7 @@ For databases requiring precise conflict detection (such as detecting concurrent
 
 ## Vector Clocks
 
-Vector Clocks extend Lamport Timestamps to capture full causal history. Instead of a single integer, a process maintains a vector (an array) of logical clocks representing its current knowledge of all nodes in the system.
+[Vector Clocks](https://doi.org/10.1007/3-540-15850-1_9) extend Lamport Timestamps to capture full causal history. Instead of a single integer, a process maintains a vector (an array) of logical clocks representing its current knowledge of all nodes in the system.
 
 **The Shared Timeline Log Analogy**:
 Instead of separate personal diaries, imagine each node maintains a "shared timeline log book" represented by an array (like `[A, B, C]`). 

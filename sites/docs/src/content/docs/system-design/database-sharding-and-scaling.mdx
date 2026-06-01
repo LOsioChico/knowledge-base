@@ -11,6 +11,7 @@ related:
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/distributed-caching]]"
   - "[[system-design/messaging-patterns]]"
+  - "[[system-design/logical-clocks]]"
 source:
   - https://algomaster.io/learn/system-design
   - https://www.postgresql.org/docs/current/ddl-partitioning.html
@@ -285,7 +286,7 @@ Replication between nodes operates under three synchronicity models ([PostgreSQL
 
 ### 1. Synchronous Replication
 The Master writes the transaction to the WAL locally, replicates the WAL entries to the slave, and **waits for the slave to write the log and return an acknowledgement** before returning success to the application client.
-* **Pro**: Strong consistency (Zero data loss or dirty reads on master failover).
+* **Pro**: [[system-design/consistency-models|Strong consistency]] (Zero data loss or dirty reads on master failover).
 * **Con**: Extremely high write latency. If even a single replica experiences network skew, disk choke, or crashes, all master writes block.
 
 ### 2. Asynchronous Replication
@@ -327,7 +328,7 @@ Imagine a user updating their bio on a profile page. The update commits on the M
 
 ### Mitigations
 1. **Sticky Session Routing**: The session router tracks write timestamps. If a client writes data, the router sticky-pins all of that client's reads to the Master database for a brief window (e.g. 2-5 seconds), bypassing the replicas until replication lag catches up.
-2. **Quorum Reads**: Read from a subset of replicas and resolve inconsistencies using vector clocks or timestamps.
+2. **Quorum Reads**: Read from a subset of replicas and resolve inconsistencies using [[system-design/logical-clocks|vector clocks]] or timestamps.
 
 #### Sticky Session Routing Code Blueprint
 Here is a production-grade TypeScript middleware example demonstrating how sticky session routing is implemented in Node.js/Express using Redis. 

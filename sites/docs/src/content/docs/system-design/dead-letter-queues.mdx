@@ -11,6 +11,7 @@ related:
   - "[[system-design/delivery-semantics]]"
   - "[[system-design/distributed-transactions]]"
   - "[[system-design/consistency-models]]"
+  - "[[system-design/distributed-caching]]"
 source:
   - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
   - https://www.rabbitmq.com/docs/dlx
@@ -210,7 +211,7 @@ Double the wait interval after each failure. This spreads retries over time, giv
 
 ### Exponential backoff with jitter
 
-Add a random offset to each backoff interval to prevent the **thundering herd** problem. Without jitter, all messages that failed at the same time retry at the same time, recreating the spike:
+Add a random offset to each backoff interval to prevent the **[[system-design/distributed-caching|thundering herd]]** problem. Without jitter, all messages that failed at the same time retry at the same time, recreating the spike:
 
 ```
 delay = min(maxDelay, baseDelay × 2^attempt + random(0, baseDelay))

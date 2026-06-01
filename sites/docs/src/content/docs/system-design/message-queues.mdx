@@ -5,6 +5,10 @@ aliases: [message queues, message broker, event streaming, async messaging]
 tags: [type/concept]
 area: system-design
 status: evergreen
+source:
+  - https://kafka.apache.org/documentation/
+  - https://www.rabbitmq.com/docs/tutorials
+  - https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -105,7 +109,7 @@ flowchart TD
   flows={[
     { label: "Point-to-Point", steps: [
       { from: "producer", to: "queue", message: "Push Message A", description: "Producer sends Message A into the queue. The queue stores it and waits until a consumer is free to pick it up." },
-      { from: "queue", to: "consumer1", message: "Deliver A (locked)", description: "Queue delivers Message A to Consumer 1 and locks it: no other consumer can see or process this message. This guarantees exactly-once delivery." },
+      { from: "queue", to: "consumer1", message: "Deliver A (locked)", description: "Queue delivers Message A to Consumer 1 and locks it: no other consumer can see or process this message. This guarantees exclusive single-consumer delivery." },
       { from: "producer", to: "queue", message: "Push Message B", description: "Producer sends a second message. The queue picks the next available consumer (rotating through them one by one, called round-robin) so work is spread evenly." },
       { from: "queue", to: "consumer2", message: "Deliver B (locked)", description: "Message B goes to Consumer 2 because Consumer 1 is still busy. Each message is handled by exactly one consumer: multiple consumers share the load but never duplicate work." },
     ]},
@@ -125,7 +129,7 @@ flowchart TD
 
 Asynchronous platforms are divided into two fundamentally different architectures: **Traditional Message Brokers** and **Log-Based Event Streamers**. Choosing the correct one determines how data is persisted, processed, and scaled.
 
-### Traditional Message Brokers (e.g., RabbitMQ, Amazon SQS)
+### Traditional Message Brokers (e.g., [RabbitMQ](https://www.rabbitmq.com/docs/tutorials), [Amazon SQS](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html))
 
 Traditional brokers focus on transient delivery using a **smart broker, dumb consumer** model. 
 
@@ -133,7 +137,7 @@ Traditional brokers focus on transient delivery using a **smart broker, dumb con
 *   **State Control**: The broker is responsible for tracking which consumer has locked which message, managing visibility timeouts, and coordinating message retries.
 *   **Routing Logic**: Supports rich routing features (like header-based routing, wildcards, and direct exchanges), allowing complex routing graphs inside the broker itself.
 
-### Log-Based Event Streamers (e.g., Apache Kafka, Apache Pulsar)
+### Log-Based Event Streamers (e.g., [Apache Kafka](https://kafka.apache.org/documentation/), Apache Pulsar)
 
 Event streams treat messages as a durable, chronological history using a **dumb broker, smart consumer** model.
 

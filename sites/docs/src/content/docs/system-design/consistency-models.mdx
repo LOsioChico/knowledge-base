@@ -1,6 +1,14 @@
 ---
 title: CAP Theorem & Consistency Models
 description: Exploring the trade-offs of the CAP theorem, linearizability vs sequential consistency, and client-centric consistency guarantees in distributed systems.
+aliases: [CAP theorem, linearizability, eventual consistency, strong consistency]
+tags: [type/concept]
+area: system-design
+status: evergreen
+source:
+  - https://dl.acm.org/doi/10.1145/78969.78972
+  - https://www.cs.berkeley.edu/~brewer/cs262b-2004/PODC-keynote.pdf
+  - https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -41,7 +49,7 @@ A consistency model defines the contract between a distributed database and its 
 
 ## The Core Trade-off: CAP Theorem Explained
 
-The CAP theorem states that a distributed data store can simultaneously provide at most two of the following three guarantees:
+The [CAP theorem](https://www.cs.berkeley.edu/~brewer/cs262b-2004/PODC-keynote.pdf), proposed by Eric Brewer in 2000, states that a distributed data store can simultaneously provide at most two of the following three guarantees:
 
 *   **Consistency (Linearizability)**: Every read receives the most recent write or an error.
 *   **Availability**: Every non-failing node returns a non-error response for every request, without guaranteeing that it contains the most recent write.
@@ -97,7 +105,7 @@ Distributed databases do not offer a binary choice between strong consistency an
 | :--- | :--- | :--- | :--- |
 | [**Linearizable**](#1-linearizability-strong-consistency) | Strict real-time global ordering. Reads always return the latest write. | Extremely High (Consensus required) | Google Spanner, CockroachDB |
 | [**Sequential**](#2-sequential-consistency) | Identical global order of operations seen by all nodes. Real-time is ignored. | High (Global logical sequencing) | Apache ZooKeeper (for writes) |
-| [**Causal**](#3-causal-consistency) | Causally related operations are seen in the same order. Concurrent updates can diverge. | Medium (Vector tracking) | Cassandra (with lightweight transactions) |
+| [**Causal**](#3-causal-consistency) | Causally related operations are seen in the same order. Concurrent updates can diverge. | Medium (Vector tracking) | MongoDB (with causal consistency sessions) |
 | [**Eventual**](#4-eventual-consistency) | Replicas converge to the same value over time if no new writes occur. | Low (Background anti-entropy) | DynamoDB, CouchDB, DNS |
 
 *Note: For detail on partitioning strategies and hashing techniques used to distribute these data sets, see [[system-design/consistent-hashing|Consistent Hashing]].*
@@ -110,7 +118,7 @@ Data-centric consistency models define system-wide, global constraints on the or
 
 ### 1. Linearizability (Strong Consistency)
 
-Linearizability is the strongest possible consistency guarantee. It imposes a strict real-time constraint: as soon as a write completes successfully, every subsequent read across any server in the system must return that new value or a newer one.
+[Linearizability](https://dl.acm.org/doi/10.1145/78969.78972), defined by Herlihy and Wing in 1990, is the strongest possible consistency guarantee. It imposes a strict real-time constraint: as soon as a write completes successfully, every subsequent read across any server in the system must return that new value or a newer one.
 
 **The Google Doc Analogy**:
 Imagine a shared Google Doc in "real-time" editing mode. If Alice edits a sentence on her screen and receives confirmation that the edit is saved, Bob (reading the same document a split second later) is guaranteed to see Alice's new sentence. He will never see the old, stale version. 
@@ -312,7 +320,7 @@ If you choose Availability (AP) and allow concurrent local writes, you must even
 *   **CRDTs (Conflict-Free Replicated Data Types)**: Uses mathematical structures (like grow-only sets, PN-counters, or observed-removed sets) to merge concurrent updates deterministically without custom resolution code.
 
 <Aside type="note" title="Case Study: Amazon Dynamo & The Shopping Cart Sibling Merge">
-Amazon's original Dynamo database pioneered the use of **Multi-Value Sibling Registers** to enforce a strict **"never lose a sale"** business rule. 
+Amazon's original [Dynamo database](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) pioneered the use of **Multi-Value Sibling Registers** to enforce a strict **"never lose a sale"** business rule. 
 
 During a network partition, if a customer added a "Book" on Server A (London) and "Headphones" on Server B (New York), a standard Last-Write-Wins (LWW) resolution would have silently deleted one of the items based on timestamp (resulting in lost revenue). By storing both values as siblings `[["Book"], ["Headphones"]]`, the shopping cart application server received both states upon the next read and executed a simple `Union()` merge: `Cart = ["Book", "Headphones"]`. The customer sees both items, checkout succeeds, and data loss is avoided!
 </Aside>
