@@ -7,7 +7,7 @@ area: system-design
 status: evergreen
 source:
   - https://lamport.azurewebsites.net/pubs/time-clocks.pdf
-  - https://doi.org/10.1007/3-540-15850-1_9
+  - https://www.vs.inf.ethz.ch/publ/papers/VirtTimeGlobStates.pdf
 related:
   - "[[system-design/back-of-the-envelope-estimation]]"
   - "[[system-design/distributed-caching]]"
@@ -124,7 +124,7 @@ For databases requiring precise conflict detection (such as detecting concurrent
 
 ## Vector Clocks
 
-[Vector Clocks](https://doi.org/10.1007/3-540-15850-1_9) extend Lamport Timestamps to capture full causal history. Instead of a single integer, a process maintains a vector (an array) of logical clocks representing its current knowledge of all nodes in the system.
+[Vector Clocks](https://www.vs.inf.ethz.ch/publ/papers/VirtTimeGlobStates.pdf) extend Lamport Timestamps to capture full causal history. Instead of a single integer, a process maintains a vector (an array) of logical clocks representing its current knowledge of all nodes in the system.
 
 **The Shared Timeline Log Analogy**:
 Instead of separate personal diaries, imagine each node maintains a "shared timeline log book" represented by an array (like `[A, B, C]`). 
