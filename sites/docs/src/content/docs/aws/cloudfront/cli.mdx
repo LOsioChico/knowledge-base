@@ -12,7 +12,8 @@ related:
   - "[[aws/cloudfront]]"
 prerequisites:
   - "[[aws/cli/profiles-and-credentials]]"
-source: []
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/cloudfront/
 ---
 
 > Distribution discovery, invalidation, and alias inspection. Most [[aws/cloudfront|CloudFront]] work is "find which distribution serves this hostname".
@@ -145,3 +146,4 @@ Stale `--if-match` rejects the update: refetch and retry.
 
 - [[aws/amplify|Amplify]] distributions often appear only via [[aws/amplify/cli|Amplify CLI]].
 - Alias conflicts: [[aws/cloudfront/alternate-domain-claim|alternate-domain ghost claims]].
+- [AWS CloudFront CLI reference](https://docs.aws.amazon.com/cli/latest/reference/cloudfront/) (official): full list of `aws cloudfront` subcommands.

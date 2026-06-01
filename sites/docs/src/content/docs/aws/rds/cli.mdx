@@ -13,7 +13,8 @@ unrelated:
   - "[[aws/s3/cross-account-migration]]"
 prerequisites:
   - "[[aws/cli/profiles-and-credentials]]"
-source: []
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/
 ---
 
 > Read + snapshot + restore for [[aws/rds|RDS]]. The snapshot family is the entire migration surface; the rest is inventory.
@@ -146,3 +147,4 @@ aws rds wait db-instance-deleted --profile $AWS_PROFILE --region $REGION \
 - Always `wait` between create/copy/restore in scripts: else `InvalidDBSnapshotState`.
 - Full cross-account + [[aws/kms|KMS]] sequence: [[aws/rds/cross-account-snapshot|cross-account RDS snapshot]].
 - See [[aws/cli/profiles-and-credentials|profiles and credentials]] for multi-account `--profile`.
+- [AWS RDS CLI reference](https://docs.aws.amazon.com/cli/latest/reference/rds/) (official): full list of `aws rds` subcommands.

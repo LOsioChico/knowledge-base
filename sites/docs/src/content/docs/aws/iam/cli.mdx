@@ -11,7 +11,8 @@ related:
   - "[[aws/recipes/cross-account-role-pattern]]"
 prerequisites:
   - "[[aws/iam/policy-evaluation]]"
-source: []
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/iam/
 ---
 
 > Read-only [[aws/iam|IAM]] commands for unexpected `AccessDenied`. Start with "who is the caller?" and "what policies attach?" before destructive changes.
@@ -182,3 +183,4 @@ aws iam delete-access-key --profile $AWS_PROFILE \
 
 - Always `aws sts get-caller-identity` first: mismatched `--profile` is the #1 mystery denial. See [[aws/cli/profiles-and-credentials|profiles and credentials]].
 - For cross-account from a profile, use `role_arn` + `source_profile` in `~/.aws/config`: [[aws/recipes/cross-account-role-pattern|cross-account pattern]].
+- [AWS IAM CLI reference](https://docs.aws.amazon.com/cli/latest/reference/iam/) (official): full list of `aws iam` subcommands.

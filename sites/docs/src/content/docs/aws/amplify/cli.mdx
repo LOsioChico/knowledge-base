@@ -10,7 +10,8 @@ related:
   - "[[aws/cloudfront/cli]]"
 prerequisites:
   - "[[aws/cli/profiles-and-credentials]]"
-source: []
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/amplify/
 ---
 
 > The four [[aws/amplify|Amplify Hosting]] lifecycles (app, branch, deployment, domain) plus inspection during build failures or domain moves.
@@ -185,3 +186,4 @@ aws amplify delete-domain-association --profile $AWS_PROFILE --region $REGION \
 - `WEB_COMPUTE` for Next.js SSR; `WEB` is static-only.
 - Poll `get-job` until `SUCCEED`/`FAILED`.
 - Cross-account sequence: [[aws/amplify/cross-account-migration|Amplify cross-account migration]].
+- [AWS Amplify CLI reference](https://docs.aws.amazon.com/cli/latest/reference/amplify/) (official): full list of `aws amplify` subcommands.

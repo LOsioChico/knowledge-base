@@ -10,7 +10,8 @@ related:
   - "[[aws/lambda]]"
 prerequisites:
   - "[[aws/lambda/quickstart]]"
-source: []
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/lambda/
 ---
 
 > Function lifecycle, invoke, and inspection commands for triage. Expand as [[aws/lambda|Lambda]] recipes land.
@@ -150,3 +151,4 @@ aws lambda list-aliases --profile $AWS_PROFILE --region $REGION \
 
 - Wire triggers to **aliases**, not bare `$LATEST`.
 - Prefer `update-function-code` + `publish-version` for an audit trail.
+- [AWS Lambda CLI reference](https://docs.aws.amazon.com/cli/latest/reference/lambda/) (official): full list of `aws lambda` subcommands.
