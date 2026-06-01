@@ -1,9 +1,16 @@
 ---
 title: KMS CLI cheatsheet
 description: KMS key creation, aliases, key-policy edits, and scheduled deletion commands.
+aliases: [kms cli, kms commands]
+tags: [type/recipe, tech/aws, tech/kms, tech/aws-cli]
+area: aws
+status: evergreen
+source:
+  - https://docs.aws.amazon.com/cli/latest/reference/kms/
 related:
   - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/rds/cli]]"
+  - "[[aws/kms]]"
 unrelated:
   - "[[aws/s3/cross-account-migration]]"
 prerequisites:
@@ -152,3 +159,4 @@ There's no undo after the pending window. Anything encrypted with that key becom
 
 - Reference keys by **alias** in app config.
 - Cross-account needs key-policy edit **and** [[aws/iam|IAM]] policy on the consumer: [[aws/rds/cross-account-snapshot|RDS cross-account snapshot]] walkthrough.
+- [AWS KMS CLI reference](https://docs.aws.amazon.com/cli/latest/reference/kms/) (official): full list of `aws kms` subcommands.

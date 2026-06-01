@@ -1,6 +1,10 @@
 ---
 title: Cross-account AMI copy (EC2)
 description: Share and copy an EC2 AMI to a destination account so the destination owns independent snapshots.
+aliases: [ami cross-account copy, ec2 ami copy, cross-account ami]
+tags: [type/recipe, tech/aws, tech/ec2]
+area: aws
+status: evergreen
 related:
   - "[[aws/account-migrations]]"
   - "[[aws/ec2/snapshot-all-instances]]"
@@ -8,6 +12,9 @@ related:
 prerequisites:
   - "[[aws/ec2/snapshot-all-instances]]"
   - "[[aws/iam/policy-evaluation]]"
+source:
+  - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-explicit.html
+  - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/CopyingAMIs.html
 ---
 
 > Move an [[aws/ec2/snapshot-all-instances|EC2 AMI]] so the destination **owns** an independent copy. Launch permission alone lets B boot from A's AMI but **not** `copy-image`: snapshot share is required.

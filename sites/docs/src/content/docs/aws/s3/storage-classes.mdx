@@ -1,11 +1,20 @@
 ---
 title: S3 storage classes
 description: S3 storage class comparison — Standard, Intelligent-Tiering, IA, Glacier tiers, and when retrieval fees bite.
+aliases: [S3 storage tiers, S3 Glacier, Intelligent-Tiering]
+tags: [type/concept, tech/aws, tech/s3]
+area: aws
+status: evergreen
 related:
   - "[[aws/s3/quickstart]]"
   - "[[aws/s3/lifecycle-rules]]"
+  - "[[aws/s3/event-notifications]]"
+  - "[[aws/s3]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-freq-data-access
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html#sc-compare
 ---
 
 > Every S3 object has a storage class controlling per-GB cost, retrieval cost, latency, and AZ count. Pick wrong and you overpay for idle storage or pay surprise retrieval fees on hot data.

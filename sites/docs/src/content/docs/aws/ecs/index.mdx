@@ -1,6 +1,16 @@
 ---
 title: ECS and Fargate
 description: Elastic Container Service — task definitions, services, Fargate vs EC2 launch types, and ECR pulls.
+aliases: [Elastic Container Service, Amazon ECS, AWS Fargate]
+tags: [type/moc, tech/aws, tech/ecs]
+area: aws
+status: evergreen
+related:
+  - "[[aws/lambda-vs-ec2]]"
+source:
+  - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-networking-awsvpc.html
+  - https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-policies.html
+  - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html
 ---
 
 > Amazon ECS is AWS's container orchestrator: define a **task** (containers + resources), AWS schedules it. **Fargate** is serverless compute; **EC2** launch type means you manage cluster nodes on [[aws/ec2|EC2]].

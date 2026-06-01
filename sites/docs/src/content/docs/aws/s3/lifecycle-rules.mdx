@@ -1,12 +1,21 @@
 ---
 title: S3 lifecycle rules
 description: Per-bucket lifecycle configuration — transitions, expiration, noncurrent version cleanup, and multipart abort.
+aliases: [S3 lifecycle, lifecycle configuration, lifecycle transitions]
+tags: [type/concept, tech/aws, tech/s3]
+area: aws
+status: evergreen
 related:
   - "[[aws/s3/storage-classes]]"
   - "[[aws/s3/quickstart]]"
   - "[[aws/s3/cli]]"
+  - "[[aws/s3]]"
 prerequisites:
   - "[[aws/s3/storage-classes]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/intro-lifecycle-rules.html#intro-lifecycle-rules-filter
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lifecycle-mgmt.html
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-configuration-examples.html
 ---
 
 > Up to 1,000 rules per bucket age objects automatically: transition to cheaper [[aws/s3/storage-classes|storage classes]] or delete. Scales without custom code.

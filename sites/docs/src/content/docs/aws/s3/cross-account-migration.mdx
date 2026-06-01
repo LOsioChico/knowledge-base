@@ -1,14 +1,23 @@
 ---
 title: Cross-account S3 bucket migration
 description: Move an S3 bucket between accounts — inventory config, grant cross-account read, aws s3 sync, verify, cutover.
+aliases: [S3 cross-account copy, S3 bucket migration, cross-account S3 sync]
+tags: [type/recipe, tech/aws, tech/s3]
+area: aws
+status: evergreen
 related:
   - "[[aws/account-migrations]]"
   - "[[aws/rds/cross-account-snapshot]]"
   - "[[aws/recipes/cross-account-role-pattern]]"
   - "[[aws/s3/cli]]"
+  - "[[aws/kms]]"
+  - "[[aws/s3]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
   - "[[aws/iam/policy-evaluation]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html
+  - https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html
 ---
 
 > Move a bucket between accounts by recreating config in the target, granting cross-account read on the source, and using `aws s3 sync` for server-side copies.

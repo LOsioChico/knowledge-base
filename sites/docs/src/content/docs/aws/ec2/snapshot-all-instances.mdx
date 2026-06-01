@@ -1,10 +1,17 @@
 ---
 title: Snapshot every EC2 instance with AMIs
 description: Manual point-in-time backup of every EC2 instance via one AMI per instance.
+aliases: [ec2 snapshot all, ec2 ami backup, snapshot all instances]
+tags: [type/recipe, tech/aws, tech/ec2]
+area: aws
+status: evergreen
 related:
   - "[[aws/ec2/ami-cross-account-copy]]"
 prerequisites:
   - "[[aws/cli/profiles-and-credentials]]"
+source:
+  - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html
+  - https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/deregister-ami.html
 ---
 
 > Take a manual backup of every EC2 instance by creating one AMI per instance. AMIs capture root volume, attached EBS, and boot config: redeployable from a single image ID.

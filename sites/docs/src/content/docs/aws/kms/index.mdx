@@ -1,6 +1,17 @@
 ---
 title: KMS
 description: AWS Key Management Service — customer-managed vs AWS-managed keys, key policies, and cross-account grants.
+aliases: [Key Management Service, AWS KMS]
+tags: [type/moc, tech/aws, tech/kms]
+area: aws
+status: evergreen
+related:
+  - "[[aws/iam/policy-evaluation]]"
+  - "[[aws/kms/cli]]"
+  - "[[aws/rds/cross-account-snapshot]]"
+  - "[[aws/s3/cross-account-migration]]"
+source:
+  - https://docs.aws.amazon.com/kms/latest/developerguide/overview.html
 ---
 
 > AWS Key Management Service (KMS) is the encryption-key broker for encryption-at-rest: S3, [[aws/rds|RDS]], EBS, and [[aws/secrets-manager|Secrets Manager]] call KMS to encrypt and decrypt **data keys** (short-lived symmetric keys that wrap bulk data).

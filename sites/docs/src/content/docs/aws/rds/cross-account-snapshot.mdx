@@ -1,6 +1,10 @@
 ---
 title: Cross-account RDS snapshot sharing
 description: Move encrypted RDS between accounts — CMK re-encrypt, share snapshot, copy and restore in target account.
+aliases: [rds cross-account snapshot, rds snapshot sharing]
+tags: [type/recipe, tech/aws, tech/rds, tech/kms]
+area: aws
+status: evergreen
 related:
   - "[[aws/account-migrations]]"
   - "[[aws/cli/profiles-and-credentials]]"
@@ -9,9 +13,27 @@ related:
   - "[[aws/s3/cross-account-migration]]"
   - "[[aws/secrets-manager]]"
   - "[[aws/ec2/ami-cross-account-copy]]"
+  - "[[aws/kms]]"
 prerequisites:
   - "[[aws/rds/cli]]"
   - "[[aws/iam/policy-evaluation]]"
+source:
+  - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/share-encrypted-snapshot.html
+  - https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html
+  - https://docs.aws.amazon.com/cli/latest/reference/kms/create-key.html
+  - https://docs.aws.amazon.com/cli/latest/reference/kms/put-key-policy.html
+  - https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying-external-accounts.html
+  - https://docs.aws.amazon.com/cli/latest/reference/kms/create-alias.html
+  - https://docs.aws.amazon.com/cli/latest/reference/kms/describe-key.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/create-db-snapshot.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/copy-db-snapshot.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/modify-db-snapshot-attribute.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-snapshot-attributes.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-snapshots.html
+  - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_ShareSnapshot.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/restore-db-instance-from-db-snapshot.html
+  - https://docs.aws.amazon.com/cli/latest/reference/rds/describe-db-instances.html
+  - https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_CopySnapshot.html
 ---
 
 > Move encrypted [[aws/rds|RDS]] by sharing a snapshot. Default AWS-managed KMS key **cannot** be shared: re-encrypt under a customer-managed key first.

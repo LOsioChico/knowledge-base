@@ -1,12 +1,22 @@
 ---
 title: S3 presigned URLs
 description: Time-limited S3 GET and PUT URLs for browser download and direct upload without public buckets.
+aliases: [presigned URLs, pre-signed URLs, S3 signed URLs]
+tags: [type/concept, tech/aws, tech/s3]
+area: aws
+status: evergreen
 related:
   - "[[aws/secrets-manager]]"
   - "[[aws/lambda-vs-ec2]]"
   - "[[aws/s3/quickstart]]"
+  - "[[aws/s3]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html#ShareObjectPresignedCLI
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrl-Expiration
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html#PresignedUrlUploadObject-LimitCapabilities
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html
 ---
 
 > A presigned URL grants time-limited permission for one S3 operation on one object. The signature comes from your credentials: recipients need no AWS account.

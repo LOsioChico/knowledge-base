@@ -1,11 +1,21 @@
 ---
 title: S3 event notifications
 description: S3 object event notifications to SQS, SNS, Lambda, or EventBridge — filters, semantics, and recursion traps.
+aliases: [S3 events, S3 notifications, bucket notifications]
+tags: [type/concept, tech/aws, tech/s3]
+area: aws
+status: evergreen
 related:
   - "[[aws/s3/quickstart]]"
+  - "[[aws/s3/storage-classes]]"
   - "[[aws/eventbridge/event-driven-decoupling]]"
+  - "[[aws/s3]]"
 prerequisites:
   - "[[aws/s3/quickstart]]"
+source:
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
+  - https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventNotifications.html#EventNotifications
+  - https://docs.aws.amazon.com/lambda/latest/dg/with-s3.html
 ---
 
 > S3 event notifications fire to [[aws/sns|SNS]], [[aws/sqs|SQS]], [[aws/lambda|Lambda]], or [[aws/eventbridge|EventBridge]] when configured object lifecycle events occur: turning a passive bucket into an event-driven pipeline front.
@@ -20,7 +30,7 @@ Before diving in, make sure you understand:
 
 ## Event families
 
-Ten activity types including Intelligent-Tiering auto-tier ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
+Ten activity types including [[aws/s3/storage-classes|Intelligent-Tiering]] auto-tier ([source](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types)):
 
 | Family | Wildcard | Notes |
 | --- | --- | --- |

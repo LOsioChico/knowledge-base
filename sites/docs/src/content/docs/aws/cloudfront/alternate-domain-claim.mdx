@@ -1,12 +1,20 @@
 ---
 title: CloudFront alternate-domain ghost claims
 description: CloudFront CNAME conflicts across accounts — diagnosis, ACM workaround, and when to wait or open a support case.
+aliases: [CloudFront CNAME conflicts, ghost claims]
+tags: [type/concept, tech/aws, tech/cloudfront, gotchas]
+area: aws
+status: evergreen
 related:
   - "[[aws/amplify/cross-account-migration]]"
   - "[[aws/cloudfront/cli]]"
   - "[[aws/account-migrations]]"
+  - "[[aws/cloudfront]]"
 prerequisites:
   - "[[aws/cloudfront/cli]]"
+source:
+  - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/alternate-domain-names-move-options.html
+  - https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/CNAMEs.html#alternate-domain-names-restrictions
 ---
 
 > [[aws/cloudfront|CloudFront]] alternate domain names are globally unique across accounts. Amplify domain moves can leave **ghost claims**: retries stack faster than DNS can chase them.

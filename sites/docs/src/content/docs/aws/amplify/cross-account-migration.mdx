@@ -1,6 +1,10 @@
 ---
 title: Cross-account Amplify app migration
 description: Recreate an Amplify Hosting app in a new account via zip deployment and custom domain handoff.
+aliases: [amplify cross-account migration, amplify account migration]
+tags: [type/recipe, tech/aws, tech/amplify]
+area: aws
+status: evergreen
 related:
   - "[[aws/account-migrations]]"
   - "[[aws/amplify/cli]]"
@@ -9,6 +13,8 @@ related:
 prerequisites:
   - "[[aws/amplify/cli]]"
   - "[[aws/iam/policy-evaluation]]"
+source:
+  - https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html
 ---
 
 > Recreate [[aws/amplify|Amplify Hosting]] in a new account: `create-app` → branch → zip deployment → move custom domain. CLI-driven and scriptable for dry runs.
