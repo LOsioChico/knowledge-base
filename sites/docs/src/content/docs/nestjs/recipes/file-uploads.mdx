@@ -1,6 +1,12 @@
 ---
 title: "File uploads: Local, Streaming, and Direct Cloud"
 description: Accept multipart form-data uploads, prevent memory exhaustion and ephemeral disk loss gotchas, stream directly to cloud storage, and implement secure direct S3 presigned PUT uploads.
+aliases: [file upload, multipart upload, multer, presigned upload]
+tags: [type/recipe, tech/typescript, tech/multer]
+area: nestjs
+status: evergreen
+source:
+  - https://docs.nestjs.com/techniques/file-upload
 related:
   - "[[nestjs/fundamentals/interceptors]]"
   - "[[nestjs/fundamentals/pipes]]"
@@ -404,3 +410,4 @@ When developers think of "file upload," they usually think of a browser sending 
 - [[nestjs/recipes/validation|Validation with class-validator]]: validating text fields inside multipart forms
 - [[nestjs/recipes/dynamic-modules|Dynamic Modules]]: setting up dynamic bucket storage configurations
 - [[aws/s3/presigned-urls|S3 Presigned URLs]]: AWS SDK v3 presigned URL limits, safety rules, and details
+- [NestJS File Upload](https://docs.nestjs.com/techniques/file-upload) (official): `FileInterceptor`, `ParseFilePipe`, and Multer integration
