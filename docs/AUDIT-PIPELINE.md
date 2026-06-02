@@ -56,6 +56,20 @@ Full re-audit: `set -a; source .env; set +a; find sites/docs/src/content/docs -n
 
 (from `scripts/audit-notes/`): `bun run audit:mdx-ci`, `bun run audit:mdx-triage`. Explicit paths still work: `npx tsx scripts/audit-notes/mdx-audit-notes.ts --profile=mdx-triage sites/docs/src/content/docs/<path>.mdx`.
 
+## Contradiction scanner
+
+Cross-note contradiction detection (LLM-powered, not in CI). Finds factual contradictions between notes connected via `related:` or body wikilinks.
+
+```bash
+set -a; source .env; set +a
+bun run audit:contradictions                  # same-area pairs only
+bun run audit:contradictions --area nestjs    # scope to one area
+bun run audit:contradictions --cross-area     # all connected pairs
+bun run audit:contradictions --json           # structured output
+```
+
+**How it works**: builds candidate pairs from frontmatter `related:` and body wikilinks (same-area by default), sends both notes to the LLM via `kb-contradiction-judge` skill, which extracts factual claims (execution order, API behavior, default values, scope) and cross-checks for contradictions. Results are cached per note-pair (cache invalidates when either note changes) and filtered through `dismissed.json`. False positives are dismissable with rule `"contradiction"`.
+
 ## Pass 1c: anchor verifier
 
 `mdx-triage` and `mdx-full` exit non-zero if `CURSOR_API_KEY` is missing or invalid. `mdx-ci` never calls the LLM. A deterministic **Pass 1c (anchor verifier)** runs after source verification: for any `source-verification` finding whose complaint is "wrong GitHub line anchor" (`L<m>-L<n>` claim), it fetches the cited file and checks whether the symbol named in the note's link text is actually defined within the original anchor's range. If yes, the finding is dropped automatically as a false positive (logged as `[pass-1c] anchor-verifier dropped N false-positive(s)`). This catches the most common LLM hallucination empirically (~50% FP rate on anchor claims) before it reaches human triage.

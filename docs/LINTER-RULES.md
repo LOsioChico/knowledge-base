@@ -38,6 +38,10 @@ Obsidian aliased wikilinks (`[[slug|label]]`) use the pipe character (`|`), whic
 
 This is a programmatically enforced quality gate in `mdx-deterministic.ts` (`checkMdxPrerequisiteBadge`). If a page does not include either of these prerequisite indicators, the `bun run lint:ci` linter will fail and block compilation. Mapped prerequisites must align logically with the nearest Map of Content (MOC) index visual flowchart sequence.
 
+## Contradiction scanner
+
+(LLM-powered, NOT in CI): detects factual contradictions between related notes. For each pair of notes connected via `related:` or body wikilinks within the same area, an LLM extracts factual claims (execution order, API behavior, default values, scope assertions) and cross-checks for incompatible statements. Runs locally via `bun run audit:contradictions` (requires `CURSOR_API_KEY`). Findings use `dismissed.json` for false-positive management. Use `--area nestjs` to scope to one area, `--cross-area` for full cross-area comparison, `--json` for structured output. Skill prompt: `.github/skills/kb-contradiction-judge/SKILL.md`.
+
 ## Known limitation of forced symmetry
 
 `related:` currently collapses three distinct relationships (peer ↔ peer, recipe → fundamental prerequisite, fundamental → recipes-that-use-it) into one symmetric field. This is fine at the current knowledge base size but will cause noise on fundamentals that get many dependents. When that starts to hurt (a fundamental's `related:` block becomes longer than its own content, ~10+ dependents), split the contract: keep `related:` for symmetric peers, add `prerequisites:` for asymmetric "you need to read this first" links (linter would NOT require back-references on `prerequisites:`). Don't pre-emptively split — wait for the friction.

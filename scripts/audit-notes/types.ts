@@ -20,7 +20,9 @@ export type RuleId =
   | "source-verification" //  audit N (always on; requires CURSOR_API_KEY)
   | "express-first"
   | "recipe-command-context" // audit S2
-  | "prerequisite-coverage"; // audit Q
+  | "prerequisite-coverage" // audit Q
+  // Cross-note checks
+  | "contradiction"; //        contradiction-scan (LLM, cross-note)
 
 export interface Finding {
   rule: RuleId;
