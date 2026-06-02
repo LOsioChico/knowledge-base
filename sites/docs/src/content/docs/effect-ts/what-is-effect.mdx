@@ -90,7 +90,7 @@ Effect ships three [runners](https://effect.website/docs/getting-started/running
 | ------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------- |
 | `Effect.runSync`    | `A` (throws on failure) | Known-synchronous paths only; [example above](#lazy-descriptions-not-running-code)                        |
 | `Effect.runPromise` | `Promise<A>`            | Bridge to `async/await` at the edge; [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it) |
-| `Effect.runFork`    | `Fiber<A, E>`           | Background work you may [interrupt](/knowledge-base/effect-ts/concurrency/); [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it)   |
+| `Effect.runFork`    | `RuntimeFiber<A, E>`           | Background work you may [interrupt](/knowledge-base/effect-ts/concurrency/); [Quickstart example](/knowledge-base/effect-ts/quickstart/#2-run-it)   |
 
 Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; pick a runner only at the **entry point**. [[effect-ts/quickstart|Quickstart]] walks all three with runnable code.
 
@@ -116,7 +116,7 @@ Compose with `pipe` / [[effect-ts/composition|Effect.gen]] inside the program; p
 
   </TabItem>
   <TabItem label="Dependencies (R)">
-    The `R` channel lists services the effect still needs. After `Layer.provide`, `R` becomes `never` and the effect is runnable:
+    The `R` channel lists services the effect still needs. After `Effect.provide`, `R` becomes `never` and the effect is runnable:
 
     ```ts twoslash title="effect-vs-promise.ts"
     import { Context, Data, Effect, Layer } from "effect";

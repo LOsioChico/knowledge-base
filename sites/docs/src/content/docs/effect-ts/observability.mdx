@@ -114,7 +114,7 @@ Notice the `spans=[item-processor, 52ms]` attribute. This lets log-analyzers (li
 
 ## 3. OpenTelemetry Integration
 
-Effect's built-in span tracing is fully compliant with the **OpenTelemetry (OTel)** standard. Under the hood, log spans are actual OpenTelemetry Tracer Spans.
+Effect provides two span mechanisms: `Effect.withLogSpan` (log annotations with timing metadata) and `Effect.withSpan` (actual OpenTelemetry trace spans). The OTel integration below uses `Effect.withSpan` internally when the `@effect/opentelemetry` layer is provided.
 
 By importing the `@effect/opentelemetry` package, you can plug in native OTel exporters. The runtime will automatically propagate trace headers across microservices boundaries and pipe all trace data to Honeycomb, Jaeger, or Datadog collectors.
 
@@ -147,7 +147,7 @@ const processPayment = Effect.gen(function* () {
   yield* Effect.sleep("200 millis");
   return "Tx-98314";
 }).pipe(
-  Effect.withLogSpan("cc-authorization")
+  Effect.withSpan("cc-authorization")
 );
 
 const program = Effect.gen(function* () {

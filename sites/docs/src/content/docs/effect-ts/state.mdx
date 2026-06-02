@@ -12,7 +12,7 @@ related:
   - "[[effect-ts/async-result]]"
   - "[[effect-ts/concurrency]]"
 source:
-  - https://effect.website/docs/concurrency/ref/
+  - https://effect.website/docs/state-management/ref/
 prerequisites:
   - "[[effect-ts/typed-errors]]"
 ---
@@ -44,7 +44,7 @@ To coordinate state safely, Effect provides three layers of concurrency primitiv
 
 ## 1. Ref for Atomic Updates
 
-A [`Ref<A>`](https://effect.website/docs/concurrency/ref) is a reference to a mutable value. All operations on a `Ref` (reads, writes, and updates) are **atomic** and guaranteed to run without interruption:
+A [`Ref<A>`](https://effect.website/docs/state-management/ref/) is a reference to a mutable value. All operations on a `Ref` (reads, writes, and updates) are **atomic** and guaranteed to run without interruption:
 
 ```ts twoslash title="ref-atomic.ts"
 import { Console, Effect, Ref } from "effect";

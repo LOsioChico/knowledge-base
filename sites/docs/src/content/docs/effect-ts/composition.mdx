@@ -135,7 +135,7 @@ Same problem, three shapes. The sections below explain when each is the right sh
 
     <Aside type="caution" title="Effect.gen short-circuits on failure">
 
-    The first `yield*` that fails ends the generator: nothing after it runs. Use `Effect.either(child)` to lift the failure into the success channel as `Either<E, A>` when the block must keep going.
+    The first `yield*` that fails ends the generator: nothing after it runs. Use `Effect.either(child)` to lift the failure into the success channel as `Either<A, E>` when the block must keep going.
 
     </Aside>
 
