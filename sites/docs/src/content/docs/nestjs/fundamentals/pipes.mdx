@@ -64,8 +64,8 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
 | --- | --- | --- |
 | [Middleware](/knowledge-base/nestjs/fundamentals/middleware/) | Whole `req` | Raw HTTP |
 | [Guards](/knowledge-base/nestjs/fundamentals/guards/) | `ExecutionContext` | Allow/deny |
-| **Pipe** | One arg + `metatype` | Transform/validate that arg |
 | [Interceptor](/knowledge-base/nestjs/fundamentals/interceptors/) | Handler stream | Before + after handler |
+| **Pipe** | One arg + `metatype` | Transform/validate that arg |
 
 `ValidationPipe` works because it reads the DTO **class** from `metatype` and runs `class-validator` on that value only ([Pipes](https://docs.nestjs.com/pipes)).
 
@@ -87,7 +87,7 @@ Return a value to continue; throw (usually `BadRequestException`) to stop the pi
     Global → controller → route (same direction as [[nestjs/fundamentals/guards|guards]]). **Every** matching pipe in the list runs.
   </TabItem>
   <TabItem label="Per parameter">
-    For one handler, Nest runs pipes on each parameter. **Route-parameter pipes run in reverse declaration order** (last `@Param()` pipe first). See [router-execution-context](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts).
+    For one handler, Nest runs pipes on each parameter in declaration order. See [router-execution-context](https://github.com/nestjs/nest/blob/master/packages/core/router/router-execution-context.ts).
   </TabItem>
 </Tabs>
 

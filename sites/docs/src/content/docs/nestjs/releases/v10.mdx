@@ -15,7 +15,7 @@ related:
 prerequisites: []
 ---
 
-> Released June 15, 2023. Smaller release than [[nestjs/releases/v11|v11]]: drops Node 12, splits `CacheModule` into `@nestjs/cache-manager`, and ships [[nestjs/recipes/swc-setup|SWC]] in the CLI. Most apps upgrade in an afternoon.
+> Released June 2023. Smaller release than [[nestjs/releases/v11|v11]]: drops Node 12 and 14 (minimum 16), splits `CacheModule` into `@nestjs/cache-manager`, and ships [[nestjs/recipes/swc-setup|SWC]] in the CLI. Most apps upgrade in an afternoon.
 
 import { Aside, Card, CardGrid } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
@@ -29,7 +29,7 @@ Before reading about the NestJS 10 release notes, make sure you understand:
 
 | Change | Type | Impact |
 | --- | --- | --- |
-| [Node.js 16+ required](#nodejs-16) | Breaking | Drop Node 12 from CI |
+| [Node.js 16+ required](#nodejs-16) | Breaking | Drop Node 12 and 14 |
 | [`CacheModule` → `@nestjs/cache-manager`](#cachemodule-moved-out-of-nestjscommon) | Breaking | Re-import; see [caching recipe](/knowledge-base/nestjs/data/caching/) |
 | [CLI Plugins need TypeScript 4.8+](#cli-plugins-require-typescript-48) | Breaking | Bump `typescript` if Swagger/GraphQL plugins enabled |
 | `ES2021` compile target | Behavior | Smaller bundles |

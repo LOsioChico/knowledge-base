@@ -374,7 +374,7 @@ WORKDIR /usr/src/app
 RUN npm install -g turbo
 COPY . .
 # Isolates only the files required to build the 'api' application
-RUN turbo prune api --out=json
+RUN turbo prune api --docker
 
 # Stage 2: Workspace dependency setup
 FROM node:22-alpine AS installer

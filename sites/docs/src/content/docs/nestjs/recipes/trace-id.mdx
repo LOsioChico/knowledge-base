@@ -423,9 +423,9 @@ Response payload:
 
 </Aside>
 
-<Aside type="caution" title="TraceLogger MUST be Transient Scope">
+<Aside type="caution" title="TraceLogger should be Transient Scope">
 
-If your logger is a singleton (`Scope.DEFAULT`), NestJS will reuse a single instance across the entire application. The dynamic call to `getTraceId()` inside `formatPid` will fail to resolve request context accurately during concurrent invocations. Always mark `TraceLogger` with `Scope.TRANSIENT`.
+`AsyncLocalStorage` itself works correctly regardless of instance scope: `getTraceId()` always resolves the store for the current async context. However, NestJS's `ConsoleLogger` uses the `context` string (e.g. `[CatsController]`) set at injection time. With `Scope.DEFAULT`, every consumer shares the same instance and the same context name. Use `Scope.TRANSIENT` so each injecting class gets its own logger instance with the correct context name.
 
 </Aside>
 

@@ -136,7 +136,7 @@ aws iam list-entities-for-policy --profile $AWS_PROFILE \
 ## Will this principal be allowed?
 
 ### Simulate policy evaluation
-Test whether an IAM user has permission to execute specific API actions on a target resource. This checks identity policies, resource policies, SCPs, and boundaries without making the actual API call:
+Test whether an IAM user has permission to execute specific API actions on a target resource. This checks identity policies, permission boundaries, and SCPs without making the actual API call (note: resource-based policies are not evaluated, and SCPs with conditions are only partially simulated):
 ```bash
 aws iam simulate-principal-policy --profile $AWS_PROFILE \
   --policy-source-arn arn:aws:iam::$ACCOUNT_ID:user/$USER_NAME \

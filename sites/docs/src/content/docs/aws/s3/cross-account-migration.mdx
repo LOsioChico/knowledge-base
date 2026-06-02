@@ -94,12 +94,13 @@ aws s3api get-bucket-policy      --profile account-a --bucket "$SRC_BUCKET" --qu
 aws s3api get-bucket-encryption  --profile account-a --bucket "$SRC_BUCKET" > src-bucket-encryption.json
 aws s3api get-bucket-versioning  --profile account-a --bucket "$SRC_BUCKET"
 aws s3api get-public-access-block --profile account-a --bucket "$SRC_BUCKET"
-aws s3api list-objects-v2        --profile account-a --bucket "$SRC_BUCKET" --query 'KeyCount' --output text
+aws s3 ls                        --profile account-a s3://$SRC_BUCKET --recursive --summarize | tail -2
 ```
 
 Expected baseline object count stdout (e.g. 15,240 objects):
 ```text
-15240
+   Total Objects: 15240
+      Total Size: 1073741824
 ```
 
 ## 3. Create destination in `account-b`
@@ -194,20 +195,22 @@ For very large buckets, run from EC2 in the destination Region so client bandwid
 
 ## 6. Verify
 
-Compare `KeyCount` on both buckets; they should match when the sync finished cleanly:
+Compare object counts on both buckets; they should match when the sync finished cleanly:
 
 ```bash
-aws s3api list-objects-v2 --profile account-a --bucket "$SRC_BUCKET" --query 'KeyCount' --output text
-aws s3api list-objects-v2 --profile account-b --bucket "$DST_BUCKET" --query 'KeyCount' --output text
+aws s3 ls --profile account-a s3://$SRC_BUCKET --recursive --summarize | tail -2
+aws s3 ls --profile account-b s3://$DST_BUCKET --recursive --summarize | tail -2
 ```
 
 Expected output confirming matching counts (e.g., 15,240 objects in both):
 ```text
 Source Bucket (Account A):
-15240
+   Total Objects: 15240
+      Total Size: 1073741824
 
 Destination Bucket (Account B):
-15240
+   Total Objects: 15240
+      Total Size: 1073741824
 ```
 
 ## 7. Cut writers over
