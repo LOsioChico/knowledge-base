@@ -107,9 +107,7 @@ Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com
   <TabItem label="Jest">
     Replace `ts-jest` with `@swc/jest`:
 
-    ```bash
-    npm i --save-dev @swc/jest
-    ```
+    <PackageManagers pkg="@swc/jest" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
     ```json
     {
@@ -124,9 +122,7 @@ Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com
     `.swcrc` needs `legacyDecorator` + `decoratorMetadata` or DI fails at runtime with unresolved dependencies.
   </TabItem>
   <TabItem label="Vitest">
-    ```bash
-    npm i --save-dev vitest unplugin-swc @swc/core
-    ```
+    <PackageManagers pkg="vitest unplugin-swc @swc/core" dev pkgManagers={['npm', 'pnpm', 'yarn', 'bun']} />
 
     ```typescript title="vitest.config.ts"
     import { dirname, resolve } from "node:path";
