@@ -493,7 +493,6 @@ const { actors, steps, title } = Astro.props;
 
           const dx = x2 - x1;
           const isRight = dx > 0;
-          const len = Math.abs(dx);
           
           const pad = 12; // Gap from the lifeline
           const x1_draw = x1 + (isRight ? pad : -pad);

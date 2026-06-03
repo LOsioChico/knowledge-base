@@ -563,7 +563,6 @@ const nodesWithColors = nodes.map((n, i) => ({
       let showVnodes = false;
       let prevRouting = new Map<string, string>();
       let addCounter = 0;
-      let highlightedKey: string | null = null;
       let isFullscreen = false;
 
       const NS = 'http://www.w3.org/2000/svg';
@@ -956,7 +955,6 @@ const nodesWithColors = nodes.map((n, i) => ({
 
       /* ── HIGHLIGHT ── */
       function highlight(keyId: string | null) {
-        highlightedKey = keyId;
         // Arcs
         svg.querySelectorAll<SVGElement>('.hr-arc, .hr-arc-head').forEach(el => {
           if (!keyId) { el.style.opacity = ''; return; }

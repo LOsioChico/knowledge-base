@@ -1281,13 +1281,8 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
       let clientValB: string | null = null;
 
       // Anti-entropy state
-      let syncPending = false;
       let conflictResolutionActive = false;
       let multiValueActive = false;
-
-      // Timestamps for LWW conflict simulation
-      let timestampA = 0;
-      let timestampB = 0;
 
       // Tour / Walkthrough state
       let activeTour: null | "AP" | "CP" = null;
@@ -1306,7 +1301,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
       const readoutA = comp.querySelector<HTMLElement>("#readout-a")!;
       const readoutB = comp.querySelector<HTMLElement>("#readout-b")!;
 
-      const btnReadA = comp.querySelector<HTMLButtonElement>("#btn-read-a")!;
       const btnReadB = comp.querySelector<HTMLButtonElement>("#btn-read-b")!;
       
       const networkLink = comp.querySelector<HTMLElement>("#network-link")!;
@@ -1580,7 +1574,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
       // ═══ ANTI-ENTROPY SYNC & CONFLICT OVERLAYS ═══
       function triggerSyncReconciliation() {
         setMsg("🔧 Fiber line restored. Nodes exchanging anti-entropy sync packets...", "warning");
-        syncPending = true;
         updateUI();
 
         // Send replication sync packets both ways
@@ -1589,7 +1582,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
           sendPacket(nodeB, nodeA, "replicate", "Amber");
 
           setTimeout(() => {
-            syncPending = false;
             
             // Check if divergence happened in AP mode
             if (valA !== valB) {
@@ -1658,7 +1650,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
           if (!multiValueActive) return;
 
           const chosenVal = idx === 0 ? valA : valB;
-          const otherVal = idx === 0 ? valB : valA;
 
           multiValueActive = false;
           resolutionHud.classList.add("hidden");
@@ -1693,10 +1684,10 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
           clientValB = null;
 
           // 1. Client to Replica Write Request
-          sendPacket(sourceEl, targetNodeEl, "write", chosenVal as any, (success) => {
+          sendPacket(sourceEl, targetNodeEl, "write", chosenVal as any, () => {
             if (networkState === "healthy") {
               // Write replicates instantly
-              sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, (replicaSuccess) => {
+              sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, () => {
                 sendPacket(oppositeNodeEl, targetNodeEl, "ack", "Green");
                 
                 setTimeout(() => {
@@ -1710,35 +1701,33 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
                 }, 550);
               });
             } else {
-              // Partition active
-              if (currentMode === "CP") {
-                // CP Mode blocks write due to lack of consensus
-                sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, (repSuccess) => {
-                  // This fails due to partition. Send error back to client
-                  sendPacket(targetNodeEl, sourceEl, "error", "Red");
-                  setMsg("TX REJECTED: Consensus cut. Write blocked to guarantee consistency.", "error");
-                  
-                  if (activeTour) progressTour();
-                  else updateUI();
-                });
-              } else {
-                // AP Mode allows local writes
-                sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, (repSuccess) => {
-                  // Replication failed (exploded), but Node A/B accepts locally anyway
-                  if (targetNodeChar === "A") {
-                    valA = chosenVal;
-                    timestampA = Date.now();
-                  } else {
-                    valB = chosenVal;
-                    timestampB = Date.now();
-                  }
-                  sendPacket(targetNodeEl, sourceEl, "ack", "Green");
-                  setMsg(`Local write accepted on Node ${targetNodeChar}. Replica lag: opposite node is stale.`, "warning");
-                  
-                  if (activeTour) progressTour();
-                  else updateUI();
-                });
-              }
+                // Partition active
+                if (currentMode === "CP") {
+                  // CP Mode blocks write due to lack of consensus
+                  sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, () => {
+                    // This fails due to partition. Send error back to client
+                    sendPacket(targetNodeEl, sourceEl, "error", "Red");
+                    setMsg("TX REJECTED: Consensus cut. Write blocked to guarantee consistency.", "error");
+                    
+                    if (activeTour) progressTour();
+                    else updateUI();
+                  });
+                } else {
+                  // AP Mode allows local writes
+                  sendPacket(targetNodeEl, oppositeNodeEl, "replicate", chosenVal as any, () => {
+                    // Replication failed (exploded), but Node A/B accepts locally anyway
+                    if (targetNodeChar === "A") {
+                      valA = chosenVal;
+                    } else {
+                      valB = chosenVal;
+                    }
+                    sendPacket(targetNodeEl, sourceEl, "ack", "Green");
+                    setMsg(`Local write accepted on Node ${targetNodeChar}. Replica lag: opposite node is stale.`, "warning");
+                    
+                    if (activeTour) progressTour();
+                    else updateUI();
+                  });
+                }
             }
           });
         });
@@ -1750,7 +1739,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
           const targetNodeChar = btn.dataset.node as "A" | "B";
           const sourceEl = targetNodeChar === "A" ? clientA : clientB;
           const targetNodeEl = targetNodeChar === "A" ? nodeA : nodeB;
-          const oppositeNodeEl = targetNodeChar === "A" ? nodeB : nodeA;
 
           // Clear previous readouts
           clientValA = null;
@@ -1758,7 +1746,7 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
           updateUI();
 
           // 1. Client to Replica Read Query
-          sendPacket(sourceEl, targetNodeEl, "read", "Blue", (success) => {
+          sendPacket(sourceEl, targetNodeEl, "read", "Blue", () => {
             if (networkState === "healthy") {
               const currentVal = targetNodeChar === "A" ? valA : valB;
               sendPacket(targetNodeEl, sourceEl, "ack", "Green");
@@ -1821,7 +1809,6 @@ const { title = "CAP Theorem Simulator" } = Astro.props;
         valB = "Green";
         clientValA = null;
         clientValB = null;
-        syncPending = false;
         conflictResolutionActive = false;
         multiValueActive = false;
         networkState = "healthy";

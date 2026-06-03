@@ -17,6 +17,7 @@ prerequisites: []
 
 import { Aside, Steps, Tabs, TabItem } from "@astrojs/starlight/components";
 import { PackageManagers } from 'starlight-package-managers';
+import DecisionGuide from '/src/components/interactive/DecisionGuide.astro';
 
 <Aside type="note" title="Prerequisites">
 Before diving into the SWC builder setup, make sure you understand:
@@ -100,6 +101,27 @@ SWC **does not type-check**: it transpiles only. `--type-check` (or `typeCheck: 
 | `webpack` | Slow | Via loader | [Nest CLI monorepos](/knowledge-base/nestjs/recipes/monorepo/) (see [monorepo note](#monorepo-note)) |
 
 Builder enum: `tsc | webpack | swc` ([`start.command.ts#L19`](https://github.com/nestjs/nest-cli/blob/master/commands/start.command.ts#L19)).
+
+<DecisionGuide
+  title="Which NestJS builder should I use?"
+  steps={[
+    { id: "start", question: "Is this a monorepo with multiple Nest apps or libraries?", options: [
+      { label: "Yes : multiple apps/libs in one repo", next: "r-webpack" },
+      { label: "No : single app", next: "q-plugins" },
+    ]},
+    { id: "q-plugins", question: "Do you use @nestjs/swagger, @nestjs/graphql, or custom TypeScript transformers?", note: "SWC does not run tsc transformers; CLI plugins that read type metadata need type-check mode.", options: [
+      { label: "Yes : I need schema generation or custom transformers", next: "q-swc-ok" },
+      { label: "No : plain controllers and services", next: "r-swc" },
+    ]},
+    { id: "q-swc-ok", question: "Have you hit an SWC-specific bug (circular metadata, legacy decorator emit, or a custom transformer that SWC cannot emulate)?", options: [
+      { label: "Yes : SWC breaks my build or runtime", next: "r-tsc" },
+      { label: "No : SWC works fine", next: "r-swc" },
+    ]},
+    { id: "r-swc", result: "SWC", explanation: "Fastest builds (~20× tsc). Always pair with the type-check flag or typeCheck: true in nest-cli.json. Default for single-app projects.", link: "#setup" },
+    { id: "r-tsc", result: "tsc", explanation: "Fallback when SWC hits an incompatibility. Slower but handles legacy decorator emit and custom transformers that SWC cannot emulate.", link: "#pick-a-builder" },
+    { id: "r-webpack", result: "webpack + swc-loader", explanation: "The Nest CLI monorepo schematic uses webpack. Add swc-loader for faster compiles inside webpack. See the monorepo guide for workspace layout.", link: "/knowledge-base/nestjs/recipes/monorepo/" },
+  ]}
+/>
 
 ## Tests
 

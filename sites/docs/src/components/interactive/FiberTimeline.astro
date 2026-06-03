@@ -470,7 +470,6 @@ function segId(seg: { lane: string; start: number }) {
       });
 
       // ── Event arrows ──
-      const lanes: Array<{id: string; label: string}> = JSON.parse(root.dataset.lanes || '[]');
       const evts: Array<{time: number; from: string; to: string; label: string}> = JSON.parse(root.dataset.events || '[]');
       if (evts.length === 0) return;
 

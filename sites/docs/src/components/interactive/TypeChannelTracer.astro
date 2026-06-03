@@ -31,10 +31,9 @@ interface Step {
 
 interface Props {
   steps: Step[];
-  title?: string;
 }
 
-const { steps, title } = Astro.props;
+const { steps } = Astro.props;
 
 /**
  * Parse individual error tags from the E channel string.

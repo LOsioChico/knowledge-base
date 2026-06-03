@@ -36,7 +36,6 @@ interface Props {
 
 const { steps, title } = Astro.props;
 const firstId = steps[0]?.id || "";
-const questionCount = steps.filter(s => "question" in s).length;
 ---
 
 <div class="dg" data-steps={JSON.stringify(steps)} data-first={firstId}>
