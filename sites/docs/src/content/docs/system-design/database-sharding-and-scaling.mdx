@@ -13,7 +13,6 @@ related:
   - "[[system-design/messaging-patterns]]"
   - "[[system-design/logical-clocks]]"
 source:
-  - https://algomaster.io/learn/system-design
   - https://www.postgresql.org/docs/current/ddl-partitioning.html
   - https://www.postgresql.org/docs/current/warm-standby.html
 ---
@@ -79,7 +78,7 @@ Before committing to complex distributed database architectures, engineers must 
 
 ## Table Partitioning (Within a Single Server)
 
-Table partitioning ([PostgreSQL docs](https://www.postgresql.org/docs/current/ddl-partitioning.html), [overview](https://algomaster.io/learn/system-design)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
+Table partitioning ([PostgreSQL docs](https://www.postgresql.org/docs/current/ddl-partitioning.html)) is the process of splitting a large, monolithic table (or index) into smaller, more manageable physical chunks called **partitions**, all managed within the **same database instance** by a single database engine.
 
 Physically, each partition is stored as a **completely independent table file on disk**. The parent table (`orders`) is a **logical routing shell** that holds no physical data of its own. When an application queries the parent table, the database query planner uses **Partition Pruning** to inspect the filter constraints and bypass partition files that cannot hold matching records, saving massive disk I/O.
 

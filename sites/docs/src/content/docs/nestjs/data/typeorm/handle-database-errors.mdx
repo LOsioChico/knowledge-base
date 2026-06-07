@@ -12,6 +12,9 @@ related:
 prerequisites:
   - "[[nestjs/fundamentals/exception-filters]]"
   - "[[nestjs/data/typeorm/postgresql-setup]]"
+tags: [type/recipe, tech/typeorm, tech/postgres]
+area: nestjs
+status: evergreen
 ---
 
 > Catch `QueryFailedError`, branch on the driver SQLSTATE, throw a domain `HttpException`. Centralize in one filter so controllers stay clean.

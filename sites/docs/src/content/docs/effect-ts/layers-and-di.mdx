@@ -17,6 +17,9 @@ unrelated:
   - "[[effect-ts/quickstart]]"
 prerequisites:
   - "[[effect-ts/typed-errors]]"
+tags: [type/concept, tech/effect-ts]
+area: effect-ts
+status: evergreen
 ---
 
 > The `R` channel of `Effect<A, E, R>` is the typed dependency graph. Declare a service with a `Tag`, build an implementation as a `Layer`, and `Effect.provide` it. The compiler refuses to run an effect whose `R` is not `never`.

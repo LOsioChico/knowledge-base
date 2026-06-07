@@ -11,6 +11,9 @@ related:
   - "[[nestjs/recipes/validation]]"
 prerequisites:
   - "[[nestjs/recipes/configuration]]"
+tags: [type/recipe, tech/typeorm, tech/postgres]
+area: nestjs
+status: evergreen
 ---
 
 > Wire `@nestjs/typeorm` to Postgres via `forRootAsync` + `ConfigService`, register entities per feature, inject repositories, and run migrations from a standalone `DataSource`. One `forRoot` per process; `forFeature` per module.
@@ -82,7 +85,7 @@ Before diving into PostgreSQL setup, make sure you understand:
    -p 5432:5432 postgres:16
    ```
 
-   <Aside type="danger" title="Never ship synchronize: true">
+   <Aside type="caution" title="Never ship synchronize: true">
 
    `synchronize: true` re-derives schema on every boot and can drop columns in production. Disable it and use migrations (step 5).
 

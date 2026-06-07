@@ -15,6 +15,9 @@ related:
   - "[[effect-ts/schema]]"
 prerequisites:
   - "[[effect-ts/composition]]"
+tags: [type/concept, tech/effect-ts]
+area: effect-ts
+status: evergreen
 ---
 
 > Put failure modes in the type signature, not in `try/catch`. `Effect.fail` declares an error in the `E` channel; `Effect.try` and `Effect.tryPromise` lift fallible code; `Effect.catchTag` discriminates by `_tag` and removes the handled tag from the residual error type.

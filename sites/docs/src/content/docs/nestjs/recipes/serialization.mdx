@@ -11,6 +11,9 @@ source:
   - https://github.com/nestjs/nest/blob/master/packages/core/index.ts
 prerequisites:
   - "[[nestjs/fundamentals/interceptors]]"
+tags: [type/recipe, tech/class-transformer]
+area: nestjs
+status: evergreen
 ---
 
 > Strip secrets, rename fields, and expose role-specific views of the same entity. Nest hands the response to `class-transformer` via `ClassSerializerInterceptor`, which calls `classToPlain` on whatever the controller returned ([`class-serializer.interceptor.ts`](https://github.com/nestjs/nest/blob/master/packages/common/serializer/class-serializer.interceptor.ts)).

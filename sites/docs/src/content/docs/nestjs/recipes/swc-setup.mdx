@@ -11,6 +11,9 @@ related:
   - "[[nestjs/releases/v10]]"
   - "[[nestjs/recipes/testing]]"
 prerequisites: []
+tags: [type/recipe]
+area: nestjs
+status: evergreen
 ---
 
 > [SWC](https://swc.rs) compiles TypeScript roughly **20× faster** than `tsc` on Nest builds. Since [[nestjs/releases/v10|NestJS 10]], the CLI supports `nest start -b swc`; pair with `--type-check` so type errors still surface. This knowledge base defaults to SWC for single-app projects.
@@ -74,7 +77,7 @@ SWC **does not type-check**: it transpiles only. `--type-check` (or `typeCheck: 
 | Watch (`-w`) | SWC and `tsc` run **in parallel**; type errors print asynchronously |
 | One-shot (`nest build`) | Type-check **awaits** before SWC emit |
 
-<Aside type="danger" title="CLI Plugins require type-check">
+<Aside type="caution" title="CLI Plugins require type-check">
 
 `@nestjs/swagger` and `@nestjs/graphql` plugins read TS types at build time. Without `--type-check`, the plugin transformer never runs and generated schemas miss operations while the app still boots ([SWC recipe: CLI Plugins](https://docs.nestjs.com/recipes/swc#cli-plugins-swc)).
 
